@@ -381,6 +381,34 @@ section.content {
   background: var(--border);
   margin: 4px 0;
 }
+/* Tool popover (image tool sub-menu) */
+.tool-popover {
+  display: none;
+  position: absolute;
+  left: 52px; top: 0;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 6px;
+  z-index: 300;
+  box-shadow: 0 8px 32px #0008;
+  min-width: 170px;
+  flex-direction: column;
+  gap: 2px;
+}
+.tool-popover.open { display: flex; }
+.popover-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px; border-radius: 7px;
+  cursor: pointer; border: none;
+  background: none; color: var(--text);
+  font-family: 'DM Sans', sans-serif; font-size: 13px;
+  text-align: left; width: 100%;
+  transition: background 0.12s;
+}
+.popover-item:hover { background: var(--surface); }
+.popover-item svg { flex-shrink: 0; color: var(--muted); }
+
 /* Swatch inside background button */
 .bg-swatch {
   width: 16px; height: 16px;
@@ -560,6 +588,35 @@ section.content {
           <line x1="12" y1="4" x2="12" y2="20"/>
         </svg>
       </button>
+
+      <!-- Image tool + popover -->
+      <div style="position:relative">
+        <button class="tool-btn" title="Add Image" onclick="toggleImagePopover(event)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <circle cx="8.5" cy="8.5" r="1.5"/>
+            <polyline points="21 15 16 10 5 21"/>
+          </svg>
+        </button>
+        <div class="tool-popover" id="imagePopover">
+          <button class="popover-item" onclick="designerUploadImage()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            Upload from device
+          </button>
+          <button class="popover-item" onclick="designerImageFromUrl()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+            </svg>
+            Paste image URL
+          </button>
+        </div>
+        <input type="file" id="designerFileInput" accept="image/*"
+               style="position:absolute;width:0;height:0;opacity:0;pointer-events:none">
+      </div>
 
       <div class="tool-divider"></div>
 
@@ -974,6 +1031,78 @@ function syncBgSwatch() {
   const color = fabricCanvas?.backgroundColor || '#ffffff';
   bgColorInput.value = color;
   bgSwatch.style.background = color;
+}
+
+// ── Image tool ────────────────────────────────────────────────────────────
+window.toggleImagePopover = function(e) {
+  e.stopPropagation();
+  document.getElementById('imagePopover').classList.toggle('open');
+};
+
+// Close popover when clicking anywhere else
+document.addEventListener('click', () => {
+  document.getElementById('imagePopover')?.classList.remove('open');
+});
+
+window.designerUploadImage = function() {
+  document.getElementById('imagePopover').classList.remove('open');
+  document.getElementById('designerFileInput').click();
+};
+
+window.designerImageFromUrl = function() {
+  document.getElementById('imagePopover').classList.remove('open');
+  const url = prompt('Paste an image URL:');
+  if (url) addImageToCanvas(url);
+};
+
+document.getElementById('designerFileInput').addEventListener('change', async function() {
+  const file = this.files[0];
+  if (!file) return;
+  this.value = '';
+
+  toast('Uploading image…');
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+  formData.append('folder', `signage/designer`);
+
+  try {
+    const res  = await fetch(
+      `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+      { method: 'POST', body: formData }
+    );
+    const data = await res.json();
+    if (data.secure_url) {
+      addImageToCanvas(data.secure_url);
+    } else {
+      toast('Upload failed: ' + (data.error?.message || 'Unknown error'), true);
+    }
+  } catch(e) {
+    toast('Upload error: ' + e.message, true);
+  }
+});
+
+async function addImageToCanvas(url) {
+  if (!fabricCanvas) return;
+  try {
+    const img = await fabric.Image.fromURL(url, { crossOrigin: 'anonymous' });
+    const maxW  = CANVAS_W * 0.75;
+    const maxH  = CANVAS_H * 0.75;
+    const scale = Math.min(maxW / img.width, maxH / img.height, 1);
+    img.set({
+      left:    CANVAS_W / 2,
+      top:     CANVAS_H / 2,
+      originX: 'center',
+      originY: 'center',
+      scaleX:  scale,
+      scaleY:  scale,
+    });
+    fabricCanvas.add(img);
+    fabricCanvas.setActiveObject(img);
+    fabricCanvas.renderAll();
+  } catch(e) {
+    toast('Could not load image — check the URL or CORS policy.', true);
+  }
 }
 
 window.saveDesignedSlide = function() {
