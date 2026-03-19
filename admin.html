@@ -437,6 +437,75 @@ section.content {
   line-height: 0; /* prevent inline gap below canvas */
   position: relative;
 }
+
+/* ── Properties Panel ────────────────────────────────────────────────────── */
+.designer-props {
+  width: 240px; flex-shrink: 0;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  overflow-y: auto;
+  padding: 16px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.props-title {
+  font-size: 10px; font-weight: 600; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted);
+  margin-bottom: 2px;
+}
+.prop-group { display: flex; flex-direction: column; gap: 10px; }
+.prop-row   { display: flex; flex-direction: column; gap: 5px; }
+.prop-label { font-size: 11px; color: var(--muted); }
+.prop-input, .prop-select {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 7px; padding: 7px 10px;
+  color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 13px;
+  width: 100%; transition: border-color 0.15s;
+}
+.prop-input:focus, .prop-select:focus { outline: none; border-color: var(--accent); }
+.prop-select option { background: var(--surface2); }
+.prop-color-wide {
+  width: 100%; height: 34px; border-radius: 7px;
+  border: 1px solid var(--border); cursor: pointer;
+  padding: 2px; background: var(--surface2);
+}
+.prop-color-sm {
+  width: 34px; height: 34px; border-radius: 7px; flex-shrink: 0;
+  border: 1px solid var(--border); cursor: pointer;
+  padding: 2px; background: var(--surface2);
+}
+.prop-hr { height: 1px; background: var(--border); }
+.toggle-row { display: flex; gap: 4px; }
+.toggle-btn {
+  flex: 1; padding: 6px 4px; border-radius: 6px;
+  border: 1px solid var(--border); background: var(--surface2);
+  color: var(--muted); cursor: pointer;
+  font-size: 12px; text-align: center; transition: all 0.15s;
+  display: flex; align-items: center; justify-content: center;
+}
+.toggle-btn:hover { border-color: var(--muted); color: var(--text); }
+.toggle-btn.active { background: #4f8ef720; border-color: var(--accent); color: var(--accent); }
+.prop-btn {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 5px;
+  padding: 7px 6px; border-radius: 7px;
+  border: 1px solid var(--border); background: var(--surface2);
+  color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 11px;
+  cursor: pointer; transition: all 0.15s;
+}
+.prop-btn:hover { border-color: var(--muted); }
+.prop-btn-row { display: flex; gap: 6px; }
+.prop-inline  { display: flex; gap: 8px; align-items: flex-end; }
+.bg-type-tabs {
+  display: flex; border-radius: 7px; overflow: hidden;
+  border: 1px solid var(--border);
+}
+.bg-tab {
+  flex: 1; padding: 6px; border: none; border-right: 1px solid var(--border);
+  background: var(--surface2); color: var(--muted);
+  font-family: 'DM Sans', sans-serif; font-size: 11px;
+  cursor: pointer; transition: all 0.15s;
+}
+.bg-tab:last-child { border-right: none; }
+.bg-tab.active { background: #4f8ef720; color: var(--accent); }
 </style>
 </head>
 <body>
@@ -651,6 +720,186 @@ section.content {
         <canvas id="designerCanvas"></canvas>
       </div>
     </div>
+
+    <!-- Properties Panel -->
+    <div class="designer-props" id="designerProps">
+
+      <!-- No selection: canvas background -->
+      <div id="propsNone">
+        <div class="props-title">Background</div>
+        <div class="prop-group">
+          <div class="bg-type-tabs">
+            <button class="bg-tab active" data-bg="solid"    onclick="setBgType('solid')">Solid</button>
+            <button class="bg-tab"        data-bg="gradient" onclick="setBgType('gradient')">Gradient</button>
+            <button class="bg-tab"        data-bg="image"    onclick="setBgType('image')">Image</button>
+          </div>
+          <div id="bgSolidPanel">
+            <div class="prop-row">
+              <div class="prop-label">Color</div>
+              <input type="color" id="propsBgColor" value="#ffffff" class="prop-color-wide">
+            </div>
+          </div>
+          <div id="bgGradientPanel" style="display:none">
+            <div class="prop-row">
+              <div class="prop-label">Colors</div>
+              <div class="prop-inline">
+                <input type="color" id="gradColor1" value="#4f8ef7" class="prop-color-wide" style="flex:1">
+                <input type="color" id="gradColor2" value="#7c5cfc" class="prop-color-wide" style="flex:1">
+              </div>
+            </div>
+            <div class="prop-row">
+              <div class="prop-label">Direction</div>
+              <select id="gradDirection" class="prop-input">
+                <option value="horizontal">Horizontal →</option>
+                <option value="vertical">Vertical ↓</option>
+                <option value="diagonal">Diagonal ↘</option>
+              </select>
+            </div>
+          </div>
+          <div id="bgImagePanel" style="display:none">
+            <div class="prop-row">
+              <button class="prop-btn" style="width:100%" onclick="setBgImage()">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+                Upload / Paste URL
+              </button>
+            </div>
+            <div class="prop-row">
+              <div class="prop-label">Fit</div>
+              <select id="bgImageFit" class="prop-input" onchange="applyBgImage()">
+                <option value="cover">Cover (crop to fill)</option>
+                <option value="contain">Contain (letterbox)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Text properties -->
+      <div id="propsText" style="display:none">
+        <div class="props-title">Text</div>
+        <div class="prop-group">
+          <div class="prop-row">
+            <div class="prop-label">Font</div>
+            <select id="propFontFamily" class="prop-input" onchange="applyTextProp('fontFamily', this.value)">
+              <option>Arial</option><option>Georgia</option><option>Helvetica</option>
+              <option>Impact</option><option>Montserrat</option><option>Oswald</option>
+              <option>Raleway</option><option>Roboto</option>
+            </select>
+          </div>
+          <div class="prop-inline">
+            <div class="prop-row" style="flex:1">
+              <div class="prop-label">Size</div>
+              <input type="number" id="propFontSize" class="prop-input" min="8" max="400"
+                     onchange="applyTextProp('fontSize', +this.value)">
+            </div>
+            <div class="prop-row">
+              <div class="prop-label">Color</div>
+              <input type="color" id="propTextColor" class="prop-color-sm"
+                     oninput="applyTextProp('fill', this.value)">
+            </div>
+          </div>
+          <div class="prop-row">
+            <div class="prop-label">Style</div>
+            <div class="toggle-row">
+              <button class="toggle-btn" id="toggleBold"      onclick="toggleTextStyle('bold')"><b>B</b></button>
+              <button class="toggle-btn" id="toggleItalic"    onclick="toggleTextStyle('italic')"><i>I</i></button>
+              <button class="toggle-btn" id="toggleUnderline" onclick="toggleTextStyle('underline')"><u>U</u></button>
+            </div>
+          </div>
+          <div class="prop-row">
+            <div class="prop-label">Align</div>
+            <div class="toggle-row">
+              <button class="toggle-btn" id="alignLeft"   onclick="applyTextAlign('left')">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="18" y2="18"/>
+                </svg>
+              </button>
+              <button class="toggle-btn" id="alignCenter" onclick="applyTextAlign('center')">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <line x1="3" y1="6" x2="21" y2="6"/><line x1="6" y1="12" x2="18" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/>
+                </svg>
+              </button>
+              <button class="toggle-btn" id="alignRight"  onclick="applyTextAlign('right')">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <line x1="3" y1="6" x2="21" y2="6"/><line x1="9" y1="12" x2="21" y2="12"/><line x1="6" y1="18" x2="21" y2="18"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="prop-row">
+            <div class="prop-label">Opacity</div>
+            <input type="range" id="propTextOpacity" min="0" max="1" step="0.01" value="1" style="width:100%"
+                   oninput="applyTextProp('opacity', +this.value)">
+          </div>
+        </div>
+      </div>
+
+      <!-- Image properties -->
+      <div id="propsImage" style="display:none">
+        <div class="props-title">Image</div>
+        <div class="prop-group">
+          <div class="prop-row">
+            <div class="prop-label">Opacity</div>
+            <input type="range" id="propImgOpacity" min="0" max="1" step="0.01" value="1" style="width:100%"
+                   oninput="applyObjProp('opacity', +this.value)">
+          </div>
+          <div class="prop-row">
+            <div class="prop-label">Flip</div>
+            <div class="prop-btn-row">
+              <button class="prop-btn" onclick="flipObj('X')">↔ Flip H</button>
+              <button class="prop-btn" onclick="flipObj('Y')">↕ Flip V</button>
+            </div>
+          </div>
+          <div class="prop-row">
+            <div class="prop-label">Order</div>
+            <div class="prop-btn-row">
+              <button class="prop-btn" onclick="bringFwd()">↑ Forward</button>
+              <button class="prop-btn" onclick="sendBwd()">↓ Backward</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Shape properties -->
+      <div id="propsShape" style="display:none">
+        <div class="props-title">Shape</div>
+        <div class="prop-group">
+          <div class="prop-inline">
+            <div class="prop-row" style="flex:1">
+              <div class="prop-label">Fill</div>
+              <input type="color" id="propShapeFill" class="prop-color-wide"
+                     oninput="applyObjProp('fill', this.value)">
+            </div>
+            <div class="prop-row" style="flex:1">
+              <div class="prop-label">Border</div>
+              <input type="color" id="propShapeStroke" class="prop-color-wide"
+                     oninput="applyObjProp('stroke', this.value)">
+            </div>
+          </div>
+          <div class="prop-row">
+            <div class="prop-label">Border Width</div>
+            <input type="number" id="propShapeStrokeW" class="prop-input" min="0" max="50" value="0"
+                   onchange="applyObjProp('strokeWidth', +this.value)">
+          </div>
+          <div class="prop-row">
+            <div class="prop-label">Opacity</div>
+            <input type="range" id="propShapeOpacity" min="0" max="1" step="0.01" value="1" style="width:100%"
+                   oninput="applyObjProp('opacity', +this.value)">
+          </div>
+          <div class="prop-row">
+            <div class="prop-label">Order</div>
+            <div class="prop-btn-row">
+              <button class="prop-btn" onclick="bringFwd()">↑ Forward</button>
+              <button class="prop-btn" onclick="sendBwd()">↓ Backward</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end .designer-props -->
   </div>
 </div>
 
@@ -1006,6 +1255,13 @@ function initFabricCanvas() {
 
     syncBgSwatch();
 
+    // Selection events → update properties panel
+    fabricCanvas.on('selection:created', updatePropsPanel);
+    fabricCanvas.on('selection:updated', updatePropsPanel);
+    fabricCanvas.on('selection:cleared', updatePropsPanel);
+    fabricCanvas.on('object:modified',   updatePropsPanel);
+    updatePropsPanel();
+
     // Delete key removes selected object
     document.addEventListener('keydown', onDesignerKey);
   } catch(err) {
@@ -1049,19 +1305,15 @@ window.designerAddText = function() {
 const bgColorInput = document.getElementById('bgColorInput');
 const bgSwatch     = document.getElementById('bgSwatch');
 
-bgColorInput.addEventListener('input', () => {
-  if (!fabricCanvas) return;
-  const color = bgColorInput.value;
-  fabricCanvas.backgroundColor = color;
-  fabricCanvas.renderAll();
-  bgSwatch.style.background = color;
-});
+// bgColorInput listener is handled in the Properties Panel section below
 
 // Sync swatch when canvas initialises
 function syncBgSwatch() {
-  const color = fabricCanvas?.backgroundColor || '#ffffff';
-  bgColorInput.value = color;
+  const color = (typeof fabricCanvas?.backgroundColor === 'string'
+    ? fabricCanvas.backgroundColor : null) || '#ffffff';
+  bgColorInput.value        = color;
   bgSwatch.style.background = color;
+  document.getElementById('propsBgColor').value = color;
 }
 
 // ── Image tool ────────────────────────────────────────────────────────────
@@ -1205,6 +1457,214 @@ window.designerAddLine = function() {
   fabricCanvas.add(line);
   fabricCanvas.setActiveObject(line);
   fabricCanvas.renderAll();
+};
+
+// ── Properties Panel ──────────────────────────────────────────────────────
+
+// Parse any CSS color to a #rrggbb hex string for <input type="color">
+function toHex(color) {
+  if (!color || color === 'transparent' || typeof color !== 'string') return '#000000';
+  if (/^#[0-9a-f]{6}$/i.test(color)) return color;
+  const ctx = document.createElement('canvas').getContext('2d');
+  ctx.fillStyle = color;
+  const h = ctx.fillStyle;
+  return /^#[0-9a-f]{6}$/i.test(h) ? h : '#000000';
+}
+
+function updatePropsPanel() {
+  const obj = fabricCanvas?.getActiveObject();
+  document.getElementById('propsNone').style.display  = 'none';
+  document.getElementById('propsText').style.display  = 'none';
+  document.getElementById('propsImage').style.display = 'none';
+  document.getElementById('propsShape').style.display = 'none';
+
+  if (!obj) {
+    document.getElementById('propsNone').style.display = 'block';
+    return;
+  }
+
+  const t = obj.type;
+  if (t === 'i-text' || t === 'text') {
+    document.getElementById('propsText').style.display = 'block';
+    document.getElementById('propFontFamily').value   = obj.fontFamily || 'Arial';
+    document.getElementById('propFontSize').value     = Math.round(obj.fontSize) || 72;
+    document.getElementById('propTextColor').value    = toHex(obj.fill);
+    document.getElementById('propTextOpacity').value  = obj.opacity ?? 1;
+    document.getElementById('toggleBold').classList.toggle('active', obj.fontWeight === 'bold');
+    document.getElementById('toggleItalic').classList.toggle('active', obj.fontStyle === 'italic');
+    document.getElementById('toggleUnderline').classList.toggle('active', !!obj.underline);
+    ['left','center','right'].forEach(a =>
+      document.getElementById('align' + a[0].toUpperCase() + a.slice(1))
+        .classList.toggle('active', obj.textAlign === a)
+    );
+
+  } else if (t === 'image') {
+    document.getElementById('propsImage').style.display = 'block';
+    document.getElementById('propImgOpacity').value = obj.opacity ?? 1;
+
+  } else {
+    document.getElementById('propsShape').style.display = 'block';
+    document.getElementById('propShapeFill').value    = toHex(typeof obj.fill   === 'string' ? obj.fill   : '#4f8ef7');
+    document.getElementById('propShapeStroke').value  = toHex(typeof obj.stroke === 'string' ? obj.stroke : '#000000');
+    document.getElementById('propShapeStrokeW').value = obj.strokeWidth ?? 0;
+    document.getElementById('propShapeOpacity').value = obj.opacity ?? 1;
+  }
+}
+
+window.applyTextProp = function(prop, value) {
+  const obj = fabricCanvas?.getActiveObject();
+  if (!obj) return;
+  obj.set(prop, value);
+  fabricCanvas.renderAll();
+};
+
+window.applyTextAlign = function(align) {
+  applyTextProp('textAlign', align);
+  ['left','center','right'].forEach(a =>
+    document.getElementById('align' + a[0].toUpperCase() + a.slice(1))
+      .classList.toggle('active', a === align)
+  );
+};
+
+window.toggleTextStyle = function(style) {
+  const obj = fabricCanvas?.getActiveObject();
+  if (!obj) return;
+  if (style === 'bold') {
+    obj.set('fontWeight', obj.fontWeight === 'bold' ? 'normal' : 'bold');
+    document.getElementById('toggleBold').classList.toggle('active', obj.fontWeight === 'bold');
+  } else if (style === 'italic') {
+    obj.set('fontStyle', obj.fontStyle === 'italic' ? 'normal' : 'italic');
+    document.getElementById('toggleItalic').classList.toggle('active', obj.fontStyle === 'italic');
+  } else if (style === 'underline') {
+    obj.set('underline', !obj.underline);
+    document.getElementById('toggleUnderline').classList.toggle('active', !!obj.underline);
+  }
+  fabricCanvas.renderAll();
+};
+
+window.applyObjProp = function(prop, value) {
+  const obj = fabricCanvas?.getActiveObject();
+  if (!obj) return;
+  obj.set(prop, value);
+  fabricCanvas.renderAll();
+};
+
+window.flipObj = function(axis) {
+  const obj = fabricCanvas?.getActiveObject();
+  if (!obj) return;
+  obj.set('flip' + axis, !obj['flip' + axis]);
+  fabricCanvas.renderAll();
+};
+
+window.bringFwd = function() {
+  const obj = fabricCanvas?.getActiveObject();
+  if (!obj) return;
+  fabricCanvas.bringForward(obj);
+  fabricCanvas.renderAll();
+};
+
+window.sendBwd = function() {
+  const obj = fabricCanvas?.getActiveObject();
+  if (!obj) return;
+  fabricCanvas.sendBackwards(obj);
+  fabricCanvas.renderAll();
+};
+
+// ── Background controls ────────────────────────────────────────────────────
+let currentBgType  = 'solid';
+let currentBgImgUrl = null;
+
+window.setBgType = function(type) {
+  currentBgType = type;
+  document.querySelectorAll('.bg-tab').forEach(t =>
+    t.classList.toggle('active', t.dataset.bg === type)
+  );
+  document.getElementById('bgSolidPanel').style.display    = type === 'solid'    ? 'block' : 'none';
+  document.getElementById('bgGradientPanel').style.display = type === 'gradient' ? 'block' : 'none';
+  document.getElementById('bgImagePanel').style.display    = type === 'image'    ? 'block' : 'none';
+  if (type === 'solid')    applyBgSolid();
+  if (type === 'gradient') applyBgGradient();
+  if (type === 'image' && currentBgImgUrl) applyBgImage();
+};
+
+// Keep right-panel solid picker in sync with left-toolbar swatch
+const propsBgColor = document.getElementById('propsBgColor');
+propsBgColor.addEventListener('input', () => {
+  bgColorInput.value        = propsBgColor.value;
+  bgSwatch.style.background = propsBgColor.value;
+  applyBgSolid();
+});
+// Keep left-toolbar swatch in sync with right-panel picker
+bgColorInput.addEventListener('input', () => {
+  propsBgColor.value        = bgColorInput.value;
+  bgSwatch.style.background = bgColorInput.value;
+  applyBgSolid();
+});
+
+function applyBgSolid() {
+  if (!fabricCanvas) return;
+  const color = propsBgColor.value;
+  fabricCanvas.backgroundColor = color;
+  fabricCanvas.renderAll();
+}
+
+const gradColor1    = document.getElementById('gradColor1');
+const gradColor2    = document.getElementById('gradColor2');
+const gradDirection = document.getElementById('gradDirection');
+
+function applyBgGradient() {
+  if (!fabricCanvas) return;
+  const dir = gradDirection.value;
+  const coords = dir === 'horizontal' ? { x1: 0, y1: 0, x2: 1, y2: 0 }
+               : dir === 'vertical'   ? { x1: 0, y1: 0, x2: 0, y2: 1 }
+               :                       { x1: 0, y1: 0, x2: 1, y2: 1 };
+  fabricCanvas.setBackgroundColor(
+    new fabric.Gradient({
+      type: 'linear', gradientUnits: 'percentage', coords,
+      colorStops: [
+        { offset: 0, color: gradColor1.value },
+        { offset: 1, color: gradColor2.value },
+      ],
+    }),
+    () => fabricCanvas.renderAll()
+  );
+}
+[gradColor1, gradColor2].forEach(el => el.addEventListener('input', applyBgGradient));
+gradDirection.addEventListener('change', applyBgGradient);
+
+window.setBgImage = async function() {
+  const url = prompt('Paste an image URL (or cancel to upload a file):');
+  if (url) { currentBgImgUrl = url; applyBgImage(); return; }
+
+  const inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = 'image/*';
+  inp.onchange = async () => {
+    const file = inp.files[0]; if (!file) return;
+    toast('Uploading background…');
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+    const res  = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, { method: 'POST', body: fd });
+    const data = await res.json();
+    if (data.secure_url) { currentBgImgUrl = data.secure_url; applyBgImage(); }
+    else toast('Upload failed', true);
+  };
+  inp.click();
+};
+
+window.applyBgImage = function() {
+  if (!fabricCanvas || !currentBgImgUrl) return;
+  const fit = document.getElementById('bgImageFit').value;
+  const imgEl = new Image();
+  imgEl.onload = () => {
+    const fImg = new fabric.Image(imgEl);
+    const scaleX = fabricCanvas.width  / imgEl.naturalWidth;
+    const scaleY = fabricCanvas.height / imgEl.naturalHeight;
+    const scale  = fit === 'cover' ? Math.max(scaleX, scaleY) : Math.min(scaleX, scaleY);
+    fImg.set({ scaleX: scale, scaleY: scale, originX: 'left', originY: 'top' });
+    fabricCanvas.setBackgroundImage(fImg, fabricCanvas.renderAll.bind(fabricCanvas));
+  };
+  imgEl.src = currentBgImgUrl;
 };
 
 window.saveDesignedSlide = function() {
