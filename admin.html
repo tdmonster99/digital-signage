@@ -1049,10 +1049,10 @@ window.designerUploadImage = function() {
   document.getElementById('designerFileInput').click();
 };
 
-window.designerImageFromUrl = function() {
+window.designerImageFromUrl = async function() {
   document.getElementById('imagePopover').classList.remove('open');
   const url = prompt('Paste an image URL:');
-  if (url) addImageToCanvas(url);
+  if (url) await addImageToCanvas(url);
 };
 
 document.getElementById('designerFileInput').addEventListener('change', async function() {
@@ -1060,11 +1060,17 @@ document.getElementById('designerFileInput').addEventListener('change', async fu
   if (!file) return;
   this.value = '';
 
-  toast('Uploading image…');
+  // Show on canvas immediately via local blob URL (no CORS needed)
+  const blobUrl = URL.createObjectURL(file);
+  const fabricImg = await addImageToCanvas(blobUrl);
+  if (!fabricImg) return;
+
+  // Upload to Cloudinary in background so the real URL gets stored on save
+  toast('Saving to cloud…');
   const formData = new FormData();
   formData.append('file', file);
   formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-  formData.append('folder', `signage/designer`);
+  formData.append('folder', 'signage/designer');
 
   try {
     const res  = await fetch(
@@ -1073,39 +1079,49 @@ document.getElementById('designerFileInput').addEventListener('change', async fu
     );
     const data = await res.json();
     if (data.secure_url) {
-      addImageToCanvas(data.secure_url);
+      // Swap blob URL → Cloudinary URL so canvas JSON serialises correctly
+      fabricImg._element.src = data.secure_url;
+      if (fabricImg._originalElement) fabricImg._originalElement.src = data.secure_url;
+      URL.revokeObjectURL(blobUrl);
+      toast('Saved to cloud ✓');
     } else {
-      toast('Upload failed: ' + (data.error?.message || 'Unknown error'), true);
+      toast('Cloud upload failed: ' + (data.error?.message || 'Unknown error'), true);
     }
   } catch(e) {
-    toast('Upload error: ' + e.message, true);
+    toast('Cloud upload error: ' + e.message, true);
   }
 });
 
+// Returns a Promise<fabric.Image | null>
 function addImageToCanvas(url) {
-  if (!fabricCanvas) return;
-  const imgEl = new Image();
-  imgEl.crossOrigin = 'anonymous';
-  imgEl.onload = () => {
-    const img   = new fabric.Image(imgEl);
-    const maxW  = CANVAS_W * 0.75;
-    const maxH  = CANVAS_H * 0.75;
-    const scale = Math.min(maxW / imgEl.naturalWidth, maxH / imgEl.naturalHeight, 1);
-    img.set({
-      left:    CANVAS_W / 2,
-      top:     CANVAS_H / 2,
-      originX: 'center',
-      originY: 'center',
-      scaleX:  scale,
-      scaleY:  scale,
-    });
-    fabricCanvas.add(img);
-    fabricCanvas.setActiveObject(img);
-    fabricCanvas.renderAll();
-    toast('Image added ✓');
-  };
-  imgEl.onerror = () => toast('Could not load image — check the URL or CORS policy.', true);
-  imgEl.src = url;
+  return new Promise(resolve => {
+    if (!fabricCanvas) { resolve(null); return; }
+    const imgEl = new Image();
+    imgEl.onload = () => {
+      const img   = new fabric.Image(imgEl);
+      const maxW  = CANVAS_W * 0.75;
+      const maxH  = CANVAS_H * 0.75;
+      const scale = Math.min(maxW / imgEl.naturalWidth, maxH / imgEl.naturalHeight, 1);
+      img.set({
+        left:    CANVAS_W / 2,
+        top:     CANVAS_H / 2,
+        originX: 'center',
+        originY: 'center',
+        scaleX:  scale,
+        scaleY:  scale,
+      });
+      fabricCanvas.add(img);
+      fabricCanvas.setActiveObject(img);
+      fabricCanvas.renderAll();
+      toast('Image added ✓');
+      resolve(img);
+    };
+    imgEl.onerror = () => {
+      toast('Could not load image.', true);
+      resolve(null);
+    };
+    imgEl.src = url;
+  });
 }
 
 window.saveDesignedSlide = function() {
