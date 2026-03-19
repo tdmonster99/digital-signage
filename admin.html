@@ -6,7 +6,7 @@
 <title>Signage Admin</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/6.0.0/fabric.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fabric@6/dist/fabric.min.js"></script>
 
 <style>
 /* ── Reset & tokens ─────────────────────────────────────────────────────── */
@@ -943,6 +943,10 @@ const CANVAS_H = 1080;
 let fabricCanvas = null;
 
 window.openDesigner = function(existingSlide = null) {
+  if (typeof fabric === 'undefined') {
+    toast('Fabric.js failed to load — check your internet connection and refresh.', true);
+    return;
+  }
   const modal = document.getElementById('designerModal');
   modal.style.display = 'flex';
   document.getElementById('designerSlideName').value = existingSlide?.name || 'New Slide';
@@ -956,31 +960,41 @@ window.closeDesigner = function() {
 };
 
 function initFabricCanvas() {
-  if (fabricCanvas) { fabricCanvas.dispose(); fabricCanvas = null; }
+  try {
+    if (fabricCanvas) { fabricCanvas.dispose(); fabricCanvas = null; }
 
-  const surround = document.getElementById('canvasSurround');
-  const pad = 80;
-  const scale = Math.min(
-    (surround.clientWidth  - pad) / CANVAS_W,
-    (surround.clientHeight - pad) / CANVAS_H,
-    1
-  );
-  const dispW = Math.round(CANVAS_W * scale);
-  const dispH = Math.round(CANVAS_H * scale);
+    const surround = document.getElementById('canvasSurround');
+    const pad = 80;
+    const scale = Math.min(
+      (surround.clientWidth  - pad) / CANVAS_W,
+      (surround.clientHeight - pad) / CANVAS_H,
+      1
+    );
+    // Guard against zero/negative dimensions if layout hasn't settled yet
+    if (scale <= 0) {
+      setTimeout(initFabricCanvas, 100);
+      return;
+    }
+    const dispW = Math.round(CANVAS_W * scale);
+    const dispH = Math.round(CANVAS_H * scale);
 
-  fabricCanvas = new fabric.Canvas('designerCanvas', {
-    width:  dispW,
-    height: dispH,
-    backgroundColor: '#ffffff',
-  });
+    fabricCanvas = new fabric.Canvas('designerCanvas', {
+      width:  dispW,
+      height: dispH,
+      backgroundColor: '#ffffff',
+    });
 
-  // Keep logical coordinates in 1920×1080 space
-  fabricCanvas.setZoom(scale);
+    // Keep logical coordinates in 1920×1080 space
+    fabricCanvas.setZoom(scale);
 
-  syncBgSwatch();
+    syncBgSwatch();
 
-  // Delete key removes selected object
-  document.addEventListener('keydown', onDesignerKey);
+    // Delete key removes selected object
+    document.addEventListener('keydown', onDesignerKey);
+  } catch(err) {
+    toast('Canvas init failed: ' + err.message, true);
+    console.error('initFabricCanvas error:', err);
+  }
 }
 
 function onDesignerKey(e) {
@@ -1059,6 +1073,7 @@ document.getElementById('designerFileInput').addEventListener('change', async fu
   const file = this.files[0];
   if (!file) return;
   this.value = '';
+  if (!fabricCanvas) { toast('Canvas not ready — try reopening the designer.', true); return; }
 
   // Show on canvas immediately via local blob URL (no CORS needed)
   const blobUrl = URL.createObjectURL(file);
