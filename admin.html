@@ -336,6 +336,60 @@ section.content {
 #designerSlideName:focus { outline: none; border-color: var(--accent); }
 .designer-topbar-actions { display: flex; gap: 8px; margin-left: auto; }
 
+/* Designer body (toolbar + canvas side by side) */
+.designer-body {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+/* Left tool strip */
+.designer-toolbar {
+  width: 52px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 0;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.tool-btn {
+  width: 36px; height: 36px;
+  border-radius: 8px;
+  border: none; background: none;
+  color: var(--muted);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  position: relative;
+}
+.tool-btn:hover { background: var(--surface2); color: var(--text); }
+.tool-btn.active { background: #4f8ef720; color: var(--accent); }
+.tool-btn[title]:hover::after {
+  content: attr(title);
+  position: absolute; left: calc(100% + 10px); top: 50%;
+  transform: translateY(-50%);
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text); font-size: 12px; white-space: nowrap;
+  padding: 4px 10px; border-radius: 6px;
+  pointer-events: none; z-index: 10;
+}
+.tool-divider {
+  width: 28px; height: 1px;
+  background: var(--border);
+  margin: 4px 0;
+}
+/* Swatch inside background button */
+.bg-swatch {
+  width: 16px; height: 16px;
+  border-radius: 4px;
+  border: 1.5px solid #ffffff44;
+  background: #ffffff;
+  pointer-events: none;
+}
+
 .canvas-surround {
   flex: 1;
   display: flex; align-items: center; justify-content: center;
@@ -497,9 +551,31 @@ section.content {
       <button class="btn btn-primary" onclick="saveDesignedSlide()">Save Slide</button>
     </div>
   </div>
-  <div class="canvas-surround" id="canvasSurround">
-    <div id="canvasFrame">
-      <canvas id="designerCanvas"></canvas>
+  <div class="designer-body">
+    <!-- Left toolbar -->
+    <div class="designer-toolbar">
+      <button class="tool-btn" title="Add Text" onclick="designerAddText()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/>
+          <line x1="12" y1="4" x2="12" y2="20"/>
+        </svg>
+      </button>
+
+      <div class="tool-divider"></div>
+
+      <!-- Background color — hidden color input triggered by button -->
+      <button class="tool-btn" title="Background Color" onclick="document.getElementById('bgColorInput').click()">
+        <div class="bg-swatch" id="bgSwatch"></div>
+      </button>
+      <input type="color" id="bgColorInput" value="#ffffff"
+             style="position:absolute;width:0;height:0;opacity:0;pointer-events:none">
+    </div>
+
+    <!-- Canvas area -->
+    <div class="canvas-surround" id="canvasSurround">
+      <div id="canvasFrame">
+        <canvas id="designerCanvas"></canvas>
+      </div>
     </div>
   </div>
 </div>
@@ -844,6 +920,8 @@ function initFabricCanvas() {
   // Keep logical coordinates in 1920×1080 space
   fabricCanvas.setZoom(scale);
 
+  syncBgSwatch();
+
   // Delete key removes selected object
   document.addEventListener('keydown', onDesignerKey);
 }
@@ -856,6 +934,46 @@ function onDesignerKey(e) {
     const obj = fabricCanvas.getActiveObject();
     if (obj) { fabricCanvas.remove(obj); fabricCanvas.discardActiveObject(); fabricCanvas.renderAll(); }
   }
+}
+
+// ── Text tool ─────────────────────────────────────────────────────────────
+window.designerAddText = function() {
+  if (!fabricCanvas) return;
+  const zoom = fabricCanvas.getZoom();
+  const cx   = (CANVAS_W / 2);
+  const cy   = (CANVAS_H / 2);
+  const text = new fabric.IText('Double-click to edit', {
+    left:       cx,
+    top:        cy,
+    originX:    'center',
+    originY:    'center',
+    fontSize:   72,
+    fontFamily: 'Arial',
+    fill:       '#000000',
+    editable:   true,
+  });
+  fabricCanvas.add(text);
+  fabricCanvas.setActiveObject(text);
+  fabricCanvas.renderAll();
+};
+
+// ── Background color tool ─────────────────────────────────────────────────
+const bgColorInput = document.getElementById('bgColorInput');
+const bgSwatch     = document.getElementById('bgSwatch');
+
+bgColorInput.addEventListener('input', () => {
+  if (!fabricCanvas) return;
+  const color = bgColorInput.value;
+  fabricCanvas.backgroundColor = color;
+  fabricCanvas.renderAll();
+  bgSwatch.style.background = color;
+});
+
+// Sync swatch when canvas initialises
+function syncBgSwatch() {
+  const color = fabricCanvas?.backgroundColor || '#ffffff';
+  bgColorInput.value = color;
+  bgSwatch.style.background = color;
 }
 
 window.saveDesignedSlide = function() {
