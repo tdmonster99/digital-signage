@@ -1082,13 +1082,15 @@ document.getElementById('designerFileInput').addEventListener('change', async fu
   }
 });
 
-async function addImageToCanvas(url) {
+function addImageToCanvas(url) {
   if (!fabricCanvas) return;
-  try {
-    const img = await fabric.Image.fromURL(url, { crossOrigin: 'anonymous' });
+  const imgEl = new Image();
+  imgEl.crossOrigin = 'anonymous';
+  imgEl.onload = () => {
+    const img   = new fabric.Image(imgEl);
     const maxW  = CANVAS_W * 0.75;
     const maxH  = CANVAS_H * 0.75;
-    const scale = Math.min(maxW / img.width, maxH / img.height, 1);
+    const scale = Math.min(maxW / imgEl.naturalWidth, maxH / imgEl.naturalHeight, 1);
     img.set({
       left:    CANVAS_W / 2,
       top:     CANVAS_H / 2,
@@ -1100,9 +1102,10 @@ async function addImageToCanvas(url) {
     fabricCanvas.add(img);
     fabricCanvas.setActiveObject(img);
     fabricCanvas.renderAll();
-  } catch(e) {
-    toast('Could not load image — check the URL or CORS policy.', true);
-  }
+    toast('Image added ✓');
+  };
+  imgEl.onerror = () => toast('Could not load image — check the URL or CORS policy.', true);
+  imgEl.src = url;
 }
 
 window.saveDesignedSlide = function() {
