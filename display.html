@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Display — Signage Player</title>
+
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  // ── PASTE YOUR FIREBASE CONFIG HERE ──────────────────────────────────────
+  const firebaseConfig = {
+    apiKey: "AIzaSyDYsip5Xx2N-gewNDqTj7EAnvabfbrBQTY",
+    authDomain: "digital-signage-2.firebaseapp.com",
+    projectId: "digital-signage-2",
+    storageBucket: "digital-signage-2.firebasestorage.app",
+    messagingSenderId: "1004548485661",
+    appId: "1:1004548485661:web:b3ab204d94943716674cf4"
+  };
+  // ─────────────────────────────────────────────────────────────────────────
+
+  // Which slideshow to display — change this per TV if you want different content
+  const SLIDESHOW_ID = "main";
+
+  const app   = initializeApp(firebaseConfig);
+  const db    = getFirestore(app);
+
+  // ── State ─────────────────────────────────────────────────────────────────
+  let slides       = [];
+  let current      = 0;
+  let timer        = null;
+  let defaultDwell = 6000; // ms — overridden by Firestore data
+
+  // ── DOM refs ──────────────────────────────────────────────────────────────
+  const stageA   = document.getElementById("stageA");
+  const stageB   = document.getElementById("stageB");
+  const loader   = document.getElementById("loader");
+  const errBox   = document.getElementById("errBox");
+  const errMsg   = document.getElementById("errMsg");
+  let   active   = stageA;   // currently-visible stage
+  let   inactive = stageB;   // staging (hidden) stage
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  function showError(msg) {
+    errMsg.textContent = msg;
+    errBox.style.display = "flex";
+  }
+
+  function preload(url) {
+    return new Promise((res, rej) => {
+      const img = new Image();
+      img.onload  = () => res(url);
+      img.onerror = () => rej(url);
+      img.src = url;
+    });
+  }
+
+  async function crossfadeTo(slide) {
+    const url  = slide.url;
+    const fit  = slide.fit  || "contain";
+    const bg   = slide.bg   || "#000000";
+
+    // Preload into inactive stage
+    inactive.style.backgroundImage = `url('${url}')`;
+    inactive.style.backgroundSize  = fit;
+    inactive.style.backgroundColor = bg;
+
+    try { await preload(url); } catch(_) { /* show anyway */ }
+
+    // Swap
+    inactive.style.opacity = "1";
+    active.style.opacity   = "0";
+
+    const tmp = active;
+    active   = inactive;
+    inactive = tmp;
+  }
+
+  function scheduleNext(dwell) {
+    clearTimeout(timer);
+    timer = setTimeout(advance, dwell);
+  }
+
+  async function advance() {
+    if (!slides.length) return;
+    current = (current + 1) % slides.length;
+    const slide = slides[current];
+    await crossfadeTo(slide);
+    scheduleNext((slide.dwell ?? defaultDwell));
+  }
+
+  async function applyPlaylist(data) {
+    if (!data || !data.slides || !data.slides.length) {
+      showError("No slides configured. Open the Admin Panel to add images.");
+      return;
+    }
+
+    errBox.style.display = "none";
+    loader.style.display = "none";
+
+    const incoming     = data.slides.filter(s => s.url && s.active !== false);
+    defaultDwell       = (data.defaultDwell ?? 6) * 1000;
+    const wasEmpty     = slides.length === 0;
+
+    // Keep current index sane
+    if (current >= incoming.length) current = 0;
+
+    slides = incoming;
+
+    if (wasEmpty) {
+      // First load — show immediately
+      clearTimeout(timer);
+      await crossfadeTo(slides[current]);
+      scheduleNext(slides[current].dwell ?? defaultDwell);
+    }
+    // If already playing, changes will take effect on next advance naturally.
+    // (No jarring resets.)
+  }
+
+  // ── Firebase listener ─────────────────────────────────────────────────────
+  const docRef = doc(db, "slideshows", SLIDESHOW_ID);
+
+  onSnapshot(docRef,
+    (snap) => {
+      if (snap.exists()) {
+        applyPlaylist(snap.data());
+      } else {
+        loader.style.display = "none";
+        showError("Slideshow '" + SLIDESHOW_ID + "' not found. Create it in the Admin Panel.");
+      }
+    },
+    (err) => {
+      loader.style.display = "none";
+      showError("Firebase connection error: " + err.message);
+    }
+  );
+</script>
+
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    width: 100%; height: 100%;
+    background: #000;
+    overflow: hidden;
+    font-family: 'Segoe UI', sans-serif;
+  }
+
+  /* ── Two-stage crossfade setup ─────────────────────────────────────── */
+  .stage {
+    position: absolute;
+    inset: 0;
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-size: contain;
+    background-color: #000;
+    opacity: 0;
+    transition: opacity 1.2s ease-in-out;
+    will-change: opacity;
+  }
+  #stageA { z-index: 1; }
+  #stageB { z-index: 2; }
+
+  /* ── Loader ────────────────────────────────────────────────────────── */
+  #loader {
+    position: absolute; inset: 0; z-index: 10;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    background: #0a0a0a; color: #555;
+  }
+  .spinner {
+    width: 48px; height: 48px;
+    border: 3px solid #222;
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+    margin-bottom: 18px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #loader p { font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; }
+
+  /* ── Error overlay ─────────────────────────────────────────────────── */
+  #errBox {
+    display: none;
+    position: absolute; inset: 0; z-index: 20;
+    background: #0a0a0a;
+    flex-direction: column; align-items: center; justify-content: center;
+    gap: 16px; padding: 40px; text-align: center;
+  }
+  #errBox svg { opacity: 0.3; }
+  #errMsg {
+    font-size: 15px; color: #666;
+    max-width: 520px; line-height: 1.7;
+    letter-spacing: 0.01em;
+  }
+  #errBox small {
+    font-size: 11px; color: #333;
+    letter-spacing: 0.05em; text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+
+<!-- Crossfade stages -->
+<div id="stageA" class="stage"></div>
+<div id="stageB" class="stage"></div>
+
+<!-- Initial loader -->
+<div id="loader">
+  <div class="spinner"></div>
+  <p>Connecting to signage server…</p>
+</div>
+
+<!-- Error state -->
+<div id="errBox">
+  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5">
+    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/>
+    <line x1="12" y1="16" x2="12.01" y2="16"/>
+  </svg>
+  <p id="errMsg"></p>
+  <small>display.html · check console for details</small>
+</div>
+
+</body>
+</html>
