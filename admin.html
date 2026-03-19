@@ -661,7 +661,7 @@ section.content {
     </div>
     <div class="designer-topbar-actions">
       <button class="btn btn-secondary" onclick="closeDesigner()">Cancel</button>
-      <button class="btn btn-primary" onclick="saveDesignedSlide()">Save Slide</button>
+      <button class="btn btn-primary" id="btnDesignerSave" onclick="saveDesignedSlide()">Save Slide</button>
     </div>
   </div>
   <div class="designer-body">
@@ -1114,25 +1114,40 @@ function renderGrid() {
     return;
   }
 
-  grid.innerHTML = slides.map((s, i) => `
+  grid.innerHTML = slides.map((s, i) => {
+    const isDesigned = s.type === 'designed';
+    const thumbUrl   = isDesigned ? s.thumbnailUrl : s.url;
+    const editBtn    = isDesigned
+      ? `<button class="icon-btn toggle" title="Edit" onclick="openDesigner(slides[${i}], ${i})">
+           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2">
+             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+           </svg>
+         </button>`
+      : `<button class="icon-btn toggle" title="${s.active === false ? 'Show' : 'Hide'}" onclick="toggleSlide(${i})">
+           ${s.active === false
+             ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`
+             : `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`
+           }
+         </button>`;
+    return `
     <div class="slide-card ${s.active === false ? 'disabled' : ''}"
          draggable="true" data-idx="${i}">
-      <img class="slide-thumb" src="${s.url}" alt="${s.name}"
-           onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-      <div class="slide-thumb-placeholder" style="display:none">
+      ${thumbUrl
+        ? `<img class="slide-thumb" src="${thumbUrl}" alt="${s.name}"
+                onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+        : ''}
+      <div class="slide-thumb-placeholder" style="display:${thumbUrl ? 'none' : 'flex'}">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="1.5">
           <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
           <polyline points="21 15 16 10 5 21"/>
         </svg>
       </div>
+      ${isDesigned ? `<div style="position:absolute;top:6px;left:6px;font-size:9px;font-weight:600;
+        letter-spacing:0.08em;text-transform:uppercase;color:#fff;background:#4f8ef7cc;
+        padding:2px 7px;border-radius:4px">Designed</div>` : ''}
       <div class="slide-actions">
-        <button class="icon-btn toggle" title="${s.active === false ? 'Show' : 'Hide'}"
-                onclick="toggleSlide(${i})">
-          ${s.active === false
-            ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`
-            : `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`
-          }
-        </button>
+        ${editBtn}
         <button class="icon-btn del" title="Delete" onclick="deleteSlide(${i})">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2">
             <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
@@ -1146,8 +1161,8 @@ function renderGrid() {
         <span class="slide-name" title="${s.name}">${s.name}</span>
         <span class="slide-dwell">${s.dwell ?? '—'}s</span>
       </div>
-    </div>
-  `).join("");
+    </div>`;
+  }).join("");
 
   // Drag-to-reorder
   grid.querySelectorAll(".slide-card").forEach(card => {
@@ -1222,18 +1237,31 @@ window.toast = (msg, err=false) => {
 // ── Slide Designer ────────────────────────────────────────────────────────
 const CANVAS_W = 1920;
 const CANVAS_H = 1080;
-let fabricCanvas = null;
+let fabricCanvas    = null;
+let editingSlideIdx = null; // null = new slide, number = editing existing
 
-window.openDesigner = function(existingSlide = null) {
+window.openDesigner = function(existingSlide = null, slideIdx = null) {
   if (typeof fabric === 'undefined') {
     toast('Fabric.js failed to load — check your internet connection and refresh.', true);
     return;
   }
+  editingSlideIdx = slideIdx;
   const modal = document.getElementById('designerModal');
   modal.style.display = 'flex';
   document.getElementById('designerSlideName').value = existingSlide?.name || 'New Slide';
-  // Wait one frame for the modal to paint so we can measure its size
-  requestAnimationFrame(() => initFabricCanvas());
+  requestAnimationFrame(() => {
+    initFabricCanvas();
+    if (existingSlide?.canvasJson) {
+      historyPaused = true;
+      fabricCanvas.loadFromJSON(existingSlide.canvasJson, () => {
+        fabricCanvas.renderAll();
+        historyPaused = false;
+        historyStack = []; histIdx = -1;
+        historySave();
+        updatePropsPanel();
+      });
+    }
+  });
 };
 
 window.closeDesigner = function() {
@@ -1745,9 +1773,73 @@ window.applyBgImage = function() {
   imgEl.src = currentBgImgUrl;
 };
 
-window.saveDesignedSlide = function() {
-  toast('Save coming in Step 7 — canvas is ready!');
-  closeDesigner();
+window.saveDesignedSlide = async function() {
+  if (!auth.currentUser) { toast('Sign in first to save.', true); return; }
+  if (!fabricCanvas)     { toast('No canvas to save.', true);     return; }
+
+  const btn  = document.getElementById('btnDesignerSave');
+  const name = document.getElementById('designerSlideName').value.trim() || 'Designed Slide';
+  btn.disabled    = true;
+  btn.textContent = 'Saving…';
+
+  try {
+    const canvasJson = JSON.stringify(fabricCanvas.toJSON());
+
+    // Generate thumbnail — may fail if canvas has tainted images (CORS)
+    let thumbnailUrl = null;
+    try {
+      const dataUrl = fabricCanvas.toDataURL({ format: 'jpeg', quality: 0.7 });
+      const blob    = dataURLtoBlob(dataUrl);
+      const fd = new FormData();
+      fd.append('file',           blob, 'thumbnail.jpg');
+      fd.append('upload_preset',  CLOUDINARY_UPLOAD_PRESET);
+      fd.append('folder',         'signage/thumbnails');
+      const res  = await fetch(
+        `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+        { method: 'POST', body: fd }
+      );
+      const data = await res.json();
+      thumbnailUrl = data.secure_url || null;
+    } catch(e) {
+      console.warn('Thumbnail generation skipped:', e.message);
+    }
+
+    const slide = {
+      id:           editingSlideIdx !== null ? slides[editingSlideIdx].id : crypto.randomUUID(),
+      type:         'designed',
+      name,
+      active:       true,
+      canvasJson,
+      thumbnailUrl,
+    };
+
+    if (editingSlideIdx !== null) {
+      slides[editingSlideIdx] = { ...slides[editingSlideIdx], ...slide };
+    } else {
+      slides.push(slide);
+    }
+
+    renderGrid();
+    updateCount();
+    await pushToFirestore();
+    toast('Slide saved ✓');
+    closeDesigner();
+
+  } catch(e) {
+    toast('Save failed: ' + e.message, true);
+  } finally {
+    btn.disabled    = false;
+    btn.textContent = 'Save Slide';
+  }
+};
+
+function dataURLtoBlob(dataUrl) {
+  const [header, data] = dataUrl.split(',');
+  const mime   = header.match(/:(.*?);/)[1];
+  const binary = atob(data);
+  const arr    = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) arr[i] = binary.charCodeAt(i);
+  return new Blob([arr], { type: mime });
 };
 
 // Re-scale canvas when window resizes while modal is open
