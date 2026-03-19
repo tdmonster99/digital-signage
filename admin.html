@@ -643,6 +643,20 @@ section.content {
   <div class="designer-topbar">
     <span class="designer-topbar-label">Designer</span>
     <input type="text" id="designerSlideName" placeholder="Slide name…" value="New Slide">
+    <div style="display:flex;gap:4px;margin-left:12px">
+      <button class="btn btn-secondary" id="btnUndo" title="Undo (Ctrl+Z)" onclick="designerUndo()" disabled
+              style="padding:7px 12px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 7v6h6"/><path d="M3 13A9 9 0 1 0 6 6.7L3 13"/>
+        </svg>
+      </button>
+      <button class="btn btn-secondary" id="btnRedo" title="Redo (Ctrl+Y)" onclick="designerRedo()" disabled
+              style="padding:7px 12px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 7v6h-6"/><path d="M21 13A9 9 0 1 1 18 6.7L21 13"/>
+        </svg>
+      </button>
+    </div>
     <div class="designer-topbar-actions">
       <button class="btn btn-secondary" onclick="closeDesigner()">Cancel</button>
       <button class="btn btn-primary" onclick="saveDesignedSlide()">Save Slide</button>
@@ -1228,6 +1242,7 @@ window.closeDesigner = function() {
 function initFabricCanvas() {
   try {
     if (fabricCanvas) { fabricCanvas.dispose(); fabricCanvas = null; }
+    historyReset();
 
     const surround = document.getElementById('canvasSurround');
     const pad = 80;
@@ -1262,6 +1277,12 @@ function initFabricCanvas() {
     fabricCanvas.on('object:modified',   updatePropsPanel);
     updatePropsPanel();
 
+    // History events
+    fabricCanvas.on('object:added',    historySave);
+    fabricCanvas.on('object:removed',  historySave);
+    fabricCanvas.on('object:modified', historySave);
+    historySave(); // save blank initial state
+
     // Delete key removes selected object
     document.addEventListener('keydown', onDesignerKey);
   } catch(err) {
@@ -1272,12 +1293,15 @@ function initFabricCanvas() {
 
 function onDesignerKey(e) {
   if (!fabricCanvas) return;
-  if ((e.key === 'Delete' || e.key === 'Backspace') &&
-       document.activeElement.tagName !== 'INPUT' &&
-       document.activeElement.tagName !== 'TEXTAREA') {
+  const active = document.activeElement.tagName;
+  if (active === 'INPUT' || active === 'TEXTAREA') return;
+
+  if ((e.key === 'Delete' || e.key === 'Backspace')) {
     const obj = fabricCanvas.getActiveObject();
     if (obj) { fabricCanvas.remove(obj); fabricCanvas.discardActiveObject(); fabricCanvas.renderAll(); }
   }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); designerUndo(); }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'y') { e.preventDefault(); designerRedo(); }
 }
 
 // ── Text tool ─────────────────────────────────────────────────────────────
@@ -1606,6 +1630,7 @@ function applyBgSolid() {
   const color = propsBgColor.value;
   fabricCanvas.backgroundColor = color;
   fabricCanvas.renderAll();
+  historySave();
 }
 
 const gradColor1    = document.getElementById('gradColor1');
@@ -1626,7 +1651,7 @@ function applyBgGradient() {
         { offset: 1, color: gradColor2.value },
       ],
     }),
-    () => fabricCanvas.renderAll()
+    () => { fabricCanvas.renderAll(); historySave(); }
   );
 }
 [gradColor1, gradColor2].forEach(el => el.addEventListener('input', applyBgGradient));
@@ -1650,6 +1675,57 @@ window.setBgImage = async function() {
     else toast('Upload failed', true);
   };
   inp.click();
+};
+
+// ── Undo / Redo ───────────────────────────────────────────────────────────
+const HISTORY_MAX = 50;
+let historyStack  = [];
+let histIdx       = -1;
+let historyPaused = false;
+
+function historyReset() {
+  historyStack = []; histIdx = -1;
+  historyPaused = false;
+  updateHistoryBtns();
+}
+
+function historySave() {
+  if (historyPaused || !fabricCanvas) return;
+  historyStack = historyStack.slice(0, histIdx + 1); // drop redo branch
+  historyStack.push(JSON.stringify(fabricCanvas.toJSON()));
+  if (historyStack.length > HISTORY_MAX) historyStack.shift();
+  histIdx = historyStack.length - 1;
+  updateHistoryBtns();
+}
+
+function historyLoad(json) {
+  historyPaused = true;
+  fabricCanvas.loadFromJSON(json, () => {
+    fabricCanvas.renderAll();
+    historyPaused = false;
+    updatePropsPanel();
+  });
+}
+
+function updateHistoryBtns() {
+  const u = document.getElementById('btnUndo');
+  const r = document.getElementById('btnRedo');
+  if (u) u.disabled = histIdx <= 0;
+  if (r) r.disabled = histIdx >= historyStack.length - 1;
+}
+
+window.designerUndo = function() {
+  if (histIdx <= 0) return;
+  histIdx--;
+  historyLoad(historyStack[histIdx]);
+  updateHistoryBtns();
+};
+
+window.designerRedo = function() {
+  if (histIdx >= historyStack.length - 1) return;
+  histIdx++;
+  historyLoad(historyStack[histIdx]);
+  updateHistoryBtns();
 };
 
 window.applyBgImage = function() {
