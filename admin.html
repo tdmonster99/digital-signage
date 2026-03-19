@@ -618,6 +618,23 @@ section.content {
                style="position:absolute;width:0;height:0;opacity:0;pointer-events:none">
       </div>
 
+      <!-- Shape tools -->
+      <button class="tool-btn" title="Add Rectangle" onclick="designerAddRect()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="5" width="18" height="14" rx="2"/>
+        </svg>
+      </button>
+      <button class="tool-btn" title="Add Circle" onclick="designerAddCircle()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="9"/>
+        </svg>
+      </button>
+      <button class="tool-btn" title="Add Line" onclick="designerAddLine()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="3" y1="12" x2="21" y2="12"/>
+        </svg>
+      </button>
+
       <div class="tool-divider"></div>
 
       <!-- Background color — hidden color input triggered by button -->
@@ -1138,6 +1155,57 @@ function addImageToCanvas(url) {
     imgEl.src = url;
   });
 }
+
+// ── Shape tools ───────────────────────────────────────────────────────────
+window.designerAddRect = function() {
+  if (!fabricCanvas) return;
+  const rect = new fabric.Rect({
+    left:    CANVAS_W / 2,
+    top:     CANVAS_H / 2,
+    originX: 'center',
+    originY: 'center',
+    width:   400,
+    height:  250,
+    fill:    '#4f8ef7',
+    stroke:  null,
+    rx:      8,
+    ry:      8,
+  });
+  fabricCanvas.add(rect);
+  fabricCanvas.setActiveObject(rect);
+  fabricCanvas.renderAll();
+};
+
+window.designerAddCircle = function() {
+  if (!fabricCanvas) return;
+  const circle = new fabric.Circle({
+    left:    CANVAS_W / 2,
+    top:     CANVAS_H / 2,
+    originX: 'center',
+    originY: 'center',
+    radius:  180,
+    fill:    '#7c5cfc',
+    stroke:  null,
+  });
+  fabricCanvas.add(circle);
+  fabricCanvas.setActiveObject(circle);
+  fabricCanvas.renderAll();
+};
+
+window.designerAddLine = function() {
+  if (!fabricCanvas) return;
+  const line = new fabric.Line(
+    [CANVAS_W * 0.2, CANVAS_H / 2, CANVAS_W * 0.8, CANVAS_H / 2],
+    {
+      stroke:      '#e8eaf2',
+      strokeWidth: 6,
+      selectable:  true,
+    }
+  );
+  fabricCanvas.add(line);
+  fabricCanvas.setActiveObject(line);
+  fabricCanvas.renderAll();
+};
 
 window.saveDesignedSlide = function() {
   toast('Save coming in Step 7 — canvas is ready!');
