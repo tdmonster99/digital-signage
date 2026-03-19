@@ -6,6 +6,7 @@
 <title>Signage Admin</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/6.0.0/fabric.min.js"></script>
 
 <style>
 /* ── Reset & tokens ─────────────────────────────────────────────────────── */
@@ -303,6 +304,57 @@ section.content {
   main { grid-template-columns: 1fr; }
   aside { border-right: none; border-bottom: 1px solid var(--border); }
 }
+
+/* ── Slide Designer Modal ────────────────────────────────────────────────── */
+#designerModal {
+  position: fixed; inset: 0; z-index: 200;
+  display: none; flex-direction: column;
+  background: var(--bg);
+}
+
+.designer-topbar {
+  display: flex; align-items: center; gap: 12px;
+  padding: 0 20px; height: 56px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  flex-shrink: 0;
+}
+.designer-topbar-label {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted);
+}
+#designerSlideName {
+  flex: 1; max-width: 320px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 7px 12px;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif; font-size: 14px;
+  transition: border-color 0.15s;
+}
+#designerSlideName:focus { outline: none; border-color: var(--accent); }
+.designer-topbar-actions { display: flex; gap: 8px; margin-left: auto; }
+
+.canvas-surround {
+  flex: 1;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+  /* Checkerboard — like Figma/Canva outside the canvas bounds */
+  background-color: #1a1d24;
+  background-image:
+    linear-gradient(45deg, #22252e 25%, transparent 25%),
+    linear-gradient(-45deg, #22252e 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #22252e 75%),
+    linear-gradient(-45deg, transparent 75%, #22252e 75%);
+  background-size: 24px 24px;
+  background-position: 0 0, 0 12px, 12px -12px, -12px 0px;
+}
+#canvasFrame {
+  box-shadow: 0 12px 64px #0009;
+  line-height: 0; /* prevent inline gap below canvas */
+  position: relative;
+}
 </style>
 </head>
 <body>
@@ -386,6 +438,12 @@ section.content {
         </svg>
         Add by URL
       </button>
+      <button class="btn btn-secondary" onclick="openDesigner()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+        </svg>
+        Design a Slide
+      </button>
       <button class="btn btn-danger" onclick="clearAll()" id="btnClear" style="display:none">
         Clear All
       </button>
@@ -428,6 +486,23 @@ section.content {
 </main>
 
 <div id="toast"></div>
+
+<!-- ── Slide Designer Modal ──────────────────────────────────────────────── -->
+<div id="designerModal">
+  <div class="designer-topbar">
+    <span class="designer-topbar-label">Designer</span>
+    <input type="text" id="designerSlideName" placeholder="Slide name…" value="New Slide">
+    <div class="designer-topbar-actions">
+      <button class="btn btn-secondary" onclick="closeDesigner()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveDesignedSlide()">Save Slide</button>
+    </div>
+  </div>
+  <div class="canvas-surround" id="canvasSurround">
+    <div id="canvasFrame">
+      <canvas id="designerCanvas"></canvas>
+    </div>
+  </div>
+</div>
 
 <!-- Firebase SDK -->
 <script type="module">
@@ -728,6 +803,72 @@ window.toast = (msg, err=false) => {
   t.classList.add("show");
   setTimeout(() => t.classList.remove("show"), 3000);
 };
+
+// ── Slide Designer ────────────────────────────────────────────────────────
+const CANVAS_W = 1920;
+const CANVAS_H = 1080;
+let fabricCanvas = null;
+
+window.openDesigner = function(existingSlide = null) {
+  const modal = document.getElementById('designerModal');
+  modal.style.display = 'flex';
+  document.getElementById('designerSlideName').value = existingSlide?.name || 'New Slide';
+  // Wait one frame for the modal to paint so we can measure its size
+  requestAnimationFrame(() => initFabricCanvas());
+};
+
+window.closeDesigner = function() {
+  document.getElementById('designerModal').style.display = 'none';
+  if (fabricCanvas) { fabricCanvas.dispose(); fabricCanvas = null; }
+};
+
+function initFabricCanvas() {
+  if (fabricCanvas) { fabricCanvas.dispose(); fabricCanvas = null; }
+
+  const surround = document.getElementById('canvasSurround');
+  const pad = 80;
+  const scale = Math.min(
+    (surround.clientWidth  - pad) / CANVAS_W,
+    (surround.clientHeight - pad) / CANVAS_H,
+    1
+  );
+  const dispW = Math.round(CANVAS_W * scale);
+  const dispH = Math.round(CANVAS_H * scale);
+
+  fabricCanvas = new fabric.Canvas('designerCanvas', {
+    width:  dispW,
+    height: dispH,
+    backgroundColor: '#ffffff',
+  });
+
+  // Keep logical coordinates in 1920×1080 space
+  fabricCanvas.setZoom(scale);
+
+  // Delete key removes selected object
+  document.addEventListener('keydown', onDesignerKey);
+}
+
+function onDesignerKey(e) {
+  if (!fabricCanvas) return;
+  if ((e.key === 'Delete' || e.key === 'Backspace') &&
+       document.activeElement.tagName !== 'INPUT' &&
+       document.activeElement.tagName !== 'TEXTAREA') {
+    const obj = fabricCanvas.getActiveObject();
+    if (obj) { fabricCanvas.remove(obj); fabricCanvas.discardActiveObject(); fabricCanvas.renderAll(); }
+  }
+}
+
+window.saveDesignedSlide = function() {
+  toast('Save coming in Step 7 — canvas is ready!');
+  closeDesigner();
+};
+
+// Re-scale canvas when window resizes while modal is open
+window.addEventListener('resize', () => {
+  if (fabricCanvas && document.getElementById('designerModal').style.display === 'flex') {
+    initFabricCanvas();
+  }
+});
 
 // Init
 listenToShow("main");
