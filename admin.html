@@ -260,6 +260,8 @@ section.content {
 .icon-btn.del:hover { background: #e05252; }
 .icon-btn.toggle { background: #000000aa; }
 .icon-btn.toggle:hover { background: #000000cc; }
+.icon-btn.dup   { background: #000000aa; }
+.icon-btn.dup:hover   { background: #2a5298cc; }
 
 .slide-card.disabled { opacity: 0.4; }
 .slide-card.disabled::after {
@@ -1360,6 +1362,11 @@ function renderGrid() {
         padding:2px 7px;border-radius:4px">Designed</div>` : ''}
       <div class="slide-actions">
         ${editBtn}
+        <button class="icon-btn dup" title="Duplicate" onclick="duplicateSlide(${i})">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2">
+            <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+          </svg>
+        </button>
         <button class="icon-btn del" title="Delete" onclick="deleteSlide(${i})">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2">
             <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
@@ -1414,6 +1421,21 @@ window.toggleSlide = async (idx) => {
   slides[idx].active = slides[idx].active === false ? true : false;
   renderGrid();
   await pushToFirestore();
+};
+
+window.duplicateSlide = function(idx) {
+  const src = slides[idx];
+  if (src.type === 'designed') {
+    // Open editor pre-populated with existing canvasJson; editingSlideIdx = null → saves as new slide
+    const copy = { ...src, name: 'Copy of ' + src.name };
+    openDesigner(copy, null);
+  } else {
+    // Image slide — insert clone immediately after the original
+    const copy = { ...src, id: crypto.randomUUID(), name: 'Copy of ' + src.name };
+    slides.splice(idx + 1, 0, copy);
+    renderGrid(); updateCount();
+    pushToFirestore();
+  }
 };
 
 function updateCount() {
