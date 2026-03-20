@@ -5,12 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Display — Signage Player</title>
 
+<!-- Fabric.js (StaticCanvas for designed slides) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
+
 <!-- Firebase SDK -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-  // ── PASTE YOUR FIREBASE CONFIG HERE ──────────────────────────────────────
   const firebaseConfig = {
     apiKey: "AIzaSyDYsip5Xx2N-gewNDqTj7EAnvabfbrBQTY",
     authDomain: "digital-signage-2.firebaseapp.com",
@@ -19,65 +21,113 @@
     messagingSenderId: "1004548485661",
     appId: "1:1004548485661:web:b3ab204d94943716674cf4"
   };
-  // ─────────────────────────────────────────────────────────────────────────
 
   // Which slideshow to display — change this per TV if you want different content
   const SLIDESHOW_ID = "main";
 
-  const app   = initializeApp(firebaseConfig);
-  const db    = getFirestore(app);
+  const app = initializeApp(firebaseConfig);
+  const db  = getFirestore(app);
 
-  // ── State ─────────────────────────────────────────────────────────────────
+  // ── State ───────────────────────────────────────────────────────────────────
   let slides       = [];
   let current      = 0;
   let timer        = null;
-  let defaultDwell = 6000; // ms — overridden by Firestore data
+  let defaultDwell = 6000;
 
-  // ── DOM refs ──────────────────────────────────────────────────────────────
-  const stageA   = document.getElementById("stageA");
-  const stageB   = document.getElementById("stageB");
-  const loader   = document.getElementById("loader");
-  const errBox   = document.getElementById("errBox");
-  const errMsg   = document.getElementById("errMsg");
-  let   active   = stageA;   // currently-visible stage
-  let   inactive = stageB;   // staging (hidden) stage
+  // ── DOM refs ─────────────────────────────────────────────────────────────────
+  const stageA        = document.getElementById("stageA");
+  const stageB        = document.getElementById("stageB");
+  const stageDesigned = document.getElementById("stageDesigned");
+  const loader        = document.getElementById("loader");
+  const errBox        = document.getElementById("errBox");
+  const errMsg        = document.getElementById("errMsg");
+  let   active        = stageA;
+  let   inactive      = stageB;
 
-  // ── Helpers ───────────────────────────────────────────────────────────────
+  // ── Fabric.js StaticCanvas for designed slides ────────────────────────────
+  const LOGICAL_W = 1920;
+  const LOGICAL_H = 1080;
+
+  const displayFabric = new fabric.StaticCanvas("fabricDisplay", {
+    width:             window.innerWidth,
+    height:            window.innerHeight,
+    renderOnAddRemove: false,
+    enableRetinaScaling: false,
+  });
+
+  function fitFabricToScreen() {
+    const w     = window.innerWidth;
+    const h     = window.innerHeight;
+    const scale = Math.min(w / LOGICAL_W, h / LOGICAL_H);
+    const offX  = (w - LOGICAL_W * scale) / 2;
+    const offY  = (h - LOGICAL_H * scale) / 2;
+    displayFabric.setWidth(w);
+    displayFabric.setHeight(h);
+    displayFabric.setViewportTransform([scale, 0, 0, scale, offX, offY]);
+    displayFabric.renderAll();
+  }
+
+  window.addEventListener("resize", fitFabricToScreen);
+
+  function loadDesignedSlide(canvasJson) {
+    return new Promise(resolve => {
+      displayFabric.loadFromJSON(canvasJson, () => {
+        fitFabricToScreen();
+        resolve();
+      });
+    });
+  }
+
+  // ── Helpers ──────────────────────────────────────────────────────────────────
   function showError(msg) {
-    errMsg.textContent = msg;
+    errMsg.textContent   = msg;
     errBox.style.display = "flex";
   }
 
   function preload(url) {
     return new Promise((res, rej) => {
-      const img = new Image();
+      const img   = new Image();
       img.onload  = () => res(url);
       img.onerror = () => rej(url);
-      img.src = url;
+      img.src     = url;
     });
   }
 
+  // ── Crossfade ────────────────────────────────────────────────────────────────
   async function crossfadeTo(slide) {
-    const url  = slide.url;
-    const fit  = slide.fit  || "contain";
-    const bg   = slide.bg   || "#000000";
+    if (slide.type === "designed" && slide.canvasJson) {
+      // Load and render the Fabric canvas
+      await loadDesignedSlide(slide.canvasJson);
 
-    // Preload into inactive stage
-    inactive.style.backgroundImage = `url('${url}')`;
-    inactive.style.backgroundSize  = fit;
-    inactive.style.backgroundColor = bg;
+      // Fade in designed stage, fade out current image stage
+      stageDesigned.style.opacity = "1";
+      active.style.opacity        = "0";
+      // Note: active/inactive image stage refs stay unchanged so the
+      // next image slide picks up correctly.
 
-    try { await preload(url); } catch(_) { /* show anyway */ }
+    } else {
+      // Image slide — existing behaviour
+      const url = slide.url;
+      const fit = slide.fit || "contain";
+      const bg  = slide.bg  || "#000000";
 
-    // Swap
-    inactive.style.opacity = "1";
-    active.style.opacity   = "0";
+      inactive.style.backgroundImage = `url('${url}')`;
+      inactive.style.backgroundSize  = fit;
+      inactive.style.backgroundColor = bg;
 
-    const tmp = active;
-    active   = inactive;
-    inactive = tmp;
+      try { await preload(url); } catch (_) { /* show anyway */ }
+
+      inactive.style.opacity      = "1";
+      active.style.opacity        = "0";
+      stageDesigned.style.opacity = "0"; // hide designed stage if it was showing
+
+      const tmp = active;
+      active    = inactive;
+      inactive  = tmp;
+    }
   }
 
+  // ── Playback ─────────────────────────────────────────────────────────────────
   function scheduleNext(dwell) {
     clearTimeout(timer);
     timer = setTimeout(advance, dwell);
@@ -85,10 +135,10 @@
 
   async function advance() {
     if (!slides.length) return;
-    current = (current + 1) % slides.length;
+    current     = (current + 1) % slides.length;
     const slide = slides[current];
     await crossfadeTo(slide);
-    scheduleNext((slide.dwell ?? defaultDwell));
+    scheduleNext(slide.dwell ?? defaultDwell);
   }
 
   async function applyPlaylist(data) {
@@ -100,30 +150,32 @@
     errBox.style.display = "none";
     loader.style.display = "none";
 
-    const incoming     = data.slides.filter(s => s.url && s.active !== false);
-    defaultDwell       = (data.defaultDwell ?? 6) * 1000;
-    const wasEmpty     = slides.length === 0;
+    // Accept both image slides (have url) and designed slides (have canvasJson)
+    const incoming = data.slides.filter(s =>
+      s.active !== false && (s.url || s.canvasJson)
+    );
 
-    // Keep current index sane
+    if (!incoming.length) {
+      showError("No active slides. Enable some slides in the Admin Panel.");
+      return;
+    }
+
+    defaultDwell = (data.defaultDwell ?? 6) * 1000;
+    const wasEmpty = slides.length === 0;
     if (current >= incoming.length) current = 0;
-
     slides = incoming;
 
     if (wasEmpty) {
-      // First load — show immediately
       clearTimeout(timer);
       await crossfadeTo(slides[current]);
       scheduleNext(slides[current].dwell ?? defaultDwell);
     }
-    // If already playing, changes will take effect on next advance naturally.
-    // (No jarring resets.)
   }
 
   // ── Firebase listener ─────────────────────────────────────────────────────
-  const docRef = doc(db, "slideshows", SLIDESHOW_ID);
-
-  onSnapshot(docRef,
-    (snap) => {
+  onSnapshot(
+    doc(db, "slideshows", SLIDESHOW_ID),
+    snap => {
       if (snap.exists()) {
         applyPlaylist(snap.data());
       } else {
@@ -131,7 +183,7 @@
         showError("Slideshow '" + SLIDESHOW_ID + "' not found. Create it in the Admin Panel.");
       }
     },
-    (err) => {
+    err => {
       loader.style.display = "none";
       showError("Firebase connection error: " + err.message);
     }
@@ -148,7 +200,7 @@
     font-family: 'Segoe UI', sans-serif;
   }
 
-  /* ── Two-stage crossfade setup ─────────────────────────────────────── */
+  /* ── Crossfade stages ──────────────────────────────────────────────── */
   .stage {
     position: absolute;
     inset: 0;
@@ -160,8 +212,15 @@
     transition: opacity 1.2s ease-in-out;
     will-change: opacity;
   }
-  #stageA { z-index: 1; }
-  #stageB { z-index: 2; }
+  #stageA        { z-index: 1; }
+  #stageB        { z-index: 2; }
+  #stageDesigned { z-index: 3; background: #000; }
+
+  /* Fabric canvas fills the designed stage */
+  #stageDesigned .canvas-container,
+  #stageDesigned canvas {
+    display: block;
+  }
 
   /* ── Loader ────────────────────────────────────────────────────────── */
   #loader {
@@ -203,9 +262,14 @@
 </head>
 <body>
 
-<!-- Crossfade stages -->
+<!-- Image crossfade stages -->
 <div id="stageA" class="stage"></div>
 <div id="stageB" class="stage"></div>
+
+<!-- Designed slide stage (Fabric.js renders here) -->
+<div id="stageDesigned" class="stage">
+  <canvas id="fabricDisplay"></canvas>
+</div>
 
 <!-- Initial loader -->
 <div id="loader">
