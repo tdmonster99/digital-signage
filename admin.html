@@ -252,13 +252,14 @@ section.content {
   width: 28px; height: 28px;
   border-radius: 6px; border: none; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(6px);
   transition: background 0.15s;
+  box-shadow: 0 2px 6px #0007;
 }
-.icon-btn.del { background: #e05252bb; }
-.icon-btn.del:hover { background: var(--danger); }
-.icon-btn.toggle { background: #ffffff22; }
-.icon-btn.toggle:hover { background: #ffffff44; }
+.icon-btn.del    { background: #c0392bcc; }
+.icon-btn.del:hover { background: #e05252; }
+.icon-btn.toggle { background: #000000aa; }
+.icon-btn.toggle:hover { background: #000000cc; }
 
 .slide-card.disabled { opacity: 0.4; }
 .slide-card.disabled::after {
