@@ -1810,6 +1810,7 @@ function addImageToCanvas(url) {
     if (!fabricCanvas) { resolve(null); return; }
     const imgEl = new Image();
     imgEl.onload = () => {
+      imgEl.onload = null; // prevent re-fire when src is swapped to Cloudinary URL
       const img   = new fabric.Image(imgEl);
       const maxW  = CANVAS_W * 0.75;
       const maxH  = CANVAS_H * 0.75;
