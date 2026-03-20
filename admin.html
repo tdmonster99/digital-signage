@@ -557,6 +557,58 @@ section.content {
 }
 .bg-tab:last-child { border-right: none; }
 .bg-tab.active { background: #4f8ef720; color: var(--accent); }
+
+/* ── Layers Panel ─────────────────────────────────────────────────────────── */
+.designer-layers {
+  height: 58px; flex-shrink: 0;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: flex; align-items: center;
+  padding: 0 12px;
+  gap: 6px;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+.designer-layers::-webkit-scrollbar { height: 4px; }
+.designer-layers::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+.layers-label {
+  font-size: 10px; font-weight: 600; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted);
+  flex-shrink: 0; margin-right: 4px;
+}
+.layer-chip {
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 8px; border-radius: 7px;
+  background: var(--surface2); border: 1px solid var(--border);
+  cursor: pointer; flex-shrink: 0;
+  transition: border-color 0.15s, background 0.15s;
+  user-select: none;
+}
+.layer-chip:hover { border-color: var(--muted); }
+.layer-chip.selected { border-color: var(--accent); background: #4f8ef712; }
+.layer-chip.dragging { opacity: 0.4; }
+.layer-icon { color: var(--muted); flex-shrink: 0; }
+.layer-name {
+  font-size: 12px; color: var(--text);
+  max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.layer-vis {
+  width: 20px; height: 20px; border-radius: 4px;
+  border: none; background: none;
+  color: var(--muted); cursor: pointer; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; transition: color 0.12s;
+}
+.layer-vis:hover { color: var(--text); }
+.layer-vis.hidden { color: #ffffff30; }
+.layer-del {
+  width: 20px; height: 20px; border-radius: 4px;
+  border: none; background: none;
+  color: var(--muted); cursor: pointer; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; transition: color 0.12s;
+}
+.layer-del:hover { color: var(--danger); }
 </style>
 </head>
 <body>
@@ -1070,6 +1122,12 @@ section.content {
       </div>
 
     </div><!-- end .designer-props -->
+  </div><!-- end .designer-body -->
+
+  <!-- Layers panel -->
+  <div class="designer-layers" id="layersPanel">
+    <span class="layers-label">Layers</span>
+    <span style="font-size:12px;color:var(--muted)">No objects</span>
   </div>
 </div>
 
@@ -1496,6 +1554,15 @@ function initFabricCanvas() {
     fabricCanvas.on('object:modified', historySave);
     historySave(); // save blank initial state
 
+    // Layers panel events
+    fabricCanvas.on('object:added',    renderLayersPanel);
+    fabricCanvas.on('object:removed',  renderLayersPanel);
+    fabricCanvas.on('object:modified', renderLayersPanel);
+    fabricCanvas.on('selection:created', renderLayersPanel);
+    fabricCanvas.on('selection:updated', renderLayersPanel);
+    fabricCanvas.on('selection:cleared', renderLayersPanel);
+    renderLayersPanel();
+
     // Delete key removes selected object
     document.addEventListener('keydown', onDesignerKey);
   } catch(err) {
@@ -1516,6 +1583,130 @@ function onDesignerKey(e) {
   if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); designerUndo(); }
   if ((e.ctrlKey || e.metaKey) && e.key === 'y') { e.preventDefault(); designerRedo(); }
 }
+
+// ── Layers Panel ──────────────────────────────────────────────────────────
+let layerDragIdx = null;
+
+function getLayerIcon(obj) {
+  if (obj.type === 'i-text' || obj.type === 'text')
+    return `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>`;
+  if (obj.type === 'image')
+    return `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`;
+  if (obj.type === 'circle')
+    return `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/></svg>`;
+  if (obj.type === 'line')
+    return `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/></svg>`;
+  // rect / other
+  return `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/></svg>`;
+}
+
+function getLayerLabel(obj, idx) {
+  if (obj.type === 'i-text' || obj.type === 'text')
+    return obj.text ? obj.text.slice(0, 18) : 'Text';
+  if (obj.type === 'image') return 'Image';
+  if (obj.type === 'circle') return 'Circle';
+  if (obj.type === 'line') return 'Line';
+  if (obj.type === 'rect') return 'Rectangle';
+  return obj.type || 'Object';
+}
+
+function renderLayersPanel() {
+  const panel = document.getElementById('layersPanel');
+  if (!fabricCanvas) return;
+
+  const objs = fabricCanvas.getObjects();
+  if (!objs.length) {
+    panel.innerHTML = '<span class="layers-label">Layers</span><span style="font-size:12px;color:var(--muted)">No objects</span>';
+    return;
+  }
+
+  const activeObj = fabricCanvas.getActiveObject();
+
+  // Display bottom→top (index 0 at right = bottom layer; last index at left = top layer)
+  const chips = [...objs].reverse().map((obj, revIdx) => {
+    const realIdx = objs.length - 1 - revIdx;
+    const isSelected = obj === activeObj;
+    const isHidden   = obj.visible === false;
+    return `
+      <div class="layer-chip${isSelected ? ' selected' : ''}"
+           draggable="true"
+           data-idx="${realIdx}"
+           onclick="selectLayerObj(${realIdx})"
+           ondragstart="layerDragStart(event,${realIdx})"
+           ondragover="layerDragOver(event)"
+           ondrop="layerDrop(event,${realIdx})">
+        <span class="layer-icon">${getLayerIcon(obj)}</span>
+        <span class="layer-name">${getLayerLabel(obj, realIdx)}</span>
+        <button class="layer-vis${isHidden ? ' hidden' : ''}"
+                title="${isHidden ? 'Show' : 'Hide'}"
+                onclick="event.stopPropagation();toggleLayerVis(${realIdx})">
+          ${isHidden
+            ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`
+            : `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`
+          }
+        </button>
+        <button class="layer-del" title="Delete" onclick="event.stopPropagation();deleteLayerObj(${realIdx})">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+            <path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+          </svg>
+        </button>
+      </div>`;
+  }).join('');
+
+  panel.innerHTML = `<span class="layers-label">Layers</span>${chips}`;
+}
+
+window.selectLayerObj = function(idx) {
+  if (!fabricCanvas) return;
+  const obj = fabricCanvas.item(idx);
+  if (!obj) return;
+  fabricCanvas.setActiveObject(obj);
+  fabricCanvas.renderAll();
+  updatePropsPanel();
+};
+
+window.toggleLayerVis = function(idx) {
+  if (!fabricCanvas) return;
+  const obj = fabricCanvas.item(idx);
+  if (!obj) return;
+  obj.visible = !obj.visible;
+  fabricCanvas.renderAll();
+  renderLayersPanel();
+};
+
+window.deleteLayerObj = function(idx) {
+  if (!fabricCanvas) return;
+  const obj = fabricCanvas.item(idx);
+  if (!obj) return;
+  fabricCanvas.remove(obj);
+  fabricCanvas.discardActiveObject();
+  fabricCanvas.renderAll();
+};
+
+window.layerDragStart = function(event, idx) {
+  layerDragIdx = idx;
+  event.dataTransfer.effectAllowed = 'move';
+};
+
+window.layerDragOver = function(event) {
+  event.preventDefault();
+  event.dataTransfer.dropEffect = 'move';
+};
+
+window.layerDrop = function(event, targetIdx) {
+  event.preventDefault();
+  if (layerDragIdx === null || layerDragIdx === targetIdx) return;
+  const objs = fabricCanvas.getObjects();
+  const dragObj = objs[layerDragIdx];
+  if (!dragObj) return;
+  // Move object to new z-index position
+  fabricCanvas.moveTo(dragObj, targetIdx);
+  fabricCanvas.renderAll();
+  layerDragIdx = null;
+  renderLayersPanel();
+  historySave();
+};
 
 // ── Text tool ─────────────────────────────────────────────────────────────
 window.designerAddText = function() {
@@ -1917,6 +2108,7 @@ function historyLoad(json) {
     fabricCanvas.renderAll();
     historyPaused = false;
     updatePropsPanel();
+    renderLayersPanel();
   });
 }
 
