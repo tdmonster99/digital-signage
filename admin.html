@@ -4875,8 +4875,9 @@ const GOOGLE_FONTS_LIST = [
   'Yeseva One','Zilla Slab',
 ].sort();
 
-let currentPickerFont = 'Arial';
-let fontPickerOpen    = false;
+let currentPickerFont    = 'Arial';
+let fontPickerOpen       = false;
+let previewOriginalFont  = null;  // font in use before picker was opened; null = committed
 
 function loadGoogleFont(family) {
   const id = 'gf-' + family.replace(/[\s]+/g, '-').toLowerCase();
@@ -4915,7 +4916,7 @@ function updateFontPickerTrigger(family) {
 }
 
 window.toggleFontPicker = function() {
-  fontPickerOpen ? closeFontPicker() : openFontPicker();
+  fontPickerOpen ? closeFontPicker(false) : openFontPicker();
 };
 
 function openFontPicker() {
@@ -4923,6 +4924,12 @@ function openFontPicker() {
   const panel   = document.getElementById('fontPickerPanel');
   if (!trigger || !panel) return;
   fontPickerOpen = true;
+
+  // Snapshot the current font so we can revert if the picker is dismissed
+  const obj = fabricCanvas?.getActiveObject();
+  previewOriginalFont = (obj?.type === 'i-text' || obj?.type === 'text')
+    ? (obj.fontFamily || 'Arial') : null;
+
   trigger.classList.add('open');
   const rect = trigger.getBoundingClientRect();
   panel.style.top  = (rect.bottom + 4) + 'px';
@@ -4933,19 +4940,44 @@ function openFontPicker() {
   renderFontList('');
 }
 
-function closeFontPicker() {
+// committed=true means the user clicked a font; false means dismissed without selecting
+function closeFontPicker(committed = false) {
+  if (!fontPickerOpen) return;
   fontPickerOpen = false;
   document.getElementById('fontPickerTrigger')?.classList.remove('open');
   document.getElementById('fontPickerPanel')?.classList.remove('open');
+  // Revert canvas text to original font if picker was dismissed without a selection
+  if (!committed && previewOriginalFont) {
+    const obj = fabricCanvas?.getActiveObject();
+    if (obj && (obj.type === 'i-text' || obj.type === 'text')) {
+      if (fabric.util.clearFabricFontCache) fabric.util.clearFabricFontCache(previewOriginalFont);
+      obj.set('fontFamily', previewOriginalFont);
+      fabricCanvas.requestRenderAll();
+    }
+    updateFontPickerTrigger(previewOriginalFont);
+  }
+  previewOriginalFont = null;
 }
 
 function fontOptionHTML(family) {
-  const sel = family === currentPickerFont ? ' selected' : '';
+  const sel  = family === currentPickerFont ? ' selected' : '';
   const safe = family.replace(/'/g, "\\'");
   return `<div class="font-option${sel}"
+               data-family="${family}"
                style="font-family:'${family}',sans-serif"
+               onmouseenter="previewFont('${safe}')"
                onclick="selectFont('${safe}')">${family}</div>`;
 }
+
+// Temporarily apply a font to the active text so the user sees a live preview
+window.previewFont = function(family) {
+  loadGoogleFont(family);
+  const obj = fabricCanvas?.getActiveObject();
+  if (!obj || (obj.type !== 'i-text' && obj.type !== 'text')) return;
+  if (fabric.util.clearFabricFontCache) fabric.util.clearFabricFontCache(family);
+  obj.set('fontFamily', family);
+  fabricCanvas.requestRenderAll();
+};
 
 function renderFontList(query) {
   const list = document.getElementById('fontList');
@@ -4954,27 +4986,43 @@ function renderFontList(query) {
   let html = '';
   if (!q) {
     html += '<div class="font-section-lbl">Favorites</div>';
-    FAVORITE_FONTS.forEach(f => { loadGoogleFont(f); html += fontOptionHTML(f); });
-    const others = GOOGLE_FONTS_LIST.filter(f => !FAVORITE_FONTS.includes(f)).slice(0, 40);
+    // Favorites are pre-loaded — render them with their fonts already available
+    FAVORITE_FONTS.forEach(f => { html += fontOptionHTML(f); });
     html += '<div class="font-section-lbl">All Fonts</div>';
-    others.forEach(f => { loadGoogleFont(f); html += fontOptionHTML(f); });
+    // All other fonts — no slice cap; IntersectionObserver loads them lazily below
+    GOOGLE_FONTS_LIST.filter(f => !FAVORITE_FONTS.includes(f))
+                     .forEach(f => { html += fontOptionHTML(f); });
   } else {
-    const results = GOOGLE_FONTS_LIST.filter(f => f.toLowerCase().includes(q)).slice(0, 30);
+    const results = GOOGLE_FONTS_LIST.filter(f => f.toLowerCase().includes(q));
     if (!results.length) {
       html = '<div style="padding:12px 10px;font-size:12px;color:var(--muted)">No fonts found</div>';
     } else {
-      results.forEach(f => { loadGoogleFont(f); html += fontOptionHTML(f); });
+      results.forEach(f => { html += fontOptionHTML(f); });
     }
   }
   list.innerHTML = html;
+
+  // Lazily inject a Google Fonts <link> for each option as it scrolls into view
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const fam = entry.target.dataset.family;
+        if (fam) loadGoogleFont(fam);
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { root: list, rootMargin: '80px' });
+
+  list.querySelectorAll('.font-option[data-family]').forEach(el => observer.observe(el));
 }
 
 window.searchFonts = function(query) { renderFontList(query); };
 
 window.selectFont = function(family) {
+  previewOriginalFont = null;   // mark as committed — closeFontPicker must NOT revert
   loadGoogleFont(family);
   updateFontPickerTrigger(family);
-  closeFontPicker();
+  closeFontPicker(true);
   const obj = fabricCanvas?.getActiveObject();
   if (!obj || (obj.type !== 'i-text' && obj.type !== 'text')) return;
   if (fabric.util.clearFabricFontCache) fabric.util.clearFabricFontCache(family);
@@ -4989,7 +5037,7 @@ document.addEventListener('mousedown', e => {
   const panel   = document.getElementById('fontPickerPanel');
   const trigger = document.getElementById('fontPickerTrigger');
   if (panel && !panel.contains(e.target) && trigger && !trigger.contains(e.target)) {
-    closeFontPicker();
+    closeFontPicker(false);
   }
 });
 
