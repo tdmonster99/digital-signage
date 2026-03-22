@@ -320,10 +320,10 @@ section.content {
   color: #fff; background: #000a; padding: 4px 10px; border-radius: 5px;
 }
 
-/* Theme toggle icons */
+/* Theme toggle labels */
 .theme-sun  { display: none; }
-.theme-moon { display: block; }
-[data-theme="dark"] .theme-sun  { display: block; }
+.theme-moon { display: inline; }
+[data-theme="dark"] .theme-sun  { display: inline; }
 [data-theme="dark"] .theme-moon { display: none; }
 
 /* Toast */
@@ -684,19 +684,9 @@ section.content {
   <div style="display:flex;gap:10px;align-items:center">
     <span id="liveBadge" class="live-badge offline">Offline</span>
     <span id="userEmail" style="font-size:13px;color:var(--muted)"></span>
-    <button id="themeToggle" class="btn btn-secondary" style="padding:7px 10px;font-size:12px" onclick="toggleTheme()" title="Toggle light/dark mode">
-      <!-- Sun rays: shown only in dark mode (click to go light) -->
-      <svg class="theme-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-        <circle cx="12" cy="12" r="5"/>
-        <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
-        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-        <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
-        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-      </svg>
-      <!-- Filled crescent: shown only in light mode (click to go dark) -->
-      <svg class="theme-moon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-      </svg>
+    <button id="themeToggle" class="btn btn-secondary" style="padding:7px 14px;font-size:12px" onclick="toggleTheme()">
+      <span class="theme-moon">🌙 Dark</span>
+      <span class="theme-sun">☀ Light</span>
     </button>
     <button class="btn btn-secondary" style="padding:7px 14px;font-size:12px" onclick="handleAuth()">Sign In</button>
   </div>
