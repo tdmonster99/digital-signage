@@ -38,6 +38,8 @@
   const stageA        = document.getElementById("stageA");
   const stageB        = document.getElementById("stageB");
   const stageDesigned = document.getElementById("stageDesigned");
+  const stageYoutube  = document.getElementById("stageYoutube");
+  const iframeYoutube = document.getElementById("iframeYoutube");
   const stageWebpage  = document.getElementById("stageWebpage");
   const iframeWebpage = document.getElementById("iframeWebpage");
   const loader        = document.getElementById("loader");
@@ -101,6 +103,17 @@
       await loadDesignedSlide(slide.canvasJson);
       stageDesigned.style.opacity = "1";
       active.style.opacity        = "0";
+      stageYoutube.style.opacity  = "0";
+      iframeYoutube.src           = "about:blank";
+      stageWebpage.style.opacity  = "0";
+      iframeWebpage.src           = "about:blank";
+
+    } else if (slide.type === "youtube") {
+      const params = "autoplay=1&mute=1&controls=0&loop=1&modestbranding=1&rel=0&playlist=" + slide.videoId;
+      iframeYoutube.src           = `https://www.youtube.com/embed/${slide.videoId}?${params}`;
+      stageYoutube.style.opacity  = "1";
+      active.style.opacity        = "0";
+      stageDesigned.style.opacity = "0";
       stageWebpage.style.opacity  = "0";
       iframeWebpage.src           = "about:blank";
 
@@ -109,6 +122,8 @@
       stageWebpage.style.opacity  = "1";
       active.style.opacity        = "0";
       stageDesigned.style.opacity = "0";
+      stageYoutube.style.opacity  = "0";
+      iframeYoutube.src           = "about:blank";
 
     } else {
       // Image slide — existing behaviour
@@ -125,6 +140,8 @@
       inactive.style.opacity      = "1";
       active.style.opacity        = "0";
       stageDesigned.style.opacity = "0";
+      stageYoutube.style.opacity  = "0";
+      iframeYoutube.src           = "about:blank";
       stageWebpage.style.opacity  = "0";
       iframeWebpage.src           = "about:blank";
 
@@ -222,8 +239,9 @@
   #stageA        { z-index: 1; }
   #stageB        { z-index: 2; }
   #stageDesigned { z-index: 3; background: #000; }
-  #stageWebpage  { z-index: 4; background: #000; }
-  #iframeWebpage {
+  #stageYoutube  { z-index: 4; background: #000; }
+  #stageWebpage  { z-index: 5; background: #000; }
+  #iframeYoutube, #iframeWebpage {
     position: absolute; inset: 0;
     width: 100%; height: 100%;
     border: none;
@@ -282,6 +300,11 @@
 <!-- Designed slide stage (Fabric.js renders here) -->
 <div id="stageDesigned" class="stage">
   <canvas id="fabricDisplay"></canvas>
+</div>
+
+<!-- YouTube slide stage -->
+<div id="stageYoutube" class="stage">
+  <iframe id="iframeYoutube" src="about:blank" allow="autoplay; encrypted-media" allowfullscreen></iframe>
 </div>
 
 <!-- Web page slide stage -->
