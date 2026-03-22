@@ -4025,28 +4025,25 @@ function applyBgGradient() {
   if (!fabricCanvas) return;
   const c1 = gradColor1.value, c2 = gradColor2.value;
   const dir = currentGradDir;
+  const w = fabricCanvas.width, h = fabricCanvas.height;
+  let grad;
   if (dir === 'radial') {
-    fabricCanvas.setBackgroundColor(
-      new fabric.Gradient({
-        type: 'radial', gradientUnits: 'percentage',
-        coords: { x1: 0.5, y1: 0.5, r1: 0, x2: 0.5, y2: 0.5, r2: 0.7 },
-        colorStops: [{ offset: 0, color: c1 }, { offset: 1, color: c2 }],
-      }),
-      () => { fabricCanvas.renderAll(); historySave(); }
-    );
+    grad = new fabric.Gradient({
+      type: 'radial',
+      coords: { x1: w / 2, y1: h / 2, r1: 0, x2: w / 2, y2: h / 2, r2: Math.max(w, h) * 0.7 },
+      colorStops: [{ offset: 0, color: c1 }, { offset: 1, color: c2 }],
+    });
   } else {
-    const coords = dir === 'horizontal'  ? { x1: 0, y1: 0, x2: 1, y2: 0 }
-                 : dir === 'vertical'    ? { x1: 0, y1: 0, x2: 0, y2: 1 }
-                 : dir === 'diagonal-se' ? { x1: 0, y1: 0, x2: 1, y2: 1 }
-                 :                        { x1: 1, y1: 0, x2: 0, y2: 1 }; // diagonal-sw
-    fabricCanvas.setBackgroundColor(
-      new fabric.Gradient({
-        type: 'linear', gradientUnits: 'percentage', coords,
-        colorStops: [{ offset: 0, color: c1 }, { offset: 1, color: c2 }],
-      }),
-      () => { fabricCanvas.renderAll(); historySave(); }
-    );
+    const coords = dir === 'horizontal'  ? { x1: 0,  y1: 0,  x2: w,  y2: 0  }
+                 : dir === 'vertical'    ? { x1: 0,  y1: 0,  x2: 0,  y2: h  }
+                 : dir === 'diagonal-se' ? { x1: 0,  y1: 0,  x2: w,  y2: h  }
+                 :                        { x1: w,  y1: 0,  x2: 0,  y2: h  }; // diagonal-sw
+    grad = new fabric.Gradient({
+      type: 'linear', coords,
+      colorStops: [{ offset: 0, color: c1 }, { offset: 1, color: c2 }],
+    });
   }
+  fabricCanvas.setBackgroundColor(grad, () => { fabricCanvas.renderAll(); historySave(); });
 }
 [gradColor1, gradColor2].forEach(el => el.addEventListener('input', applyBgGradient));
 
