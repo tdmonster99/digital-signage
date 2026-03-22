@@ -3646,14 +3646,15 @@ function onDragMove(e) {
 
 function onDragEnd() {
   if (!dragState) return;
-  const ev = editingSchedule.events[dragState.idx];
+  const moved = dragState.current !== null;  // only true if mouse actually moved
+  const ev    = editingSchedule.events[dragState.idx];
 
-  if (dragState.type === 'move' && dragState.current !== null) {
+  if (dragState.type === 'move' && moved) {
     const dur = dragState.origEnd - dragState.origStart;
     const s   = dragState.current;
     ev.startHour = Math.floor(s / 60);  ev.startMin = s % 60;
     ev.endHour   = Math.floor((s + dur) / 60); ev.endMin = (s + dur) % 60;
-  } else if (dragState.type === 'resize' && dragState.current !== null) {
+  } else if (dragState.type === 'resize' && moved) {
     ev.endHour = Math.floor(dragState.current / 60);
     ev.endMin  = dragState.current % 60;
   }
@@ -3662,8 +3663,13 @@ function onDragEnd() {
   dragState = null;
   document.removeEventListener('mousemove', onDragMove);
   document.removeEventListener('mouseup',   onDragEnd);
-  renderCalendar();
-  renderEventPanel();
+
+  // Only re-render if a drag actually changed data — a pure click must NOT
+  // destroy the block before the 'click' event fires on it
+  if (moved) {
+    renderCalendar();
+    renderEventPanel();
+  }
 }
 
 // ── Right panel rendering ─────────────────────────────────────────────────
