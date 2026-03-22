@@ -66,50 +66,161 @@ body {
   font-family: 'DM Sans', sans-serif;
   background: var(--bg);
   color: var(--text);
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   display: flex;
-  flex-direction: column;
 }
 
-/* ── Top nav ────────────────────────────────────────────────────────────── */
-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 0 32px; height: 60px;
-  border-bottom: 1px solid var(--border);
+/* ── Left Sidebar Nav ───────────────────────────────────────────────────── */
+.sidebar {
+  width: 220px;
+  flex-shrink: 0;
   background: var(--surface);
-  position: sticky; top: 0; z-index: 100;
-  box-shadow: var(--header-shadow);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0; left: 0;
+  height: 100vh;
+  z-index: 50;
 }
-.logo {
+.sidebar-logo {
   display: flex; align-items: center; gap: 10px;
-  font-weight: 600; font-size: 15px; letter-spacing: -0.01em;
+  padding: 18px 16px 14px;
+  font-weight: 700; font-size: 14px; letter-spacing: -0.01em;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
 }
 .logo-dot {
   width: 8px; height: 8px; border-radius: 50%;
   background: var(--accent);
   box-shadow: 0 0 8px var(--accent);
   animation: pulse 2s ease-in-out infinite;
+  flex-shrink: 0;
 }
 @keyframes pulse {
   0%,100% { opacity: 1; } 50% { opacity: 0.4; }
+}
+.sidebar-nav {
+  flex: 1;
+  padding: 10px 8px;
+  display: flex; flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+}
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 10px; border-radius: 8px;
+  font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
+  color: var(--muted); cursor: pointer;
+  border: none; background: none; text-align: left; width: 100%;
+  transition: background 0.15s, color 0.15s;
+}
+.nav-item:hover { background: var(--surface2); color: var(--text); }
+.nav-item.active { background: var(--accent-bg); color: var(--accent); }
+.nav-item svg { flex-shrink: 0; }
+.sidebar-footer {
+  flex-shrink: 0;
+  padding: 10px 12px;
+  border-top: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 7px;
+}
+.sidebar-user-email {
+  font-size: 11px; color: var(--muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  min-width: 0;
 }
 .live-badge {
   font-size: 10px; font-weight: 500; letter-spacing: 0.08em;
   text-transform: uppercase; color: var(--success);
   background: var(--success-bg); border: 1px solid var(--success-border);
   padding: 3px 8px; border-radius: 20px;
+  align-self: flex-start;
 }
 .live-badge.offline { color: var(--danger); background: var(--danger-bg); border-color: var(--danger-border); }
 
-/* ── Main layout ────────────────────────────────────────────────────────── */
-main {
-  display: grid;
-  grid-template-columns: 320px 1fr;
-  gap: 0;
+/* ── App main area ──────────────────────────────────────────────────────── */
+.app-main {
+  margin-left: 220px;
   flex: 1;
+  height: 100vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 
-/* ── Sidebar ────────────────────────────────────────────────────────────── */
+/* ── Pages ──────────────────────────────────────────────────────────────── */
+.page { display: none; flex: 1; }
+.page.active { display: flex; }
+
+#page-slideshows { display: none; }
+#page-slideshows.active { display: grid; grid-template-columns: 320px 1fr; min-height: 100%; }
+
+#page-dashboard.active { flex-direction: column; padding: 32px; gap: 22px; }
+
+.coming-soon {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  color: var(--muted); gap: 14px; padding: 60px;
+}
+.coming-soon svg { opacity: 0.2; }
+.coming-soon h2 { font-size: 18px; font-weight: 600; color: var(--text); }
+.coming-soon p { font-size: 14px; line-height: 1.7; text-align: center; max-width: 380px; }
+
+/* ── Dashboard cards ────────────────────────────────────────────────────── */
+.dash-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 18px;
+}
+.dash-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 22px;
+  box-shadow: var(--card-shadow);
+  display: flex; flex-direction: column; gap: 14px;
+}
+.dash-card-title {
+  font-size: 10px; font-weight: 600; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted);
+}
+.dash-welcome-name {
+  font-size: 22px; font-weight: 700; color: var(--text); line-height: 1.2;
+}
+.dash-welcome-sub { font-size: 13px; color: var(--muted); }
+.dash-stat { display: flex; align-items: center; gap: 14px; }
+.dash-stat-icon {
+  width: 42px; height: 42px; border-radius: 10px;
+  background: var(--accent-bg);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--accent); flex-shrink: 0;
+}
+.dash-stat-val { font-size: 28px; font-weight: 700; color: var(--text); line-height: 1; }
+.dash-stat-label { font-size: 12px; color: var(--muted); margin-top: 3px; }
+.activity-list { display: flex; flex-direction: column; gap: 6px; }
+.activity-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 7px 10px; background: var(--surface2);
+  border-radius: 7px; font-size: 12px; gap: 8px;
+}
+.activity-msg { color: var(--text); flex: 1; }
+.activity-time { color: var(--muted); font-size: 11px; font-family: 'DM Mono', monospace; flex-shrink: 0; }
+.activity-empty { font-size: 13px; color: var(--muted); text-align: center; padding: 12px 0; }
+.quick-actions { display: flex; flex-direction: column; gap: 8px; }
+.quick-action-btn {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; border-radius: 9px;
+  border: 1px solid var(--border); background: var(--surface2);
+  color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 13px;
+  cursor: pointer; transition: border-color 0.15s, background 0.15s, color 0.15s;
+  text-align: left; width: 100%;
+}
+.quick-action-btn:hover { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); }
+.quick-action-btn svg { color: var(--muted); flex-shrink: 0; transition: color 0.15s; }
+.quick-action-btn:hover svg { color: var(--accent); }
+
+/* ── Slideshows aside panel ─────────────────────────────────────────────── */
 aside {
   border-right: 1px solid var(--border);
   padding: 24px;
@@ -359,7 +470,9 @@ section.content {
 
 /* Responsive */
 @media (max-width: 768px) {
-  main { grid-template-columns: 1fr; }
+  .sidebar { display: none; }
+  .app-main { margin-left: 0; }
+  #page-slideshows.active { grid-template-columns: 1fr; }
   aside { border-right: none; border-bottom: 1px solid var(--border); }
 }
 
@@ -677,25 +790,159 @@ section.content {
 </head>
 <body>
 
-<header>
-  <div class="logo">
+<!-- ── Sidebar Navigation ─────────────────────────────────────────────── -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
     <div class="logo-dot"></div>
-    Signage Admin
+    Signage
   </div>
-  <div style="display:flex;gap:10px;align-items:center">
-    <span id="liveBadge" class="live-badge offline">Offline</span>
-    <span id="userEmail" style="font-size:13px;color:var(--muted)"></span>
-    <button id="themeToggle" class="btn btn-secondary" style="padding:7px 14px;font-size:12px" onclick="toggleTheme()">
-      <span class="theme-moon">🌙 Dark</span>
-      <span class="theme-sun">☀ Light</span>
+  <div class="sidebar-nav">
+    <button class="nav-item active" data-page="dashboard" onclick="showPage('dashboard')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+        <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+      </svg>
+      Dashboard
     </button>
+    <button class="nav-item" data-page="slideshows" onclick="showPage('slideshows')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <rect x="2" y="5" width="20" height="14" rx="2"/>
+        <polyline points="2 10 12 14 22 10"/>
+      </svg>
+      Slideshows
+    </button>
+    <button class="nav-item" data-page="media" onclick="showPage('media')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <rect x="3" y="3" width="18" height="18" rx="2"/>
+        <circle cx="8.5" cy="8.5" r="1.5"/>
+        <polyline points="21 15 16 10 5 21"/>
+      </svg>
+      Media
+    </button>
+    <button class="nav-item" data-page="schedules" onclick="showPage('schedules')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <rect x="3" y="4" width="18" height="18" rx="2"/>
+        <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+        <line x1="3" y1="10" x2="21" y2="10"/>
+      </svg>
+      Schedules
+    </button>
+    <button class="nav-item" data-page="screens" onclick="showPage('screens')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <rect x="2" y="3" width="20" height="14" rx="2"/>
+        <line x1="8" y1="21" x2="16" y2="21"/>
+        <line x1="12" y1="17" x2="12" y2="21"/>
+      </svg>
+      Screens
+    </button>
+    <button class="nav-item" data-page="settings" onclick="showPage('settings')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+      Settings
+    </button>
+  </div>
+  <div class="sidebar-footer">
+    <span id="liveBadge" class="live-badge offline">Offline</span>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:6px">
+      <span id="userEmail" class="sidebar-user-email"></span>
+      <button id="themeToggle" class="btn btn-secondary" style="padding:5px 10px;font-size:12px;flex-shrink:0" onclick="toggleTheme()">
+        <span class="theme-moon">🌙 Dark</span>
+        <span class="theme-sun">☀ Light</span>
+      </button>
+    </div>
     <button id="authBtn" class="btn btn-secondary" style="padding:7px 14px;font-size:12px" onclick="handleAuth()">Sign In</button>
   </div>
-</header>
+</nav>
 
-<main>
-  <!-- Sidebar -->
-  <aside>
+<!-- ── App Main ────────────────────────────────────────────────────────── -->
+<div class="app-main">
+
+  <!-- Dashboard -->
+  <div id="page-dashboard" class="page active">
+    <div>
+      <h1 style="font-size:22px;font-weight:700;color:var(--text);margin-bottom:4px">Dashboard</h1>
+      <p style="font-size:13px;color:var(--muted)">Overview of your digital signage</p>
+    </div>
+    <div class="dash-grid">
+
+      <!-- Welcome -->
+      <div class="dash-card">
+        <div class="dash-card-title">Welcome back</div>
+        <div>
+          <div class="dash-welcome-name" id="dashWelcomeName">—</div>
+          <div class="dash-welcome-sub" style="margin-top:6px">Your signage is ready to manage.</div>
+        </div>
+        <button class="quick-action-btn" onclick="showPage('slideshows')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <rect x="2" y="5" width="20" height="14" rx="2"/><polyline points="2 10 12 14 22 10"/>
+          </svg>
+          Go to Slideshows
+        </button>
+      </div>
+
+      <!-- Screen Status -->
+      <div class="dash-card">
+        <div class="dash-card-title">Screen Status</div>
+        <div class="dash-stat">
+          <div class="dash-stat-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <rect x="2" y="3" width="20" height="14" rx="2"/>
+              <line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+            </svg>
+          </div>
+          <div>
+            <div class="dash-stat-val" id="dashSlideCount">—</div>
+            <div class="dash-stat-label">slides in current show</div>
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.6">
+          Open <strong style="color:var(--text)">display.html</strong> on your TV in full-screen (F11). It connects automatically.
+        </div>
+      </div>
+
+      <!-- Recent Activity -->
+      <div class="dash-card">
+        <div class="dash-card-title">Recent Activity</div>
+        <div class="activity-list" id="dashActivity">
+          <div class="activity-empty">No recent activity</div>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="dash-card">
+        <div class="dash-card-title">Quick Actions</div>
+        <div class="quick-actions">
+          <button class="quick-action-btn" onclick="showPage('slideshows');setTimeout(()=>document.getElementById('fileInput').click(),50)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            Upload Media
+          </button>
+          <button class="quick-action-btn" onclick="showPage('slideshows');setTimeout(openDesigner,50)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+            </svg>
+            Design a Slide
+          </button>
+          <button class="quick-action-btn" onclick="showPage('slideshows');setTimeout(newShowPrompt,50)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            New Slideshow
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Slideshows -->
+  <div id="page-slideshows" class="page">
+    <!-- Aside panel -->
+    <aside>
     <div>
       <div class="section-label">Slideshows</div>
       <div class="show-list" id="showList">
@@ -829,7 +1076,60 @@ section.content {
       </div>
     </div>
   </section>
-</main>
+  </div><!-- /page-slideshows -->
+
+  <!-- Media -->
+  <div id="page-media" class="page">
+    <div class="coming-soon">
+      <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <rect x="3" y="3" width="18" height="18" rx="2"/>
+        <circle cx="8.5" cy="8.5" r="1.5"/>
+        <polyline points="21 15 16 10 5 21"/>
+      </svg>
+      <h2>Media Library</h2>
+      <p>Coming soon — manage all your uploaded images and videos in one place.</p>
+    </div>
+  </div>
+
+  <!-- Schedules -->
+  <div id="page-schedules" class="page">
+    <div class="coming-soon">
+      <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <rect x="3" y="4" width="18" height="18" rx="2"/>
+        <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+        <line x1="3" y1="10" x2="21" y2="10"/>
+      </svg>
+      <h2>Schedules</h2>
+      <p>Coming soon — automatically switch slideshows based on time of day or day of week.</p>
+    </div>
+  </div>
+
+  <!-- Screens -->
+  <div id="page-screens" class="page">
+    <div class="coming-soon">
+      <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <rect x="2" y="3" width="20" height="14" rx="2"/>
+        <line x1="8" y1="21" x2="16" y2="21"/>
+        <line x1="12" y1="17" x2="12" y2="21"/>
+      </svg>
+      <h2>Screens</h2>
+      <p>Coming soon — register and monitor all your display screens from one place.</p>
+    </div>
+  </div>
+
+  <!-- Settings -->
+  <div id="page-settings" class="page">
+    <div class="coming-soon">
+      <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+      <h2>Settings</h2>
+      <p>Coming soon — configure account preferences, integrations, and display defaults.</p>
+    </div>
+  </div>
+
+</div><!-- /app-main -->
 
 <div id="toast"></div>
 
@@ -1389,6 +1689,7 @@ async function pushToFirestore() {
     transition,
     updatedAt:    new Date().toISOString()
   });
+  logActivity(`Slideshow "${currentShowId}" saved (${slides.length} slide${slides.length !== 1 ? 's' : ''})`);
   toast("Saved — displays updating live ✓");
 }
 
@@ -2617,6 +2918,56 @@ window.addEventListener('resize', () => {
     initFabricCanvas();
   }
 });
+
+// ── Page navigation ───────────────────────────────────────────────────────
+window.showPage = function(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.page === name));
+  const page = document.getElementById('page-' + name);
+  if (page) {
+    page.classList.add('active');
+    if (name === 'dashboard') updateDashboard();
+  }
+};
+
+// ── Activity log ──────────────────────────────────────────────────────────
+const activityLog = [];
+
+function logActivity(msg) {
+  activityLog.unshift({ msg, time: new Date() });
+  if (activityLog.length > 20) activityLog.pop();
+}
+
+function formatActivityTime(date) {
+  const now  = new Date();
+  const diff = Math.floor((now - date) / 1000);
+  if (diff < 60)   return 'just now';
+  if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+  if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+  return date.toLocaleDateString();
+}
+
+// ── Dashboard update ──────────────────────────────────────────────────────
+function updateDashboard() {
+  const user = auth.currentUser;
+  const name = user ? (user.displayName || user.email || 'You') : 'Guest';
+  document.getElementById('dashWelcomeName').textContent = 'Hello, ' + name.split(' ')[0] + '.';
+
+  const n = slides.filter(s => s.active !== false).length;
+  document.getElementById('dashSlideCount').textContent = n;
+
+  const list = document.getElementById('dashActivity');
+  if (!activityLog.length) {
+    list.innerHTML = '<div class="activity-empty">No recent activity</div>';
+    return;
+  }
+  list.innerHTML = activityLog.slice(0, 5).map(a =>
+    `<div class="activity-item">
+      <span class="activity-msg">${a.msg}</span>
+      <span class="activity-time">${formatActivityTime(a.time)}</span>
+    </div>`
+  ).join('');
+}
 
 // ── Theme toggle ──────────────────────────────────────────────────────────
 // Icons are swapped purely via CSS ([data-theme="dark"] .theme-sun / .theme-moon)
