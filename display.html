@@ -38,6 +38,8 @@
   const stageA        = document.getElementById("stageA");
   const stageB        = document.getElementById("stageB");
   const stageDesigned = document.getElementById("stageDesigned");
+  const stageWebpage  = document.getElementById("stageWebpage");
+  const iframeWebpage = document.getElementById("iframeWebpage");
   const loader        = document.getElementById("loader");
   const errBox        = document.getElementById("errBox");
   const errMsg        = document.getElementById("errMsg");
@@ -96,14 +98,17 @@
   // ── Crossfade ────────────────────────────────────────────────────────────────
   async function crossfadeTo(slide) {
     if (slide.type === "designed" && slide.canvasJson) {
-      // Load and render the Fabric canvas
       await loadDesignedSlide(slide.canvasJson);
-
-      // Fade in designed stage, fade out current image stage
       stageDesigned.style.opacity = "1";
       active.style.opacity        = "0";
-      // Note: active/inactive image stage refs stay unchanged so the
-      // next image slide picks up correctly.
+      stageWebpage.style.opacity  = "0";
+      iframeWebpage.src           = "about:blank";
+
+    } else if (slide.type === "webpage") {
+      iframeWebpage.src           = slide.url;
+      stageWebpage.style.opacity  = "1";
+      active.style.opacity        = "0";
+      stageDesigned.style.opacity = "0";
 
     } else {
       // Image slide — existing behaviour
@@ -119,7 +124,9 @@
 
       inactive.style.opacity      = "1";
       active.style.opacity        = "0";
-      stageDesigned.style.opacity = "0"; // hide designed stage if it was showing
+      stageDesigned.style.opacity = "0";
+      stageWebpage.style.opacity  = "0";
+      iframeWebpage.src           = "about:blank";
 
       const tmp = active;
       active    = inactive;
@@ -215,6 +222,12 @@
   #stageA        { z-index: 1; }
   #stageB        { z-index: 2; }
   #stageDesigned { z-index: 3; background: #000; }
+  #stageWebpage  { z-index: 4; background: #000; }
+  #iframeWebpage {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    border: none;
+  }
 
   /* Fabric canvas fills the designed stage */
   #stageDesigned .canvas-container,
@@ -269,6 +282,11 @@
 <!-- Designed slide stage (Fabric.js renders here) -->
 <div id="stageDesigned" class="stage">
   <canvas id="fabricDisplay"></canvas>
+</div>
+
+<!-- Web page slide stage -->
+<div id="stageWebpage" class="stage">
+  <iframe id="iframeWebpage" src="about:blank"></iframe>
 </div>
 
 <!-- Initial loader -->
