@@ -922,6 +922,42 @@ section.content {
 }
 .grad-preset:hover { border-color: var(--accent); transform: scale(1.1); }
 
+/* ── Stock Photos Panel ─────────────────────────────────────────────────── */
+.stock-search-row { display:flex; gap:6px; margin-bottom:10px; }
+.stock-search-row .prop-input { flex:1; min-width:0; }
+.stock-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:4px; }
+.stock-item { display:flex; flex-direction:column; }
+.stock-thumb-wrap {
+  position:relative; border-radius:5px; overflow:hidden;
+  cursor:pointer; aspect-ratio:3/2; background:var(--surface2);
+}
+.stock-thumb-wrap img { width:100%; height:100%; object-fit:cover; display:block; }
+.stock-thumb-overlay {
+  position:absolute; inset:0; background:rgba(0,0,0,0.55);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+  opacity:0; transition:opacity 0.15s; padding:3px;
+}
+.stock-thumb-wrap:hover .stock-thumb-overlay { opacity:1; }
+.stock-overlay-btn {
+  width:100%; padding:3px 0; border-radius:4px;
+  background:rgba(255,255,255,0.92); color:#111;
+  font-size:9px; font-family:'DM Sans',sans-serif;
+  border:none; cursor:pointer; font-weight:600; transition:background 0.1s;
+}
+.stock-overlay-btn:hover { background:#fff; }
+.stock-credit {
+  font-size:9px; color:var(--muted); margin-top:2px;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:center;
+}
+.stock-credit a { color:var(--muted); text-decoration:none; }
+.stock-credit a:hover { color:var(--accent); }
+.ctx-item {
+  display:block; width:100%; text-align:left;
+  padding:7px 12px; border:none; background:none;
+  color:var(--text); font-size:13px; font-family:'DM Sans',sans-serif;
+  cursor:pointer; border-radius:5px; transition:background 0.12s;
+}
+.ctx-item:hover { background:var(--surface2); }
 /* ── Text preset style buttons ─────────────────────────────────────────── */
 .text-preset-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:4px; margin-bottom:4px; }
 .text-preset-btn {
@@ -1990,6 +2026,17 @@ section.content {
           <line x1="15" y1="3" x2="15" y2="21"/>
         </svg>
       </button>
+
+      <div class="tool-divider"></div>
+
+      <!-- Stock photos -->
+      <button class="tool-btn" id="btnStockPhotos" title="Stock Photos" onclick="toggleStockPanel()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <rect x="3" y="3" width="18" height="18" rx="2"/>
+          <circle cx="8.5" cy="8.5" r="1.5"/>
+          <polyline points="21 15 16 10 5 21"/>
+        </svg>
+      </button>
     </div>
 
     <!-- Canvas area -->
@@ -2002,7 +2049,41 @@ section.content {
     </div>
 
     <!-- Properties Panel -->
+    <!-- Stock photos right-click context menu -->
+    <div id="stockCtxMenu" style="display:none;position:fixed;z-index:900;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.2);padding:4px;min-width:160px">
+      <button class="ctx-item" onclick="stockCtxAddCanvas()">Add to canvas</button>
+      <button class="ctx-item" onclick="stockCtxSetBg()">Set as background</button>
+    </div>
+
     <div class="designer-props" id="designerProps">
+
+      <!-- Stock photos panel -->
+      <div id="stockPanel" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div class="props-title" style="margin:0">Stock Photos</div>
+          <button onclick="closeStockPanel()" title="Close" style="background:none;border:none;cursor:pointer;color:var(--muted);padding:2px;display:flex;align-items:center">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+        <div class="stock-search-row">
+          <input type="text" id="stockSearchInput" class="prop-input" placeholder="Search photos…"
+                 onkeydown="if(event.key==='Enter') searchStockPhotos()">
+          <button class="prop-btn" onclick="searchStockPhotos()" title="Search">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+          </button>
+        </div>
+        <div id="stockGrid" class="stock-grid"></div>
+        <div id="stockStatus" style="font-size:11px;color:var(--muted);text-align:center;padding:8px 0"></div>
+        <button id="stockLoadMore" class="prop-btn" style="width:100%;margin-top:4px;display:none"
+                onclick="loadMoreStock()">Load more</button>
+        <div style="font-size:9px;color:var(--muted);text-align:center;margin-top:8px">
+          Photos by <a href="https://unsplash.com?utm_source=digital_signage&utm_medium=referral" target="_blank" rel="noopener" style="color:var(--muted)">Unsplash</a>
+        </div>
+      </div>
 
       <!-- No selection: canvas background -->
       <div id="propsNone">
@@ -3104,6 +3185,11 @@ function doCloseDesigner() {
   if (btn) btn.classList.remove('grid-active');
   const go = document.getElementById('gridOverlay');
   if (go) go.style.display = 'none';
+  // Reset stock panel
+  document.getElementById('stockPanel').style.display = 'none';
+  document.getElementById('stockGrid').innerHTML = '';
+  document.getElementById('stockLoadMore').style.display = 'none';
+  document.getElementById('btnStockPhotos').classList.remove('active');
 }
 
 window.unsavedCancel = function() {
@@ -4182,6 +4268,148 @@ window.sendBwd = function() {
   fabricCanvas.sendBackwards(obj);
   fabricCanvas.renderAll();
 };
+
+// ── Stock Photos ───────────────────────────────────────────────────────────
+const UNSPLASH_ACCESS_KEY = 'UNSPLASH_ACCESS_KEY';
+const stockPhotoMap = {};
+let stockQuery = '';
+let stockPage  = 1;
+let stockCtxPhotoId = null;
+
+window.toggleStockPanel = function() {
+  const panel = document.getElementById('stockPanel');
+  if (panel.style.display !== 'none') closeStockPanel();
+  else openStockPanel();
+};
+
+function openStockPanel() {
+  document.getElementById('btnStockPhotos').classList.add('active');
+  document.getElementById('stockPanel').style.display = 'block';
+  ['propsNone','propsText','propsImage','propsShape'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  if (!document.getElementById('stockGrid').children.length) {
+    stockQuery = ''; stockPage = 1;
+    loadStockPhotos();
+  }
+}
+
+window.closeStockPanel = function() {
+  document.getElementById('btnStockPhotos').classList.remove('active');
+  document.getElementById('stockPanel').style.display = 'none';
+  updatePropsPanel();
+};
+
+window.searchStockPhotos = function() {
+  stockQuery = document.getElementById('stockSearchInput').value.trim();
+  stockPage  = 1;
+  document.getElementById('stockGrid').innerHTML = '';
+  document.getElementById('stockLoadMore').style.display = 'none';
+  loadStockPhotos();
+};
+
+window.loadMoreStock = function() {
+  stockPage++;
+  loadStockPhotos(true);
+};
+
+async function loadStockPhotos(append = false) {
+  const status      = document.getElementById('stockStatus');
+  const loadMoreBtn = document.getElementById('stockLoadMore');
+  status.textContent = 'Loading…';
+  loadMoreBtn.style.display = 'none';
+  try {
+    const base = 'https://api.unsplash.com';
+    const url  = stockQuery
+      ? `${base}/search/photos?query=${encodeURIComponent(stockQuery)}&per_page=12&page=${stockPage}&client_id=${UNSPLASH_ACCESS_KEY}`
+      : `${base}/photos?order_by=popular&per_page=12&page=${stockPage}&client_id=${UNSPLASH_ACCESS_KEY}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(String(res.status));
+    const data   = await res.json();
+    const photos = stockQuery ? data.results : data;
+    status.textContent = '';
+    renderStockGrid(photos, append);
+    if (photos.length === 12) loadMoreBtn.style.display = 'block';
+  } catch (err) {
+    status.textContent = err.message === '401'
+      ? 'Invalid API key — replace UNSPLASH_ACCESS_KEY in the code.'
+      : 'Could not load photos. Check your API key.';
+  }
+}
+
+function renderStockGrid(photos, append) {
+  const grid = document.getElementById('stockGrid');
+  if (!append) grid.innerHTML = '';
+  if (!photos.length) {
+    document.getElementById('stockStatus').textContent = 'No results found.';
+    return;
+  }
+  photos.forEach(photo => {
+    stockPhotoMap[photo.id] = photo;
+    const div = document.createElement('div');
+    div.className = 'stock-item';
+    const creditUrl = `${photo.user.links.html}?utm_source=digital_signage&utm_medium=referral`;
+    div.innerHTML = `
+      <div class="stock-thumb-wrap"
+           oncontextmenu="stockRightClick(event,'${photo.id}');return false;">
+        <img src="${photo.urls.thumb}" alt="" loading="lazy">
+        <div class="stock-thumb-overlay">
+          <button class="stock-overlay-btn" onclick="addStockToCanvas('${photo.id}')">+ Canvas</button>
+          <button class="stock-overlay-btn" onclick="setStockAsBg('${photo.id}')">Set BG</button>
+        </div>
+      </div>
+      <div class="stock-credit">
+        <a href="${creditUrl}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${photo.user.name}</a>
+      </div>`;
+    grid.appendChild(div);
+  });
+}
+
+window.addStockToCanvas = function(photoId) {
+  const photo = stockPhotoMap[photoId];
+  if (!photo || !fabricCanvas) return;
+  toast('Adding photo…');
+  fabric.Image.fromURL(photo.urls.regular, function(img) {
+    if (!img) { toast('Failed to load image', true); return; }
+    const scale = (fabricCanvas.width * 0.8) / img.width;
+    img.set({
+      scaleX: scale, scaleY: scale,
+      left: fabricCanvas.width  / 2,
+      top:  fabricCanvas.height / 2,
+      originX: 'center', originY: 'center',
+    });
+    fabricCanvas.add(img);
+    fabricCanvas.setActiveObject(img);
+    fabricCanvas.renderAll();
+    historySave();
+  }, { crossOrigin: 'anonymous' });
+};
+
+window.setStockAsBg = function(photoId) {
+  const photo = stockPhotoMap[photoId];
+  if (!photo || !fabricCanvas) return;
+  toast('Setting background…');
+  currentBgImgUrl = photo.urls.regular;
+  setBgType('image');
+};
+
+window.stockRightClick = function(event, photoId) {
+  event.preventDefault();
+  stockCtxPhotoId = photoId;
+  const menu = document.getElementById('stockCtxMenu');
+  menu.style.display = 'block';
+  menu.style.left = event.clientX + 'px';
+  menu.style.top  = event.clientY + 'px';
+  setTimeout(() => document.addEventListener('click', hideStockCtxMenu, { once: true }), 0);
+};
+
+function hideStockCtxMenu() {
+  document.getElementById('stockCtxMenu').style.display = 'none';
+}
+
+window.stockCtxAddCanvas = function() { addStockToCanvas(stockCtxPhotoId); hideStockCtxMenu(); };
+window.stockCtxSetBg     = function() { setStockAsBg(stockCtxPhotoId);     hideStockCtxMenu(); };
 
 // ── Background controls ────────────────────────────────────────────────────
 let currentBgType  = 'solid';
