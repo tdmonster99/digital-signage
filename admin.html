@@ -902,6 +902,25 @@ section.content {
 }
 .bg-tab:last-child { border-right: none; }
 .bg-tab.active { background: var(--accent-bg); color: var(--accent); }
+/* ── Gradient direction buttons ─────────────────────────────────────────── */
+.grad-dir-btns { display:flex; gap:4px; }
+.grad-dir-btn {
+  flex:1; padding:5px 2px;
+  border: 1px solid var(--border); border-radius:6px;
+  background: var(--surface2); color: var(--muted);
+  font-family: 'DM Sans',sans-serif; font-size:14px;
+  cursor:pointer; text-align:center; line-height:1;
+  transition: all 0.12s;
+}
+.grad-dir-btn:hover { border-color: var(--muted); color: var(--text); }
+.grad-dir-btn.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent); }
+/* ── Gradient preset swatches ────────────────────────────────────────────── */
+.grad-presets { display:grid; grid-template-columns:repeat(6,1fr); gap:4px; margin-top:8px; }
+.grad-preset {
+  height:20px; border-radius:5px; cursor:pointer;
+  border: 2px solid transparent; transition: border-color 0.12s, transform 0.1s;
+}
+.grad-preset:hover { border-color: var(--accent); transform: scale(1.1); }
 
 /* ── Google Font picker ─────────────────────────────────────────────────── */
 .font-picker { position: relative; }
@@ -1984,11 +2003,27 @@ section.content {
             </div>
             <div class="prop-row">
               <div class="prop-label">Direction</div>
-              <select id="gradDirection" class="prop-input">
-                <option value="horizontal">Horizontal →</option>
-                <option value="vertical">Vertical ↓</option>
-                <option value="diagonal">Diagonal ↘</option>
-              </select>
+              <div class="grad-dir-btns">
+                <button class="grad-dir-btn active" data-dir="horizontal" onclick="setGradDir(this,'horizontal')" title="Horizontal">→</button>
+                <button class="grad-dir-btn" data-dir="vertical" onclick="setGradDir(this,'vertical')" title="Vertical">↓</button>
+                <button class="grad-dir-btn" data-dir="diagonal-se" onclick="setGradDir(this,'diagonal-se')" title="Diagonal ↘">↘</button>
+                <button class="grad-dir-btn" data-dir="diagonal-sw" onclick="setGradDir(this,'diagonal-sw')" title="Diagonal ↙">↙</button>
+                <button class="grad-dir-btn" data-dir="radial" onclick="setGradDir(this,'radial')" title="Radial">◎</button>
+              </div>
+            </div>
+            <div class="grad-presets">
+              <div class="grad-preset" title="Sunset"      style="background:linear-gradient(to right,#ff7043,#e91e8c)" onclick="setGradPreset('#ff7043','#e91e8c')"></div>
+              <div class="grad-preset" title="Ocean"       style="background:linear-gradient(to right,#1565c0,#26c6da)" onclick="setGradPreset('#1565c0','#26c6da')"></div>
+              <div class="grad-preset" title="Forest"      style="background:linear-gradient(to right,#43a047,#1b5e20)" onclick="setGradPreset('#43a047','#1b5e20')"></div>
+              <div class="grad-preset" title="Midnight"    style="background:linear-gradient(to right,#1a237e,#6a1b9a)" onclick="setGradPreset('#1a237e','#6a1b9a')"></div>
+              <div class="grad-preset" title="Fire"        style="background:linear-gradient(to right,#d32f2f,#ff9800)" onclick="setGradPreset('#d32f2f','#ff9800')"></div>
+              <div class="grad-preset" title="Rose Gold"   style="background:linear-gradient(to right,#f48fb1,#ffd54f)" onclick="setGradPreset('#f48fb1','#ffd54f')"></div>
+              <div class="grad-preset" title="Slate"       style="background:linear-gradient(to right,#78909c,#263238)" onclick="setGradPreset('#78909c','#263238')"></div>
+              <div class="grad-preset" title="Arctic"      style="background:linear-gradient(to right,#81d4fa,#e3f2fd)" onclick="setGradPreset('#81d4fa','#e3f2fd')"></div>
+              <div class="grad-preset" title="Corporate"   style="background:linear-gradient(to right,#0d47a1,#1976d2)" onclick="setGradPreset('#0d47a1','#1976d2')"></div>
+              <div class="grad-preset" title="Warm"        style="background:linear-gradient(to right,#fff9c4,#d7ccc8)" onclick="setGradPreset('#fff9c4','#d7ccc8')"></div>
+              <div class="grad-preset" title="Neon"        style="background:linear-gradient(to right,#7b1fa2,#00bcd4)" onclick="setGradPreset('#7b1fa2','#00bcd4')"></div>
+              <div class="grad-preset" title="Monochrome"  style="background:linear-gradient(to right,#ffffff,#bdbdbd)" onclick="setGradPreset('#ffffff','#bdbdbd')"></div>
             </div>
           </div>
           <div id="bgImagePanel" style="display:none">
@@ -3970,29 +4005,50 @@ function applyBgSolid() {
   historySave();
 }
 
-const gradColor1    = document.getElementById('gradColor1');
-const gradColor2    = document.getElementById('gradColor2');
-const gradDirection = document.getElementById('gradDirection');
+const gradColor1 = document.getElementById('gradColor1');
+const gradColor2 = document.getElementById('gradColor2');
+let currentGradDir = 'horizontal';
+
+window.setGradDir = function(btn, dir) {
+  currentGradDir = dir;
+  document.querySelectorAll('.grad-dir-btn').forEach(b => b.classList.toggle('active', b === btn));
+  applyBgGradient();
+};
+
+window.setGradPreset = function(c1, c2) {
+  gradColor1.value = c1;
+  gradColor2.value = c2;
+  applyBgGradient();
+};
 
 function applyBgGradient() {
   if (!fabricCanvas) return;
-  const dir = gradDirection.value;
-  const coords = dir === 'horizontal' ? { x1: 0, y1: 0, x2: 1, y2: 0 }
-               : dir === 'vertical'   ? { x1: 0, y1: 0, x2: 0, y2: 1 }
-               :                       { x1: 0, y1: 0, x2: 1, y2: 1 };
-  fabricCanvas.setBackgroundColor(
-    new fabric.Gradient({
-      type: 'linear', gradientUnits: 'percentage', coords,
-      colorStops: [
-        { offset: 0, color: gradColor1.value },
-        { offset: 1, color: gradColor2.value },
-      ],
-    }),
-    () => { fabricCanvas.renderAll(); historySave(); }
-  );
+  const c1 = gradColor1.value, c2 = gradColor2.value;
+  const dir = currentGradDir;
+  if (dir === 'radial') {
+    fabricCanvas.setBackgroundColor(
+      new fabric.Gradient({
+        type: 'radial', gradientUnits: 'percentage',
+        coords: { x1: 0.5, y1: 0.5, r1: 0, x2: 0.5, y2: 0.5, r2: 0.7 },
+        colorStops: [{ offset: 0, color: c1 }, { offset: 1, color: c2 }],
+      }),
+      () => { fabricCanvas.renderAll(); historySave(); }
+    );
+  } else {
+    const coords = dir === 'horizontal'  ? { x1: 0, y1: 0, x2: 1, y2: 0 }
+                 : dir === 'vertical'    ? { x1: 0, y1: 0, x2: 0, y2: 1 }
+                 : dir === 'diagonal-se' ? { x1: 0, y1: 0, x2: 1, y2: 1 }
+                 :                        { x1: 1, y1: 0, x2: 0, y2: 1 }; // diagonal-sw
+    fabricCanvas.setBackgroundColor(
+      new fabric.Gradient({
+        type: 'linear', gradientUnits: 'percentage', coords,
+        colorStops: [{ offset: 0, color: c1 }, { offset: 1, color: c2 }],
+      }),
+      () => { fabricCanvas.renderAll(); historySave(); }
+    );
+  }
 }
 [gradColor1, gradColor2].forEach(el => el.addEventListener('input', applyBgGradient));
-gradDirection.addEventListener('change', applyBgGradient);
 
 window.setBgImage = async function() {
   const url = prompt('Paste an image URL (or cancel to upload a file):');
