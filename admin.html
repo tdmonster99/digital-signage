@@ -784,6 +784,55 @@ section.content {
   position: relative;
 }
 
+/* ── Safe Zone Overlay ───────────────────────────────────────────────────── */
+#safeZoneOverlay {
+  display: none; position: absolute; inset: 0; pointer-events: none; z-index: 6;
+}
+.sz-edge { position: absolute; background: rgba(0,0,0,0.42); }
+.sz-top    { top: 0;   left: 0;   right: 0;    height: 5%; }
+.sz-bottom { bottom:0; left: 0;   right: 0;    height: 5%; }
+.sz-left   { top: 5%;  left: 0;   width: 5%;   bottom: 5%; }
+.sz-right  { top: 5%;  right: 0;  width: 5%;   bottom: 5%; }
+.sz-border {
+  position: absolute; top: 5%; left: 5%; right: 5%; bottom: 5%;
+  border: 2px dashed rgba(255,255,255,0.55); pointer-events: none;
+}
+/* ── TV Preview Overlay ──────────────────────────────────────────────────── */
+#tvPreviewOverlay {
+  display: none; position: fixed; inset: 0; z-index: 500;
+  background: rgba(5,5,8,0.97); flex-direction: column;
+  align-items: center; justify-content: center;
+}
+.tv-bezel {
+  position: relative;
+  background: #080808;
+  border: 10px solid #1c1c1c;
+  border-radius: 14px;
+  box-shadow: 0 0 0 3px #111, 0 0 0 5px #0a0a0a, 0 30px 80px rgba(0,0,0,0.9);
+  max-width: 92vw; max-height: 80vh;
+  aspect-ratio: 16/9;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.tv-bezel img { width: 100%; height: 100%; display: block; object-fit: contain; }
+#tvReadabilityOverlay { position: absolute; inset: 0; pointer-events: none; }
+.tv-controls {
+  display: flex; gap: 10px; margin-top: 18px; align-items: center; flex-wrap: wrap; justify-content: center;
+}
+#tvReadabilityMsg {
+  margin-top: 10px; font-size: 13px; text-align: center; max-width: 600px;
+  font-family: 'DM Sans', sans-serif;
+}
+.readability-box {
+  position: absolute; border: 2px solid #ff3333;
+  background: rgba(255,51,51,0.15); border-radius: 3px; pointer-events: none;
+}
+.readability-lbl {
+  position: absolute; bottom: calc(100% + 3px); left: 0;
+  background: #ff3333; color: #fff; font-size: 9px; font-weight: 700;
+  padding: 2px 5px; border-radius: 3px; white-space: nowrap;
+  font-family: 'DM Sans', sans-serif;
+}
 /* ── Template Gallery ────────────────────────────────────────────────────── */
 #templateGallery {
   position: fixed; inset: 0; z-index: 300;
@@ -2049,6 +2098,30 @@ section.content {
 </div>
 
 <!-- ── Slide Designer Modal ──────────────────────────────────────────────── -->
+<!-- ── TV Preview Overlay ──────────────────────────────────────────────────── -->
+<div id="tvPreviewOverlay">
+  <div class="tv-bezel" id="tvBezelFrame">
+    <img id="tvPreviewImg" alt="Slide preview">
+    <div id="tvReadabilityOverlay"></div>
+  </div>
+  <div class="tv-controls">
+    <button class="btn btn-secondary" onclick="runReadabilityCheck()" style="display:flex;align-items:center;gap:6px">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+        <line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/>
+      </svg>
+      Readability Check
+    </button>
+    <button class="btn btn-primary" onclick="closeTvPreview()" style="display:flex;align-items:center;gap:6px">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+      Close Preview
+    </button>
+  </div>
+  <div id="tvReadabilityMsg" style="color:#aaa"></div>
+</div>
+
 <div id="designerModal">
   <div class="designer-topbar">
     <span class="designer-topbar-label">Designer</span>
@@ -2087,6 +2160,15 @@ section.content {
           <line x1="2" y1="12" x2="22" y2="12"/>
           <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
         </svg>
+      </button>
+      <div style="width:1px;height:22px;background:var(--border);margin:0 2px;align-self:center"></div>
+      <button class="btn btn-secondary" title="TV Preview" onclick="openTvPreview()" style="display:flex;align-items:center;gap:6px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="3" width="20" height="14" rx="2"/>
+          <line x1="8" y1="21" x2="16" y2="21"/>
+          <line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+        Preview
       </button>
       <div style="width:1px;height:22px;background:var(--border);margin:0 2px;align-self:center"></div>
       <button class="btn btn-secondary" onclick="closeDesigner()">Cancel</button>
@@ -2190,6 +2272,14 @@ section.content {
 
       <div class="tool-divider"></div>
 
+      <!-- Safe zone -->
+      <button class="tool-btn" id="btnSafeZone" title="Safe Zone — Content outside this area may be cropped on some TVs" onclick="toggleSafeZone()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <rect x="2" y="4" width="20" height="16" rx="2"/>
+          <rect x="5" y="7" width="14" height="10" rx="1" stroke-dasharray="3 2"/>
+        </svg>
+      </button>
+
       <!-- Stock photos -->
       <button class="tool-btn" id="btnStockPhotos" title="Stock Photos" onclick="toggleStockPanel()">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
@@ -2204,6 +2294,13 @@ section.content {
     <div class="canvas-surround" id="canvasSurround">
       <div id="canvasFrame">
         <div id="gridOverlay"></div>
+        <div id="safeZoneOverlay">
+          <div class="sz-edge sz-top"></div>
+          <div class="sz-edge sz-bottom"></div>
+          <div class="sz-edge sz-left"></div>
+          <div class="sz-edge sz-right"></div>
+          <div class="sz-border"></div>
+        </div>
         <canvas id="designerCanvas"></canvas>
         <div id="guideOverlay"></div>
       </div>
@@ -3325,6 +3422,7 @@ function launchDesigner(existingSlide) {
   designerDirty      = false;
   autoSaveNewSlideId = null;
   updateDesignerStatus('saved');
+  applySafeZoneState();
   requestAnimationFrame(() => {
     initFabricCanvas();
     if (existingSlide?.canvasJson) {
@@ -3352,6 +3450,79 @@ window.closeDesigner = function() {
   doCloseDesigner();
 };
 
+// ── Safe Zone ─────────────────────────────────────────────────────────────
+let safeZoneEnabled = localStorage.getItem('designerSafeZone') === '1';
+
+function applySafeZoneState() {
+  document.getElementById('safeZoneOverlay').style.display = safeZoneEnabled ? 'block' : 'none';
+  document.getElementById('btnSafeZone').classList.toggle('active', safeZoneEnabled);
+}
+
+window.toggleSafeZone = function() {
+  safeZoneEnabled = !safeZoneEnabled;
+  localStorage.setItem('designerSafeZone', safeZoneEnabled ? '1' : '0');
+  applySafeZoneState();
+};
+
+// ── TV Preview ─────────────────────────────────────────────────────────────
+window.openTvPreview = function() {
+  if (!fabricCanvas) return;
+  let dataUrl;
+  try {
+    dataUrl = fabricCanvas.toDataURL({ format: 'jpeg', quality: 0.92 });
+  } catch(e) {
+    try { dataUrl = fabricCanvas.toDataURL({ format: 'png' }); }
+    catch(e2) { toast('Preview failed — canvas has cross-origin images.', true); return; }
+  }
+  document.getElementById('tvPreviewImg').src = dataUrl;
+  document.getElementById('tvReadabilityOverlay').innerHTML = '';
+  document.getElementById('tvReadabilityMsg').textContent = '';
+  document.getElementById('tvReadabilityMsg').style.color = '#aaa';
+  document.getElementById('tvPreviewOverlay').style.display = 'flex';
+};
+
+window.closeTvPreview = function() {
+  document.getElementById('tvPreviewOverlay').style.display = 'none';
+};
+
+window.runReadabilityCheck = function() {
+  if (!fabricCanvas) return;
+  const overlay  = document.getElementById('tvReadabilityOverlay');
+  const frame    = document.getElementById('tvBezelFrame');
+  overlay.innerHTML = '';
+
+  const displayW = frame.clientWidth;
+  const displayH = frame.clientHeight;
+  const sx = displayW / fabricCanvas.width;
+  const sy = displayH / fabricCanvas.height;
+
+  let smallCount = 0;
+  fabricCanvas.getObjects().forEach(obj => {
+    if (obj.type !== 'i-text' && obj.type !== 'text') return;
+    const effective = (obj.fontSize || 0) * Math.max(obj.scaleX || 1, 0.01);
+    if (effective >= 32) return;
+    smallCount++;
+    const br  = obj.getBoundingRect(true);
+    const box = document.createElement('div');
+    box.className = 'readability-box';
+    box.style.cssText = `left:${br.left*sx}px;top:${br.top*sy}px;width:${br.width*sx}px;height:${br.height*sy}px`;
+    const lbl = document.createElement('div');
+    lbl.className = 'readability-lbl';
+    lbl.textContent = `${Math.round(effective)}px — too small`;
+    box.appendChild(lbl);
+    overlay.appendChild(box);
+  });
+
+  const msg = document.getElementById('tvReadabilityMsg');
+  if (smallCount === 0) {
+    msg.style.color = '#4caf50';
+    msg.textContent = 'All text is large enough to read comfortably from 10 feet away.';
+  } else {
+    msg.style.color = '#ff6060';
+    msg.textContent = `${smallCount} text element${smallCount > 1 ? 's' : ''} may be too small to read from 10 feet away (highlighted in red).`;
+  }
+};
+
 function doCloseDesigner() {
   document.getElementById('designerModal').style.display = 'none';
   document.getElementById('unsavedModal').style.display  = 'none';
@@ -3365,6 +3536,8 @@ function doCloseDesigner() {
   if (btn) btn.classList.remove('grid-active');
   const go = document.getElementById('gridOverlay');
   if (go) go.style.display = 'none';
+  // Close TV preview if open
+  document.getElementById('tvPreviewOverlay').style.display = 'none';
   // Reset stock panel
   document.getElementById('stockPanel').style.display = 'none';
   document.getElementById('stockGrid').innerHTML = '';
@@ -3820,6 +3993,9 @@ function onDesignerKey(e) {
 
   // ── Escape: deselect ──────────────────────────────────────────────────
   if (e.key === 'Escape') {
+    if (document.getElementById('tvPreviewOverlay').style.display === 'flex') {
+      closeTvPreview(); return;
+    }
     fabricCanvas.discardActiveObject();
     fabricCanvas.renderAll();
     return;
