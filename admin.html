@@ -688,7 +688,7 @@ section.content {
       <span class="theme-moon">🌙 Dark</span>
       <span class="theme-sun">☀ Light</span>
     </button>
-    <button class="btn btn-secondary" style="padding:7px 14px;font-size:12px" onclick="handleAuth()">Sign In</button>
+    <button id="authBtn" class="btn btn-secondary" style="padding:7px 14px;font-size:12px" onclick="handleAuth()">Sign In</button>
   </div>
 </header>
 
@@ -1234,7 +1234,7 @@ let unsaved       = false;
 onAuthStateChanged(auth, user => {
   const badge  = document.getElementById("liveBadge");
   const email  = document.getElementById("userEmail");
-  const btn    = document.querySelector("header .btn");
+  const btn    = document.getElementById("authBtn");
 
   if (user) {
     badge.textContent  = "Live";
