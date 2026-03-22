@@ -98,8 +98,38 @@
 
   window.addEventListener("resize", fitFabricToScreen);
 
+  // Preload any Google Fonts referenced in a canvasJson before rendering
+  const SYSTEM_FONTS = new Set([
+    'Arial','Arial Black','Helvetica','Georgia','Impact','Verdana',
+    'Trebuchet MS','Times New Roman','Courier New','Comic Sans MS',
+  ]);
+
+  async function preloadFontsForSlide(canvasJson) {
+    try {
+      const data = typeof canvasJson === 'string' ? JSON.parse(canvasJson) : canvasJson;
+      const families = new Set();
+      (data.objects || []).forEach(obj => { if (obj.fontFamily) families.add(obj.fontFamily); });
+      const toLoad = [...families].filter(f => !SYSTEM_FONTS.has(f));
+      if (!toLoad.length) return;
+      const url = 'https://fonts.googleapis.com/css2?'
+                + toLoad.map(f => 'family=' + f.replace(/ /g, '+')).join('&')
+                + '&display=swap';
+      if (document.querySelector(`link[href="${url}"]`)) return;
+      await new Promise(resolve => {
+        const link   = document.createElement('link');
+        link.rel     = 'stylesheet';
+        link.href    = url;
+        link.onload  = resolve;
+        link.onerror = resolve;
+        document.head.appendChild(link);
+      });
+      await document.fonts.ready;
+    } catch(e) {}
+  }
+
   function loadDesignedSlide(canvasJson) {
-    return new Promise(resolve => {
+    return new Promise(async resolve => {
+      await preloadFontsForSlide(canvasJson);
       displayFabric.loadFromJSON(canvasJson, () => {
         fitFabricToScreen();
         resolve();

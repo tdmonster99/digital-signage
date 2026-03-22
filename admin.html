@@ -881,6 +881,50 @@ section.content {
 .bg-tab:last-child { border-right: none; }
 .bg-tab.active { background: var(--accent-bg); color: var(--accent); }
 
+/* ── Google Font picker ─────────────────────────────────────────────────── */
+.font-picker { position: relative; }
+.font-picker-trigger {
+  width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 6px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 7px; padding: 7px 10px;
+  color: var(--text); font-size: 13px; cursor: pointer; text-align: left;
+  transition: border-color 0.15s;
+}
+.font-picker-trigger:hover { border-color: var(--muted); }
+.font-picker-trigger.open  { border-color: var(--accent); }
+.font-picker-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.font-picker-panel {
+  position: fixed; z-index: 650;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  width: 220px; max-height: 320px;
+  display: none; flex-direction: column;
+  overflow: hidden;
+}
+.font-picker-panel.open { display: flex; }
+.font-search-wrap { padding: 8px 8px 6px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.font-search {
+  width: 100%; padding: 6px 10px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 6px; color: var(--text); font-size: 12px;
+  outline: none; transition: border-color 0.15s;
+  font-family: 'DM Sans', sans-serif;
+}
+.font-search:focus { border-color: var(--accent); }
+.font-list { overflow-y: auto; flex: 1; padding-bottom: 6px; }
+.font-section-lbl {
+  font-size: 10px; font-weight: 600; color: var(--muted);
+  letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 8px 10px 3px; font-family: 'DM Sans', sans-serif;
+}
+.font-option {
+  padding: 7px 10px; cursor: pointer; font-size: 16px;
+  color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  transition: background 0.1s; line-height: 1.3;
+}
+.font-option:hover   { background: var(--surface2); }
+.font-option.selected { background: var(--accent-bg); color: var(--accent); }
+
 /* ── Layers Panel ─────────────────────────────────────────────────────────── */
 .designer-layers {
   height: 58px; flex-shrink: 0;
@@ -1946,11 +1990,12 @@ section.content {
         <div class="prop-group">
           <div class="prop-row">
             <div class="prop-label">Font</div>
-            <select id="propFontFamily" class="prop-input" onchange="applyTextProp('fontFamily', this.value)">
-              <option>Arial</option><option>Georgia</option><option>Helvetica</option>
-              <option>Impact</option><option>Montserrat</option><option>Oswald</option>
-              <option>Raleway</option><option>Roboto</option>
-            </select>
+            <div class="font-picker">
+              <button class="font-picker-trigger" id="fontPickerTrigger" onclick="toggleFontPicker()">
+                <span class="font-picker-label" id="fontPickerLabel" style="font-family:Arial,sans-serif">Arial</span>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" flex-shrink="0"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+            </div>
           </div>
           <div class="prop-inline">
             <div class="prop-row" style="flex:1">
@@ -2172,6 +2217,15 @@ section.content {
       <button class="btn btn-primary"   onclick="saveAddEvent()">Save Event</button>
     </div>
   </div>
+</div>
+
+<!-- Google Font Picker Panel -->
+<div class="font-picker-panel" id="fontPickerPanel">
+  <div class="font-search-wrap">
+    <input class="font-search" id="fontSearch" placeholder="Search fonts…"
+           oninput="searchFonts(this.value)" autocomplete="off" spellcheck="false">
+  </div>
+  <div class="font-list" id="fontList"></div>
 </div>
 
 <!-- Keyboard Shortcuts Panel -->
@@ -3655,7 +3709,7 @@ function updatePropsPanel() {
   const t = obj.type;
   if (t === 'i-text' || t === 'text') {
     document.getElementById('propsText').style.display = 'block';
-    document.getElementById('propFontFamily').value   = obj.fontFamily || 'Arial';
+    updateFontPickerTrigger(obj.fontFamily || 'Arial');
     document.getElementById('propFontSize').value     = Math.round(obj.fontSize) || 72;
     document.getElementById('propTextColor').value    = toHex(obj.fill);
     document.getElementById('propTextOpacity').value  = obj.opacity ?? 1;
@@ -4789,6 +4843,158 @@ window.toggleTheme = function() {
   document.documentElement.setAttribute('data-theme', next);
   localStorage.setItem('signage-theme', next);
 };
+
+// ── Google Fonts picker ────────────────────────────────────────────────────
+const FAVORITE_FONTS = [
+  'Anton', 'Bebas Neue', 'Lato', 'Montserrat', 'Open Sans',
+  'Oswald', 'Playfair Display', 'Poppins', 'Raleway', 'Roboto',
+];
+
+const GOOGLE_FONTS_LIST = [
+  'ABeeZee','Abel','Abril Fatface','Acme','Alegreya','Alegreya Sans',
+  'Alfa Slab One','Almarai','Amiri','Anton','Archivo','Archivo Black',
+  'Arimo','Arvo','Asap','Assistant','Barlow','Barlow Condensed',
+  'Bebas Neue','Bitter','Boogaloo','Cabin','Cairo','Catamaran','Caveat',
+  'Cinzel','Comfortaa','Concert One','Cormorant Garamond','Courgette',
+  'Crimson Text','Dancing Script','DM Sans','DM Serif Display','EB Garamond',
+  'Encode Sans','Exo 2','Figtree','Fira Sans','Fira Sans Condensed',
+  'Fjalla One','Francois One','Fredoka One','Gloria Hallelujah','Graduate',
+  'Heebo','IBM Plex Mono','IBM Plex Sans','IBM Plex Serif','Indie Flower',
+  'Inter','Josefin Sans','Josefin Slab','Jost','Kanit','Kaushan Script',
+  'Lato','League Spartan','Libre Baskerville','Libre Franklin','Lilita One',
+  'Lobster','Lora','Manrope','Maven Pro','Merriweather','Merriweather Sans',
+  'Michroma','Montserrat','Mukta','Mulish','Noto Sans','Noto Serif','Nunito',
+  'Nunito Sans','Open Sans','Orbitron','Oswald','Outfit','Oxanium','Oxygen',
+  'Pacifico','Paytone One','Permanent Marker','Philosopher','Playfair Display',
+  'Plus Jakarta Sans','Poppins','Prompt','PT Sans','PT Serif','Quicksand',
+  'Racing Sans One','Rajdhani','Raleway','Roboto','Roboto Condensed',
+  'Roboto Mono','Roboto Slab','Rowdies','Rubik','Russo One','Sacramento',
+  'Satisfy','Sen','Shadows Into Light','Source Code Pro','Source Sans 3',
+  'Space Grotesk','Space Mono','Syne','Teko','Titillium Web','Ubuntu',
+  'Unbounded','Urbanist','Varela Round','Work Sans','Yanone Kaffeesatz',
+  'Yeseva One','Zilla Slab',
+].sort();
+
+let currentPickerFont = 'Arial';
+let fontPickerOpen    = false;
+
+function loadGoogleFont(family) {
+  const id = 'gf-' + family.replace(/[\s]+/g, '-').toLowerCase();
+  if (document.getElementById(id)) return;
+  const link = document.createElement('link');
+  link.id   = id;
+  link.rel  = 'stylesheet';
+  link.href = 'https://fonts.googleapis.com/css2?family='
+            + encodeURIComponent(family).replace(/%20/g, '+')
+            + ':ital,wght@0,400;0,700;1,400&display=swap';
+  document.head.appendChild(link);
+}
+
+function preloadFavoriteFonts() {
+  const id = 'gf-favorites';
+  if (document.getElementById(id)) return;
+  const params = FAVORITE_FONTS.map(f => 'family=' + f.replace(/ /g, '+')).join('&');
+  const link   = document.createElement('link');
+  link.id   = id;
+  link.rel  = 'stylesheet';
+  link.href = 'https://fonts.googleapis.com/css2?' + params + '&display=swap';
+  document.head.appendChild(link);
+}
+
+function updateFontPickerTrigger(family) {
+  currentPickerFont = family;
+  const label = document.getElementById('fontPickerLabel');
+  if (!label) return;
+  label.textContent        = family;
+  label.style.fontFamily   = '"' + family + '", sans-serif';
+  // Ensure font is loaded so the trigger itself renders correctly
+  if (!['Arial','Helvetica','Georgia','Impact','Verdana','Times New Roman',
+        'Courier New','Trebuchet MS','Comic Sans MS','Arial Black'].includes(family)) {
+    loadGoogleFont(family);
+  }
+}
+
+window.toggleFontPicker = function() {
+  fontPickerOpen ? closeFontPicker() : openFontPicker();
+};
+
+function openFontPicker() {
+  const trigger = document.getElementById('fontPickerTrigger');
+  const panel   = document.getElementById('fontPickerPanel');
+  if (!trigger || !panel) return;
+  fontPickerOpen = true;
+  trigger.classList.add('open');
+  const rect = trigger.getBoundingClientRect();
+  panel.style.top  = (rect.bottom + 4) + 'px';
+  panel.style.left = Math.max(4, rect.left) + 'px';
+  panel.classList.add('open');
+  const search = document.getElementById('fontSearch');
+  if (search) { search.value = ''; search.focus(); }
+  renderFontList('');
+}
+
+function closeFontPicker() {
+  fontPickerOpen = false;
+  document.getElementById('fontPickerTrigger')?.classList.remove('open');
+  document.getElementById('fontPickerPanel')?.classList.remove('open');
+}
+
+function fontOptionHTML(family) {
+  const sel = family === currentPickerFont ? ' selected' : '';
+  const safe = family.replace(/'/g, "\\'");
+  return `<div class="font-option${sel}"
+               style="font-family:'${family}',sans-serif"
+               onclick="selectFont('${safe}')">${family}</div>`;
+}
+
+function renderFontList(query) {
+  const list = document.getElementById('fontList');
+  if (!list) return;
+  const q = query.trim().toLowerCase();
+  let html = '';
+  if (!q) {
+    html += '<div class="font-section-lbl">Favorites</div>';
+    FAVORITE_FONTS.forEach(f => { loadGoogleFont(f); html += fontOptionHTML(f); });
+    const others = GOOGLE_FONTS_LIST.filter(f => !FAVORITE_FONTS.includes(f)).slice(0, 40);
+    html += '<div class="font-section-lbl">All Fonts</div>';
+    others.forEach(f => { loadGoogleFont(f); html += fontOptionHTML(f); });
+  } else {
+    const results = GOOGLE_FONTS_LIST.filter(f => f.toLowerCase().includes(q)).slice(0, 30);
+    if (!results.length) {
+      html = '<div style="padding:12px 10px;font-size:12px;color:var(--muted)">No fonts found</div>';
+    } else {
+      results.forEach(f => { loadGoogleFont(f); html += fontOptionHTML(f); });
+    }
+  }
+  list.innerHTML = html;
+}
+
+window.searchFonts = function(query) { renderFontList(query); };
+
+window.selectFont = function(family) {
+  loadGoogleFont(family);
+  updateFontPickerTrigger(family);
+  closeFontPicker();
+  const obj = fabricCanvas?.getActiveObject();
+  if (!obj || (obj.type !== 'i-text' && obj.type !== 'text')) return;
+  if (fabric.util.clearFabricFontCache) fabric.util.clearFabricFontCache(family);
+  obj.set('fontFamily', family);
+  fabricCanvas.requestRenderAll();
+  fabricCanvas.fire('object:modified', { target: obj });
+};
+
+// Close picker when clicking outside it
+document.addEventListener('mousedown', e => {
+  if (!fontPickerOpen) return;
+  const panel   = document.getElementById('fontPickerPanel');
+  const trigger = document.getElementById('fontPickerTrigger');
+  if (panel && !panel.contains(e.target) && trigger && !trigger.contains(e.target)) {
+    closeFontPicker();
+  }
+});
+
+// Pre-load favorite fonts when the page loads
+preloadFavoriteFonts();
 
 // Init
 listenToShow("main");
