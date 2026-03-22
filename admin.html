@@ -220,6 +220,54 @@ body {
 .quick-action-btn svg { color: var(--muted); flex-shrink: 0; transition: color 0.15s; }
 .quick-action-btn:hover svg { color: var(--accent); }
 
+/* ── Preview iframe ─────────────────────────────────────────────────────── */
+.preview-wrap {
+  position: relative; width: 100%; aspect-ratio: 16/9;
+  overflow: hidden; border-radius: 10px;
+  background: #000; border: 1px solid var(--border);
+}
+.preview-wrap iframe {
+  width: 100%; height: 100%; border: none; pointer-events: none;
+  display: block;
+}
+
+/* ── Screens page ───────────────────────────────────────────────────────── */
+#page-screens.active { flex-direction: column; padding: 32px; gap: 24px; }
+.screen-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 18px 20px;
+  display: flex; align-items: center; gap: 16px;
+  box-shadow: var(--card-shadow);
+}
+.screen-status-dot {
+  width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+  background: var(--success); box-shadow: 0 0 6px var(--success);
+}
+.screen-status-dot.stale { background: var(--muted); box-shadow: none; }
+.screen-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.screen-name-input {
+  font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600;
+  color: var(--text); background: none; border: none; padding: 0;
+  width: 100%; outline: none; cursor: text;
+}
+.screen-name-input:focus {
+  background: var(--surface2); border-radius: 4px; padding: 2px 6px;
+  border: 1px solid var(--accent); margin: -2px -6px;
+}
+.screen-meta { font-size: 11px; color: var(--muted); display: flex; gap: 12px; }
+.screen-id-tag {
+  font-family: 'DM Mono', monospace; font-size: 11px;
+  background: var(--surface2); border: 1px solid var(--border);
+  padding: 1px 6px; border-radius: 4px; color: var(--muted);
+}
+.screen-show-select {
+  font-family: 'DM Sans', sans-serif; font-size: 13px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 7px 10px; color: var(--text);
+  cursor: pointer; transition: border-color 0.15s; flex-shrink: 0;
+}
+.screen-show-select:focus { outline: none; border-color: var(--accent); }
+
 /* ── Slideshows aside panel ─────────────────────────────────────────────── */
 aside {
   border-right: 1px solid var(--border);
@@ -936,6 +984,19 @@ section.content {
         </div>
       </div>
 
+      <!-- Live Preview (full width) -->
+      <div class="dash-card" style="grid-column:1/-1">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <div class="dash-card-title">Live Preview</div>
+          <select id="previewShowSelect" class="screen-show-select" style="font-size:12px;padding:5px 8px" onchange="updatePreviewFrame()">
+            <option value="main">Main Display</option>
+          </select>
+        </div>
+        <div class="preview-wrap">
+          <iframe id="previewFrame" src="display.html?slideshow=main"></iframe>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -1106,14 +1167,19 @@ section.content {
 
   <!-- Screens -->
   <div id="page-screens" class="page">
-    <div class="coming-soon">
-      <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-        <rect x="2" y="3" width="20" height="14" rx="2"/>
-        <line x1="8" y1="21" x2="16" y2="21"/>
-        <line x1="12" y1="17" x2="12" y2="21"/>
-      </svg>
-      <h2>Screens</h2>
-      <p>Coming soon — register and monitor all your display screens from one place.</p>
+    <div>
+      <h1 style="font-size:22px;font-weight:700;color:var(--text);margin-bottom:4px">Screens</h1>
+      <p style="font-size:13px;color:var(--muted)">Registered display screens — open display.html on a TV to register it automatically</p>
+    </div>
+    <div id="screensList">
+      <div class="empty" style="padding:60px 0">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="2" y="3" width="20" height="14" rx="2"/>
+          <line x1="8" y1="21" x2="16" y2="21"/>
+          <line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+        <p>No screens registered yet.<br>Open display.html on a TV to register it automatically.</p>
+      </div>
     </div>
   </div>
 
@@ -1593,7 +1659,7 @@ section.content {
 <!-- Firebase SDK -->
 <script type="module">
 import { initializeApp }              from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, doc, setDoc, onSnapshot, getDoc }
+import { getFirestore, doc, collection, setDoc, onSnapshot, getDoc }
                                        from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut }
                                        from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -1672,6 +1738,7 @@ function listenToShow(id) {
     }
     renderGrid();
     updateCount();
+    syncPreviewSelect();
   });
 }
 
@@ -2927,6 +2994,118 @@ window.showPage = function(name) {
   if (page) {
     page.classList.add('active');
     if (name === 'dashboard') updateDashboard();
+    if (name === 'screens')   initScreensPage();
+  }
+};
+
+// ── Preview frame ──────────────────────────────────────────────────────────
+window.updatePreviewFrame = function() {
+  const sel = document.getElementById('previewShowSelect');
+  const frame = document.getElementById('previewFrame');
+  if (sel && frame) frame.src = 'display.html?slideshow=' + encodeURIComponent(sel.value);
+};
+
+function syncPreviewSelect() {
+  const sel = document.getElementById('previewShowSelect');
+  if (!sel) return;
+  // Rebuild options from known slideshows in the show list
+  const items = document.querySelectorAll('#showList .show-item');
+  const current = sel.value;
+  sel.innerHTML = '';
+  items.forEach(item => {
+    const id   = item.dataset.id;
+    const name = item.querySelector('.show-item-name')?.textContent || id;
+    const opt  = document.createElement('option');
+    opt.value = id; opt.textContent = name;
+    if (id === current) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+
+// ── Screens page ───────────────────────────────────────────────────────────
+let screensUnsub = null;
+
+function initScreensPage() {
+  if (screensUnsub) return; // already listening
+
+  screensUnsub = onSnapshot(
+    collection(db, 'screens'),
+    snap => renderScreens(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
+    err  => console.warn('Screens listener error:', err.message)
+  );
+}
+
+function renderScreens(screens) {
+  const list = document.getElementById('screensList');
+  if (!screens.length) {
+    list.innerHTML = `<div class="empty" style="padding:60px 0">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <rect x="2" y="3" width="20" height="14" rx="2"/>
+        <line x1="8" y1="21" x2="16" y2="21"/>
+        <line x1="12" y1="17" x2="12" y2="21"/>
+      </svg>
+      <p>No screens registered yet.<br>Open display.html on a TV to register it automatically.</p>
+    </div>`;
+    return;
+  }
+
+  const now = Date.now();
+  list.innerHTML = '';
+
+  screens
+    .sort((a, b) => (a.registeredAt || '') < (b.registeredAt || '') ? -1 : 1)
+    .forEach(screen => {
+      const lastSeen = screen.lastSeen ? new Date(screen.lastSeen) : null;
+      const minsAgo  = lastSeen ? Math.floor((now - lastSeen) / 60000) : Infinity;
+      const isOnline = minsAgo < 10;
+
+      // Build slideshow options
+      const showItems = document.querySelectorAll('#showList .show-item');
+      const showOpts  = Array.from(showItems).map(el => {
+        const id   = el.dataset.id;
+        const name = el.querySelector('.show-item-name')?.textContent || id;
+        const sel  = id === (screen.slideshowId || 'main') ? ' selected' : '';
+        return `<option value="${id}"${sel}>${name}</option>`;
+      }).join('');
+
+      const lastSeenStr = lastSeen
+        ? (minsAgo < 1 ? 'just now' : minsAgo < 60 ? minsAgo + 'm ago' : Math.floor(minsAgo/60) + 'h ago')
+        : 'never';
+
+      const card = document.createElement('div');
+      card.className = 'screen-card';
+      card.innerHTML = `
+        <div class="screen-status-dot ${isOnline ? '' : 'stale'}" title="${isOnline ? 'Online' : 'Last seen ' + lastSeenStr}"></div>
+        <div class="screen-info">
+          <input class="screen-name-input" value="${screen.name || screen.id}"
+                 onblur="saveScreenName('${screen.id}', this.value)"
+                 onkeydown="if(event.key==='Enter')this.blur()">
+          <div class="screen-meta">
+            <span class="screen-id-tag">${screen.id.slice(0,8)}…</span>
+            <span>Last seen: ${lastSeenStr}</span>
+            <span style="color:${isOnline ? 'var(--success)' : 'var(--muted)'}">${isOnline ? '● Online' : '○ Offline'}</span>
+          </div>
+        </div>
+        <select class="screen-show-select" onchange="assignScreenShow('${screen.id}', this.value)">
+          ${showOpts}
+        </select>`;
+      list.appendChild(card);
+    });
+}
+
+window.saveScreenName = async function(screenId, name) {
+  if (!name.trim()) return;
+  try { await setDoc(doc(db, 'screens', screenId), { name: name.trim() }, { merge: true }); }
+  catch(e) { toast('Could not rename screen: ' + e.message, true); }
+};
+
+window.assignScreenShow = async function(screenId, slideshowId) {
+  try {
+    await setDoc(doc(db, 'screens', screenId), { slideshowId }, { merge: true });
+    logActivity('Screen assigned to slideshow "' + slideshowId + '"');
+    toast('Screen updated ✓');
+  } catch(e) {
+    toast('Could not update screen: ' + e.message, true);
   }
 };
 

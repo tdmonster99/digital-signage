@@ -11,7 +11,7 @@
 <!-- Firebase SDK -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyDYsip5Xx2N-gewNDqTj7EAnvabfbrBQTY",
@@ -22,11 +22,31 @@
     appId: "1:1004548485661:web:b3ab204d94943716674cf4"
   };
 
-  // Which slideshow to display — change this per TV if you want different content
-  const SLIDESHOW_ID = "main";
-
   const app = initializeApp(firebaseConfig);
   const db  = getFirestore(app);
+
+  // ── Screen identity ───────────────────────────────────────────────────────
+  // ?slideshow=xxx in URL = preview iframe from admin panel (skip screen registration)
+  // Otherwise: assign a persistent screenId and get slideshow assignment from Firestore
+  const urlParams = new URLSearchParams(window.location.search);
+  const previewId = urlParams.get("slideshow");
+
+  let screenId = localStorage.getItem("signage-screen-id");
+  if (!screenId && !previewId) {
+    screenId = crypto.randomUUID();
+    localStorage.setItem("signage-screen-id", screenId);
+  }
+
+  // ── Offline cache ─────────────────────────────────────────────────────────
+  function saveCache(id, data) {
+    try { localStorage.setItem("signage-cache-" + id, JSON.stringify(data)); } catch(e) {}
+  }
+  function loadCache(id) {
+    try {
+      const raw = localStorage.getItem("signage-cache-" + id);
+      return raw ? JSON.parse(raw) : null;
+    } catch(e) { return null; }
+  }
 
   // ── State ───────────────────────────────────────────────────────────────────
   let slides       = [];
@@ -205,22 +225,101 @@
     }
   }
 
-  // ── Firebase listener ─────────────────────────────────────────────────────
-  onSnapshot(
-    doc(db, "slideshows", SLIDESHOW_ID),
-    snap => {
-      if (snap.exists()) {
-        applyPlaylist(snap.data());
-      } else {
-        loader.style.display = "none";
-        showError("Slideshow '" + SLIDESHOW_ID + "' not found. Create it in the Admin Panel.");
-      }
-    },
-    err => {
+  // ── Slideshow subscription ────────────────────────────────────────────────
+  let slideshowUnsub = null;
+
+  function subscribeToSlideshow(slideshowId) {
+    if (slideshowUnsub) { slideshowUnsub(); slideshowUnsub = null; }
+
+    // Play cached playlist immediately so the TV never goes black
+    const cached = loadCache(slideshowId);
+    if (cached) {
       loader.style.display = "none";
-      showError("Firebase connection error: " + err.message);
+      errBox.style.display = "none";
+      applyPlaylist(cached);
     }
-  );
+
+    slideshowUnsub = onSnapshot(
+      doc(db, "slideshows", slideshowId),
+      snap => {
+        if (snap.exists()) {
+          const data = snap.data();
+          saveCache(slideshowId, data);
+          applyPlaylist(data);
+        } else {
+          loader.style.display = "none";
+          showError("Slideshow '" + slideshowId + "' not found. Create it in the Admin Panel.");
+        }
+      },
+      err => {
+        loader.style.display = "none";
+        const cached = loadCache(slideshowId);
+        if (cached) {
+          applyPlaylist(cached);
+          console.warn("Firebase offline — playing from cache:", err.message);
+        } else {
+          showError("Firebase connection error: " + err.message);
+        }
+      }
+    );
+  }
+
+  // ── Screen registration & slideshow assignment ────────────────────────────
+  async function initScreen() {
+    // Preview mode (?slideshow=xxx): skip screen registration entirely
+    if (previewId) {
+      subscribeToSlideshow(previewId);
+      return;
+    }
+
+    let currentSlideshowId = null;
+    const screenRef = doc(db, "screens", screenId);
+
+    // Heartbeat: keep lastSeen fresh every 5 min so admin knows screen is alive
+    async function heartbeat() {
+      try { await setDoc(screenRef, { lastSeen: new Date().toISOString() }, { merge: true }); }
+      catch(e) {}
+    }
+    setInterval(heartbeat, 5 * 60 * 1000);
+
+    onSnapshot(
+      screenRef,
+      snap => {
+        if (!snap.exists()) {
+          // First boot — register this screen in Firestore
+          const shortId = screenId.slice(0, 6).toUpperCase();
+          setDoc(screenRef, {
+            slideshowId:  "main",
+            name:         "Screen " + shortId,
+            registeredAt: new Date().toISOString(),
+            lastSeen:     new Date().toISOString(),
+          }).catch(e => console.warn("Screen registration failed:", e.message));
+          // Subscribe to 'main' immediately while the doc write completes
+          if (!currentSlideshowId) {
+            currentSlideshowId = "main";
+            subscribeToSlideshow("main");
+          }
+        } else {
+          const newId = snap.data().slideshowId || "main";
+          heartbeat();
+          if (newId !== currentSlideshowId) {
+            currentSlideshowId = newId;
+            slides = []; current = 0; clearTimeout(timer);
+            subscribeToSlideshow(newId);
+          }
+        }
+      },
+      err => {
+        console.warn("Screen listener error:", err.message);
+        if (!currentSlideshowId) {
+          currentSlideshowId = "main";
+          subscribeToSlideshow("main");
+        }
+      }
+    );
+  }
+
+  initScreen();
 </script>
 
 <style>
