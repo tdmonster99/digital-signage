@@ -960,6 +960,50 @@ section.content {
   border-color: var(--accent);
 }
 
+/* ── Shortcuts panel ────────────────────────────────────────────────── */
+#shortcutsPanel {
+  display: none;
+  position: fixed;
+  z-index: 500;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.22);
+  padding: 18px 20px 16px;
+  width: 300px;
+  pointer-events: all;
+}
+#shortcutsPanel h3 {
+  font-size: 13px; font-weight: 700; color: var(--text);
+  margin-bottom: 14px; letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.sc-group { margin-bottom: 12px; }
+.sc-group-title {
+  font-size: 10px; font-weight: 600; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.06em;
+  margin-bottom: 6px;
+}
+.sc-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+.sc-row:last-child { border-bottom: none; }
+.sc-label { color: var(--text); }
+.sc-keys { display: flex; gap: 4px; }
+.sc-key {
+  font-family: 'Courier New', monospace;
+  font-size: 10px; font-weight: 600;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 5px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
 /* ── Apps page ─────────────────────────────────────────────────────── */
 .apps-grid {
   display: grid;
@@ -1793,6 +1837,15 @@ section.content {
 
       <div class="tool-divider"></div>
 
+      <!-- Keyboard shortcuts help -->
+      <button class="tool-btn" id="btnShortcuts" title="Keyboard Shortcuts" onclick="toggleShortcutsPanel(event)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+      </button>
+
       <!-- Grid toggle -->
       <button class="tool-btn" id="btnGrid" title="Toggle Grid (40px)" onclick="toggleDesignerGrid()">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
@@ -2099,6 +2152,35 @@ section.content {
       <button class="btn btn-secondary" onclick="closeAddEventModal()">Cancel</button>
       <button class="btn btn-primary"   onclick="saveAddEvent()">Save Event</button>
     </div>
+  </div>
+</div>
+
+<!-- Keyboard Shortcuts Panel -->
+<div id="shortcutsPanel">
+  <h3>Keyboard Shortcuts</h3>
+
+  <div class="sc-group">
+    <div class="sc-group-title">Selection</div>
+    <div class="sc-row"><span class="sc-label">Select all</span><span class="sc-keys"><span class="sc-key">Ctrl A</span></span></div>
+    <div class="sc-row"><span class="sc-label">Add to selection</span><span class="sc-keys"><span class="sc-key">Shift</span><span class="sc-key">Click</span></span></div>
+    <div class="sc-row"><span class="sc-label">Rubber-band select</span><span class="sc-keys"><span class="sc-key">Drag</span></span></div>
+    <div class="sc-row"><span class="sc-label">Deselect all</span><span class="sc-keys"><span class="sc-key">Esc</span></span></div>
+  </div>
+
+  <div class="sc-group">
+    <div class="sc-group-title">Edit</div>
+    <div class="sc-row"><span class="sc-label">Delete selected</span><span class="sc-keys"><span class="sc-key">Del</span></span></div>
+    <div class="sc-row"><span class="sc-label">Duplicate</span><span class="sc-keys"><span class="sc-key">Ctrl D</span></span></div>
+    <div class="sc-row"><span class="sc-label">Copy</span><span class="sc-keys"><span class="sc-key">Ctrl C</span></span></div>
+    <div class="sc-row"><span class="sc-label">Paste</span><span class="sc-keys"><span class="sc-key">Ctrl V</span></span></div>
+    <div class="sc-row"><span class="sc-label">Undo</span><span class="sc-keys"><span class="sc-key">Ctrl Z</span></span></div>
+    <div class="sc-row"><span class="sc-label">Redo</span><span class="sc-keys"><span class="sc-key">Ctrl Y</span></span></div>
+  </div>
+
+  <div class="sc-group">
+    <div class="sc-group-title">Move</div>
+    <div class="sc-row"><span class="sc-label">Nudge 1 px</span><span class="sc-keys"><span class="sc-key">↑ ↓ ← →</span></span></div>
+    <div class="sc-row"><span class="sc-label">Nudge 10 px</span><span class="sc-keys"><span class="sc-key">Shift</span><span class="sc-key">↑ ↓ ← →</span></span></div>
   </div>
 </div>
 
@@ -2957,18 +3039,151 @@ function initFabricCanvas() {
   }
 }
 
+// ── Clipboard ────────────────────────────────────────────────────────────
+let designerClipboard = null;
+
+// Delete the active object(s), supporting both single and multi-select
+function designerDeleteActive() {
+  const obj = fabricCanvas.getActiveObject();
+  if (!obj) return;
+  if (obj.type === 'activeSelection') {
+    obj.forEachObject(o => fabricCanvas.remove(o));
+    fabricCanvas.discardActiveObject();
+  } else {
+    fabricCanvas.remove(obj);
+    fabricCanvas.discardActiveObject();
+  }
+  fabricCanvas.renderAll();
+}
+
+// Duplicate the active object(s)
+function designerDuplicate() {
+  const obj = fabricCanvas.getActiveObject();
+  if (!obj) return;
+  obj.clone(cloned => {
+    cloned.set({ left: cloned.left + 20, top: cloned.top + 20 });
+    if (cloned.type === 'activeSelection') {
+      cloned.canvas = fabricCanvas;
+      cloned.forEachObject(o => fabricCanvas.add(o));
+      cloned.setCoords();
+    } else {
+      fabricCanvas.add(cloned);
+    }
+    fabricCanvas.setActiveObject(cloned);
+    fabricCanvas.renderAll();
+  });
+}
+
+// Copy the active object(s) into the in-memory clipboard
+function designerCopy() {
+  const obj = fabricCanvas.getActiveObject();
+  if (!obj) return;
+  obj.clone(cloned => { designerClipboard = cloned; });
+}
+
+// Paste from clipboard with a small offset each time
+function designerPaste() {
+  if (!designerClipboard) return;
+  designerClipboard.clone(cloned => {
+    fabricCanvas.discardActiveObject();
+    cloned.set({ left: cloned.left + 20, top: cloned.top + 20, evented: true });
+    if (cloned.type === 'activeSelection') {
+      cloned.canvas = fabricCanvas;
+      cloned.forEachObject(o => { o.set({ left: o.left + 20, top: o.top + 20 }); fabricCanvas.add(o); });
+      cloned.setCoords();
+    } else {
+      fabricCanvas.add(cloned);
+    }
+    // Shift the stored clipboard so repeated pastes cascade
+    designerClipboard.left += 20;
+    designerClipboard.top  += 20;
+    fabricCanvas.setActiveObject(cloned);
+    fabricCanvas.renderAll();
+  });
+}
+
 function onDesignerKey(e) {
   if (!fabricCanvas) return;
-  const active = document.activeElement.tagName;
-  if (active === 'INPUT' || active === 'TEXTAREA') return;
+  const tag = document.activeElement.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
 
-  if ((e.key === 'Delete' || e.key === 'Backspace')) {
-    const obj = fabricCanvas.getActiveObject();
-    if (obj) { fabricCanvas.remove(obj); fabricCanvas.discardActiveObject(); fabricCanvas.renderAll(); }
+  const ctrl = e.ctrlKey || e.metaKey;
+
+  // ── Undo / Redo ────────────────────────────────────────────────────────
+  if (ctrl && e.key === 'z' && !e.shiftKey) { e.preventDefault(); designerUndo(); return; }
+  if (ctrl && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) { e.preventDefault(); designerRedo(); return; }
+
+  // ── Copy / Paste / Duplicate ───────────────────────────────────────────
+  if (ctrl && e.key === 'c') { e.preventDefault(); designerCopy();      return; }
+  if (ctrl && e.key === 'v') { e.preventDefault(); designerPaste();     return; }
+  if (ctrl && e.key === 'd') { e.preventDefault(); designerDuplicate(); return; }
+
+  // ── Select all ────────────────────────────────────────────────────────
+  if (ctrl && e.key === 'a') {
+    e.preventDefault();
+    const objs = fabricCanvas.getObjects();
+    if (!objs.length) return;
+    fabricCanvas.setActiveObject(
+      new fabric.ActiveSelection(objs, { canvas: fabricCanvas })
+    );
+    fabricCanvas.renderAll();
+    return;
   }
-  if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); designerUndo(); }
-  if ((e.ctrlKey || e.metaKey) && e.key === 'y') { e.preventDefault(); designerRedo(); }
+
+  // ── Delete selected ───────────────────────────────────────────────────
+  if (e.key === 'Delete' || e.key === 'Backspace') {
+    designerDeleteActive();
+    return;
+  }
+
+  // ── Escape: deselect ──────────────────────────────────────────────────
+  if (e.key === 'Escape') {
+    fabricCanvas.discardActiveObject();
+    fabricCanvas.renderAll();
+    return;
+  }
+
+  // ── Arrow nudge ───────────────────────────────────────────────────────
+  if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)) {
+    const obj = fabricCanvas.getActiveObject();
+    if (!obj) return;
+    e.preventDefault();
+    const px = e.shiftKey ? 10 : 1;
+    if (e.key === 'ArrowLeft')  obj.left -= px;
+    if (e.key === 'ArrowRight') obj.left += px;
+    if (e.key === 'ArrowUp')    obj.top  -= px;
+    if (e.key === 'ArrowDown')  obj.top  += px;
+    obj.setCoords();
+    fabricCanvas.renderAll();
+    // Fire modified so history + props panel update
+    fabricCanvas.fire('object:modified', { target: obj });
+    return;
+  }
 }
+
+// ── Shortcuts panel ───────────────────────────────────────────────────────
+window.toggleShortcutsPanel = function(e) {
+  e.stopPropagation();
+  const panel = document.getElementById('shortcutsPanel');
+  const btn   = document.getElementById('btnShortcuts');
+  const rect  = btn.getBoundingClientRect();
+  if (panel.style.display === 'block') {
+    panel.style.display = 'none';
+    return;
+  }
+  // Position to the right of the toolbar button
+  panel.style.left = (rect.right + 8) + 'px';
+  panel.style.top  = Math.min(rect.top, window.innerHeight - 360) + 'px';
+  panel.style.display = 'block';
+};
+
+// Close shortcuts panel on outside click
+document.addEventListener('click', e => {
+  const panel = document.getElementById('shortcutsPanel');
+  if (panel && panel.style.display === 'block' && !panel.contains(e.target)) {
+    panel.style.display = 'none';
+  }
+});
 
 // ── Layers Panel ──────────────────────────────────────────────────────────
 let layerDragIdx = null;
