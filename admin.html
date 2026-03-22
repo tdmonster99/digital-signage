@@ -1002,6 +1002,19 @@ section.content {
       </button>
     </div>
     <div class="designer-topbar-actions">
+      <button class="btn btn-secondary" title="Add YouTube slide" onclick="openYoutubeModal()" style="padding:7px 10px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M23 7s-.3-2-1.2-2.8c-1.1-1.2-2.4-1.2-3-1.3C16.6 2.8 12 2.8 12 2.8s-4.6 0-6.8.1c-.6.1-1.9.1-3 1.3C1.3 5 1 7 1 7S.7 9.1.7 11.3v2c0 2.1.3 4.3.3 4.3s.3 2 1.2 2.8c1.1 1.2 2.6 1.1 3.3 1.2C7.3 21.8 12 21.8 12 21.8s4.6 0 6.8-.2c.6-.1 1.9-.1 3-1.3.9-.8 1.2-2.8 1.2-2.8s.3-2.1.3-4.3v-2C23.3 9.1 23 7 23 7zM9.7 15.5V8.4l8.1 3.6-8.1 3.5z"/>
+        </svg>
+      </button>
+      <button class="btn btn-secondary" title="Add Web Page slide" onclick="openWebpageModal()" style="padding:7px 10px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="2" y1="12" x2="22" y2="12"/>
+          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+        </svg>
+      </button>
+      <div style="width:1px;height:22px;background:var(--border);margin:0 2px;align-self:center"></div>
       <button class="btn btn-secondary" onclick="closeDesigner()">Cancel</button>
       <button class="btn btn-primary" id="btnDesignerSave" onclick="saveDesignedSlide()">Save Slide</button>
     </div>
@@ -1039,6 +1052,16 @@ section.content {
               <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
             </svg>
             Paste image URL
+          </button>
+          <button class="popover-item" onclick="designerImageFromDropbox()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2l-5 4 5 4 5-4-5-4z"/>
+              <path d="M2 10l5 4 5-4"/>
+              <path d="M12 10l5 4 5-4"/>
+              <path d="M7 18l5 4 5-4"/>
+              <line x1="12" y1="14" x2="12" y2="22"/>
+            </svg>
+            From Dropbox
           </button>
         </div>
         <input type="file" id="designerFileInput" accept="image/*"
@@ -2021,6 +2044,24 @@ window.designerImageFromUrl = async function() {
   document.getElementById('imagePopover').classList.remove('open');
   const url = prompt('Paste an image URL:');
   if (url) await addImageToCanvas(url);
+};
+
+window.designerImageFromDropbox = function() {
+  document.getElementById('imagePopover').classList.remove('open');
+  if (typeof Dropbox === 'undefined') {
+    toast('Dropbox picker failed to load — please refresh and try again.', true);
+    return;
+  }
+  Dropbox.choose({
+    linkType:     'direct',
+    multiselect:  false,
+    extensions:   ['.png', '.jpg', '.jpeg', '.gif', '.webp'],
+    folderselect: false,
+    success: async function(files) {
+      if (files[0]) await addImageToCanvas(files[0].link);
+    },
+    cancel: function() {}
+  });
 };
 
 document.getElementById('designerFileInput').addEventListener('change', async function() {
