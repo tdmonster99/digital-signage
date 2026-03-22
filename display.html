@@ -38,6 +38,8 @@
   const stageA        = document.getElementById("stageA");
   const stageB        = document.getElementById("stageB");
   const stageDesigned = document.getElementById("stageDesigned");
+  const stageVideo    = document.getElementById("stageVideo");
+  const videoEl       = document.getElementById("videoEl");
   const stageYoutube  = document.getElementById("stageYoutube");
   const iframeYoutube = document.getElementById("iframeYoutube");
   const stageWebpage  = document.getElementById("stageWebpage");
@@ -103,10 +105,18 @@
       await loadDesignedSlide(slide.canvasJson);
       stageDesigned.style.opacity = "1";
       active.style.opacity        = "0";
-      stageYoutube.style.opacity  = "0";
-      iframeYoutube.src           = "about:blank";
-      stageWebpage.style.opacity  = "0";
-      iframeWebpage.src           = "about:blank";
+      stageVideo.style.opacity    = "0"; videoEl.pause(); videoEl.src = "";
+      stageYoutube.style.opacity  = "0"; iframeYoutube.src = "about:blank";
+      stageWebpage.style.opacity  = "0"; iframeWebpage.src = "about:blank";
+
+    } else if (slide.type === "video") {
+      videoEl.src                 = slide.url;
+      videoEl.play();
+      stageVideo.style.opacity    = "1";
+      active.style.opacity        = "0";
+      stageDesigned.style.opacity = "0";
+      stageYoutube.style.opacity  = "0"; iframeYoutube.src = "about:blank";
+      stageWebpage.style.opacity  = "0"; iframeWebpage.src = "about:blank";
 
     } else if (slide.type === "youtube") {
       const params = "autoplay=1&mute=1&controls=0&loop=1&modestbranding=1&rel=0&playlist=" + slide.videoId;
@@ -114,16 +124,16 @@
       stageYoutube.style.opacity  = "1";
       active.style.opacity        = "0";
       stageDesigned.style.opacity = "0";
-      stageWebpage.style.opacity  = "0";
-      iframeWebpage.src           = "about:blank";
+      stageVideo.style.opacity    = "0"; videoEl.pause(); videoEl.src = "";
+      stageWebpage.style.opacity  = "0"; iframeWebpage.src = "about:blank";
 
     } else if (slide.type === "webpage") {
       iframeWebpage.src           = slide.url;
       stageWebpage.style.opacity  = "1";
       active.style.opacity        = "0";
       stageDesigned.style.opacity = "0";
-      stageYoutube.style.opacity  = "0";
-      iframeYoutube.src           = "about:blank";
+      stageVideo.style.opacity    = "0"; videoEl.pause(); videoEl.src = "";
+      stageYoutube.style.opacity  = "0"; iframeYoutube.src = "about:blank";
 
     } else {
       // Image slide — existing behaviour
@@ -140,10 +150,9 @@
       inactive.style.opacity      = "1";
       active.style.opacity        = "0";
       stageDesigned.style.opacity = "0";
-      stageYoutube.style.opacity  = "0";
-      iframeYoutube.src           = "about:blank";
-      stageWebpage.style.opacity  = "0";
-      iframeWebpage.src           = "about:blank";
+      stageVideo.style.opacity    = "0"; videoEl.pause(); videoEl.src = "";
+      stageYoutube.style.opacity  = "0"; iframeYoutube.src = "about:blank";
+      stageWebpage.style.opacity  = "0"; iframeWebpage.src = "about:blank";
 
       const tmp = active;
       active    = inactive;
@@ -239,12 +248,18 @@
   #stageA        { z-index: 1; }
   #stageB        { z-index: 2; }
   #stageDesigned { z-index: 3; background: #000; }
-  #stageYoutube  { z-index: 4; background: #000; }
-  #stageWebpage  { z-index: 5; background: #000; }
+  #stageVideo    { z-index: 4; background: #000; }
+  #stageYoutube  { z-index: 5; background: #000; }
+  #stageWebpage  { z-index: 6; background: #000; }
   #iframeYoutube, #iframeWebpage {
     position: absolute; inset: 0;
     width: 100%; height: 100%;
     border: none;
+  }
+  #videoEl {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
   }
 
   /* Fabric canvas fills the designed stage */
@@ -300,6 +315,11 @@
 <!-- Designed slide stage (Fabric.js renders here) -->
 <div id="stageDesigned" class="stage">
   <canvas id="fabricDisplay"></canvas>
+</div>
+
+<!-- Video file slide stage -->
+<div id="stageVideo" class="stage">
+  <video id="videoEl" autoplay muted loop playsinline></video>
 </div>
 
 <!-- YouTube slide stage -->
