@@ -49,10 +49,11 @@
   }
 
   // ── State ───────────────────────────────────────────────────────────────────
-  let slides       = [];
-  let current      = 0;
-  let timer        = null;
-  let defaultDwell = 6000;
+  let slides        = [];
+  let current       = 0;
+  let timer         = null;
+  let defaultDwell  = 6000;
+  let clockInterval = null;
 
   // ── DOM refs ─────────────────────────────────────────────────────────────────
   const stageA        = document.getElementById("stageA");
@@ -64,6 +65,8 @@
   const iframeYoutube = document.getElementById("iframeYoutube");
   const stageWebpage  = document.getElementById("stageWebpage");
   const iframeWebpage = document.getElementById("iframeWebpage");
+  const stageClock    = document.getElementById("stageClock");
+  const clockEl       = document.getElementById("clockEl");
   const loader        = document.getElementById("loader");
   const errBox        = document.getElementById("errBox");
   const errMsg        = document.getElementById("errMsg");
@@ -119,6 +122,48 @@
     });
   }
 
+  // ── Clock slide ───────────────────────────────────────────────────────────
+  const CLOCK_FONTS = {
+    minimal: { ff: "'Courier New', monospace",            fw: '200', ls: '0.05em'  },
+    bold:    { ff: "'Arial Black', 'DM Sans', sans-serif", fw: '900', ls: '-0.02em' },
+    elegant: { ff: "Georgia, 'Times New Roman', serif",   fw: '400', ls: '0.06em'  },
+  };
+
+  function renderClockEl(config) {
+    const tz     = (!config.timezone || config.timezone === 'local') ? undefined : config.timezone;
+    const fmt12  = config.format === '12h';
+    const now    = new Date();
+    const tOpts  = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: fmt12, ...(tz ? { timeZone: tz } : {}) };
+    const dOpts  = { weekday: 'long', month: 'long', day: 'numeric', ...(tz ? { timeZone: tz } : {}) };
+    const timeStr = new Intl.DateTimeFormat('en-US', tOpts).format(now);
+    const dateStr = new Intl.DateTimeFormat('en-US', dOpts).format(now);
+    const font   = CLOCK_FONTS[config.fontStyle] || CLOCK_FONTS.minimal;
+
+    clockEl.style.background    = config.bgColor    || '#000000';
+    clockEl.style.color         = config.textColor  || '#ffffff';
+    clockEl.style.fontFamily    = font.ff;
+    clockEl.style.fontWeight    = font.fw;
+    clockEl.style.letterSpacing = font.ls;
+
+    const timeEl = clockEl.querySelector('.clock-time');
+    const dateEl = clockEl.querySelector('.clock-date');
+    if (timeEl) timeEl.textContent = timeStr;
+    if (dateEl) {
+      dateEl.textContent    = config.showDate !== false ? dateStr : '';
+      dateEl.style.display  = config.showDate !== false ? '' : 'none';
+    }
+  }
+
+  function startClock(slide) {
+    stopClock();
+    renderClockEl(slide);
+    clockInterval = setInterval(() => renderClockEl(slide), 1000);
+  }
+
+  function stopClock() {
+    if (clockInterval) { clearInterval(clockInterval); clockInterval = null; }
+  }
+
   // ── Crossfade ────────────────────────────────────────────────────────────────
   async function crossfadeTo(slide) {
     if (slide.type === "designed" && slide.canvasJson) {
@@ -128,6 +173,7 @@
       stageVideo.style.opacity    = "0"; videoEl.pause(); videoEl.src = "";
       stageYoutube.style.opacity  = "0"; iframeYoutube.src = "about:blank";
       stageWebpage.style.opacity  = "0"; iframeWebpage.src = "about:blank";
+      stopClock(); stageClock.style.opacity = "0";
 
     } else if (slide.type === "video") {
       videoEl.src                 = slide.url;
@@ -137,6 +183,7 @@
       stageDesigned.style.opacity = "0";
       stageYoutube.style.opacity  = "0"; iframeYoutube.src = "about:blank";
       stageWebpage.style.opacity  = "0"; iframeWebpage.src = "about:blank";
+      stopClock(); stageClock.style.opacity = "0";
 
     } else if (slide.type === "youtube") {
       const params = "autoplay=1&mute=1&controls=0&loop=1&modestbranding=1&rel=0&playlist=" + slide.videoId;
@@ -146,6 +193,7 @@
       stageDesigned.style.opacity = "0";
       stageVideo.style.opacity    = "0"; videoEl.pause(); videoEl.src = "";
       stageWebpage.style.opacity  = "0"; iframeWebpage.src = "about:blank";
+      stopClock(); stageClock.style.opacity = "0";
 
     } else if (slide.type === "webpage") {
       iframeWebpage.src           = slide.url;
@@ -154,6 +202,16 @@
       stageDesigned.style.opacity = "0";
       stageVideo.style.opacity    = "0"; videoEl.pause(); videoEl.src = "";
       stageYoutube.style.opacity  = "0"; iframeYoutube.src = "about:blank";
+      stopClock(); stageClock.style.opacity = "0";
+
+    } else if (slide.type === "clock") {
+      startClock(slide);
+      stageClock.style.opacity    = "1";
+      active.style.opacity        = "0";
+      stageDesigned.style.opacity = "0";
+      stageVideo.style.opacity    = "0"; videoEl.pause(); videoEl.src = "";
+      stageYoutube.style.opacity  = "0"; iframeYoutube.src = "about:blank";
+      stageWebpage.style.opacity  = "0"; iframeWebpage.src = "about:blank";
 
     } else {
       // Image slide — existing behaviour
@@ -173,6 +231,7 @@
       stageVideo.style.opacity    = "0"; videoEl.pause(); videoEl.src = "";
       stageYoutube.style.opacity  = "0"; iframeYoutube.src = "about:blank";
       stageWebpage.style.opacity  = "0"; iframeWebpage.src = "about:blank";
+      stopClock(); stageClock.style.opacity = "0";
 
       const tmp = active;
       active    = inactive;
@@ -203,9 +262,9 @@
     errBox.style.display = "none";
     loader.style.display = "none";
 
-    // Accept both image slides (have url) and designed slides (have canvasJson)
+    // Accept image, designed, and app slides
     const incoming = data.slides.filter(s =>
-      s.active !== false && (s.url || s.canvasJson)
+      s.active !== false && (s.url || s.canvasJson || s.type === 'clock')
     );
 
     if (!incoming.length) {
@@ -350,6 +409,24 @@
   #stageVideo    { z-index: 4; background: #000; }
   #stageYoutube  { z-index: 5; background: #000; }
   #stageWebpage  { z-index: 6; background: #000; }
+  #stageClock    { z-index: 7; background: #000; }
+  #clockEl {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center;
+    padding: 40px;
+  }
+  .clock-time {
+    font-size: 15vw;
+    line-height: 1;
+  }
+  .clock-date {
+    font-size: 2.5vw;
+    margin-top: 0.5em;
+    opacity: 0.75;
+  }
+
   #iframeYoutube, #iframeWebpage {
     position: absolute; inset: 0;
     width: 100%; height: 100%;
@@ -429,6 +506,14 @@
 <!-- Web page slide stage -->
 <div id="stageWebpage" class="stage">
   <iframe id="iframeWebpage" src="about:blank"></iframe>
+</div>
+
+<!-- Clock slide stage -->
+<div id="stageClock" class="stage">
+  <div id="clockEl">
+    <div class="clock-time"></div>
+    <div class="clock-date"></div>
+  </div>
 </div>
 
 <!-- Initial loader -->
