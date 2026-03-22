@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
+<script src="https://www.dropbox.com/static/api/2/dropins.js" id="dropboxjs" data-app-key="363zjxwv9mk4zij"></script>
 
 <style>
 /* ── Reset & tokens ─────────────────────────────────────────────────────── */
@@ -752,6 +753,16 @@ section.content {
         </svg>
         Upload Images
       </button>
+      <button class="btn btn-secondary" onclick="addFromDropbox()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2l-5 4 5 4 5-4-5-4z"/>
+          <path d="M2 10l5 4 5-4"/>
+          <path d="M12 10l5 4 5-4"/>
+          <path d="M7 18l5 4 5-4"/>
+          <line x1="12" y1="14" x2="12" y2="22"/>
+        </svg>
+        Dropbox
+      </button>
       <button class="btn btn-secondary" onclick="addByUrl()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
@@ -1366,6 +1377,31 @@ window.addByUrl = async () => {
   slides.push({ id: crypto.randomUUID(), url, name, active: true });
   renderGrid(); updateCount();
   await pushToFirestore();
+};
+
+// ── Add from Dropbox ──────────────────────────────────────────────────────
+window.addFromDropbox = function() {
+  if (typeof Dropbox === 'undefined') {
+    toast('Dropbox picker failed to load — please refresh and try again.', true);
+    return;
+  }
+  Dropbox.choose({
+    linkType:   'direct',
+    multiselect: true,
+    extensions: ['.png', '.jpg', '.jpeg', '.gif', '.webp'],
+    folderselect: false,
+    success: async function(files) {
+      for (const file of files) {
+        const name = file.name.replace(/\.[^.]+$/, '') || 'Dropbox slide';
+        slides.push({ id: crypto.randomUUID(), url: file.link, name, active: true });
+      }
+      renderGrid();
+      updateCount();
+      await pushToFirestore();
+      toast(`Added ${files.length} slide${files.length !== 1 ? 's' : ''} from Dropbox ✓`);
+    },
+    cancel: function() {}
+  });
 };
 
 // ── Clear all ─────────────────────────────────────────────────────────────
