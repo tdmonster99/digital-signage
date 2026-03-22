@@ -3383,6 +3383,7 @@ let allSchedules = [
 let editingSchedule = null;  // { id, name, fillerSlideshowId, events[] }
 let editingEvIdx    = null;  // index in editingSchedule.events, or null for new
 let dragState       = null;
+let didDrag         = false;  // true if mousedown became an actual drag
 
 function fmtTime(h, m) {
   const ampm = h < 12 ? 'am' : 'pm';
@@ -3555,18 +3556,17 @@ function buildEventBlock(ev, idx, day) {
     <button class="cal-ev-del" title="Delete" onclick="deleteEventFromCal(event,${idx})">✕</button>
     <div class="cal-resize-handle"></div>`;
 
-  // Drag to move (vertical only)
+  // Drag to move (vertical only) — don't preventDefault so click still fires
   block.addEventListener('mousedown', e => {
     if (e.target.closest('.cal-resize-handle') || e.target.closest('.cal-ev-del')) return;
-    e.preventDefault();
     const ev2 = editingSchedule.events[idx];
+    didDrag   = false;
     dragState = {
       type: 'move', idx,
       origStart: ev2.startHour * 60 + ev2.startMin,
       origEnd:   ev2.endHour   * 60 + ev2.endMin,
       startY: e.clientY, current: null,
     };
-    block.classList.add('is-dragging');
     document.addEventListener('mousemove', onDragMove);
     document.addEventListener('mouseup',   onDragEnd);
   });
@@ -3575,6 +3575,7 @@ function buildEventBlock(ev, idx, day) {
   block.querySelector('.cal-resize-handle').addEventListener('mousedown', e => {
     e.preventDefault(); e.stopPropagation();
     const ev2 = editingSchedule.events[idx];
+    didDrag   = false;
     dragState = {
       type: 'resize', idx,
       origEnd: ev2.endHour * 60 + ev2.endMin,
@@ -3585,9 +3586,10 @@ function buildEventBlock(ev, idx, day) {
     document.addEventListener('mouseup',   onDragEnd);
   });
 
-  // Click to edit
+  // Click to edit — suppressed if the mousedown turned into an actual drag
   block.addEventListener('click', e => {
     if (e.target.closest('.cal-resize-handle') || e.target.closest('.cal-ev-del')) return;
+    if (didDrag) { didDrag = false; return; }
     openAddEventModal(idx);
   });
 
@@ -3605,6 +3607,13 @@ window.deleteEventFromCal = function(e, idx) {
 function onDragMove(e) {
   if (!dragState) return;
   const dy   = e.clientY - dragState.startY;
+  // Don't commit to a drag until the mouse moves at least 4px
+  if (!didDrag && Math.abs(dy) < 4) return;
+  if (!didDrag) {
+    didDrag = true;
+    document.querySelectorAll(`.cal-event[data-idx="${dragState.idx}"]`).forEach(b => b.classList.add('is-dragging'));
+    e.preventDefault();
+  }
   const dMin = Math.round((dy / CAL_ROW_H) * 60 / 15) * 15;
   const ev   = editingSchedule.events[dragState.idx];
 
