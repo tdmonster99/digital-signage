@@ -629,6 +629,28 @@ section.content {
   aside { border-right: none; border-bottom: 1px solid var(--border); }
 }
 
+/* ── Auto-save status indicator ─────────────────────────────────────────── */
+@keyframes spin { to { transform: rotate(360deg); } }
+.designer-status {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 11px; white-space: nowrap; padding: 0 4px;
+}
+.status-dot {
+  width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+  background: #22c55e;
+}
+.designer-status.saving .status-dot {
+  background: transparent;
+  border: 1.5px solid var(--muted);
+  border-top-color: transparent;
+  animation: spin 0.75s linear infinite;
+  width: 8px; height: 8px;
+}
+.designer-status.unsaved .status-dot { background: #f59e0b; }
+.designer-status.saving  .status-text { color: var(--muted); }
+.designer-status.unsaved .status-text { color: #f59e0b; }
+.designer-status.saved   .status-text { color: #22c55e; }
+
 /* ── Slide Designer Modal ────────────────────────────────────────────────── */
 #designerModal {
   position: fixed; inset: 0; z-index: 200;
@@ -1805,6 +1827,12 @@ section.content {
         </svg>
       </button>
     </div>
+    <!-- Auto-save status -->
+    <div id="designerStatus" class="designer-status saved">
+      <div class="status-dot"></div>
+      <span class="status-text">Saved</span>
+    </div>
+
     <div class="designer-topbar-actions">
       <button class="btn btn-secondary" title="Add YouTube slide" onclick="openYoutubeModal()" style="padding:7px 10px">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
@@ -2215,6 +2243,21 @@ section.content {
     <div style="display:flex;justify-content:flex-end;gap:10px">
       <button class="btn btn-secondary" onclick="closeAddEventModal()">Cancel</button>
       <button class="btn btn-primary"   onclick="saveAddEvent()">Save Event</button>
+    </div>
+  </div>
+</div>
+
+<!-- Unsaved Changes Confirmation Modal -->
+<div id="unsavedModal" style="display:none;position:fixed;inset:0;z-index:500;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px)">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px;width:min(420px,90vw);box-shadow:0 12px 48px rgba(0,0,0,0.22)">
+    <h3 style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:8px">Unsaved Changes</h3>
+    <p style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:22px">
+      You have unsaved changes in this slide. Would you like to save before closing?
+    </p>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-secondary" onclick="unsavedCancel()">Cancel</button>
+      <button class="btn btn-secondary" style="color:var(--danger);border-color:var(--danger)" onclick="unsavedDiscard()">Discard</button>
+      <button class="btn btn-primary" onclick="unsavedSaveAndClose()">Save Slide</button>
     </div>
   </div>
 </div>
@@ -2874,6 +2917,10 @@ function launchDesigner(existingSlide) {
   const modal = document.getElementById('designerModal');
   modal.style.display = 'flex';
   document.getElementById('designerSlideName').value = existingSlide?.name || 'New Slide';
+  // Reset auto-save state for this editing session
+  designerDirty      = false;
+  autoSaveNewSlideId = null;
+  updateDesignerStatus('saved');
   requestAnimationFrame(() => {
     initFabricCanvas();
     if (existingSlide?.canvasJson) {
@@ -2894,7 +2941,19 @@ function launchDesigner(existingSlide) {
 };
 
 window.closeDesigner = function() {
+  if (designerDirty) {
+    document.getElementById('unsavedModal').style.display = 'flex';
+    return;  // wait for the user's choice
+  }
+  doCloseDesigner();
+};
+
+function doCloseDesigner() {
   document.getElementById('designerModal').style.display = 'none';
+  document.getElementById('unsavedModal').style.display  = 'none';
+  stopAutoSaveTimer();
+  designerDirty      = false;
+  autoSaveNewSlideId = null;
   if (fabricCanvas) { fabricCanvas.dispose(); fabricCanvas = null; }
   clearGuides();
   gridVisible = false;
@@ -2902,7 +2961,76 @@ window.closeDesigner = function() {
   if (btn) btn.classList.remove('grid-active');
   const go = document.getElementById('gridOverlay');
   if (go) go.style.display = 'none';
+}
+
+window.unsavedCancel = function() {
+  document.getElementById('unsavedModal').style.display = 'none';
 };
+
+window.unsavedDiscard = function() {
+  designerDirty = false;   // suppress dirty check inside doCloseDesigner
+  doCloseDesigner();
+};
+
+window.unsavedSaveAndClose = async function() {
+  document.getElementById('unsavedModal').style.display = 'none';
+  await saveDesignedSlide();
+  // saveDesignedSlide calls doCloseDesigner internally on success
+};
+
+// ── Auto-save ─────────────────────────────────────────────────────────────
+let designerDirty      = false;
+let autoSaveTimer      = null;
+let autoSaveNewSlideId = null;   // stable ID for new (unsaved) slides while editing
+
+function updateDesignerStatus(state) {
+  // state: 'saved' | 'unsaved' | 'saving'
+  const el   = document.getElementById('designerStatus');
+  const text = document.getElementById('designerStatus')?.querySelector('.status-text');
+  if (!el) return;
+  el.className = 'designer-status ' + state;
+  if (text) text.textContent = state === 'saved'   ? 'Saved'
+                             : state === 'saving'  ? 'Saving…'
+                             :                       'Unsaved changes';
+}
+
+function markDesignerDirty() {
+  if (!designerDirty) {
+    designerDirty = true;
+    updateDesignerStatus('unsaved');
+  }
+}
+
+async function autoSaveDesigner() {
+  if (!designerDirty || !fabricCanvas || !auth.currentUser) return;
+  updateDesignerStatus('saving');
+  try {
+    const canvasJson = JSON.stringify(fabricCanvas.toJSON(['isLocked']));
+    // Determine which slide ID to key the draft to
+    const slideId = editingSlideIdx !== null
+      ? slides[editingSlideIdx].id
+      : (autoSaveNewSlideId ??= crypto.randomUUID());
+    await setDoc(doc(db, 'slideshows', currentShowId), {
+      draftCanvasJson: canvasJson,
+      draftSlideId:    slideId,
+      draftAt:         new Date().toISOString(),
+    }, { merge: true });
+    designerDirty = false;
+    updateDesignerStatus('saved');
+  } catch(e) {
+    console.warn('Auto-save failed:', e.message);
+    updateDesignerStatus('unsaved');
+  }
+}
+
+function startAutoSaveTimer() {
+  stopAutoSaveTimer();
+  autoSaveTimer = setInterval(() => { if (designerDirty) autoSaveDesigner(); }, 30_000);
+}
+
+function stopAutoSaveTimer() {
+  if (autoSaveTimer) { clearInterval(autoSaveTimer); autoSaveTimer = null; }
+}
 
 // ── Element locking ────────────────────────────────────────────────────────
 // Apply lock/unlock visual+interaction state from obj.isLocked flag
@@ -3158,6 +3286,16 @@ function initFabricCanvas() {
 
     // Padlock overlay for locked elements
     installPadlockRenderer();
+
+    // Dirty-flag tracking — set whenever canvas content changes
+    // historyPaused is true during loadFromJSON so the initial load won't mark dirty
+    const onCanvasChange = () => { if (!historyPaused) markDesignerDirty(); };
+    fabricCanvas.on('object:added',    onCanvasChange);
+    fabricCanvas.on('object:removed',  onCanvasChange);
+    fabricCanvas.on('object:modified', onCanvasChange);
+
+    // Start the 30-second auto-save interval
+    startAutoSaveTimer();
 
     // Delete key removes selected object
     document.addEventListener('keydown', onDesignerKey);
@@ -4076,11 +4214,19 @@ window.saveDesignedSlide = async function() {
     renderGrid();
     updateCount();
     await pushToFirestore();
+    // Clear the draft from Firestore now that the live version is saved
+    try {
+      await setDoc(doc(db, 'slideshows', currentShowId),
+        { draftCanvasJson: null, draftSlideId: null }, { merge: true });
+    } catch(_) {}
+    designerDirty = false;
+    updateDesignerStatus('saved');
     toast('Slide saved ✓');
-    closeDesigner();
+    doCloseDesigner();
 
   } catch(e) {
     toast('Save failed: ' + e.message, true);
+    updateDesignerStatus('unsaved');
   } finally {
     btn.disabled    = false;
     btn.textContent = 'Save Slide';
