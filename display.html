@@ -127,6 +127,52 @@
     } catch(e) {}
   }
 
+  // ── Entrance Animations ───────────────────────────────────────────────────
+  const _ANIM_EASE = {
+    easeOut:   t => 1 - Math.pow(1 - t, 3),
+    bounce:    t => {
+      const n = 7.5625, d = 2.75;
+      if (t < 1/d)        return n*t*t;
+      else if (t < 2/d)   return n*(t -= 1.5/d)*t + 0.75;
+      else if (t < 2.5/d) return n*(t -= 2.25/d)*t + 0.9375;
+      else                return n*(t -= 2.625/d)*t + 0.984375;
+    },
+  };
+
+  function _animInitProps(type, orig) {
+    const D = 300;
+    switch (type) {
+      case 'fadeIn':       return { opacity: 0 };
+      case 'slideInLeft':  return { opacity: 0, left: orig.left - D };
+      case 'slideInRight': return { opacity: 0, left: orig.left + D };
+      case 'slideInUp':    return { opacity: 0, top:  orig.top  + D };
+      case 'slideInDown':  return { opacity: 0, top:  orig.top  - D };
+      case 'zoomIn':       return { opacity: 0, scaleX: orig.scaleX * 0.05, scaleY: orig.scaleY * 0.05 };
+      case 'bounceIn':     return { opacity: 0, scaleX: orig.scaleX * 0.05, scaleY: orig.scaleY * 0.05 };
+      case 'flipIn':       return { opacity: 0, scaleX: 0 };
+      default:             return null;
+    }
+  }
+
+  function _runObjAnim(canvas, obj, type, durMs, orig) {
+    const init   = _animInitProps(type, orig);
+    if (!init) return;
+    for (const k in init) obj.set(k, init[k]);
+    canvas.renderAll();
+    const ease  = type === 'bounceIn' ? _ANIM_EASE.bounce : _ANIM_EASE.easeOut;
+    const t0    = performance.now();
+    (function frame(now) {
+      const p = Math.min((now - t0) / durMs, 1);
+      const e = ease(p);
+      for (const k in init) obj.set(k, init[k] + (orig[k] - init[k]) * e);
+      canvas.renderAll();
+      if (p < 1) requestAnimationFrame(frame);
+      else { for (const k in orig) obj.set(k, orig[k]); canvas.renderAll(); }
+    })(t0);
+  }
+
+  let pendingAnimations = [];   // populated by loadDesignedSlide, consumed by crossfadeTo
+
   // ── Ticker ────────────────────────────────────────────────────────────────
   const tickerWrap  = document.getElementById('tickerWrap');
   const tickerTrack = document.getElementById('tickerTrack');
@@ -210,6 +256,24 @@
         fitFabricToScreen();
         if (tickerCfg) renderTicker(tickerCfg);
         else stopTicker();
+        // Collect animated objects and set their initial hidden state
+        pendingAnimations = [];
+        displayFabric.getObjects().forEach(obj => {
+          const a = obj.animation;
+          if (!a || !a.type || a.type === 'none') return;
+          const orig = {
+            opacity: obj.opacity ?? 1,
+            left:    obj.left,
+            top:     obj.top,
+            scaleX:  obj.scaleX ?? 1,
+            scaleY:  obj.scaleY ?? 1,
+          };
+          const init = _animInitProps(a.type, orig);
+          if (!init) return;
+          for (const k in init) obj.set(k, init[k]);
+          pendingAnimations.push({ obj, type: a.type, delay: a.delay || 0, duration: a.duration || 0.8, orig });
+        });
+        if (pendingAnimations.length) displayFabric.renderAll();
         resolve();
       });
     });
@@ -282,6 +346,16 @@
       stageYoutube.style.opacity  = "0"; iframeYoutube.src = "about:blank";
       stageWebpage.style.opacity  = "0"; iframeWebpage.src = "about:blank";
       stopClock(); stageClock.style.opacity = "0";
+      // Fire entrance animations after crossfade transition (1.2s CSS)
+      if (pendingAnimations.length) {
+        const batch = pendingAnimations.slice();
+        pendingAnimations = [];
+        setTimeout(() => {
+          batch.forEach(({ obj, type, delay, duration, orig }) => {
+            setTimeout(() => _runObjAnim(displayFabric, obj, type, duration * 1000, orig), delay * 1000);
+          });
+        }, 1200);
+      }
 
     } else if (slide.type === "video") {
       stopTicker();

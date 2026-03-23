@@ -833,6 +833,32 @@ section.content {
   padding: 2px 5px; border-radius: 3px; white-space: nowrap;
   font-family: 'DM Sans', sans-serif;
 }
+/* ── Entrance Animations ────────────────────────────────────────────────── */
+#propsAnimation {
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+  padding-top: 6px;
+}
+.anim-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+  margin-bottom: 8px;
+}
+.anim-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 7px 4px 5px;
+  border: 1px solid var(--border); border-radius: 7px;
+  background: var(--surface2); color: var(--text);
+  font-size: 10px; cursor: pointer;
+  transition: background .15s, color .15s, border-color .15s;
+  line-height: 1.2; text-align: center;
+}
+.anim-btn:hover  { background: var(--accent-bg); border-color: var(--accent); }
+.anim-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.anim-timing-row { display: flex; gap: 6px; }
+.anim-timing-row .prop-row { flex: 1; min-width: 0; }
+
 /* ── Ticker bar (canvas preview) ─────────────────────────────────────────── */
 #propsTicker .ticker-speed-btns { display: flex; gap: 6px; flex-wrap: wrap; }
 #propsTicker .ticker-speed-btn {
@@ -2644,6 +2670,88 @@ section.content {
         </div>
       </div>
 
+      <!-- Animation section (shared: text / image / shape) -->
+      <div id="propsAnimation" style="display:none">
+        <div class="prop-section-title">Entrance Animation</div>
+        <div class="anim-grid">
+          <button class="anim-btn active" data-anim="none" onclick="setAnimationType('none')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>None
+          </button>
+          <button class="anim-btn" data-anim="fadeIn" onclick="setAnimationType('fadeIn')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="5" stroke-dasharray="3 2"/>
+              <circle cx="12" cy="12" r="9" opacity=".4"/>
+            </svg>Fade In
+          </button>
+          <button class="anim-btn" data-anim="slideInLeft" onclick="setAnimationType('slideInLeft')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="5 12 11 6 11 18"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>← Slide
+          </button>
+          <button class="anim-btn" data-anim="slideInRight" onclick="setAnimationType('slideInRight')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="19 12 13 6 13 18"/><line x1="19" y1="12" x2="5" y2="12"/>
+            </svg>→ Slide
+          </button>
+          <button class="anim-btn" data-anim="slideInUp" onclick="setAnimationType('slideInUp')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="12 5 6 11 18 11"/><line x1="12" y1="5" x2="12" y2="19"/>
+            </svg>↑ Slide
+          </button>
+          <button class="anim-btn" data-anim="slideInDown" onclick="setAnimationType('slideInDown')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="12 19 6 13 18 13"/><line x1="12" y1="19" x2="12" y2="5"/>
+            </svg>↓ Slide
+          </button>
+          <button class="anim-btn" data-anim="zoomIn" onclick="setAnimationType('zoomIn')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+              <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+            </svg>Zoom In
+          </button>
+          <button class="anim-btn" data-anim="bounceIn" onclick="setAnimationType('bounceIn')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M5 20 Q9 4 12 12 Q15 20 19 4"/>
+            </svg>Bounce
+          </button>
+          <button class="anim-btn" data-anim="flipIn" onclick="setAnimationType('flipIn')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/>
+              <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/>
+            </svg>Flip In
+          </button>
+        </div>
+        <div class="anim-timing-row">
+          <div class="prop-row">
+            <div class="prop-label">Delay</div>
+            <select id="propAnimDelay" class="prop-input" onchange="setAnimDelay(+this.value)">
+              <option value="0">0s</option>
+              <option value="0.5">0.5s</option>
+              <option value="1">1s</option>
+              <option value="1.5">1.5s</option>
+              <option value="2">2s</option>
+              <option value="2.5">2.5s</option>
+              <option value="3">3s</option>
+            </select>
+          </div>
+          <div class="prop-row">
+            <div class="prop-label">Duration</div>
+            <select id="propAnimDuration" class="prop-input" onchange="setAnimDuration(+this.value)">
+              <option value="0.3">0.3s</option>
+              <option value="0.5">0.5s</option>
+              <option value="0.8" selected>0.8s</option>
+              <option value="1">1s</option>
+              <option value="1.5">1.5s</option>
+            </select>
+          </div>
+        </div>
+        <button class="prop-btn" style="width:100%;margin-top:6px" onclick="previewAnimation()">
+          ▶ Preview Animation
+        </button>
+      </div>
+
       <!-- Ticker properties -->
       <div id="propsTicker" style="display:none">
         <div class="props-title">Ticker Bar</div>
@@ -3668,7 +3776,7 @@ async function autoSaveDesigner() {
   if (!designerDirty || !fabricCanvas || !auth.currentUser) return;
   updateDesignerStatus('saving');
   try {
-    const canvasJson = JSON.stringify(fabricCanvas.toJSON(['isLocked']));
+    const canvasJson = JSON.stringify(fabricCanvas.toJSON(['isLocked', 'animation']));
     // Determine which slide ID to key the draft to
     const slideId = editingSlideIdx !== null
       ? slides[editingSlideIdx].id
@@ -3989,7 +4097,7 @@ function designerDeleteActive() {
 function designerDuplicate() {
   const obj = fabricCanvas.getActiveObject();
   if (!obj) return;
-  const extra = ['isLocked'];
+  const extra = ['isLocked', 'animation'];
   if (obj.type === 'activeSelection') {
     const jsonObjs = obj.toJSON(extra).objects.map(o => ({ ...o, left: (o.left||0) + 10, top: (o.top||0) + 10 }));
     fabric.util.enlivenObjects(jsonObjs, (objects) => {
@@ -4014,9 +4122,9 @@ function designerCopy() {
   const obj = fabricCanvas.getActiveObject();
   if (!obj) return;
   if (obj.type === 'activeSelection') {
-    designerClipboard = obj.toJSON(['isLocked']).objects;
+    designerClipboard = obj.toJSON(['isLocked', 'animation']).objects;
   } else {
-    designerClipboard = [obj.toObject(['isLocked'])];
+    designerClipboard = [obj.toObject(['isLocked', 'animation'])];
   }
 }
 
@@ -4608,6 +4716,110 @@ window.setTickerPos = function(pos) {
   );
 };
 
+// ── Entrance Animations ────────────────────────────────────────────────────
+const ANIM_EASING = {
+  easeOut:   t => 1 - Math.pow(1 - t, 3),
+  easeInOut: t => t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2, 3)/2,
+  bounce:    t => {
+    const n = 7.5625, d = 2.75;
+    if (t < 1/d)        return n*t*t;
+    else if (t < 2/d)   return n*(t -= 1.5/d)*t + 0.75;
+    else if (t < 2.5/d) return n*(t -= 2.25/d)*t + 0.9375;
+    else                return n*(t -= 2.625/d)*t + 0.984375;
+  },
+};
+
+function getAnimInitialProps(animType, orig) {
+  const SLIDE_DIST = 300;
+  switch (animType) {
+    case 'fadeIn':      return { opacity: 0 };
+    case 'slideInLeft': return { opacity: 0, left: orig.left - SLIDE_DIST };
+    case 'slideInRight':return { opacity: 0, left: orig.left + SLIDE_DIST };
+    case 'slideInUp':   return { opacity: 0, top:  orig.top  + SLIDE_DIST };
+    case 'slideInDown': return { opacity: 0, top:  orig.top  - SLIDE_DIST };
+    case 'zoomIn':      return { opacity: 0, scaleX: orig.scaleX * 0.05, scaleY: orig.scaleY * 0.05 };
+    case 'bounceIn':    return { opacity: 0, scaleX: orig.scaleX * 0.05, scaleY: orig.scaleY * 0.05 };
+    case 'flipIn':      return { opacity: 0, scaleX: 0 };
+    default:            return null;
+  }
+}
+
+function getAnimEasing(animType) {
+  if (animType === 'bounceIn') return ANIM_EASING.bounce;
+  return ANIM_EASING.easeOut;
+}
+
+function runObjectAnimation(canvas, obj, animType, durationMs, orig, onDone) {
+  const initProps = getAnimInitialProps(animType, orig);
+  if (!initProps) { onDone?.(); return; }
+  // Ensure object is in initial state
+  for (const k in initProps) obj.set(k, initProps[k]);
+  canvas.renderAll();
+  const easeFn   = getAnimEasing(animType);
+  const startT   = performance.now();
+  function frame(now) {
+    let p = Math.min((now - startT) / durationMs, 1);
+    const e = easeFn(p);
+    for (const k in initProps) {
+      obj.set(k, initProps[k] + (orig[k] - initProps[k]) * e);
+    }
+    canvas.renderAll();
+    if (p < 1) {
+      requestAnimationFrame(frame);
+    } else {
+      // Ensure final state is exactly original
+      for (const k in orig) obj.set(k, orig[k]);
+      canvas.renderAll();
+      onDone?.();
+    }
+  }
+  requestAnimationFrame(frame);
+}
+
+window.setAnimationType = function(type) {
+  const obj = fabricCanvas?.getActiveObject();
+  if (!obj) return;
+  if (!obj.animation) obj.animation = {};
+  obj.animation.type = type;
+  document.querySelectorAll('.anim-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.anim === type)
+  );
+  historySave();
+};
+
+window.setAnimDelay = function(val) {
+  const obj = fabricCanvas?.getActiveObject();
+  if (!obj) return;
+  if (!obj.animation) obj.animation = {};
+  obj.animation.delay = val;
+  historySave();
+};
+
+window.setAnimDuration = function(val) {
+  const obj = fabricCanvas?.getActiveObject();
+  if (!obj) return;
+  if (!obj.animation) obj.animation = {};
+  obj.animation.duration = val;
+  historySave();
+};
+
+window.previewAnimation = function() {
+  const obj = fabricCanvas?.getActiveObject();
+  if (!obj) return;
+  const a    = obj.animation || {};
+  const type = a.type || 'none';
+  if (type === 'none') return;
+  const dur  = (a.duration || 0.8) * 1000;
+  const orig = {
+    opacity: obj.opacity ?? 1,
+    left:    obj.left,
+    top:     obj.top,
+    scaleX:  obj.scaleX ?? 1,
+    scaleY:  obj.scaleY ?? 1,
+  };
+  runObjectAnimation(fabricCanvas, obj, type, dur, orig);
+};
+
 // ── Properties Panel ──────────────────────────────────────────────────────
 
 // Parse any CSS color to a #rrggbb hex string for <input type="color">
@@ -4620,13 +4832,27 @@ function toHex(color) {
   return /^#[0-9a-f]{6}$/i.test(h) ? h : '#000000';
 }
 
+function populateAnimPanel(obj) {
+  const a = obj.animation || {};
+  const type = a.type || 'none';
+  document.querySelectorAll('.anim-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.anim === type)
+  );
+  const delayEl = document.getElementById('propAnimDelay');
+  const durEl   = document.getElementById('propAnimDuration');
+  delayEl.value = String(a.delay    ?? 0);
+  durEl.value   = String(a.duration ?? 0.8);
+  document.getElementById('propsAnimation').style.display = 'block';
+}
+
 function updatePropsPanel() {
   const obj = fabricCanvas?.getActiveObject();
-  document.getElementById('propsNone').style.display   = 'none';
-  document.getElementById('propsText').style.display   = 'none';
-  document.getElementById('propsImage').style.display  = 'none';
-  document.getElementById('propsShape').style.display  = 'none';
-  document.getElementById('propsTicker').style.display = 'none';
+  document.getElementById('propsNone').style.display      = 'none';
+  document.getElementById('propsText').style.display      = 'none';
+  document.getElementById('propsImage').style.display     = 'none';
+  document.getElementById('propsShape').style.display     = 'none';
+  document.getElementById('propsTicker').style.display    = 'none';
+  document.getElementById('propsAnimation').style.display = 'none';
 
   if (!obj) {
     document.getElementById('propsNone').style.display = 'block';
@@ -4678,10 +4904,12 @@ function updatePropsPanel() {
     // Stroke
     document.getElementById('propStrokeWidth').value = obj.strokeWidth ?? 0;
     document.getElementById('propStrokeColor').value = toHex(obj.stroke || '#000000');
+    populateAnimPanel(obj);
 
   } else if (t === 'image') {
     document.getElementById('propsImage').style.display = 'block';
     document.getElementById('propImgOpacity').value = obj.opacity ?? 1;
+    populateAnimPanel(obj);
 
   } else {
     document.getElementById('propsShape').style.display = 'block';
@@ -4689,6 +4917,7 @@ function updatePropsPanel() {
     document.getElementById('propShapeStroke').value  = toHex(typeof obj.stroke === 'string' ? obj.stroke : '#000000');
     document.getElementById('propShapeStrokeW').value = obj.strokeWidth ?? 0;
     document.getElementById('propShapeOpacity').value = obj.opacity ?? 1;
+    populateAnimPanel(obj);
   }
 }
 
@@ -4860,7 +5089,7 @@ window.toggleStockPanel = function() {
 function openStockPanel() {
   document.getElementById('btnStockPhotos').classList.add('active');
   document.getElementById('stockPanel').style.display = 'block';
-  ['propsNone','propsText','propsImage','propsShape','propsTicker'].forEach(id => {
+  ['propsNone','propsText','propsImage','propsShape','propsTicker','propsAnimation'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });
@@ -5102,7 +5331,7 @@ function historyReset() {
 function historySave() {
   if (historyPaused || !fabricCanvas) return;
   historyStack = historyStack.slice(0, histIdx + 1); // drop redo branch
-  historyStack.push(JSON.stringify(fabricCanvas.toJSON(['isLocked'])));
+  historyStack.push(JSON.stringify(fabricCanvas.toJSON(['isLocked', 'animation'])));
   if (historyStack.length > HISTORY_MAX) historyStack.shift();
   histIdx = historyStack.length - 1;
   updateHistoryBtns();
@@ -5449,7 +5678,7 @@ window.saveDesignedSlide = async function() {
   btn.textContent = 'Saving…';
 
   try {
-    const canvasJson = JSON.stringify(fabricCanvas.toJSON(['isLocked']));
+    const canvasJson = JSON.stringify(fabricCanvas.toJSON(['isLocked', 'animation']));
 
     // Generate thumbnail — may fail if canvas has tainted images (CORS)
     let thumbnailUrl = null;
