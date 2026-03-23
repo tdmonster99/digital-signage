@@ -449,10 +449,19 @@
     errBox.style.display = "none";
     loader.style.display = "none";
 
-    // Accept image, designed, and app slides
-    const incoming = data.slides.filter(s =>
-      s.active !== false && (s.url || s.canvasJson || s.type === 'clock')
-    );
+    // Expand groups into their individual slides, then filter active ones
+    const expanded = [];
+    for (const s of data.slides) {
+      if (s.active === false) continue;
+      if (s.type === 'group' && Array.isArray(s.slides) && s.slides.length) {
+        for (const gs of s.slides) {
+          expanded.push({ ...gs, type: 'designed', _groupName: s.name });
+        }
+      } else {
+        expanded.push(s);
+      }
+    }
+    const incoming = expanded.filter(s => s.url || s.canvasJson || s.type === 'clock');
 
     if (!incoming.length) {
       showError("No active slides. Enable some slides in the Admin Panel.");

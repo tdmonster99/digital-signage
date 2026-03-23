@@ -552,6 +552,44 @@ section.content {
   opacity: 0.9;
 }
 
+/* ── Slide Groups ────────────────────────────────────────────────────────── */
+.slide-card.group-card { overflow: visible; }
+.group-stack { position:absolute; border-radius:var(--radius); background:var(--surface2); border:1px solid var(--border); }
+.group-stack-1 { top:-5px; left:4px; right:4px; bottom:2px; z-index:-1; }
+.group-stack-2 { top:-9px; left:8px; right:8px; bottom:4px; z-index:-2; }
+.group-count-badge { position:absolute; bottom:38px; right:7px; background:rgba(0,0,0,.55); color:#fff; font-size:9px; font-weight:700; padding:2px 7px; border-radius:10px; z-index:5; backdrop-filter:blur(4px); }
+
+/* Group editor modal */
+#groupEditorModal { position:fixed; inset:0; z-index:100; background:var(--bg); display:none; flex-direction:column; }
+.ge-topbar { display:flex; align-items:center; gap:12px; padding:12px 20px; background:var(--surface); border-bottom:1px solid var(--border); flex-shrink:0; box-shadow:var(--header-shadow); }
+.ge-topbar-label { font-size:11px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.06em; flex-shrink:0; }
+#groupEditorName { flex:1; max-width:340px; border:1px solid var(--border); border-radius:8px; background:var(--surface2); color:var(--text); font-family:inherit; font-size:14px; font-weight:500; padding:7px 12px; transition:border-color .15s; }
+#groupEditorName:focus { outline:none; border-color:var(--accent); }
+.ge-topbar-actions { display:flex; gap:8px; margin-left:auto; }
+.ge-body { flex:1; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+.ge-hint { display:flex; flex-direction:column; align-items:center; gap:14px; color:var(--muted); text-align:center; padding:20px; }
+.ge-hint p { font-size:13px; line-height:1.6; }
+.ge-filmstrip-wrap { background:var(--surface); border-top:1px solid var(--border); padding:16px 20px 20px; flex-shrink:0; }
+.ge-filmstrip-label { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; font-weight:600; margin-bottom:10px; }
+.ge-filmstrip { display:flex; gap:10px; overflow-x:auto; padding-bottom:4px; align-items:flex-start; }
+.ge-filmstrip::-webkit-scrollbar { height:4px; }
+.ge-filmstrip::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+.gf-item { position:relative; flex-shrink:0; width:148px; background:var(--surface2); border:2px solid var(--border); border-radius:8px; overflow:hidden; cursor:pointer; transition:border-color .12s; }
+.gf-item:hover { border-color:var(--accent); }
+.gf-thumb { width:100%; aspect-ratio:16/9; object-fit:cover; display:block; background:var(--surface); }
+.gf-thumb-ph { width:100%; aspect-ratio:16/9; display:flex; align-items:center; justify-content:center; background:var(--surface2); }
+.gf-idx { position:absolute; top:4px; left:4px; background:rgba(0,0,0,.5); color:#fff; font-size:8px; font-weight:700; padding:1px 5px; border-radius:3px; }
+.gf-footer { padding:5px 6px; display:flex; align-items:center; justify-content:space-between; gap:4px; }
+.gf-dwell { display:flex; align-items:center; gap:3px; font-size:10px; color:var(--muted); }
+.gf-dwell input { width:32px; border:1px solid var(--border); border-radius:4px; background:var(--surface); color:var(--text); font-size:10px; padding:2px 3px; text-align:center; }
+.gf-btns { display:flex; gap:2px; }
+.gf-btn { width:22px; height:22px; border:1px solid rgba(255,255,255,.18); border-radius:5px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:opacity .12s; }
+.gf-btn.edit { background:#3b82f6; }
+.gf-btn.del  { background:#dc2626; }
+.gf-btn:hover { opacity:.8; }
+.gf-add { flex-shrink:0; width:148px; border:2px dashed var(--border); border-radius:8px; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:6px; cursor:pointer; color:var(--muted); font-size:11px; transition:border-color .12s,color .12s; min-height:88px; }
+.gf-add:hover { border-color:var(--accent); color:var(--accent); }
+
 .slide-actions {
   position: absolute; top: 6px; right: 6px;
   display: flex; gap: 4px;
@@ -1861,6 +1899,14 @@ section.content {
         </svg>
         Design a Slide
       </button>
+      <button class="btn btn-secondary" onclick="addSlideGroup()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <rect x="2" y="7" width="20" height="14" rx="2"/>
+          <path d="M6 7V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2"/>
+          <line x1="12" y1="12" x2="12" y2="17"/><line x1="9.5" y1="14.5" x2="14.5" y2="14.5"/>
+        </svg>
+        Create Group
+      </button>
       <button class="btn btn-danger" onclick="clearAll()" id="btnClear" style="display:none">
         Clear All
       </button>
@@ -2429,6 +2475,38 @@ section.content {
     </button>
   </div>
   <div id="tvReadabilityMsg" style="color:#aaa"></div>
+</div>
+
+<!-- ── Slide Group Editor ──────────────────────────────────────────────────── -->
+<div id="groupEditorModal">
+  <div class="ge-topbar">
+    <span class="ge-topbar-label">Slide Group</span>
+    <input type="text" id="groupEditorName" placeholder="Group name…"
+           oninput="if(editingGroupIdx!==null){slides[editingGroupIdx].name=this.value.trim()||'Slide Group';renderGrid();}">
+    <div class="ge-topbar-actions">
+      <button class="btn btn-secondary" onclick="closeGroupEditor()">Close</button>
+      <button class="btn btn-primary" onclick="saveGroupAndClose()">Done</button>
+    </div>
+  </div>
+  <div class="ge-body">
+    <div class="ge-hint" id="geEmpty">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+        <rect x="2" y="7" width="20" height="14" rx="2"/>
+        <path d="M6 7V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2"/>
+      </svg>
+      <p><strong style="color:var(--text)">No slides in this group yet.</strong><br>Add slides using the filmstrip below.</p>
+    </div>
+    <div class="ge-hint" id="geHasSlides" style="display:none">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+      </svg>
+      <p>Click the <strong style="color:var(--text)">edit button</strong> on any slide below to open it in the designer.<br>Slides play in order from left to right.</p>
+    </div>
+  </div>
+  <div class="ge-filmstrip-wrap">
+    <div class="ge-filmstrip-label">Slides — drag to reorder</div>
+    <div class="ge-filmstrip" id="groupFilmstrip"></div>
+  </div>
 </div>
 
 <div id="designerModal">
@@ -3759,6 +3837,49 @@ function renderGrid() {
   }
 
   grid.innerHTML = slides.map((s, i) => {
+    if (s.type === 'group') {
+      const count    = (s.slides || []).length;
+      const firstThumb = (s.slides || []).find(gs => gs.thumbnailUrl)?.thumbnailUrl || null;
+      return `
+      <div class="slide-card group-card ${s.active === false ? 'disabled' : ''}" draggable="true" data-idx="${i}">
+        <div class="group-stack group-stack-2"></div>
+        <div class="group-stack group-stack-1"></div>
+        ${firstThumb
+          ? `<img class="slide-thumb" src="${firstThumb}" alt="${s.name}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+          : ''}
+        <div class="slide-thumb-placeholder" style="display:${firstThumb ? 'none' : 'flex'}">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="1.5">
+            <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M6 7V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2"/>
+          </svg>
+        </div>
+        <div class="designed-badge" style="background:#7c3aedcc">Group</div>
+        ${count > 0 ? `<div class="group-count-badge">${count} slide${count !== 1 ? 's' : ''}</div>` : ''}
+        <div class="slide-actions">
+          <button class="icon-btn toggle" title="Open Group" onclick="openGroupEditor(${i})">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+          </button>
+          <button class="icon-btn dup" title="Duplicate" onclick="duplicateSlide(${i})">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2">
+              <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+            </svg>
+          </button>
+          <button class="icon-btn del" title="Delete" onclick="deleteSlide(${i})">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2">
+              <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
+              <path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+            </svg>
+          </button>
+        </div>
+        <div class="slide-footer">
+          <span class="slide-index">${String(i+1).padStart(2,'0')}</span>
+          <span class="slide-name" title="${s.name}">${s.name}</span>
+          <span class="slide-dwell">—</span>
+        </div>
+      </div>`;
+    }
     const isDesigned = s.type === 'designed';
     const isWebpage  = s.type === 'webpage';
     const isYoutube  = s.type === 'youtube';
@@ -3873,6 +3994,128 @@ window.editDesignedSlide = (idx) => {
   openDesigner(slides[idx], idx);
 };
 
+// ── Slide Groups ───────────────────────────────────────────────────────────
+window.addSlideGroup = function() {
+  const group = { id: crypto.randomUUID(), type: 'group', name: 'Slide Group', active: true, slides: [] };
+  slides.push(group);
+  renderGrid();
+  pushToFirestore();
+  openGroupEditor(slides.length - 1);
+};
+
+window.openGroupEditor = function(idx) {
+  editingGroupIdx = idx;
+  const group = slides[idx];
+  document.getElementById('groupEditorName').value = group.name || 'Slide Group';
+  document.getElementById('groupEditorModal').style.display = 'flex';
+  renderGroupFilmstrip();
+};
+
+window.closeGroupEditor = function() {
+  editingGroupIdx = null;
+  document.getElementById('groupEditorModal').style.display = 'none';
+};
+
+window.saveGroupAndClose = async function() {
+  if (editingGroupIdx !== null) {
+    slides[editingGroupIdx].name = document.getElementById('groupEditorName').value.trim() || 'Slide Group';
+    renderGrid();
+    await pushToFirestore();
+  }
+  window.closeGroupEditor();
+};
+
+function renderGroupFilmstrip() {
+  if (editingGroupIdx === null) return;
+  const group   = slides[editingGroupIdx];
+  const strip   = document.getElementById('groupFilmstrip');
+  const isEmpty = !(group.slides || []).length;
+  document.getElementById('geEmpty').style.display    = isEmpty ? 'flex' : 'none';
+  document.getElementById('geHasSlides').style.display= isEmpty ? 'none' : 'flex';
+
+  const canAdd = (group.slides || []).length < 10;
+  strip.innerHTML = (group.slides || []).map((s, i) => `
+    <div class="gf-item" draggable="true" data-gidx="${i}">
+      ${s.thumbnailUrl
+        ? `<img class="gf-thumb" src="${s.thumbnailUrl}" alt="Slide ${i+1}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+           <div class="gf-thumb-ph" style="display:none"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>`
+        : `<div class="gf-thumb-ph"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>`
+      }
+      <div class="gf-idx">${i + 1}</div>
+      <div class="gf-footer">
+        <div class="gf-dwell">
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <input type="number" min="1" max="300" value="${s.dwell || 6}"
+                 onclick="event.stopPropagation()"
+                 onchange="setGroupSlideDwell(${i},+this.value)">s
+        </div>
+        <div class="gf-btns">
+          <button class="gf-btn edit" title="Edit slide" onclick="editGroupSlide(${i})">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
+          <button class="gf-btn del" title="Remove" onclick="removeGroupSlide(${i})">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>`).join('') + (canAdd ? `
+    <div class="gf-add" onclick="addSlideToGroup()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+      Add Slide
+    </div>` : '');
+
+  // Drag-to-reorder within filmstrip
+  strip.querySelectorAll('.gf-item').forEach(card => {
+    let dragFrom = null;
+    card.addEventListener('dragstart', e => { dragFrom = +card.dataset.gidx; card.style.opacity = '.4'; });
+    card.addEventListener('dragend',   () => card.style.opacity = '');
+    card.addEventListener('dragover',  e => e.preventDefault());
+    card.addEventListener('drop', async e => {
+      e.preventDefault();
+      const dragTo = +card.dataset.gidx;
+      if (dragFrom === null || dragFrom === dragTo) return;
+      const group = slides[editingGroupIdx];
+      const moved = group.slides.splice(dragFrom, 1)[0];
+      group.slides.splice(dragTo, 0, moved);
+      renderGroupFilmstrip();
+      renderGrid();
+      await pushToFirestore();
+    });
+  });
+}
+
+window.addSlideToGroup = function() {
+  if (editingGroupIdx === null) return;
+  if ((slides[editingGroupIdx].slides || []).length >= 10) {
+    toast('A group can contain at most 10 slides.', true); return;
+  }
+  editingGroupSlideIdx = null;
+  openDesigner(null);  // shows template gallery, then designer
+};
+
+window.editGroupSlide = function(slideIdx) {
+  if (editingGroupIdx === null) return;
+  editingGroupSlideIdx = slideIdx;
+  const groupSlide = slides[editingGroupIdx].slides[slideIdx];
+  editingSlideIdx = null;  // not a main-slide index
+  launchDesigner(groupSlide);
+};
+
+window.removeGroupSlide = function(slideIdx) {
+  if (editingGroupIdx === null) return;
+  if (!confirm('Remove this slide from the group?')) return;
+  slides[editingGroupIdx].slides.splice(slideIdx, 1);
+  renderGroupFilmstrip();
+  renderGrid();
+  pushToFirestore();
+};
+
+window.setGroupSlideDwell = function(slideIdx, dwell) {
+  if (editingGroupIdx === null) return;
+  slides[editingGroupIdx].slides[slideIdx].dwell = Math.max(1, dwell || 6);
+  pushToFirestore();
+};
+
 window.deleteSlide = async (idx) => {
   if (!confirm("Remove this slide?")) return;
   slides.splice(idx, 1);
@@ -3973,7 +4216,9 @@ const CANVAS_W = 1920;
 const CANVAS_EXTRA_PROPS = ['isLocked', 'animation', 'iconGroup', 'iconColor'];
 const CANVAS_H = 1080;
 let fabricCanvas    = null;
-let editingSlideIdx = null; // null = new slide, number = editing existing
+let editingSlideIdx      = null; // null = new slide, number = editing existing
+let editingGroupIdx      = null; // index in slides[] of group open in group editor
+let editingGroupSlideIdx = null; // index within group.slides[] while in designer; null = new
 
 let pendingTemplate = 'blank';
 
@@ -4052,9 +4297,13 @@ function launchDesigner(existingSlide) {
 window.closeDesigner = function() {
   if (designerDirty) {
     document.getElementById('unsavedModal').style.display = 'flex';
-    return;  // wait for the user's choice
+    return;
   }
+  const returnGroupIdx = editingGroupIdx;
+  editingGroupIdx      = null;
+  editingGroupSlideIdx = null;
   doCloseDesigner();
+  if (returnGroupIdx !== null) openGroupEditor(returnGroupIdx);
 };
 
 // ── Safe Zone ─────────────────────────────────────────────────────────────
@@ -4161,8 +4410,12 @@ window.unsavedCancel = function() {
 };
 
 window.unsavedDiscard = function() {
-  designerDirty = false;   // suppress dirty check inside doCloseDesigner
+  designerDirty = false;
+  const returnGroupIdx = editingGroupIdx;
+  editingGroupIdx      = null;
+  editingGroupSlideIdx = null;
   doCloseDesigner();
+  if (returnGroupIdx !== null) openGroupEditor(returnGroupIdx);
 };
 
 window.unsavedSaveAndClose = async function() {
@@ -6892,6 +7145,39 @@ window.saveDesignedSlide = async function() {
       console.warn('Thumbnail generation skipped:', e.message);
     }
 
+    // ── Save into a group (if designer was opened from the group editor) ──
+    if (editingGroupIdx !== null) {
+      const group = slides[editingGroupIdx];
+      if (!group.slides) group.slides = [];
+      const existing = editingGroupSlideIdx !== null ? group.slides[editingGroupSlideIdx] : null;
+      const groupSlide = {
+        id:           existing?.id || crypto.randomUUID(),
+        name,
+        canvasJson,
+        thumbnailUrl,
+        dwell:        existing?.dwell || 6,
+      };
+      if (editingGroupSlideIdx !== null) {
+        group.slides[editingGroupSlideIdx] = { ...existing, ...groupSlide };
+      } else {
+        group.slides.push(groupSlide);
+      }
+      renderGrid();
+      updateCount();
+      await pushToFirestore();
+      try { await setDoc(doc(db, 'slideshows', currentShowId), { draftCanvasJson: null, draftSlideId: null }, { merge: true }); } catch(_) {}
+      designerDirty = false;
+      updateDesignerStatus('saved');
+      toast('Slide saved ✓');
+      const returnGroupIdx = editingGroupIdx;
+      editingGroupIdx      = null;
+      editingGroupSlideIdx = null;
+      doCloseDesigner();
+      openGroupEditor(returnGroupIdx);
+      return;
+    }
+
+    // ── Normal (standalone) slide save ────────────────────────────────────
     const slide = {
       id:           editingSlideIdx !== null ? slides[editingSlideIdx].id : crypto.randomUUID(),
       type:         'designed',
