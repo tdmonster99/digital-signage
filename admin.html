@@ -956,6 +956,41 @@ section.content {
 [data-theme="dark"] .bk-ds-swatch { border-color: rgba(255,255,255,0.15); }
 .bk-ds-swatch:hover { transform: scale(1.25); box-shadow: 0 1px 4px rgba(0,0,0,0.2); }
 
+/* ── Icon Panel ─────────────────────────────────────────────────────────── */
+.icon-controls { display:flex; flex-direction:column; gap:7px; padding-bottom:8px; border-bottom:1px solid var(--border); margin-bottom:8px; }
+.icon-ctrl-row  { display:flex; align-items:center; gap:7px; }
+.icon-ctrl-label{ font-size:11px; color:var(--muted); min-width:36px; flex-shrink:0; }
+.icon-cat-chips { display:flex; flex-wrap:wrap; gap:4px; margin-bottom:2px; }
+.icon-cat-chip  {
+  padding:3px 9px; border-radius:20px;
+  border:1px solid var(--border); background:var(--surface2);
+  color:var(--muted); font-size:10px; cursor:pointer;
+  transition:background .12s,color .12s,border-color .12s;
+  white-space:nowrap; line-height:1.5;
+}
+.icon-cat-chip.active              { background:var(--accent); color:#fff; border-color:var(--accent); }
+.icon-cat-chip:hover:not(.active)  { background:var(--accent-bg); border-color:var(--accent); color:var(--text); }
+.icon-grid {
+  display:grid; grid-template-columns:repeat(5,1fr);
+  gap:3px; overflow-y:auto; max-height:320px;
+}
+.icon-item {
+  display:flex; flex-direction:column; align-items:center; gap:3px;
+  padding:6px 2px; border:1px solid transparent; border-radius:7px;
+  cursor:pointer; transition:background .12s,border-color .12s;
+}
+.icon-item:hover { background:var(--accent-bg); border-color:var(--accent); }
+.icon-item-img  { width:30px; height:30px; flex-shrink:0; display:block; }
+.icon-item-name { font-size:8px; color:var(--muted); text-align:center; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; width:100%; padding:0 2px; }
+.icon-loading   { text-align:center; padding:28px 10px; font-size:12px; color:var(--muted); }
+.icon-size-btns { display:flex; gap:4px; }
+.icon-size-btn  {
+  flex:1; padding:4px 2px; border:1px solid var(--border);
+  border-radius:6px; background:var(--surface2); color:var(--text);
+  font-size:10px; cursor:pointer; text-align:center; transition:background .12s;
+}
+.icon-size-btn.active, .icon-size-btn:hover { background:var(--accent); color:#fff; border-color:var(--accent); }
+
 /* ── Ticker bar (canvas preview) ─────────────────────────────────────────── */
 #propsTicker .ticker-speed-btns { display: flex; gap: 6px; flex-wrap: wrap; }
 #propsTicker .ticker-speed-btn {
@@ -2530,6 +2565,13 @@ section.content {
         </svg>
       </button>
 
+      <!-- Icons -->
+      <button class="tool-btn" id="btnIcons" title="Icons" onclick="toggleIconPanel()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+        </svg>
+      </button>
+
       <!-- Stock photos -->
       <button class="tool-btn" id="btnStockPhotos" title="Stock Photos" onclick="toggleStockPanel()">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
@@ -2586,6 +2628,55 @@ section.content {
       <div class="bk-designer-strip" id="bkDesignerStrip">
         <span class="bk-ds-label">Brand</span>
         <div id="bkDesignerSwatches" style="display:contents"></div>
+      </div>
+
+      <!-- Icon search panel -->
+      <div id="iconPanel" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div class="props-title" style="margin:0">Icons</div>
+          <button onclick="closeIconPanel()" title="Close" style="background:none;border:none;cursor:pointer;color:var(--muted);padding:2px;display:flex;align-items:center">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Search -->
+        <div style="display:flex;gap:6px;margin-bottom:8px">
+          <input type="text" id="iconSearchInput" class="prop-input" placeholder="Search icons…"
+                 style="flex:1" onkeydown="if(event.key==='Enter') doIconSearch()">
+          <button class="prop-btn" onclick="doIconSearch()" title="Search">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Category chips -->
+        <div class="icon-cat-chips" id="iconCatChips"></div>
+
+        <!-- Controls: color + size -->
+        <div class="icon-controls">
+          <div class="icon-ctrl-row">
+            <span class="icon-ctrl-label">Color</span>
+            <input type="color" id="iconColorPicker" value="#ffffff" class="prop-color-wide"
+                   style="flex:1" oninput="updateIconPreviewColor(this.value)">
+          </div>
+          <div class="icon-ctrl-row">
+            <span class="icon-ctrl-label">Size</span>
+            <div class="icon-size-btns" id="iconSizeBtns">
+              <button class="icon-size-btn" data-size="80"  onclick="setIconSize(80)">S</button>
+              <button class="icon-size-btn active" data-size="150" onclick="setIconSize(150)">M</button>
+              <button class="icon-size-btn" data-size="250" onclick="setIconSize(250)">L</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Results -->
+        <div id="iconGrid" class="icon-grid">
+          <div class="icon-loading">Type a search or choose a category</div>
+        </div>
+        <div id="iconStatus" style="font-size:10px;color:var(--muted);text-align:center;padding:4px 0;margin-top:4px"></div>
       </div>
 
       <!-- Stock photos panel -->
@@ -2970,6 +3061,30 @@ section.content {
         <button class="prop-btn" style="width:100%;margin-top:6px" onclick="previewAnimation()">
           ▶ Preview Animation
         </button>
+      </div>
+
+      <!-- Icon / SVG group recolor -->
+      <div id="propsIcon" style="display:none">
+        <div class="props-title">Icon</div>
+        <div class="prop-group">
+          <div class="prop-row">
+            <div class="prop-label">Color</div>
+            <input type="color" id="propIconColor" class="prop-color-wide"
+                   oninput="applyIconColor(this.value)">
+          </div>
+          <div class="prop-row">
+            <div class="prop-label">Opacity</div>
+            <input type="range" id="propIconOpacity" min="0" max="1" step="0.01" value="1" style="width:100%"
+                   oninput="applyObjProp('opacity', +this.value)">
+          </div>
+          <div class="prop-row">
+            <div class="prop-label">Order</div>
+            <div class="prop-btn-row">
+              <button class="prop-btn" onclick="bringFwd()">↑ Forward</button>
+              <button class="prop-btn" onclick="sendBwd()">↓ Backward</button>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Ticker properties -->
@@ -3774,6 +3889,7 @@ window.toast = (msg, err=false) => {
 
 // ── Slide Designer ────────────────────────────────────────────────────────
 const CANVAS_W = 1920;
+const CANVAS_EXTRA_PROPS = ['isLocked', 'animation', 'iconGroup', 'iconColor'];
 const CANVAS_H = 1080;
 let fabricCanvas    = null;
 let editingSlideIdx = null; // null = new slide, number = editing existing
@@ -3948,6 +4064,10 @@ function doCloseDesigner() {
   if (go) go.style.display = 'none';
   // Close TV preview if open
   document.getElementById('tvPreviewOverlay').style.display = 'none';
+  // Reset icon panel
+  iconPanelOpen = false;
+  document.getElementById('iconPanel').style.display = 'none';
+  document.getElementById('btnIcons')?.classList.remove('active');
   // Reset stock panel
   document.getElementById('stockPanel').style.display = 'none';
   document.getElementById('stockGrid').innerHTML = '';
@@ -3997,7 +4117,7 @@ async function autoSaveDesigner() {
   if (!designerDirty || !fabricCanvas || !auth.currentUser) return;
   updateDesignerStatus('saving');
   try {
-    const canvasJson = JSON.stringify(fabricCanvas.toJSON(['isLocked', 'animation']));
+    const canvasJson = JSON.stringify(fabricCanvas.toJSON(CANVAS_EXTRA_PROPS));
     // Determine which slide ID to key the draft to
     const slideId = editingSlideIdx !== null
       ? slides[editingSlideIdx].id
@@ -4319,7 +4439,7 @@ function designerDeleteActive() {
 function designerDuplicate() {
   const obj = fabricCanvas.getActiveObject();
   if (!obj) return;
-  const extra = ['isLocked', 'animation'];
+  const extra = CANVAS_EXTRA_PROPS;
   if (obj.type === 'activeSelection') {
     const jsonObjs = obj.toJSON(extra).objects.map(o => ({ ...o, left: (o.left||0) + 10, top: (o.top||0) + 10 }));
     fabric.util.enlivenObjects(jsonObjs, (objects) => {
@@ -4344,9 +4464,9 @@ function designerCopy() {
   const obj = fabricCanvas.getActiveObject();
   if (!obj) return;
   if (obj.type === 'activeSelection') {
-    designerClipboard = obj.toJSON(['isLocked', 'animation']).objects;
+    designerClipboard = obj.toJSON(CANVAS_EXTRA_PROPS).objects;
   } else {
-    designerClipboard = [obj.toObject(['isLocked', 'animation'])];
+    designerClipboard = [obj.toObject(CANVAS_EXTRA_PROPS)];
   }
 }
 
@@ -5073,6 +5193,7 @@ function updatePropsPanel() {
   document.getElementById('propsText').style.display      = 'none';
   document.getElementById('propsImage').style.display     = 'none';
   document.getElementById('propsShape').style.display     = 'none';
+  document.getElementById('propsIcon').style.display      = 'none';
   document.getElementById('propsTicker').style.display    = 'none';
   document.getElementById('propsAnimation').style.display = 'none';
 
@@ -5131,6 +5252,12 @@ function updatePropsPanel() {
   } else if (t === 'image') {
     document.getElementById('propsImage').style.display = 'block';
     document.getElementById('propImgOpacity').value = obj.opacity ?? 1;
+    populateAnimPanel(obj);
+
+  } else if (obj.iconGroup) {
+    document.getElementById('propsIcon').style.display = 'block';
+    document.getElementById('propIconColor').value   = toHex(obj.iconColor || '#ffffff');
+    document.getElementById('propIconOpacity').value = obj.opacity ?? 1;
     populateAnimPanel(obj);
 
   } else {
@@ -5311,7 +5438,7 @@ window.toggleStockPanel = function() {
 function openStockPanel() {
   document.getElementById('btnStockPhotos').classList.add('active');
   document.getElementById('stockPanel').style.display = 'block';
-  ['propsNone','propsText','propsImage','propsShape','propsTicker','propsAnimation'].forEach(id => {
+  ['propsNone','propsText','propsImage','propsShape','propsIcon','propsTicker','propsAnimation'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });
@@ -5553,7 +5680,7 @@ function historyReset() {
 function historySave() {
   if (historyPaused || !fabricCanvas) return;
   historyStack = historyStack.slice(0, histIdx + 1); // drop redo branch
-  historyStack.push(JSON.stringify(fabricCanvas.toJSON(['isLocked', 'animation'])));
+  historyStack.push(JSON.stringify(fabricCanvas.toJSON(CANVAS_EXTRA_PROPS)));
   if (historyStack.length > HISTORY_MAX) historyStack.shift();
   histIdx = historyStack.length - 1;
   updateHistoryBtns();
@@ -5622,6 +5749,204 @@ function tmplRect(left, top, width, height, opts = {}) {
   fabricCanvas.add(obj);
   return obj;
 }
+
+// ── Icon Search (Iconify) ──────────────────────────────────────────────────
+const ICON_CATS = [
+  { id:'all',        label:'All',        query:'star check arrow home' },
+  { id:'business',   label:'Business',   query:'business briefcase office chart' },
+  { id:'food',       label:'Food',       query:'food coffee restaurant pizza' },
+  { id:'health',     label:'Health',     query:'health medical heart hospital' },
+  { id:'education',  label:'Education',  query:'education book school pencil' },
+  { id:'technology', label:'Technology', query:'technology computer phone wifi' },
+  { id:'weather',    label:'Weather',    query:'weather sun rain cloud snow' },
+  { id:'arrows',     label:'Arrows',     query:'arrow direction next back' },
+  { id:'social',     label:'Social',     query:'social media share like' },
+  { id:'symbols',    label:'Symbols',    query:'symbol star check circle' },
+];
+
+let iconPanelOpen   = false;
+let iconCurrentCat  = 'business';
+let iconCurrentSize = 150;
+
+window.toggleIconPanel = function() {
+  iconPanelOpen ? closeIconPanel() : openIconPanel();
+};
+
+function openIconPanel() {
+  iconPanelOpen = true;
+  document.getElementById('btnIcons').classList.add('active');
+  document.getElementById('iconPanel').style.display = 'block';
+  closeStockPanel();
+  ['propsNone','propsText','propsImage','propsShape','propsIcon','propsTicker','propsAnimation'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  renderIconCategoryChips();
+  if (!document.getElementById('iconGrid').querySelector('.icon-item')) {
+    loadCategoryIcons('business');
+  }
+}
+
+window.closeIconPanel = function() {
+  iconPanelOpen = false;
+  document.getElementById('btnIcons').classList.remove('active');
+  document.getElementById('iconPanel').style.display = 'none';
+  updatePropsPanel();
+};
+
+function renderIconCategoryChips() {
+  const wrap = document.getElementById('iconCatChips');
+  if (!wrap) return;
+  wrap.innerHTML = ICON_CATS.map(c =>
+    `<button class="icon-cat-chip${c.id === iconCurrentCat ? ' active' : ''}"
+             data-cat="${c.id}"
+             onclick="loadCategoryIcons('${c.id}')">${c.label}</button>`
+  ).join('');
+}
+
+async function loadCategoryIcons(catId) {
+  iconCurrentCat = catId;
+  document.querySelectorAll('.icon-cat-chip').forEach(b =>
+    b.classList.toggle('active', b.dataset.cat === catId)
+  );
+  const cat   = ICON_CATS.find(c => c.id === catId) || ICON_CATS[0];
+  const query = cat.query.split(' ')[0]; // use first keyword
+  await fetchIconifySearch(query);
+}
+
+window.doIconSearch = function() {
+  const q = document.getElementById('iconSearchInput').value.trim();
+  if (!q) return;
+  // Clear active category
+  document.querySelectorAll('.icon-cat-chip').forEach(b => b.classList.remove('active'));
+  fetchIconifySearch(q);
+};
+
+async function fetchIconifySearch(query) {
+  const grid   = document.getElementById('iconGrid');
+  const status = document.getElementById('iconStatus');
+  grid.innerHTML = '<div class="icon-loading">Searching…</div>';
+  status.textContent = '';
+  try {
+    const url = `https://api.iconify.design/search?query=${encodeURIComponent(query)}&limit=60&prefixes=mdi,tabler,heroicons,ph,carbon`;
+    const res  = await fetch(url);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    const icons = data.icons || [];
+    renderIconGrid(icons);
+    status.textContent = icons.length ? `${icons.length} icons found` : 'No results';
+  } catch(e) {
+    grid.innerHTML = `<div class="icon-loading">Failed to load icons.<br>Check your connection.</div>`;
+  }
+}
+
+function iconImgSrc(prefix, name) {
+  // Use a neutral grey so icons are visible on both themes
+  const col = encodeURIComponent('#555555');
+  return `https://api.iconify.design/${prefix}/${name}.svg?color=${col}&width=40&height=40`;
+}
+
+function renderIconGrid(icons) {
+  const grid = document.getElementById('iconGrid');
+  if (!icons.length) {
+    grid.innerHTML = '<div class="icon-loading">No icons found</div>';
+    return;
+  }
+  grid.innerHTML = icons.map(id => {
+    const [prefix, ...rest] = id.split(':');
+    const name = rest.join(':');
+    const safeName = name.replace(/'/g, "\\'");
+    const safePrefix = prefix.replace(/'/g, "\\'");
+    const shortName = name.length > 10 ? name.slice(0, 10) + '…' : name;
+    return `<div class="icon-item" title="${name}" onclick="insertIcon('${safePrefix}','${safeName}')">
+              <img class="icon-item-img" src="${iconImgSrc(prefix, name)}" alt="${name}" loading="lazy">
+              <div class="icon-item-name">${shortName}</div>
+            </div>`;
+  }).join('');
+}
+
+window.setIconSize = function(size) {
+  iconCurrentSize = size;
+  document.querySelectorAll('.icon-size-btn').forEach(b =>
+    b.classList.toggle('active', +b.dataset.size === size)
+  );
+};
+
+window.updateIconPreviewColor = function(color) {
+  // Update all preview imgs to match chosen color
+  const col = encodeURIComponent(color);
+  document.querySelectorAll('.icon-item-img').forEach(img => {
+    img.src = img.src.replace(/color=[^&]+/, 'color=' + col);
+  });
+};
+
+window.insertIcon = async function(prefix, name) {
+  if (!fabricCanvas) return;
+  const color = document.getElementById('iconColorPicker').value || '#ffffff';
+  const size  = iconCurrentSize;
+  const svgUrl = `https://api.iconify.design/${prefix}/${name}.svg`;
+
+  try {
+    const res    = await fetch(svgUrl);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    let svgStr   = await res.text();
+
+    // Colorize: replace fill/stroke/currentColor with chosen color
+    svgStr = svgStr
+      .replace(/currentColor/g, color)
+      .replace(/fill="(?!none)[^"]*"/g, `fill="${color}"`)
+      .replace(/stroke="(?!none)[^"]*"/g, `stroke="${color}"`);
+    // Ensure root SVG has the fill set if no fills found
+    if (!svgStr.includes(`fill="${color}"`)) {
+      svgStr = svgStr.replace('<svg', `<svg fill="${color}"`);
+    }
+
+    fabric.loadSVGFromString(svgStr, (objects, options) => {
+      if (!objects.length) { toast('Could not parse icon SVG', true); return; }
+      const group = fabric.util.groupSVGElements(objects, options);
+      const scale = size / Math.max(group.width || size, group.height || size);
+      group.set({
+        left:      CANVAS_W / 2,
+        top:       CANVAS_H / 2,
+        originX:   'center',
+        originY:   'center',
+        scaleX:    scale,
+        scaleY:    scale,
+        iconGroup: true,
+        iconColor: color,
+      });
+      fabricCanvas.add(group);
+      fabricCanvas.setActiveObject(group);
+      fabricCanvas.renderAll();
+      historySave();
+    });
+  } catch(e) {
+    toast('Icon load failed: ' + e.message, true);
+  }
+};
+
+window.applyIconColor = function(color) {
+  const obj = fabricCanvas?.getActiveObject();
+  if (!obj) return;
+  function colorizeObjects(items) {
+    items.forEach(child => {
+      if (child.type === 'group') {
+        colorizeObjects(child.getObjects());
+      } else {
+        if (child.fill  && child.fill  !== 'none') child.set('fill',  color);
+        if (child.stroke && child.stroke !== 'none') child.set('stroke', color);
+      }
+    });
+  }
+  if (obj.type === 'group') {
+    colorizeObjects(obj.getObjects());
+    obj.iconColor = color;
+  } else if (obj.type === 'path') {
+    obj.set('fill', color);
+  }
+  fabricCanvas.renderAll();
+  historySave();
+};
 
 // ── Brand Kit ──────────────────────────────────────────────────────────────
 window.brandKit = {
@@ -6211,7 +6536,7 @@ window.saveDesignedSlide = async function() {
   btn.textContent = 'Saving…';
 
   try {
-    const canvasJson = JSON.stringify(fabricCanvas.toJSON(['isLocked', 'animation']));
+    const canvasJson = JSON.stringify(fabricCanvas.toJSON(CANVAS_EXTRA_PROPS));
 
     // Generate thumbnail — may fail if canvas has tainted images (CORS)
     let thumbnailUrl = null;
