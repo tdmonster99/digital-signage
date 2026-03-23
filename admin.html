@@ -5884,22 +5884,12 @@ window.insertIcon = async function(prefix, name) {
   if (!fabricCanvas) return;
   const color = document.getElementById('iconColorPicker').value || '#ffffff';
   const size  = iconCurrentSize;
-  const svgUrl = `https://api.iconify.design/${prefix}/${name}.svg`;
+  const svgUrl = `https://api.iconify.design/${prefix}/${name}.svg?color=${encodeURIComponent(color)}`;
 
   try {
     const res    = await fetch(svgUrl);
     if (!res.ok) throw new Error('HTTP ' + res.status);
-    let svgStr   = await res.text();
-
-    // Colorize: replace fill/stroke/currentColor with chosen color
-    svgStr = svgStr
-      .replace(/currentColor/g, color)
-      .replace(/fill="(?!none)[^"]*"/g, `fill="${color}"`)
-      .replace(/stroke="(?!none)[^"]*"/g, `stroke="${color}"`);
-    // Ensure root SVG has the fill set if no fills found
-    if (!svgStr.includes(`fill="${color}"`)) {
-      svgStr = svgStr.replace('<svg', `<svg fill="${color}"`);
-    }
+    const svgStr = await res.text();
 
     fabric.loadSVGFromString(svgStr, (objects, options) => {
       if (!objects.length) { toast('Could not parse icon SVG', true); return; }
