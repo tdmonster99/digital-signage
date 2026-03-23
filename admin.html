@@ -859,6 +859,103 @@ section.content {
 .anim-timing-row { display: flex; gap: 6px; }
 .anim-timing-row .prop-row { flex: 1; min-width: 0; }
 
+/* ── Brand Kit ────────────────────────────────────────────────────────────── */
+#page-brandkit.active { flex-direction: column; padding: 32px; gap: 22px; overflow-y: auto; }
+.bk-header { display: flex; align-items: center; justify-content: space-between; }
+.bk-header h2 { font-size: 20px; font-weight: 700; }
+.bk-layout { display: grid; grid-template-columns: 1fr 320px; gap: 24px; align-items: start; }
+@media (max-width: 960px) { .bk-layout { grid-template-columns: 1fr; } }
+.bk-left { display: flex; flex-direction: column; gap: 18px; }
+.bk-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 22px 24px; box-shadow: var(--card-shadow); display: flex; flex-direction: column; gap: 14px; }
+.bk-card-title { font-size: 13px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+.bk-swatch-grid { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.bk-swatch {
+  width: 44px; height: 44px; border-radius: 10px;
+  border: 2px solid rgba(0,0,0,0.08);
+  cursor: pointer; position: relative; flex-shrink: 0;
+  transition: transform .15s, box-shadow .15s;
+}
+[data-theme="dark"] .bk-swatch { border-color: rgba(255,255,255,0.12); }
+.bk-swatch:hover { transform: scale(1.12); box-shadow: 0 2px 8px rgba(0,0,0,0.18); }
+.bk-swatch-del {
+  position: absolute; top: -5px; right: -5px;
+  width: 16px; height: 16px;
+  background: var(--danger); border: 2px solid var(--surface);
+  border-radius: 50%; color: #fff; font-size: 9px;
+  cursor: pointer; display: none; align-items: center;
+  justify-content: center; line-height: 1;
+}
+.bk-swatch:hover .bk-swatch-del { display: flex; }
+.bk-swatch-tip {
+  position: absolute; bottom: calc(100% + 6px); left: 50%;
+  transform: translateX(-50%);
+  background: var(--text); color: var(--bg);
+  font-size: 10px; padding: 3px 7px; border-radius: 5px;
+  white-space: nowrap; pointer-events: none;
+  opacity: 0; transition: opacity .15s;
+}
+.bk-swatch:hover .bk-swatch-tip { opacity: 1; }
+.bk-add-swatch {
+  width: 44px; height: 44px; border-radius: 10px;
+  border: 2px dashed var(--border);
+  cursor: pointer; display: flex; align-items: center;
+  justify-content: center; color: var(--muted); font-size: 22px;
+  background: transparent; transition: border-color .15s, color .15s;
+}
+.bk-add-swatch:hover { border-color: var(--accent); color: var(--accent); }
+.bk-font-slots { display: flex; flex-direction: column; gap: 10px; }
+.bk-font-slot {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 14px; background: var(--surface2);
+  border: 1px solid var(--border); border-radius: 9px;
+  cursor: pointer; transition: border-color .15s;
+}
+.bk-font-slot:hover { border-color: var(--accent); }
+.bk-font-role { font-size: 11px; color: var(--muted); min-width: 58px; flex-shrink: 0; }
+.bk-font-name { font-size: 14px; flex: 1; color: var(--text); }
+.bk-font-clear {
+  background: none; border: none; color: var(--muted);
+  cursor: pointer; padding: 2px 4px; font-size: 15px;
+  line-height: 1; transition: color .15s;
+}
+.bk-font-clear:hover { color: var(--danger); }
+.bk-logo-area { display: flex; flex-direction: column; gap: 10px; }
+.bk-logo-img { max-height: 100px; max-width: 100%; object-fit: contain; border-radius: 8px; background: var(--surface2); padding: 10px; display: block; }
+/* Right: sticky preview */
+.bk-preview-panel { position: sticky; top: 24px; display: flex; flex-direction: column; gap: 14px; }
+.bk-mini-slide {
+  width: 100%; aspect-ratio: 16/9; border-radius: 12px;
+  overflow: hidden; position: relative;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 10px; padding: 20px;
+  box-shadow: var(--canvas-shadow);
+}
+.bk-mini-content { position: relative; z-index: 1; text-align: center; }
+.bk-mini-company { font-size: 22px; font-weight: 700; color: #fff; line-height: 1.2; text-shadow: 0 1px 4px rgba(0,0,0,0.3); }
+.bk-mini-tagline { font-size: 11px; color: rgba(255,255,255,0.7); margin-top: 6px; }
+.bk-mini-bar { width: 60%; height: 3px; border-radius: 2px; margin: 8px auto 0; }
+.bk-mini-font-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.bk-mini-font-chip { font-size: 9px; background: rgba(255,255,255,0.15); color: #fff; padding: 2px 7px; border-radius: 20px; }
+/* Designer brand swatches strip */
+.bk-designer-strip {
+  padding: 8px 12px 6px;
+  border-bottom: 1px solid var(--border);
+  display: none;
+  align-items: center; gap: 6px; flex-wrap: wrap;
+}
+.bk-designer-strip.has-colors { display: flex; }
+.bk-ds-label { font-size: 10px; color: var(--muted); flex-shrink: 0; margin-right: 2px; }
+.bk-ds-swatch {
+  width: 20px; height: 20px; border-radius: 5px;
+  border: 1.5px solid rgba(0,0,0,0.1);
+  cursor: pointer; flex-shrink: 0;
+  transition: transform .12s, box-shadow .12s;
+  position: relative;
+}
+[data-theme="dark"] .bk-ds-swatch { border-color: rgba(255,255,255,0.15); }
+.bk-ds-swatch:hover { transform: scale(1.25); box-shadow: 0 1px 4px rgba(0,0,0,0.2); }
+
 /* ── Ticker bar (canvas preview) ─────────────────────────────────────────── */
 #propsTicker .ticker-speed-btns { display: flex; gap: 6px; flex-wrap: wrap; }
 #propsTicker .ticker-speed-btn {
@@ -1484,6 +1581,12 @@ section.content {
       </svg>
       Screens
     </button>
+    <button class="nav-item" data-page="brandkit" onclick="showPage('brandkit')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/>
+      </svg>
+      Brand Kit
+    </button>
     <button class="nav-item" data-page="settings" onclick="showPage('settings')">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
         <circle cx="12" cy="12" r="3"/>
@@ -1851,8 +1954,111 @@ section.content {
         <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
       </svg>
       <h2>Settings</h2>
-      <p>Coming soon — configure account preferences, integrations, and display defaults.</p>
+      <p>Configure your account preferences and display defaults.</p>
+      <button class="btn btn-primary" style="margin-top:8px" onclick="showPage('brandkit')">Open Brand Kit →</button>
     </div>
+  </div>
+
+  <!-- ── Brand Kit Page ──────────────────────────────────────────────────── -->
+  <div id="page-brandkit" class="page">
+    <div class="bk-header">
+      <h2>Brand Kit</h2>
+      <button class="btn btn-primary" onclick="saveBrandKit()">Save Brand Kit</button>
+    </div>
+
+    <div class="bk-layout">
+      <!-- Left: form cards -->
+      <div class="bk-left">
+
+        <!-- Company Name -->
+        <div class="bk-card">
+          <div class="bk-card-title">Company</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <label style="font-size:12px;color:var(--muted)">Company Name</label>
+            <input type="text" id="bkCompanyName" class="prop-input" style="font-size:15px;padding:9px 12px"
+                   placeholder="Your Company Name"
+                   oninput="brandKit.companyName=this.value;renderBkPreview()">
+          </div>
+        </div>
+
+        <!-- Brand Colors -->
+        <div class="bk-card">
+          <div class="bk-card-title">Brand Colors</div>
+          <p style="font-size:12px;color:var(--muted);margin:0">Up to 8 colors. Click to edit, hover to delete. Colors appear in the slide editor for quick access.</p>
+          <div class="bk-swatch-grid" id="bkSwatchGrid"></div>
+          <input type="color" id="bkColorInput" style="position:absolute;width:0;height:0;opacity:0;pointer-events:none">
+        </div>
+
+        <!-- Brand Fonts -->
+        <div class="bk-card">
+          <div class="bk-card-title">Brand Fonts</div>
+          <p style="font-size:12px;color:var(--muted);margin:0">Your fonts appear at the top of the font picker in the editor.</p>
+          <div class="bk-font-slots">
+            <div class="bk-font-slot" onclick="openBkFontPicker('heading')">
+              <span class="bk-font-role">Heading</span>
+              <span class="bk-font-name" id="bkFontHeadingName" style="color:var(--muted)">Click to set…</span>
+              <button class="bk-font-clear" onclick="event.stopPropagation();clearBkFont('heading')" title="Remove">×</button>
+            </div>
+            <div class="bk-font-slot" onclick="openBkFontPicker('body')">
+              <span class="bk-font-role">Body</span>
+              <span class="bk-font-name" id="bkFontBodyName" style="color:var(--muted)">Click to set…</span>
+              <button class="bk-font-clear" onclick="event.stopPropagation();clearBkFont('body')" title="Remove">×</button>
+            </div>
+            <div class="bk-font-slot" onclick="openBkFontPicker('accent')">
+              <span class="bk-font-role">Accent</span>
+              <span class="bk-font-name" id="bkFontAccentName" style="color:var(--muted)">Click to set…</span>
+              <button class="bk-font-clear" onclick="event.stopPropagation();clearBkFont('accent')" title="Remove">×</button>
+            </div>
+          </div>
+          <!-- Inline font search for brand kit -->
+          <div id="bkFontPickerWrap" style="display:none;flex-direction:column;gap:6px">
+            <div style="font-size:11px;color:var(--muted)" id="bkFontPickerSlotLabel">Setting heading font…</div>
+            <input type="text" class="prop-input" placeholder="Search fonts…" id="bkFontSearch"
+                   oninput="renderBkFontList(this.value)">
+            <div id="bkFontList" style="max-height:180px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;background:var(--surface2)"></div>
+            <button class="btn btn-secondary" style="font-size:12px;padding:5px 10px" onclick="closeBkFontPicker()">Cancel</button>
+          </div>
+        </div>
+
+        <!-- Brand Logo -->
+        <div class="bk-card">
+          <div class="bk-card-title">Brand Logo</div>
+          <p style="font-size:12px;color:var(--muted);margin:0">PNG with transparency recommended. Use the "Insert Logo" button in the slide editor to add it to any slide.</p>
+          <div class="bk-logo-area">
+            <img id="bkLogoPreview" class="bk-logo-img" src="" alt="" style="display:none">
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-secondary" style="flex:1" onclick="uploadBkLogo()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:5px">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+                Upload Logo
+              </button>
+              <button class="btn btn-secondary" id="bkLogoRemoveBtn" style="display:none;color:var(--danger)" onclick="removeBkLogo()">Remove</button>
+            </div>
+            <input type="file" id="bkLogoFile" accept="image/*" style="display:none" onchange="handleBkLogoUpload(event)">
+          </div>
+        </div>
+
+      </div><!-- end .bk-left -->
+
+      <!-- Right: live preview -->
+      <div class="bk-preview-panel">
+        <div class="bk-card" style="gap:12px">
+          <div class="bk-card-title">Preview</div>
+          <div class="bk-mini-slide" id="bkMiniSlide">
+            <div id="bkMiniContent" class="bk-mini-content">
+              <div class="bk-mini-company" id="bkMiniCompany">Your Company</div>
+              <div class="bk-mini-bar" id="bkMiniBar" style="background:var(--accent)"></div>
+              <div class="bk-mini-tagline">Bringing your brand to every screen</div>
+              <div class="bk-mini-font-row" id="bkMiniFontRow"></div>
+            </div>
+          </div>
+          <div style="font-size:11px;color:var(--muted);text-align:center">Live preview of your brand settings</div>
+        </div>
+      </div>
+
+    </div><!-- end .bk-layout -->
   </div>
 
 </div><!-- /app-main -->
@@ -2333,6 +2539,14 @@ section.content {
         </svg>
       </button>
 
+      <!-- Insert Brand Logo (only shown when brand kit has a logo) -->
+      <button class="tool-btn" id="btnInsertLogo" title="Insert Brand Logo" onclick="insertBrandLogo()" style="display:none">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <rect x="3" y="3" width="18" height="18" rx="2"/>
+          <path d="M3 9h18M9 21V9"/>
+        </svg>
+      </button>
+
       <!-- Ticker bar -->
       <button class="tool-btn" title="Add Ticker Bar" onclick="designerAddTicker()">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
@@ -2367,6 +2581,12 @@ section.content {
     </div>
 
     <div class="designer-props" id="designerProps">
+
+      <!-- Brand colors quick-access strip (hidden when no brand kit) -->
+      <div class="bk-designer-strip" id="bkDesignerStrip">
+        <span class="bk-ds-label">Brand</span>
+        <div id="bkDesignerSwatches" style="display:contents"></div>
+      </div>
 
       <!-- Stock photos panel -->
       <div id="stockPanel" style="display:none">
@@ -3130,6 +3350,7 @@ onAuthStateChanged(auth, user => {
     email.textContent  = user.email;
     btn.textContent    = "Sign Out";
     listenToShow(currentShowId);
+    loadBrandKit();
   } else {
     badge.textContent  = "Offline";
     badge.className    = "live-badge offline";
@@ -4027,6 +4248,7 @@ function initFabricCanvas() {
     fabricCanvas.setZoom(scale);
 
     syncBgSwatch();
+    renderDesignerBrandStrip();
 
     // Selection events → update properties panel
     fabricCanvas.on('selection:created', updatePropsPanel);
@@ -5401,6 +5623,314 @@ function tmplRect(left, top, width, height, opts = {}) {
   return obj;
 }
 
+// ── Brand Kit ──────────────────────────────────────────────────────────────
+window.brandKit = {
+  companyName: '',
+  colors: [],   // [{hex, label}]  max 8
+  fonts:  { heading: '', body: '', accent: '' },
+  logo:   { url: '' },
+};
+
+const BK_COLOR_LABELS = ['Primary','Secondary','Accent','Dark','Light','Alert','Success','Neutral'];
+
+async function loadBrandKit() {
+  const user = auth.currentUser;
+  if (!user) return;
+  try {
+    const snap = await getDoc(doc(db, 'brandKits', user.uid));
+    if (snap.exists()) {
+      const data = snap.data();
+      window.brandKit = Object.assign({ companyName:'', colors:[], fonts:{heading:'',body:'',accent:''}, logo:{url:''} }, data);
+    }
+  } catch(e) { console.warn('Brand kit load failed:', e.message); }
+  renderBkPage();
+  renderDesignerBrandStrip();
+}
+
+window.saveBrandKit = async function() {
+  const user = auth.currentUser;
+  if (!user) { toast('Sign in first to save your brand kit.', true); return; }
+  try {
+    await setDoc(doc(db, 'brandKits', user.uid), window.brandKit);
+    toast('Brand kit saved!');
+    renderDesignerBrandStrip();
+  } catch(e) { toast('Save failed: ' + e.message, true); }
+};
+
+// ── Brand Kit Page ──────────────────────────────────────────────────────────
+function renderBkPage() {
+  const bk = window.brandKit;
+  // Company name
+  const nameEl = document.getElementById('bkCompanyName');
+  if (nameEl) nameEl.value = bk.companyName || '';
+  // Swatches
+  renderBkSwatches();
+  // Fonts
+  const slots = { heading: 'bkFontHeadingName', body: 'bkFontBodyName', accent: 'bkFontAccentName' };
+  for (const [role, id] of Object.entries(slots)) {
+    const el = document.getElementById(id);
+    if (!el) continue;
+    const f = bk.fonts?.[role];
+    el.textContent = f || 'Click to set…';
+    el.style.cssText = f ? `font-family:'${f}',sans-serif;color:var(--text)` : 'color:var(--muted)';
+    if (f) loadGoogleFont(f);
+  }
+  // Logo
+  const logoImg = document.getElementById('bkLogoPreview');
+  const logoRemBtn = document.getElementById('bkLogoRemoveBtn');
+  if (logoImg) {
+    logoImg.src = bk.logo?.url || '';
+    logoImg.style.display = bk.logo?.url ? 'block' : 'none';
+  }
+  if (logoRemBtn) logoRemBtn.style.display = bk.logo?.url ? '' : 'none';
+  renderBkPreview();
+}
+
+function renderBkSwatches() {
+  const grid = document.getElementById('bkSwatchGrid');
+  if (!grid) return;
+  const bk = window.brandKit;
+  let html = '';
+  (bk.colors || []).forEach((c, i) => {
+    const label = c.label || BK_COLOR_LABELS[i] || 'Color';
+    html += `<div class="bk-swatch" style="background:${c.hex}" title="${label}"
+              onclick="editBkColor(${i})"
+              data-idx="${i}">
+              <span class="bk-swatch-tip">${label}</span>
+              <button class="bk-swatch-del" onclick="event.stopPropagation();removeBkColor(${i})" title="Remove">×</button>
+            </div>`;
+  });
+  if ((bk.colors || []).length < 8) {
+    html += `<button class="bk-add-swatch" onclick="addBkColor()" title="Add color">+</button>`;
+  }
+  grid.innerHTML = html;
+}
+
+let _bkEditingColorIdx = null;
+window.addBkColor = function() {
+  _bkEditingColorIdx = null;
+  const inp = document.getElementById('bkColorInput');
+  inp.value = '#4f8ef7';
+  inp.onchange = () => {
+    const hex = inp.value;
+    const label = BK_COLOR_LABELS[window.brandKit.colors.length] || 'Color';
+    window.brandKit.colors.push({ hex, label });
+    renderBkSwatches(); renderBkPreview(); renderDesignerBrandStrip();
+  };
+  inp.click();
+};
+
+window.editBkColor = function(idx) {
+  _bkEditingColorIdx = idx;
+  const inp = document.getElementById('bkColorInput');
+  inp.value = window.brandKit.colors[idx]?.hex || '#000000';
+  inp.onchange = () => {
+    window.brandKit.colors[idx].hex = inp.value;
+    renderBkSwatches(); renderBkPreview(); renderDesignerBrandStrip();
+  };
+  inp.click();
+};
+
+window.removeBkColor = function(idx) {
+  window.brandKit.colors.splice(idx, 1);
+  renderBkSwatches(); renderBkPreview(); renderDesignerBrandStrip();
+};
+
+// Brand font picker (inline in Brand Kit page)
+let _bkFontSlot = null;
+window.openBkFontPicker = function(slot) {
+  _bkFontSlot = slot;
+  const wrap = document.getElementById('bkFontPickerWrap');
+  const label = document.getElementById('bkFontPickerSlotLabel');
+  const search = document.getElementById('bkFontSearch');
+  if (!wrap) return;
+  label.textContent = `Setting ${slot} font…`;
+  search.value = '';
+  wrap.style.display = 'flex';
+  renderBkFontList('');
+  search.focus();
+};
+
+window.closeBkFontPicker = function() {
+  const wrap = document.getElementById('bkFontPickerWrap');
+  if (wrap) wrap.style.display = 'none';
+  _bkFontSlot = null;
+};
+
+window.renderBkFontList = function(query) {
+  const list = document.getElementById('bkFontList');
+  if (!list) return;
+  const q = query.trim().toLowerCase();
+  const fonts = q
+    ? GOOGLE_FONTS_LIST.filter(f => f.toLowerCase().includes(q)).slice(0, 40)
+    : [...FAVORITE_FONTS, ...GOOGLE_FONTS_LIST.filter(f => !FAVORITE_FONTS.includes(f)).slice(0, 60)];
+  list.innerHTML = fonts.map(f => {
+    const safe = f.replace(/'/g, "\\'");
+    return `<div class="font-option" data-family="${f}" style="font-family:'${f}',sans-serif"
+               onmouseenter="loadGoogleFont('${safe}')"
+               onclick="selectBkFont('${safe}')">${f}</div>`;
+  }).join('');
+  list.querySelectorAll('.font-option').forEach(el => {
+    const fam = el.dataset.family;
+    const obs = new IntersectionObserver(entries => {
+      entries.forEach(e => { if (e.isIntersecting) { loadGoogleFont(fam); obs.unobserve(e.target); } });
+    }, { root: list });
+    obs.observe(el);
+  });
+};
+
+window.selectBkFont = function(family) {
+  if (!_bkFontSlot) return;
+  if (!window.brandKit.fonts) window.brandKit.fonts = {};
+  window.brandKit.fonts[_bkFontSlot] = family;
+  loadGoogleFont(family);
+  closeBkFontPicker();
+  renderBkPage();
+};
+
+window.clearBkFont = function(slot) {
+  if (window.brandKit.fonts) window.brandKit.fonts[slot] = '';
+  renderBkPage();
+};
+
+// Brand logo upload
+window.uploadBkLogo = function() { document.getElementById('bkLogoFile').click(); };
+
+window.handleBkLogoUpload = async function(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  const btn = document.querySelector('.bk-logo-area .btn');
+  if (btn) btn.textContent = 'Uploading…';
+  try {
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+    fd.append('folder', 'signage/logos');
+    const res  = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, { method:'POST', body:fd });
+    const data = await res.json();
+    window.brandKit.logo = { url: data.secure_url, publicId: data.public_id };
+    renderBkPage();
+    toast('Logo uploaded!');
+  } catch(e) { toast('Upload failed: ' + e.message, true); }
+  event.target.value = '';
+};
+
+window.removeBkLogo = function() {
+  window.brandKit.logo = { url: '' };
+  renderBkPage();
+};
+
+// Live preview
+window.renderBkPreview = function() {
+  const bk  = window.brandKit;
+  const slide = document.getElementById('bkMiniSlide');
+  if (!slide) return;
+  const primary   = bk.colors?.[0]?.hex || '#0d1b2a';
+  const secondary = bk.colors?.[1]?.hex || '#4f8ef7';
+  slide.style.background = primary;
+  const bar = document.getElementById('bkMiniBar');
+  if (bar) bar.style.background = secondary;
+  const company = document.getElementById('bkMiniCompany');
+  if (company) {
+    company.textContent = bk.companyName || 'Your Company';
+    const hFont = bk.fonts?.heading;
+    company.style.fontFamily = hFont ? `'${hFont}', sans-serif` : '';
+  }
+  const fontRow = document.getElementById('bkMiniFontRow');
+  if (fontRow) {
+    const chips = Object.entries(bk.fonts || {})
+      .filter(([,v]) => v)
+      .map(([k,v]) => `<span class="bk-mini-font-chip">${k}: ${v}</span>`)
+      .join('');
+    fontRow.innerHTML = chips;
+  }
+};
+
+// ── Designer Brand Swatches Strip ──────────────────────────────────────────
+function renderDesignerBrandStrip() {
+  const strip = document.getElementById('bkDesignerStrip');
+  const swatchWrap = document.getElementById('bkDesignerSwatches');
+  if (!strip || !swatchWrap) return;
+  const colors = window.brandKit?.colors || [];
+  if (!colors.length) { strip.classList.remove('has-colors'); return; }
+  strip.classList.add('has-colors');
+  swatchWrap.innerHTML = colors.map(c =>
+    `<div class="bk-ds-swatch" style="background:${c.hex}" title="${c.label||c.hex}"
+          onclick="applyBrandColor('${c.hex}')"></div>`
+  ).join('');
+  // Show logo insert button if logo exists
+  const logoBtn = document.getElementById('btnInsertLogo');
+  if (logoBtn) logoBtn.style.display = window.brandKit?.logo?.url ? '' : 'none';
+}
+
+window.applyBrandColor = function(hex) {
+  if (!fabricCanvas) return;
+  const obj = fabricCanvas.getActiveObject();
+  if (!obj) {
+    // Apply to background
+    const bgInput = document.getElementById('propsBgColor');
+    if (bgInput) { bgInput.value = hex; bgInput.dispatchEvent(new Event('input')); }
+    return;
+  }
+  const t = obj.type;
+  if (t === 'i-text' || t === 'text') {
+    obj.set('fill', hex);
+    document.getElementById('propTextColor').value = toHex(hex);
+  } else if (t === 'image') {
+    // no-op
+    return;
+  } else {
+    obj.set('fill', hex);
+    const fi = document.getElementById('propShapeFill');
+    if (fi) fi.value = toHex(hex);
+  }
+  fabricCanvas.renderAll();
+  historySave();
+};
+
+// ── Insert Brand Logo ──────────────────────────────────────────────────────
+window.insertBrandLogo = function() {
+  const url = window.brandKit?.logo?.url;
+  if (!url || !fabricCanvas) return;
+  fabric.Image.fromURL(url, (img) => {
+    const maxW = CANVAS_W * 0.25;
+    if (img.width > maxW) img.scale(maxW / img.width);
+    img.set({ left: CANVAS_W / 2, top: CANVAS_H / 2, originX: 'center', originY: 'center' });
+    fabricCanvas.add(img);
+    fabricCanvas.setActiveObject(img);
+    fabricCanvas.renderAll();
+    historySave();
+  }, { crossOrigin: 'anonymous' });
+};
+
+// ── Brand Kit Template Substitution ───────────────────────────────────────
+function applyBrandKitToTemplate() {
+  const bk = window.brandKit;
+  if (!bk) return;
+  const hFont = bk.fonts?.heading;
+  const bFont = bk.fonts?.body;
+  if (!hFont && !bFont) return;
+  fabricCanvas.getObjects().forEach(obj => {
+    if (obj.type !== 'i-text' && obj.type !== 'text') return;
+    const size = (obj.fontSize || 0) * (obj.scaleX || 1);
+    if (hFont && size >= 56) { loadGoogleFont(hFont); obj.set('fontFamily', hFont); }
+    else if (bFont && size < 56) { loadGoogleFont(bFont); obj.set('fontFamily', bFont); }
+  });
+  fabricCanvas.renderAll();
+}
+
+window.showPage = function(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.page === name));
+  const page = document.getElementById('page-' + name);
+  if (page) {
+    page.classList.add('active');
+    if (name === 'dashboard') updateDashboard();
+    if (name === 'screens')   initScreensPage();
+    if (name === 'brandkit')  renderBkPage();
+  }
+};
+
 function applyTemplate(name) {
   if (!fabricCanvas) return;
   const W = 1920, H = 1080;
@@ -5662,6 +6192,9 @@ function applyTemplate(name) {
     tmplText('Your supporting body copy goes here.\nAdd more details below.', W*0.74, H*0.52, { fontSize:44, fill:'#555555', textAlign:'center', lineHeight:1.4 });
   }
 
+  // Apply brand kit fonts if configured
+  applyBrandKitToTemplate();
+
   fabricCanvas.renderAll();
   historyStack = []; histIdx = -1;
   historySave();
@@ -5752,17 +6285,7 @@ window.addEventListener('resize', () => {
   }
 });
 
-// ── Page navigation ───────────────────────────────────────────────────────
-window.showPage = function(name) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.page === name));
-  const page = document.getElementById('page-' + name);
-  if (page) {
-    page.classList.add('active');
-    if (name === 'dashboard') updateDashboard();
-    if (name === 'screens')   initScreensPage();
-  }
-};
+// (showPage is defined in the Brand Kit module above)
 
 // ── Preview frame ──────────────────────────────────────────────────────────
 window.updatePreviewFrame = function() {
@@ -6634,6 +7157,19 @@ function renderFontList(query) {
   const q = query.trim().toLowerCase();
   let html = '';
   if (!q) {
+    // Brand fonts at the top if set
+    const bkFonts = Object.entries(window.brandKit?.fonts || {}).filter(([,v]) => v);
+    if (bkFonts.length) {
+      html += '<div class="font-section-lbl">Your Brand Fonts</div>';
+      bkFonts.forEach(([role, family]) => {
+        const safe = family.replace(/'/g, "\\'");
+        const sel  = family === currentPickerFont ? ' selected' : '';
+        html += `<div class="font-option${sel}" data-family="${family}"
+                      style="font-family:'${family}',sans-serif"
+                      onmouseenter="previewFont('${safe}')"
+                      onclick="selectFont('${safe}')">${family} <span style="font-size:10px;opacity:.5">(${role})</span></div>`;
+      });
+    }
     html += '<div class="font-section-lbl">Favorites</div>';
     // Favorites are pre-loaded — render them with their fonts already available
     FAVORITE_FONTS.forEach(f => { html += fontOptionHTML(f); });
