@@ -5884,7 +5884,7 @@ window.insertIcon = async function(prefix, name) {
   if (!fabricCanvas) return;
   const color = document.getElementById('iconColorPicker').value || '#ffffff';
   const size  = iconCurrentSize;
-  const svgUrl = `https://api.iconify.design/${prefix}/${name}.svg?color=${encodeURIComponent(color)}`;
+  const svgUrl = `https://api.iconify.design/${prefix}/${name}.svg?color=${encodeURIComponent(color)}&width=100&height=100`;
 
   try {
     const res    = await fetch(svgUrl);
