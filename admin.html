@@ -991,6 +991,28 @@ section.content {
 }
 .icon-size-btn.active, .icon-size-btn:hover { background:var(--accent); color:#fff; border-color:var(--accent); }
 
+/* ── Readability Checker ─────────────────────────────────────────────────── */
+#btnCheck.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+.check-score { text-align:center; padding:14px 8px 12px; border-bottom:1px solid var(--border); margin-bottom:12px; }
+.check-score-badge { display:inline-block; padding:4px 16px; border-radius:20px; font-size:15px; font-weight:700; margin-bottom:3px; }
+.check-score-badge.excellent { background:var(--success-bg); color:var(--success); }
+.check-score-badge.good      { background:var(--accent-bg);  color:var(--accent);  }
+.check-score-badge.needs-work{ background:rgba(217,119,6,.12); color:#d97706; }
+.check-score-badge.poor      { background:var(--danger-bg);  color:var(--danger);  }
+.check-score-sub { font-size:11px; color:var(--muted); }
+.check-issues { display:flex; flex-direction:column; gap:5px; margin-bottom:10px; }
+.check-issue { display:flex; align-items:flex-start; gap:8px; padding:8px 10px; border-radius:8px; background:var(--surface2); border:1px solid var(--border); cursor:pointer; transition:background .12s,border-color .12s; }
+.check-issue:hover { background:var(--accent-bg); border-color:var(--accent); }
+.check-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; margin-top:3px; }
+.check-dot.critical { background:var(--danger); }
+.check-dot.warning  { background:#d97706; }
+.check-dot.pass     { background:var(--success); }
+.check-issue-body { font-size:11px; line-height:1.45; }
+.check-issue-title { font-weight:600; color:var(--text); }
+.check-issue-desc  { color:var(--muted); }
+.check-fix-btns { display:flex; flex-direction:column; gap:5px; margin-bottom:8px; }
+.check-empty { text-align:center; padding:22px 0; font-size:12px; color:var(--muted); }
+
 #canvasFrame.drag-over { outline: 3px dashed var(--accent); outline-offset: -3px; }
 
 /* ── Ticker bar (canvas preview) ─────────────────────────────────────────── */
@@ -2449,6 +2471,15 @@ section.content {
         </svg>
       </button>
       <div style="width:1px;height:22px;background:var(--border);margin:0 2px;align-self:center"></div>
+      <button class="btn btn-secondary" id="btnCheck" title="Readability Checker" onclick="toggleCheckPanel()" style="display:flex;align-items:center;gap:6px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M9 3.5A9.7 9.7 0 0 0 1 12" stroke-width="0" fill="none"/>
+        </svg>
+        Check
+      </button>
+      <div style="width:1px;height:22px;background:var(--border);margin:0 2px;align-self:center"></div>
       <button class="btn btn-secondary" title="TV Preview" onclick="openTvPreview()" style="display:flex;align-items:center;gap:6px">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <rect x="2" y="3" width="20" height="14" rx="2"/>
@@ -2706,6 +2737,21 @@ section.content {
                 onclick="loadMoreStock()">Load more</button>
         <div style="font-size:9px;color:var(--muted);text-align:center;margin-top:8px">
           Photos by <a href="https://unsplash.com?utm_source=digital_signage&utm_medium=referral" target="_blank" rel="noopener" style="color:var(--muted)">Unsplash</a>
+        </div>
+      </div>
+
+      <!-- Readability checker panel -->
+      <div id="checkPanel" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div class="props-title" style="margin:0">Readability</div>
+          <button onclick="closeCheckPanel()" title="Close" style="background:none;border:none;cursor:pointer;color:var(--muted);padding:2px;display:flex;align-items:center">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+        <div id="checkContent">
+          <div class="check-empty">Press Check to analyze this slide</div>
         </div>
       </div>
 
@@ -5495,6 +5541,7 @@ window.toggleStockPanel = function() {
 function openStockPanel() {
   document.getElementById('btnStockPhotos').classList.add('active');
   document.getElementById('stockPanel').style.display = 'block';
+  if (checkPanelOpen) window.closeCheckPanel();
   ['propsNone','propsText','propsImage','propsShape','propsIcon','propsTicker','propsAnimation'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
@@ -5834,6 +5881,7 @@ function openIconPanel() {
   document.getElementById('btnIcons').classList.add('active');
   document.getElementById('iconPanel').style.display = 'block';
   closeStockPanel();
+  if (checkPanelOpen) window.closeCheckPanel();
   ['propsNone','propsText','propsImage','propsShape','propsIcon','propsTicker','propsAnimation'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
@@ -6003,6 +6051,236 @@ window.applyIconColor = function(color) {
   }
   fabricCanvas.renderAll();
   historySave();
+};
+
+// ── Readability Checker ────────────────────────────────────────────────────
+let checkPanelOpen = false;
+let _checkIssues   = [];
+
+window.toggleCheckPanel = function() {
+  checkPanelOpen ? window.closeCheckPanel() : openCheckPanel();
+};
+
+function openCheckPanel() {
+  checkPanelOpen = true;
+  document.getElementById('btnCheck').classList.add('active');
+  document.getElementById('checkPanel').style.display = 'block';
+  closeIconPanel();
+  closeStockPanel();
+  ['propsNone','propsText','propsImage','propsShape','propsIcon','propsTicker','propsAnimation'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  runReadabilityCheck();
+}
+
+window.closeCheckPanel = function() {
+  checkPanelOpen = false;
+  const btn = document.getElementById('btnCheck');
+  if (btn) btn.classList.remove('active');
+  const panel = document.getElementById('checkPanel');
+  if (panel) panel.style.display = 'none';
+  updatePropsPanel();
+};
+
+// WCAG relative luminance for a #rrggbb hex string
+function _wcagLuminance(hex) {
+  hex = hex.replace(/^#/, '');
+  if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+  const n = parseInt(hex, 16);
+  return [[n >> 16, 0.2126], [(n >> 8) & 255, 0.7152], [n & 255, 0.0722]]
+    .reduce((L, [ch, w]) => {
+      const v = ch / 255;
+      return L + w * (v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4));
+    }, 0);
+}
+
+function _contrastRatio(hex1, hex2) {
+  const [L1, L2] = [_wcagLuminance(hex1), _wcagLuminance(hex2)];
+  const [hi, lo] = L1 >= L2 ? [L1, L2] : [L2, L1];
+  return +((hi + 0.05) / (lo + 0.05)).toFixed(2);
+}
+
+// Return the best-guess solid background hex color behind a canvas object
+function _bgBehind(obj) {
+  const fallback = toHex(
+    typeof fabricCanvas.backgroundColor === 'string'
+      ? fabricCanvas.backgroundColor
+      : (document.getElementById('propsBgColor')?.value || '#ffffff')
+  ) || '#ffffff';
+
+  const all  = fabricCanvas.getObjects();
+  const idx  = all.indexOf(obj);
+  const bbox = obj.getBoundingRect();
+  const cx   = bbox.left + bbox.width  / 2;
+  const cy   = bbox.top  + bbox.height / 2;
+
+  for (let i = idx - 1; i >= 0; i--) {
+    const o = all[i];
+    if (typeof o.fill !== 'string' || !o.fill || o.fill === 'transparent') continue;
+    const b = o.getBoundingRect();
+    if (cx >= b.left && cx <= b.left + b.width &&
+        cy >= b.top  && cy <= b.top  + b.height) {
+      return toHex(o.fill) || fallback;
+    }
+  }
+  return fallback;
+}
+
+function runReadabilityCheck() {
+  if (!fabricCanvas) return;
+  const issues  = [];
+  const objects = fabricCanvas.getObjects();
+  const safeL   = CANVAS_W * 0.05;
+  const safeR   = CANVAS_W * 0.95;
+  const safeT   = CANVAS_H * 0.05;
+  const safeB   = CANVAS_H * 0.95;
+  const textObjs = objects.filter(o => o.type === 'i-text' || o.type === 'text');
+
+  // 4 · Overcrowding
+  if (textObjs.length > 8) {
+    issues.push({ type: 'warning', label: 'Too much text',
+      desc: `${textObjs.length} text elements — simplify for TV viewing`, obj: null });
+  }
+
+  textObjs.forEach(obj => {
+    const size  = obj.fontSize || 24;
+    const label = `"${(obj.text || '').slice(0, 20) || 'Text element'}"`;
+
+    // 1 · Text size
+    if (size < 32) {
+      issues.push({ type: 'critical', label: 'Text too small',
+        desc: `${label} is ${size}px — unreadable from 10 feet`, obj });
+    } else if (size < 48) {
+      issues.push({ type: 'warning', label: 'Small text',
+        desc: `${label} is ${size}px — consider increasing for distant viewing`, obj });
+    }
+
+    // 2 · Contrast
+    const textHex = toHex(typeof obj.fill === 'string' ? obj.fill : null);
+    if (textHex && textHex !== '#000000' || textHex) {
+      try {
+        const bgHex = _bgBehind(obj);
+        const ratio = _contrastRatio(textHex, bgHex);
+        if (ratio < 3) {
+          issues.push({ type: 'critical', label: 'Poor contrast',
+            desc: `${label} — ${ratio}:1 contrast, hard to read`, obj });
+        } else if (ratio < 4.5) {
+          issues.push({ type: 'warning', label: 'Moderate contrast',
+            desc: `${label} — ${ratio}:1 contrast, acceptable for large text`, obj });
+        }
+      } catch (_) { /* unparseable color — skip */ }
+    }
+  });
+
+  // 3 · Safe zone (all objects)
+  objects.forEach(obj => {
+    if (obj.type === 'tickerBar') return;
+    const b = obj.getBoundingRect();
+    if (b.left < safeL || b.top < safeT ||
+        b.left + b.width > safeR || b.top + b.height > safeB) {
+      const name = (obj.type === 'i-text' || obj.type === 'text')
+        ? `"${(obj.text || '').slice(0, 15) || 'Text'}"`
+        : (obj.type || 'Element');
+      issues.push({ type: 'warning', label: 'Outside safe zone',
+        desc: `${name} may be cropped on some TVs`, obj });
+    }
+  });
+
+  _checkIssues = issues;
+  _renderCheckResults(issues);
+}
+
+function _renderCheckResults(issues) {
+  const content = document.getElementById('checkContent');
+  if (!content) return;
+
+  const criticals = issues.filter(i => i.type === 'critical').length;
+  const warnings  = issues.filter(i => i.type === 'warning').length;
+
+  let scoreLabel, scoreClass;
+  if (issues.length === 0)                          { scoreLabel = 'Excellent';  scoreClass = 'excellent';  }
+  else if (criticals === 0 && issues.length <= 2)   { scoreLabel = 'Good';       scoreClass = 'good';       }
+  else if (criticals <= 2  && issues.length <= 5)   { scoreLabel = 'Needs Work'; scoreClass = 'needs-work'; }
+  else                                              { scoreLabel = 'Poor';       scoreClass = 'poor';       }
+
+  const sub = issues.length === 0 ? 'No issues found'
+    : `${criticals} critical · ${warnings} warning${warnings !== 1 ? 's' : ''}`;
+
+  const issueRows = issues.length === 0
+    ? `<div class="check-empty">✓ This slide looks great!</div>`
+    : `<div class="check-issues">${issues.map((iss, i) => `
+        <div class="check-issue" onclick="checkHighlight(${i})">
+          <div class="check-dot ${iss.type}"></div>
+          <div class="check-issue-body">
+            <div class="check-issue-title">${iss.label}</div>
+            <div class="check-issue-desc">${iss.desc}</div>
+          </div>
+        </div>`).join('')}</div>`;
+
+  const hasSmall    = issues.some(i => i.label === 'Text too small' || i.label === 'Small text');
+  const hasSafeZone = issues.some(i => i.label === 'Outside safe zone');
+
+  const fixBtns = (hasSmall || hasSafeZone) ? `
+    <div class="check-fix-btns">
+      ${hasSmall    ? `<button class="prop-btn" style="width:100%" onclick="checkFixTextSizes()">↑ Fix All Text Sizes → 48px</button>` : ''}
+      ${hasSafeZone ? `<button class="prop-btn" style="width:100%" onclick="checkFixSafeZone()">⊞ Apply Safe Zone</button>` : ''}
+    </div>` : '';
+
+  content.innerHTML = `
+    <div class="check-score">
+      <div class="check-score-badge ${scoreClass}">${scoreLabel}</div>
+      <div class="check-score-sub">${sub}</div>
+    </div>
+    ${issueRows}
+    ${fixBtns}
+    <button class="prop-btn" style="width:100%;margin-top:6px" onclick="runReadabilityCheck()">↻ Re-check</button>`;
+}
+
+window.checkHighlight = function(idx) {
+  const iss = _checkIssues[idx];
+  if (!iss?.obj) return;
+  fabricCanvas.setActiveObject(iss.obj);
+  const obj   = iss.obj;
+  const color = iss.type === 'critical' ? '#dc2626' : '#f59e0b';
+  const origS = obj.stroke;
+  const origW = obj.strokeWidth;
+  obj.set({ stroke: color, strokeWidth: Math.max(2, Math.round(4 / fabricCanvas.getZoom())) });
+  fabricCanvas.renderAll();
+  setTimeout(() => {
+    obj.set({ stroke: origS, strokeWidth: origW });
+    fabricCanvas.renderAll();
+  }, 1500);
+};
+
+window.checkFixTextSizes = function() {
+  fabricCanvas.getObjects()
+    .filter(o => (o.type === 'i-text' || o.type === 'text') && (o.fontSize || 0) < 48)
+    .forEach(o => o.set('fontSize', 48));
+  fabricCanvas.renderAll();
+  historySave();
+  runReadabilityCheck();
+};
+
+window.checkFixSafeZone = function() {
+  const pad  = 4;
+  const safeL = CANVAS_W * 0.05;
+  const safeR = CANVAS_W * 0.95;
+  const safeT = CANVAS_H * 0.05;
+  const safeB = CANVAS_H * 0.95;
+  fabricCanvas.getObjects().forEach(obj => {
+    if (obj.type === 'tickerBar') return;
+    const b = obj.getBoundingRect();
+    let dx = 0, dy = 0;
+    if (b.left < safeL)                      dx = safeL + pad - b.left;
+    else if (b.left + b.width  > safeR)      dx = (safeR - pad) - (b.left + b.width);
+    if (b.top  < safeT)                      dy = safeT + pad - b.top;
+    else if (b.top  + b.height > safeB)      dy = (safeB - pad) - (b.top  + b.height);
+    if (dx || dy) { obj.set({ left: obj.left + dx, top: obj.top + dy }); obj.setCoords(); }
+  });
+  fabricCanvas.renderAll();
+  historySave();
+  runReadabilityCheck();
 };
 
 // ── Brand Kit ──────────────────────────────────────────────────────────────
