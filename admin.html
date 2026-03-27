@@ -4756,10 +4756,15 @@ function initFabricCanvas() {
     fabricCanvas.selectionDashArray   = [6, 3];
 
     // Ctrl/Cmd+click adds to selection (same as Shift+click)
-    const _origGroupLogic = fabricCanvas._shouldHandleGroupLogic.bind(fabricCanvas);
-    fabricCanvas._shouldHandleGroupLogic = function(e, target) {
-      return _origGroupLogic(e, target) || e.ctrlKey || e.metaKey;
-    };
+    // Fabric.js v4/v5 used _shouldHandleGroupLogic; v6 uses selectionKey property
+    if (typeof fabricCanvas._shouldHandleGroupLogic === 'function') {
+      const _origGroupLogic = fabricCanvas._shouldHandleGroupLogic.bind(fabricCanvas);
+      fabricCanvas._shouldHandleGroupLogic = function(e, target) {
+        return _origGroupLogic(e, target) || e.ctrlKey || e.metaKey;
+      };
+    } else {
+      fabricCanvas.selectionKey = ['shiftKey', 'ctrlKey', 'metaKey'];
+    }
 
     syncBgSwatch();
     renderDesignerBrandStrip();
