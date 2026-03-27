@@ -6369,8 +6369,10 @@ window.applyBgImage = function() {
   const imgEl = new Image();
   imgEl.onload = () => {
     const fImg = new fabric.Image(imgEl);
-    const scaleX = fabricCanvas.width  / imgEl.naturalWidth;
-    const scaleY = fabricCanvas.height / imgEl.naturalHeight;
+    // Use logical canvas dimensions (1920×1080), not display dimensions,
+    // because setZoom() already handles the display scaling.
+    const scaleX = CANVAS_W / imgEl.naturalWidth;
+    const scaleY = CANVAS_H / imgEl.naturalHeight;
     const scale  = fit === 'cover' ? Math.max(scaleX, scaleY) : Math.min(scaleX, scaleY);
     fImg.set({ scaleX: scale, scaleY: scale, originX: 'left', originY: 'top' });
     fabricCanvas.setBackgroundImage(fImg, fabricCanvas.renderAll.bind(fabricCanvas));
