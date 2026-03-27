@@ -1236,6 +1236,11 @@ section.content {
 .grad-preset:hover { border-color: var(--accent); transform: scale(1.1); }
 
 /* ── Stock Photos Panel ─────────────────────────────────────────────────── */
+.stock-tabs { display:flex; margin-bottom:10px; border-bottom:1px solid var(--border); }
+.stock-tab { flex:1; padding:6px 4px; border:none; background:none; color:var(--muted); font-size:11px; font-family:'DM Sans',sans-serif; font-weight:600; cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; transition:color .15s,border-color .15s; }
+.stock-tab.active { color:var(--accent); border-bottom-color:var(--accent); }
+.stock-tab-pane { display:none; }
+.stock-tab-pane.active { display:block; }
 .stock-search-row { display:flex; gap:6px; margin-bottom:10px; }
 .stock-search-row .prop-input { flex:1; min-width:0; }
 .stock-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:4px; }
@@ -1264,6 +1269,14 @@ section.content {
 }
 .stock-credit a { color:var(--muted); text-decoration:none; }
 .stock-credit a:hover { color:var(--accent); }
+.stock-coll-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:6px; }
+.stock-coll-card { border-radius:6px; overflow:hidden; cursor:pointer; position:relative; aspect-ratio:3/2; background:var(--surface2); }
+.stock-coll-card img { width:100%; height:100%; object-fit:cover; display:block; }
+.stock-coll-label { position:absolute; inset:0; background:linear-gradient(to top,rgba(0,0,0,.7) 0%,rgba(0,0,0,0) 55%); display:flex; align-items:flex-end; padding:6px; }
+.stock-coll-name { color:#fff; font-size:10px; font-weight:700; line-height:1.2; }
+.stock-coll-back { display:flex; align-items:center; gap:4px; background:none; border:none; color:var(--muted); font-size:11px; font-family:'DM Sans',sans-serif; cursor:pointer; padding:0 0 8px 0; }
+.stock-coll-back:hover { color:var(--text); }
+.stock-sentinel { height:1px; }
 .ctx-item {
   display:block; width:100%; text-align:left;
   padding:7px 12px; border:none; background:none;
@@ -2792,7 +2805,7 @@ section.content {
 
       <!-- Stock photos panel -->
       <div id="stockPanel" style="display:none">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
           <div class="props-title" style="margin:0">Stock Photos</div>
           <button onclick="closeStockPanel()" title="Close" style="background:none;border:none;cursor:pointer;color:var(--muted);padding:2px;display:flex;align-items:center">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -2800,19 +2813,47 @@ section.content {
             </svg>
           </button>
         </div>
-        <div class="stock-search-row">
-          <input type="text" id="stockSearchInput" class="prop-input" placeholder="Search photos…"
-                 onkeydown="if(event.key==='Enter') searchStockPhotos()">
-          <button class="prop-btn" onclick="searchStockPhotos()" title="Search">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-            </svg>
-          </button>
+        <!-- Tabs -->
+        <div class="stock-tabs">
+          <button class="stock-tab active" onclick="switchStockTab('search')">Search</button>
+          <button class="stock-tab" onclick="switchStockTab('curated')">Curated</button>
+          <button class="stock-tab" onclick="switchStockTab('collections')">Collections</button>
         </div>
-        <div id="stockGrid" class="stock-grid"></div>
-        <div id="stockStatus" style="font-size:11px;color:var(--muted);text-align:center;padding:8px 0"></div>
-        <button id="stockLoadMore" class="prop-btn" style="width:100%;margin-top:4px;display:none"
-                onclick="loadMoreStock()">Load more</button>
+        <!-- Search pane -->
+        <div id="stockPaneSearch" class="stock-tab-pane active">
+          <div class="stock-search-row">
+            <input type="text" id="stockSearchInput" class="prop-input" placeholder="Search photos…"
+                   oninput="debouncedStockSearch()" onkeydown="if(event.key==='Enter') searchStockPhotos()">
+            <button class="prop-btn" onclick="searchStockPhotos()" title="Search">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+            </button>
+          </div>
+          <div id="stockGrid" class="stock-grid"></div>
+          <div id="stockStatus" style="font-size:11px;color:var(--muted);text-align:center;padding:8px 0"></div>
+          <div id="stockSentinel" class="stock-sentinel"></div>
+        </div>
+        <!-- Curated pane -->
+        <div id="stockPaneCurated" class="stock-tab-pane">
+          <div id="stockCuratedGrid" class="stock-grid"></div>
+          <div id="stockCuratedStatus" style="font-size:11px;color:var(--muted);text-align:center;padding:8px 0"></div>
+          <div id="stockCuratedSentinel" class="stock-sentinel"></div>
+        </div>
+        <!-- Collections pane -->
+        <div id="stockPaneCollections" class="stock-tab-pane">
+          <div id="stockCollGrid" class="stock-coll-grid"></div>
+          <div id="stockCollPhotos" style="display:none">
+            <button class="stock-coll-back" onclick="showStockCollectionsList()">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+              Back to collections
+            </button>
+            <div id="stockCollPhotoGrid" class="stock-grid"></div>
+            <div id="stockCollStatus" style="font-size:11px;color:var(--muted);text-align:center;padding:8px 0"></div>
+            <div id="stockCollSentinel" class="stock-sentinel"></div>
+          </div>
+        </div>
+        <!-- Attribution footer -->
         <div style="font-size:9px;color:var(--muted);text-align:center;margin-top:8px">
           Photos by <a href="https://unsplash.com?utm_source=digital_signage&utm_medium=referral" target="_blank" rel="noopener" style="color:var(--muted)">Unsplash</a>
         </div>
@@ -4213,7 +4254,7 @@ window.toast = (msg, err=false) => {
 
 // ── Slide Designer ────────────────────────────────────────────────────────
 const CANVAS_W = 1920;
-const CANVAS_EXTRA_PROPS = ['isLocked', 'animation', 'iconGroup', 'iconColor'];
+const CANVAS_EXTRA_PROPS = ['isLocked', 'animation', 'iconGroup', 'iconColor', 'isUnsplashAttrib'];
 const CANVAS_H = 1080;
 let fabricCanvas    = null;
 let editingSlideIdx      = null; // null = new slide, number = editing existing
@@ -4401,8 +4442,15 @@ function doCloseDesigner() {
   // Reset stock panel
   document.getElementById('stockPanel').style.display = 'none';
   document.getElementById('stockGrid').innerHTML = '';
-  document.getElementById('stockLoadMore').style.display = 'none';
+  document.getElementById('stockCuratedGrid').innerHTML = '';
+  document.getElementById('stockCollGrid').innerHTML = '';
+  document.getElementById('stockCollPhotoGrid').innerHTML = '';
   document.getElementById('btnStockPhotos').classList.remove('active');
+  activeStockTab = 'search';
+  stockCuratedLoaded = false;
+  stockCollectionsLoaded = false;
+  document.querySelectorAll('.stock-tab').forEach((btn, i) => btn.classList.toggle('active', i === 0));
+  document.querySelectorAll('.stock-tab-pane').forEach((p, i) => p.classList.toggle('active', i === 0));
 }
 
 window.unsavedCancel = function() {
@@ -4701,6 +4749,18 @@ function initFabricCanvas() {
     // Keep logical coordinates in 1920×1080 space
     fabricCanvas.setZoom(scale);
 
+    // Rubber-band selection styling
+    fabricCanvas.selectionColor       = 'rgba(79,142,247,0.08)';
+    fabricCanvas.selectionBorderColor = '#4f8ef7';
+    fabricCanvas.selectionLineWidth   = 1.5;
+    fabricCanvas.selectionDashArray   = [6, 3];
+
+    // Ctrl/Cmd+click adds to selection (same as Shift+click)
+    const _origGroupLogic = fabricCanvas._shouldHandleGroupLogic.bind(fabricCanvas);
+    fabricCanvas._shouldHandleGroupLogic = function(e, target) {
+      return _origGroupLogic(e, target) || e.ctrlKey || e.metaKey;
+    };
+
     syncBgSwatch();
     renderDesignerBrandStrip();
 
@@ -4782,9 +4842,13 @@ function designerDeleteActive() {
   const obj = fabricCanvas.getActiveObject();
   if (!obj) return;
   if (obj.type === 'activeSelection') {
+    let hasAttrib = false;
+    obj.forEachObject(o => { if (o.isUnsplashAttrib) hasAttrib = true; });
+    if (hasAttrib && !confirm('Unsplash requires attribution — are you sure you want to remove this?')) return;
     obj.forEachObject(o => fabricCanvas.remove(o));
     fabricCanvas.discardActiveObject();
   } else {
+    if (obj.isUnsplashAttrib && !confirm('Unsplash requires attribution — are you sure you want to remove this?')) return;
     fabricCanvas.remove(obj);
     fabricCanvas.discardActiveObject();
   }
@@ -5065,6 +5129,7 @@ window.deleteLayerObj = function(idx) {
   if (!fabricCanvas) return;
   const obj = fabricCanvas.item(idx);
   if (!obj) return;
+  if (obj.isUnsplashAttrib && !confirm('Unsplash requires attribution — are you sure you want to remove this?')) return;
   fabricCanvas.remove(obj);
   fabricCanvas.discardActiveObject();
   fabricCanvas.renderAll();
@@ -5778,12 +5843,51 @@ window.sendBwd = function() {
   fabricCanvas.renderAll();
 };
 
-// ── Stock Photos ───────────────────────────────────────────────────────────
+// ── Stock Photos (Upgraded Unsplash Integration) ───────────────────────────
 const UNSPLASH_ACCESS_KEY = 'Ni1OZDAzJg2uQ-mRRoqMGDfxrC4dbG6jSYuSI-Gmils';
+const UNSPLASH_BASE = 'https://api.unsplash.com';
+
+const STOCK_COLLECTIONS = [
+  { name: 'Office & Business',      query: 'office business professional' },
+  { name: 'Food & Restaurant',      query: 'food restaurant dining' },
+  { name: 'Retail & Shopping',      query: 'retail shopping store' },
+  { name: 'Health & Wellness',      query: 'health wellness spa' },
+  { name: 'Education',              query: 'education school classroom' },
+  { name: 'Nature & Outdoors',      query: 'nature outdoor landscape' },
+  { name: 'Architecture',           query: 'architecture building interior' },
+  { name: 'Abstract & Backgrounds', query: 'abstract background texture' },
+];
+
 const stockPhotoMap = {};
-let stockQuery = '';
-let stockPage  = 1;
+let activeStockTab = 'search';
 let stockCtxPhotoId = null;
+
+// Search state
+let stockQuery = '';
+let stockPage = 1;
+let stockLoading = false;
+let stockHasMore = true;
+
+// Curated state
+let stockCuratedPage = 1;
+let stockCuratedLoading = false;
+let stockCuratedHasMore = true;
+let stockCuratedLoaded = false;
+
+// Collection state
+let stockCollPhotosQuery = '';
+let stockCollPage = 1;
+let stockCollLoading = false;
+let stockCollHasMore = true;
+let stockCollectionsLoaded = false;
+
+// Debounce timer
+let stockSearchTimer = null;
+
+// IntersectionObserver instances
+let stockSearchObserver = null;
+let stockCuratedObserver = null;
+let stockCollObserver = null;
 
 window.toggleStockPanel = function() {
   const panel = document.getElementById('stockPanel');
@@ -5800,9 +5904,10 @@ function openStockPanel() {
     if (el) el.style.display = 'none';
   });
   if (!document.getElementById('stockGrid').children.length) {
-    stockQuery = ''; stockPage = 1;
+    stockQuery = ''; stockPage = 1; stockHasMore = true;
     loadStockPhotos();
   }
+  setupStockObservers();
 }
 
 window.closeStockPanel = function() {
@@ -5811,62 +5916,210 @@ window.closeStockPanel = function() {
   updatePropsPanel();
 };
 
+window.switchStockTab = function(tab) {
+  activeStockTab = tab;
+  const tabNames = ['search', 'curated', 'collections'];
+  document.querySelectorAll('.stock-tab').forEach((btn, i) =>
+    btn.classList.toggle('active', tabNames[i] === tab)
+  );
+  document.querySelectorAll('.stock-tab-pane').forEach((p, i) =>
+    p.classList.toggle('active', tabNames[i] === tab)
+  );
+  if (tab === 'curated' && !stockCuratedLoaded) {
+    stockCuratedPage = 1; stockCuratedHasMore = true;
+    loadStockCurated();
+  }
+  if (tab === 'collections' && !stockCollectionsLoaded) {
+    loadStockCollections();
+  }
+  setupStockObservers();
+};
+
+// ── Debounced search ────────────────────────────────────────────────────────
+window.debouncedStockSearch = function() {
+  clearTimeout(stockSearchTimer);
+  stockSearchTimer = setTimeout(() => searchStockPhotos(), 500);
+};
+
 window.searchStockPhotos = function() {
   stockQuery = document.getElementById('stockSearchInput').value.trim();
   stockPage  = 1;
+  stockHasMore = true;
   document.getElementById('stockGrid').innerHTML = '';
-  document.getElementById('stockLoadMore').style.display = 'none';
+  document.getElementById('stockStatus').textContent = '';
   loadStockPhotos();
 };
 
-window.loadMoreStock = function() {
-  stockPage++;
-  loadStockPhotos(true);
-};
-
+// ── Search tab ──────────────────────────────────────────────────────────────
 async function loadStockPhotos(append = false) {
-  const status      = document.getElementById('stockStatus');
-  const loadMoreBtn = document.getElementById('stockLoadMore');
-  status.textContent = 'Loading…';
-  loadMoreBtn.style.display = 'none';
+  if (stockLoading || !stockHasMore) return;
+  stockLoading = true;
+  const status = document.getElementById('stockStatus');
+  if (!append) status.textContent = 'Loading…';
   try {
-    const base = 'https://api.unsplash.com';
-    const url  = stockQuery
-      ? `${base}/search/photos?query=${encodeURIComponent(stockQuery)}&per_page=12&page=${stockPage}&client_id=${UNSPLASH_ACCESS_KEY}`
-      : `${base}/photos?order_by=popular&per_page=12&page=${stockPage}&client_id=${UNSPLASH_ACCESS_KEY}`;
+    const url = stockQuery
+      ? `${UNSPLASH_BASE}/search/photos?query=${encodeURIComponent(stockQuery)}&per_page=12&page=${stockPage}&client_id=${UNSPLASH_ACCESS_KEY}`
+      : `${UNSPLASH_BASE}/photos?order_by=popular&per_page=12&page=${stockPage}&client_id=${UNSPLASH_ACCESS_KEY}`;
     const res = await fetch(url);
     if (!res.ok) throw new Error(String(res.status));
-    const data   = await res.json();
+    const data = await res.json();
     const photos = stockQuery ? data.results : data;
     status.textContent = '';
-    renderStockGrid(photos, append);
-    if (photos.length === 12) loadMoreBtn.style.display = 'block';
+    if (!photos.length && !append) {
+      status.textContent = 'No results found.';
+      stockHasMore = false;
+    } else {
+      renderStockPhotos(photos, 'stockGrid', append);
+      stockHasMore = photos.length === 12;
+    }
+    stockPage++;
   } catch (err) {
     status.textContent = err.message === '401'
       ? 'Invalid API key — replace UNSPLASH_ACCESS_KEY in the code.'
       : 'Could not load photos. Check your API key.';
+    stockHasMore = false;
+  }
+  stockLoading = false;
+}
+
+// ── Curated tab ─────────────────────────────────────────────────────────────
+async function loadStockCurated(append = false) {
+  if (stockCuratedLoading || !stockCuratedHasMore) return;
+  stockCuratedLoading = true;
+  stockCuratedLoaded = true;
+  const status = document.getElementById('stockCuratedStatus');
+  if (!append) status.textContent = 'Loading…';
+  try {
+    const url = `${UNSPLASH_BASE}/photos?order_by=editorial&per_page=12&page=${stockCuratedPage}&client_id=${UNSPLASH_ACCESS_KEY}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(String(res.status));
+    const photos = await res.json();
+    status.textContent = '';
+    renderStockPhotos(photos, 'stockCuratedGrid', append);
+    stockCuratedHasMore = photos.length === 12;
+    stockCuratedPage++;
+  } catch (err) {
+    status.textContent = 'Could not load curated photos.';
+    stockCuratedHasMore = false;
+  }
+  stockCuratedLoading = false;
+}
+
+// ── Collections tab ─────────────────────────────────────────────────────────
+async function loadStockCollections() {
+  stockCollectionsLoaded = true;
+  const grid = document.getElementById('stockCollGrid');
+  grid.innerHTML = '';
+  STOCK_COLLECTIONS.forEach(coll => {
+    const card = document.createElement('div');
+    card.className = 'stock-coll-card';
+    card.innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--muted);padding:6px;text-align:center">${coll.name}</div>`;
+    card.onclick = () => openStockCollection(coll);
+    grid.appendChild(card);
+    // Fetch cover image async
+    fetch(`${UNSPLASH_BASE}/search/photos?query=${encodeURIComponent(coll.query)}&per_page=1&page=1&client_id=${UNSPLASH_ACCESS_KEY}`)
+      .then(r => r.json())
+      .then(data => {
+        const photo = data.results?.[0];
+        if (!photo) return;
+        card.innerHTML = `
+          <img src="${photo.urls.thumb}" alt="" loading="lazy">
+          <div class="stock-coll-label"><div class="stock-coll-name">${coll.name}</div></div>`;
+      })
+      .catch(() => {});
+  });
+}
+
+async function openStockCollection(coll) {
+  stockCollPhotosQuery = coll.query;
+  stockCollPage = 1;
+  stockCollHasMore = true;
+  document.getElementById('stockCollGrid').style.display = 'none';
+  document.getElementById('stockCollPhotos').style.display = 'block';
+  document.getElementById('stockCollPhotoGrid').innerHTML = '';
+  document.getElementById('stockCollStatus').textContent = '';
+  await loadStockCollPhotos();
+  setupStockObservers();
+}
+
+window.showStockCollectionsList = function() {
+  document.getElementById('stockCollPhotos').style.display = 'none';
+  document.getElementById('stockCollGrid').style.display = 'grid';
+  if (stockCollObserver) { stockCollObserver.disconnect(); stockCollObserver = null; }
+};
+
+async function loadStockCollPhotos(append = false) {
+  if (stockCollLoading || !stockCollHasMore) return;
+  stockCollLoading = true;
+  const status = document.getElementById('stockCollStatus');
+  if (!append) status.textContent = 'Loading…';
+  try {
+    const url = `${UNSPLASH_BASE}/search/photos?query=${encodeURIComponent(stockCollPhotosQuery)}&per_page=12&page=${stockCollPage}&client_id=${UNSPLASH_ACCESS_KEY}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(String(res.status));
+    const data = await res.json();
+    const photos = data.results;
+    status.textContent = '';
+    if (!photos.length && !append) {
+      status.textContent = 'No photos found.';
+      stockCollHasMore = false;
+    } else {
+      renderStockPhotos(photos, 'stockCollPhotoGrid', append);
+      stockCollHasMore = photos.length === 12;
+    }
+    stockCollPage++;
+  } catch (err) {
+    status.textContent = 'Could not load photos.';
+    stockCollHasMore = false;
+  }
+  stockCollLoading = false;
+}
+
+// ── Infinite scroll observers ───────────────────────────────────────────────
+function setupStockObservers() {
+  if (stockSearchObserver)  { stockSearchObserver.disconnect();  stockSearchObserver  = null; }
+  if (stockCuratedObserver) { stockCuratedObserver.disconnect(); stockCuratedObserver = null; }
+  if (stockCollObserver)    { stockCollObserver.disconnect();    stockCollObserver    = null; }
+
+  if (activeStockTab === 'search') {
+    const sentinel = document.getElementById('stockSentinel');
+    if (!sentinel) return;
+    stockSearchObserver = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting) loadStockPhotos(true);
+    }, { threshold: 0 });
+    stockSearchObserver.observe(sentinel);
+  } else if (activeStockTab === 'curated') {
+    const sentinel = document.getElementById('stockCuratedSentinel');
+    if (!sentinel) return;
+    stockCuratedObserver = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting) loadStockCurated(true);
+    }, { threshold: 0 });
+    stockCuratedObserver.observe(sentinel);
+  } else if (activeStockTab === 'collections') {
+    const sentinel = document.getElementById('stockCollSentinel');
+    if (!sentinel || document.getElementById('stockCollPhotos').style.display === 'none') return;
+    stockCollObserver = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting) loadStockCollPhotos(true);
+    }, { threshold: 0 });
+    stockCollObserver.observe(sentinel);
   }
 }
 
-function renderStockGrid(photos, append) {
-  const grid = document.getElementById('stockGrid');
+// ── Shared photo grid renderer ──────────────────────────────────────────────
+function renderStockPhotos(photos, gridId, append) {
+  const grid = document.getElementById(gridId);
   if (!append) grid.innerHTML = '';
-  if (!photos.length) {
-    document.getElementById('stockStatus').textContent = 'No results found.';
-    return;
-  }
   photos.forEach(photo => {
     stockPhotoMap[photo.id] = photo;
     const div = document.createElement('div');
     div.className = 'stock-item';
     const creditUrl = `${photo.user.links.html}?utm_source=digital_signage&utm_medium=referral`;
     div.innerHTML = `
-      <div class="stock-thumb-wrap"
-           oncontextmenu="stockRightClick(event,'${photo.id}');return false;">
+      <div class="stock-thumb-wrap" oncontextmenu="stockRightClick(event,'${photo.id}');return false;">
         <img src="${photo.urls.thumb}" alt="" loading="lazy">
         <div class="stock-thumb-overlay">
-          <button class="stock-overlay-btn" onclick="addStockToCanvas('${photo.id}')">+ Canvas</button>
-          <button class="stock-overlay-btn" onclick="setStockAsBg('${photo.id}')">Set BG</button>
+          <button class="stock-overlay-btn" onclick="addStockToCanvas('${photo.id}')">Add to Canvas</button>
+          <button class="stock-overlay-btn" onclick="setStockAsBg('${photo.id}')">Set as Background</button>
         </div>
       </div>
       <div class="stock-credit">
@@ -5876,10 +6129,36 @@ function renderStockGrid(photos, append) {
   });
 }
 
+// ── Download tracking (required by Unsplash API guidelines) ────────────────
+function trackUnsplashDownload(photoId) {
+  fetch(`${UNSPLASH_BASE}/photos/${photoId}/download?client_id=${UNSPLASH_ACCESS_KEY}`)
+    .catch(() => {}); // fire-and-forget
+}
+
+// ── Attribution text element ────────────────────────────────────────────────
+function addUnsplashAttribution(photo) {
+  if (!fabricCanvas) return;
+  const text = new fabric.Text(`Photo by ${photo.user.name} on Unsplash`, {
+    left:    fabricCanvas.width  - 12,
+    top:     fabricCanvas.height - 12,
+    originX: 'right',
+    originY: 'bottom',
+    fontSize:   12,
+    fill:       'rgba(200,200,200,0.85)',
+    fontFamily: 'Arial',
+    isLocked:         true,
+    isUnsplashAttrib: true,
+  });
+  applyLockState(text);
+  fabricCanvas.add(text);
+}
+
+// ── Add / Set as BG ─────────────────────────────────────────────────────────
 window.addStockToCanvas = function(photoId) {
   const photo = stockPhotoMap[photoId];
   if (!photo || !fabricCanvas) return;
   toast('Adding photo…');
+  trackUnsplashDownload(photoId);
   fabric.Image.fromURL(photo.urls.regular, function(img) {
     if (!img) { toast('Failed to load image', true); return; }
     const scale = (fabricCanvas.width * 0.8) / img.width;
@@ -5891,6 +6170,7 @@ window.addStockToCanvas = function(photoId) {
     });
     fabricCanvas.add(img);
     fabricCanvas.setActiveObject(img);
+    addUnsplashAttribution(photo);
     fabricCanvas.renderAll();
     historySave();
   }, { crossOrigin: 'anonymous' });
@@ -5900,10 +6180,13 @@ window.setStockAsBg = function(photoId) {
   const photo = stockPhotoMap[photoId];
   if (!photo || !fabricCanvas) return;
   toast('Setting background…');
+  trackUnsplashDownload(photoId);
   currentBgImgUrl = photo.urls.regular;
   setBgType('image');
+  addUnsplashAttribution(photo);
 };
 
+// ── Right-click context menu ────────────────────────────────────────────────
 window.stockRightClick = function(event, photoId) {
   event.preventDefault();
   stockCtxPhotoId = photoId;
