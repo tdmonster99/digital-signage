@@ -3879,10 +3879,7 @@ const firebaseConfig = {
 const CLOUDINARY_CLOUD_NAME    = "ded98r0f8";
 const CLOUDINARY_UPLOAD_PRESET = "signage_uploads";
 
-// ── ANTHROPIC API KEY ─────────────────────────────────────────────────────
-// REPLACE WITH YOUR ANTHROPIC API KEY
-const ANTHROPIC_API_KEY = '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';
-// ─────────────────────────────────────────────────────────────────────────
+// ── AI GENERATE — key lives in Vercel env vars, proxied via /api/ai-generate ──
 
 const app  = initializeApp(firebaseConfig);
 const db   = getFirestore(app);
@@ -4546,32 +4543,7 @@ const AI_LOADING_MSGS = [
   'Almost ready\u2026',
 ];
 
-const AI_SYSTEM_PROMPT = `You are a professional digital signage slide designer. When given a description, you create complete Fabric.js canvas JSON for a 1920x1080 slide.
-
-Return ONLY a valid JSON object with this structure:
-{ "version": "6.0.0", "objects": [...], "background": "#hexcolor" }
-
-Rules:
-- Canvas is 1920px wide, 1080px tall
-- Use only these object types: textbox, rect, circle, line, triangle
-- Every object needs: type, left, top, width, height, fill, opacity
-- Textbox objects also need: text, fontSize, fontFamily, fontWeight, textAlign, fill
-- Use Google Fonts: Montserrat, Oswald, Raleway, Playfair Display, Anton, Open Sans, Bebas Neue, Lato
-- Create visually striking designs with strong typography hierarchy
-- Use at least 3 layers of visual interest: background, decorative shapes, text
-- Text sizes: headlines 60-120px, subheadings 32-56px, body 24-40px
-- All text must be at least 200px from any edge
-- Do not use images (no image objects) — use colored rectangles as placeholders
-- Return ONLY the JSON, no explanation, no markdown, no code blocks
-
-Example 1 — Corporate announcement on navy:
-{"version":"6.0.0","background":"#1a2744","objects":[{"type":"rect","left":0,"top":0,"width":1920,"height":1080,"fill":"#1a2744","opacity":1},{"type":"rect","left":153,"top":88,"width":1614,"height":5,"fill":"#C9A84C","opacity":1},{"type":"textbox","left":200,"top":340,"width":1520,"height":160,"text":"ANNUAL COMPANY MEETING","fontSize":110,"fontFamily":"Montserrat","fontWeight":"bold","textAlign":"center","fill":"#ffffff","opacity":1},{"type":"rect","left":760,"top":520,"width":400,"height":5,"fill":"#C9A84C","opacity":1},{"type":"textbox","left":200,"top":548,"width":1520,"height":70,"text":"Thursday, March 28  ·  10:00 AM  ·  Main Conference Room","fontSize":46,"fontFamily":"Open Sans","fontWeight":"normal","textAlign":"center","fill":"#a8bcd4","opacity":1},{"type":"textbox","left":200,"top":930,"width":1520,"height":50,"text":"ACME CORPORATION","fontSize":34,"fontFamily":"Montserrat","fontWeight":"bold","textAlign":"center","fill":"rgba(201,168,76,0.75)","opacity":1},{"type":"rect","left":153,"top":990,"width":1614,"height":5,"fill":"#C9A84C","opacity":1}]}
-
-Example 2 — Bold happy hour promo with gradient feel:
-{"version":"6.0.0","background":"#1a0030","objects":[{"type":"rect","left":0,"top":0,"width":1920,"height":1080,"fill":"#e91e8c","opacity":0.22},{"type":"rect","left":115,"top":43,"width":1690,"height":4,"fill":"rgba(255,255,255,0.2)","opacity":1},{"type":"rect","left":115,"top":1033,"width":1690,"height":4,"fill":"rgba(255,255,255,0.2)","opacity":1},{"type":"textbox","left":200,"top":180,"width":1520,"height":260,"text":"HAPPY HOUR","fontSize":200,"fontFamily":"Bebas Neue","fontWeight":"bold","textAlign":"center","fill":"#ffffff","opacity":1},{"type":"textbox","left":200,"top":460,"width":1520,"height":90,"text":"EVERY FRIDAY  ·  5 PM — 8 PM","fontSize":68,"fontFamily":"Bebas Neue","fontWeight":"bold","textAlign":"center","fill":"rgba(255,255,255,0.82)","opacity":1},{"type":"rect","left":710,"top":600,"width":500,"height":80,"fill":"#FFD700","opacity":1},{"type":"textbox","left":710,"top":616,"width":500,"height":50,"text":"50% OFF ALL DRINKS","fontSize":40,"fontFamily":"Montserrat","fontWeight":"bold","textAlign":"center","fill":"#1a0030","opacity":1},{"type":"circle","left":1680,"top":80,"width":220,"height":220,"radius":110,"fill":"rgba(255,215,0,0.12)","opacity":1},{"type":"circle","left":20,"top":800,"width":160,"height":160,"radius":80,"fill":"rgba(255,255,255,0.06)","opacity":1}]}
-
-Example 3 — Clean minimal new product launch:
-{"version":"6.0.0","background":"#ffffff","objects":[{"type":"rect","left":0,"top":0,"width":1920,"height":8,"fill":"#111111","opacity":1},{"type":"rect","left":0,"top":1072,"width":1920,"height":8,"fill":"#111111","opacity":1},{"type":"textbox","left":200,"top":80,"width":1520,"height":60,"text":"N E W  A R R I V A L","fontSize":44,"fontFamily":"Raleway","fontWeight":"normal","textAlign":"center","fill":"rgba(0,0,0,0.42)","opacity":1},{"type":"rect","left":538,"top":172,"width":844,"height":578,"fill":"#f5f5f5","opacity":1},{"type":"textbox","left":538,"top":390,"width":844,"height":120,"text":"PRODUCT IMAGE","fontSize":48,"fontFamily":"Montserrat","fontWeight":"normal","textAlign":"center","fill":"rgba(0,0,0,0.18)","opacity":1},{"type":"textbox","left":200,"top":800,"width":1520,"height":100,"text":"Premium Wireless Headphones","fontSize":72,"fontFamily":"Raleway","fontWeight":"300","textAlign":"center","fill":"#111111","opacity":1},{"type":"textbox","left":200,"top":908,"width":1520,"height":55,"text":"$149.00  ·  Free shipping on orders over $50","fontSize":38,"fontFamily":"Open Sans","fontWeight":"normal","textAlign":"center","fill":"#666666","opacity":1}]}`;
+// (AI system prompt now lives server-side in api/ai-generate.js)
 
 let aiCurrentJson   = null;
 let aiLoadingTimer  = null;
@@ -4616,11 +4588,6 @@ window.generateAiSlide = async function() {
     document.getElementById('aiPrompt').focus();
     return;
   }
-  if (!ANTHROPIC_API_KEY || ANTHROPIC_API_KEY.includes('REPLACE')) {
-    showAiError('Add your Anthropic API key in admin.html (search for ANTHROPIC_API_KEY).');
-    return;
-  }
-
   aiLastPrompt = prompt;
   aiLastStyle  = document.querySelector('.ai-style-btn.active')?.dataset.value  || 'Professional';
   aiLastColor  = document.querySelector('.ai-color-btn.active')?.dataset.value  || 'Brand Colors';
@@ -4639,25 +4606,14 @@ window.generateAiSlide = async function() {
     setTimeout(() => { msgEl.textContent = AI_LOADING_MSGS[msgIdx]; msgEl.style.opacity = '1'; }, 200);
   }, 2000);
 
-  const userMsg =
-    `Create a digital signage slide for: "${aiLastPrompt}"\n` +
-    `Style: ${aiLastStyle}\nColor scheme: ${aiLastColor}\n` +
-    `Canvas: 1920×1080px\nReturn ONLY the Fabric.js JSON.`;
-
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch('/api/ai-generate', {
       method: 'POST',
-      headers: {
-        'x-api-key':                            ANTHROPIC_API_KEY,
-        'anthropic-version':                    '2023-06-01',
-        'content-type':                         'application/json',
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        model:      'claude-sonnet-4-20250514',
-        max_tokens: 4096,
-        system:     AI_SYSTEM_PROMPT,
-        messages:   [{ role: 'user', content: userMsg }],
+        prompt:      aiLastPrompt,
+        style:       aiLastStyle,
+        colorScheme: aiLastColor,
       }),
     });
 
