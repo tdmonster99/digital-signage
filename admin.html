@@ -2201,8 +2201,11 @@ section.content {
       <button class="gallery-cat" onclick="setGalleryCat(this,'business')">Business</button>
       <button class="gallery-cat" onclick="setGalleryCat(this,'restaurant')">Restaurant</button>
       <button class="gallery-cat" onclick="setGalleryCat(this,'retail')">Retail</button>
+      <button class="gallery-cat" onclick="setGalleryCat(this,'healthcare')">Healthcare</button>
+      <button class="gallery-cat" onclick="setGalleryCat(this,'education')">Education</button>
       <button class="gallery-cat" onclick="setGalleryCat(this,'events')">Events</button>
       <button class="gallery-cat" onclick="setGalleryCat(this,'holiday')">Holiday</button>
+      <button class="gallery-cat" onclick="setGalleryCat(this,'socialmedia')">Social Media</button>
     </div>
     <div class="gallery-grid" id="galleryGrid">
 
@@ -2216,204 +2219,275 @@ section.content {
         <div class="tmpl-info"><span class="tmpl-name">Start Blank</span><span class="tmpl-desc">Empty canvas</span></div>
       </button>
 
-      <!-- 1. Bold Announcement -->
-      <button class="tmpl-card" data-category="business" data-name="bold announcement headline business" onclick="selectTemplate('boldannouncement')">
-        <div class="tmpl-preview" style="background:#0d1b2a">
-          <div style="position:absolute;top:7%;left:8%;right:8%;height:1.5%;background:#4f8ef7;border-radius:2px"></div>
-          <div style="position:absolute;top:22%;left:8%;right:8%;height:17%;background:rgba(255,255,255,0.88);border-radius:4px"></div>
-          <div style="position:absolute;top:44%;left:30%;right:30%;height:2%;background:#4f8ef7;border-radius:2px"></div>
-          <div style="position:absolute;top:52%;left:12%;right:12%;height:9%;background:rgba(160,180,200,0.5);border-radius:3px"></div>
-          <div style="position:absolute;bottom:7%;left:8%;right:8%;height:1.5%;background:#4f8ef7;border-radius:2px"></div>
+      <!-- 1. Corporate Announcement -->
+      <button class="tmpl-card" data-category="business" data-name="corporate announcement navy gold montserrat business" onclick="selectTemplate('corporateannouncement')">
+        <div class="tmpl-preview" style="background:#1a2744">
+          <div style="position:absolute;top:8%;left:8%;right:8%;height:0.6%;background:#C9A84C;border-radius:2px"></div>
+          <div style="position:absolute;top:26%;left:8%;right:8%;height:17%;background:rgba(255,255,255,0.88);border-radius:3px"></div>
+          <div style="position:absolute;top:47%;left:30%;right:30%;height:0.6%;background:#C9A84C;border-radius:2px"></div>
+          <div style="position:absolute;top:54%;left:12%;right:12%;height:9%;background:rgba(168,188,212,0.5);border-radius:2px"></div>
+          <div style="position:absolute;bottom:8%;left:8%;right:8%;height:0.6%;background:#C9A84C;border-radius:2px"></div>
+          <div style="position:absolute;bottom:12%;left:34%;right:34%;height:4%;background:rgba(201,168,76,0.5);border-radius:2px"></div>
         </div>
-        <div class="tmpl-info"><span class="tmpl-name">Bold Announcement</span><span class="tmpl-desc">Navy background, accent underline</span><span class="tmpl-cat-tag">Business</span></div>
+        <div class="tmpl-info"><span class="tmpl-name">Corporate Announcement</span><span class="tmpl-desc">Navy, Montserrat, gold accents</span><span class="tmpl-cat-tag">Business</span></div>
       </button>
 
-      <!-- 2. Restaurant Special -->
-      <button class="tmpl-card" data-category="restaurant" data-name="restaurant special food price today" onclick="selectTemplate('restaurantspecial')">
-        <div class="tmpl-preview" style="background:linear-gradient(135deg,#e65100,#b71c1c)">
-          <div style="position:absolute;top:6%;left:8%;right:8%;height:44%;background:rgba(255,255,255,0.11);border-radius:8px;border:1px solid rgba(255,255,255,0.18)"></div>
-          <div style="position:absolute;top:57%;left:9%;right:9%;height:11%;background:rgba(255,255,255,0.85);border-radius:3px"></div>
-          <div style="position:absolute;top:73%;left:24%;right:24%;height:9%;background:#ffd54f;border-radius:3px"></div>
-          <div style="position:absolute;bottom:5%;left:34%;right:34%;height:8%;background:#fff;border-radius:12px"></div>
+      <!-- 2. Employee of the Month -->
+      <button class="tmpl-card" data-category="business" data-name="employee of month spotlight bio business" onclick="selectTemplate('employeeofmonth')">
+        <div class="tmpl-preview" style="background:#fff;display:flex">
+          <div style="width:40%;background:#1a56a0;position:relative;flex-shrink:0">
+            <div style="position:absolute;top:13%;left:10%;right:10%;bottom:26%;background:rgba(255,255,255,0.18);border-radius:50%"></div>
+            <div style="position:absolute;bottom:3%;left:5%;right:5%;height:16%;background:#0d3d7a;border-radius:7px"></div>
+            <div style="position:absolute;top:7%;left:30%;right:30%;height:5%;background:rgba(201,168,76,0.7);border-radius:1px"></div>
+          </div>
+          <div style="flex:1;padding:8% 6%;display:flex;flex-direction:column;gap:4%">
+            <div style="height:16%;background:rgba(26,39,68,0.5);border-radius:2px"></div>
+            <div style="height:8%;background:rgba(26,86,160,0.4);border-radius:2px"></div>
+            <div style="height:1px;background:#e0e0e0;margin:3% 0"></div>
+            <div style="height:12%;background:rgba(85,85,85,0.28);border-radius:2px"></div>
+            <div style="height:12%;background:rgba(85,85,85,0.2);border-radius:2px"></div>
+            <div style="height:7%;background:rgba(201,168,76,0.45);border-radius:2px"></div>
+          </div>
         </div>
-        <div class="tmpl-info"><span class="tmpl-name">Restaurant Special</span><span class="tmpl-desc">Daily special with price</span><span class="tmpl-cat-tag">Restaurant</span></div>
+        <div class="tmpl-info"><span class="tmpl-name">Employee of the Month</span><span class="tmpl-desc">Split layout, Playfair Display</span><span class="tmpl-cat-tag">Business</span></div>
       </button>
 
       <!-- 3. Now Hiring -->
-      <button class="tmpl-card" data-category="business" data-name="now hiring recruitment jobs business" onclick="selectTemplate('nowhiring')">
-        <div class="tmpl-preview" style="background:#1b5e20">
-          <div style="position:absolute;top:0;left:0;right:0;height:11%;background:#388e3c"></div>
-          <div style="position:absolute;top:18%;left:6%;right:6%;height:18%;background:rgba(255,255,255,0.88);border-radius:3px"></div>
-          <div style="position:absolute;top:41%;left:10%;right:10%;height:1.5%;background:rgba(255,255,255,0.3);border-radius:2px"></div>
-          <div style="position:absolute;top:48%;left:14%;right:14%;height:7%;background:rgba(165,214,167,0.65);border-radius:2px"></div>
-          <div style="position:absolute;top:59%;left:18%;right:18%;height:5%;background:rgba(200,230,201,0.5);border-radius:2px"></div>
-          <div style="position:absolute;top:67%;left:18%;right:18%;height:5%;background:rgba(200,230,201,0.5);border-radius:2px"></div>
-          <div style="position:absolute;top:75%;left:18%;right:18%;height:5%;background:rgba(200,230,201,0.5);border-radius:2px"></div>
-          <div style="position:absolute;bottom:4%;left:22%;right:22%;height:4%;background:rgba(105,240,174,0.55);border-radius:2px"></div>
+      <button class="tmpl-card" data-category="business" data-name="now hiring jobs recruitment coral anton business" onclick="selectTemplate('nowhiring')">
+        <div class="tmpl-preview" style="background:#FF6B35">
+          <div style="position:absolute;top:0;left:0;width:14%;height:14%;background:rgba(255,255,255,0.12)"></div>
+          <div style="position:absolute;top:0;right:0;width:14%;height:14%;background:rgba(255,255,255,0.12)"></div>
+          <div style="position:absolute;bottom:0;left:0;width:14%;height:14%;background:rgba(255,255,255,0.12)"></div>
+          <div style="position:absolute;bottom:0;right:0;width:14%;height:14%;background:rgba(255,255,255,0.12)"></div>
+          <div style="position:absolute;top:18%;left:8%;right:8%;height:20%;background:rgba(255,255,255,0.9);border-radius:3px"></div>
+          <div style="position:absolute;top:44%;left:12%;right:12%;height:9%;background:rgba(255,255,255,0.85);border-radius:12px"></div>
+          <div style="position:absolute;top:56%;left:12%;right:12%;height:9%;background:rgba(255,255,255,0.75);border-radius:12px"></div>
+          <div style="position:absolute;top:68%;left:12%;right:12%;height:9%;background:rgba(255,255,255,0.65);border-radius:12px"></div>
+          <div style="position:absolute;bottom:5%;left:18%;right:18%;height:7%;background:rgba(255,255,255,0.4);border-radius:2px"></div>
         </div>
-        <div class="tmpl-info"><span class="tmpl-name">Now Hiring</span><span class="tmpl-desc">Recruitment announcement</span><span class="tmpl-cat-tag">Business</span></div>
+        <div class="tmpl-info"><span class="tmpl-name">Now Hiring</span><span class="tmpl-desc">Coral, Anton bold, job bullets</span><span class="tmpl-cat-tag">Business</span></div>
       </button>
 
-      <!-- 4. Employee Spotlight -->
-      <button class="tmpl-card" data-category="business" data-name="employee spotlight of the month business" onclick="selectTemplate('spotlight')">
-        <div class="tmpl-preview" style="background:#fff;display:flex">
-          <div style="width:42%;background:#1565c0;position:relative;flex-shrink:0">
-            <div style="position:absolute;top:12%;left:8%;right:8%;bottom:26%;background:rgba(255,255,255,0.14);border-radius:6px"></div>
-            <div style="position:absolute;bottom:4%;left:4%;right:4%;height:16%;background:#0d47a1;border-radius:5px"></div>
+      <!-- 4. KPI Dashboard -->
+      <button class="tmpl-card" data-category="business" data-name="kpi dashboard metrics analytics stats business" onclick="selectTemplate('kpidashboard')">
+        <div class="tmpl-preview" style="background:#1e2433">
+          <div style="position:absolute;top:0;left:0;right:0;height:16%;background:#2563eb"></div>
+          <div style="position:absolute;top:1.5%;left:4%;right:24%;height:13%;background:rgba(255,255,255,0.7);border-radius:2px"></div>
+          <div style="position:absolute;top:1.5%;right:2%;width:18%;height:13%;background:rgba(255,255,255,0.2);border-radius:4px"></div>
+          <div style="position:absolute;top:19%;left:4%;width:44%;height:36%;background:#252d3d;border-radius:6px"></div>
+          <div style="position:absolute;top:19%;right:4%;width:44%;height:36%;background:#252d3d;border-radius:6px"></div>
+          <div style="position:absolute;bottom:4%;left:4%;width:44%;height:36%;background:#252d3d;border-radius:6px"></div>
+          <div style="position:absolute;bottom:4%;right:4%;width:44%;height:36%;background:#252d3d;border-radius:6px"></div>
+          <div style="position:absolute;top:31%;left:10%;width:32%;height:12%;background:rgba(96,165,250,0.55);border-radius:2px"></div>
+          <div style="position:absolute;top:31%;right:10%;width:32%;height:12%;background:rgba(96,165,250,0.55);border-radius:2px"></div>
+          <div style="position:absolute;bottom:16%;left:10%;width:32%;height:12%;background:rgba(96,165,250,0.55);border-radius:2px"></div>
+          <div style="position:absolute;bottom:16%;right:10%;width:32%;height:12%;background:rgba(96,165,250,0.55);border-radius:2px"></div>
+        </div>
+        <div class="tmpl-info"><span class="tmpl-name">KPI Dashboard</span><span class="tmpl-desc">Dark slate, 4-metric grid</span><span class="tmpl-cat-tag">Business</span></div>
+      </button>
+
+      <!-- 5. Daily Special -->
+      <button class="tmpl-card" data-category="restaurant" data-name="daily special dish food price restaurant cream" onclick="selectTemplate('dailyspecial')">
+        <div class="tmpl-preview" style="background:#FDF6E3;display:flex">
+          <div style="width:45%;background:rgba(180,140,90,0.2);position:relative;flex-shrink:0">
+            <div style="position:absolute;inset:8%;background:rgba(150,110,70,0.18);border-radius:8px"></div>
+            <div style="position:absolute;inset:14%;display:flex;align-items:center;justify-content:center;font-size:8px;color:rgba(150,110,70,0.5);font-family:sans-serif">PHOTO</div>
           </div>
-          <div style="flex:1;padding:8% 6%;display:flex;flex-direction:column;gap:5%">
-            <div style="height:16%;background:rgba(13,27,42,0.5);border-radius:2px"></div>
-            <div style="height:9%;background:rgba(21,101,192,0.35);border-radius:2px"></div>
-            <div style="height:1px;background:#e0e0e0;margin:2% 0"></div>
-            <div style="height:14%;background:rgba(85,85,85,0.3);border-radius:2px"></div>
-            <div style="height:14%;background:rgba(85,85,85,0.22);border-radius:2px"></div>
-            <div style="height:7%;background:rgba(136,136,136,0.2);border-radius:2px"></div>
+          <div style="position:absolute;top:0;left:45%;width:1%;height:100%;background:rgba(180,140,90,0.3)"></div>
+          <div style="flex:1;padding:8% 6%;display:flex;flex-direction:column;gap:5%;margin-left:45%">
+            <div style="height:4%;background:rgba(150,110,70,0.4);border-radius:1px"></div>
+            <div style="height:18%;background:rgba(26,18,11,0.55);border-radius:2px"></div>
+            <div style="height:12%;background:rgba(180,83,9,0.55);border-radius:2px"></div>
+            <div style="height:1px;background:rgba(150,110,70,0.35)"></div>
+            <div style="height:9%;background:rgba(92,74,50,0.3);border-radius:2px"></div>
+            <div style="height:9%;background:rgba(92,74,50,0.22);border-radius:2px"></div>
           </div>
         </div>
-        <div class="tmpl-info"><span class="tmpl-name">Employee Spotlight</span><span class="tmpl-desc">Split layout with bio</span><span class="tmpl-cat-tag">Business</span></div>
+        <div class="tmpl-info"><span class="tmpl-name">Daily Special</span><span class="tmpl-desc">Warm cream, Playfair Display</span><span class="tmpl-cat-tag">Restaurant</span></div>
       </button>
 
-      <!-- 5. Event Promo -->
-      <button class="tmpl-card" data-category="events" data-name="event promo date location register" onclick="selectTemplate('eventpromo')">
-        <div class="tmpl-preview" style="background:linear-gradient(135deg,#4a148c 0%,#050a14 50%,#1565c0 100%)">
-          <div style="position:absolute;top:8%;left:8%;right:8%;height:1%;background:rgba(255,255,255,0.25)"></div>
-          <div style="position:absolute;bottom:8%;left:8%;right:8%;height:1%;background:rgba(255,255,255,0.25)"></div>
-          <div style="position:absolute;top:14%;left:12%;right:12%;height:6%;background:rgba(206,147,216,0.55);border-radius:2px"></div>
-          <div style="position:absolute;top:27%;left:8%;right:8%;height:18%;background:rgba(255,255,255,0.85);border-radius:3px"></div>
-          <div style="position:absolute;top:50%;left:38%;right:38%;height:1.5%;background:#7e57c2;border-radius:2px"></div>
-          <div style="position:absolute;top:57%;left:10%;right:10%;height:7%;background:rgba(225,190,231,0.55);border-radius:2px"></div>
-          <div style="position:absolute;top:68%;left:14%;right:14%;height:6%;background:rgba(176,190,197,0.45);border-radius:2px"></div>
-          <div style="position:absolute;bottom:11%;left:30%;right:30%;height:8%;background:#7e57c2;border-radius:14px"></div>
+      <!-- 6. Menu Board -->
+      <button class="tmpl-card" data-category="restaurant" data-name="menu board dark charcoal gold columns restaurant" onclick="selectTemplate('menuboard')">
+        <div class="tmpl-preview" style="background:#2C2C2C">
+          <div style="position:absolute;top:0;left:0;right:0;height:20%;background:#1a1a1a"></div>
+          <div style="position:absolute;top:3%;left:14%;right:14%;height:14%;background:rgba(212,175,55,0.55);border-radius:2px"></div>
+          <div style="position:absolute;top:20%;left:4%;right:4%;height:0.5%;background:rgba(212,175,55,0.4)"></div>
+          <div style="position:absolute;top:24%;left:5%;width:27%;height:6%;background:rgba(212,175,55,0.5);border-radius:2px"></div>
+          <div style="position:absolute;top:24%;left:37%;width:27%;height:6%;background:rgba(212,175,55,0.5);border-radius:2px"></div>
+          <div style="position:absolute;top:24%;right:5%;width:27%;height:6%;background:rgba(212,175,55,0.5);border-radius:2px"></div>
+          <div style="position:absolute;top:34%;left:5%;width:27%;height:5%;background:rgba(232,232,232,0.3);border-radius:2px"></div>
+          <div style="position:absolute;top:42%;left:5%;width:27%;height:5%;background:rgba(232,232,232,0.22);border-radius:2px"></div>
+          <div style="position:absolute;top:50%;left:5%;width:27%;height:5%;background:rgba(232,232,232,0.16);border-radius:2px"></div>
+          <div style="position:absolute;top:58%;left:5%;width:27%;height:5%;background:rgba(232,232,232,0.12);border-radius:2px"></div>
+          <div style="position:absolute;top:34%;left:37%;width:27%;height:5%;background:rgba(232,232,232,0.3);border-radius:2px"></div>
+          <div style="position:absolute;top:42%;left:37%;width:27%;height:5%;background:rgba(232,232,232,0.22);border-radius:2px"></div>
+          <div style="position:absolute;top:50%;left:37%;width:27%;height:5%;background:rgba(232,232,232,0.16);border-radius:2px"></div>
+          <div style="position:absolute;top:58%;left:37%;width:27%;height:5%;background:rgba(232,232,232,0.12);border-radius:2px"></div>
+          <div style="position:absolute;top:34%;right:5%;width:27%;height:5%;background:rgba(232,232,232,0.3);border-radius:2px"></div>
+          <div style="position:absolute;top:42%;right:5%;width:27%;height:5%;background:rgba(232,232,232,0.22);border-radius:2px"></div>
+          <div style="position:absolute;top:50%;right:5%;width:27%;height:5%;background:rgba(232,232,232,0.16);border-radius:2px"></div>
+          <div style="position:absolute;top:58%;right:5%;width:27%;height:5%;background:rgba(232,232,232,0.12);border-radius:2px"></div>
         </div>
-        <div class="tmpl-info"><span class="tmpl-name">Event Promo</span><span class="tmpl-desc">Title, date, CTA button</span><span class="tmpl-cat-tag">Events</span></div>
+        <div class="tmpl-info"><span class="tmpl-name">Menu Board</span><span class="tmpl-desc">Dark charcoal, 3-column layout</span><span class="tmpl-cat-tag">Restaurant</span></div>
       </button>
 
-      <!-- 6. Sale Promotion -->
-      <button class="tmpl-card" data-category="retail" data-name="sale promotion percent off retail shop" onclick="selectTemplate('salepromo')">
-        <div class="tmpl-preview" style="background:#fff8e1">
-          <div style="position:absolute;top:0;left:0;right:0;height:9%;background:#e65100"></div>
-          <div style="position:absolute;top:11%;left:5%;width:44%;bottom:17%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4%">
-            <div style="height:40%;width:80%;background:rgba(230,81,0,0.65);border-radius:3px"></div>
-            <div style="height:18%;width:52%;background:rgba(191,54,12,0.55);border-radius:3px"></div>
+      <!-- 7. Happy Hour -->
+      <button class="tmpl-card" data-category="restaurant" data-name="happy hour drinks bar cocktails restaurant" onclick="selectTemplate('happyhour')">
+        <div class="tmpl-preview" style="background:linear-gradient(135deg,#3d0066,#e91e8c)">
+          <div style="position:absolute;top:4%;left:6%;right:6%;height:0.6%;background:rgba(255,255,255,0.25);border-radius:1px"></div>
+          <div style="position:absolute;bottom:4%;left:6%;right:6%;height:0.6%;background:rgba(255,255,255,0.25);border-radius:1px"></div>
+          <div style="position:absolute;top:6%;right:5%;width:16%;aspect-ratio:1;background:rgba(255,215,0,0.35);border-radius:50%;border:1.5px dashed rgba(255,215,0,0.55)"></div>
+          <div style="position:absolute;top:10%;left:8%;right:8%;height:26%;background:rgba(255,255,255,0.92);border-radius:3px"></div>
+          <div style="position:absolute;top:40%;left:14%;right:14%;height:12%;background:rgba(255,255,255,0.55);border-radius:2px"></div>
+          <div style="position:absolute;top:56%;left:32%;right:32%;bottom:14%;background:rgba(255,255,255,0.1);border-radius:8px"></div>
+          <div style="position:absolute;bottom:5%;left:12%;right:12%;height:9%;background:rgba(255,215,0,0.55);border-radius:2px"></div>
+        </div>
+        <div class="tmpl-info"><span class="tmpl-name">Happy Hour</span><span class="tmpl-desc">Purple-pink gradient, Bebas Neue</span><span class="tmpl-cat-tag">Restaurant</span></div>
+      </button>
+
+      <!-- 8. Sale Event -->
+      <button class="tmpl-card" data-category="retail" data-name="sale event percent off red white anton retail" onclick="selectTemplate('saleevent')">
+        <div class="tmpl-preview" style="background:#e0000a">
+          <div style="position:absolute;top:0;left:0;width:22%;height:22%;background:rgba(255,255,255,0.07)"></div>
+          <div style="position:absolute;bottom:0;right:0;width:22%;height:22%;background:rgba(255,255,255,0.07)"></div>
+          <div style="position:absolute;top:6%;left:8%;right:8%;height:50%;background:rgba(255,255,255,0.92);border-radius:4px;display:flex;align-items:center;justify-content:center">
+            <div style="font-size:20px;font-weight:900;color:#e0000a;font-family:sans-serif;letter-spacing:-1px">50% OFF</div>
           </div>
-          <div style="position:absolute;top:11%;right:5%;width:43%;height:65%;background:#fff3e0;border-radius:8px"></div>
-          <div style="position:absolute;bottom:12%;left:28%;right:28%;height:8%;background:#e65100;border-radius:14px"></div>
-          <div style="position:absolute;bottom:5%;left:14%;right:14%;height:5%;background:#cccccc55;border-radius:2px"></div>
+          <div style="position:absolute;top:60%;left:10%;right:10%;height:9%;background:rgba(255,255,255,0.3);border-radius:2px"></div>
+          <div style="position:absolute;top:72%;left:22%;right:22%;height:8%;background:rgba(255,255,255,0.55);border-radius:2px"></div>
+          <div style="position:absolute;bottom:4%;left:30%;right:30%;height:10%;background:#ffffff;border-radius:10px;display:flex;align-items:center;justify-content:center">
+            <div style="font-size:6px;font-weight:700;color:#e0000a;font-family:sans-serif">TODAY ONLY</div>
+          </div>
         </div>
-        <div class="tmpl-info"><span class="tmpl-name">Sale Promotion</span><span class="tmpl-desc">Big % off with product area</span><span class="tmpl-cat-tag">Retail</span></div>
+        <div class="tmpl-info"><span class="tmpl-name">Sale Event</span><span class="tmpl-desc">Red, Anton bold, urgency badge</span><span class="tmpl-cat-tag">Retail</span></div>
       </button>
 
-      <!-- 7. Menu Board -->
-      <button class="tmpl-card" data-category="restaurant" data-name="menu board food items prices restaurant" onclick="selectTemplate('menuboard')">
-        <div class="tmpl-preview" style="background:#0d0d0d">
-          <div style="position:absolute;top:0;left:0;right:0;height:19%;background:#1a0a00"></div>
-          <div style="position:absolute;top:4%;left:8%;right:8%;height:11%;background:rgba(255,213,79,0.5);border-radius:2px"></div>
-          <div style="position:absolute;top:19%;left:4%;right:4%;height:0.5%;background:#c9a84c44"></div>
-          <div style="position:absolute;top:24%;left:5%;width:27%;height:7%;background:rgba(255,213,79,0.35);border-radius:2px"></div>
-          <div style="position:absolute;top:24%;left:36%;width:27%;height:7%;background:rgba(255,213,79,0.35);border-radius:2px"></div>
-          <div style="position:absolute;top:24%;right:5%;width:27%;height:7%;background:rgba(255,213,79,0.35);border-radius:2px"></div>
-          <div style="position:absolute;top:34%;left:4%;width:1px;height:52%;background:rgba(201,168,76,0.2)"></div>
-          <div style="position:absolute;top:34%;left:35%;width:1px;height:52%;background:rgba(201,168,76,0.2)"></div>
-          <div style="position:absolute;top:34%;right:33%;width:1px;height:52%;background:rgba(201,168,76,0.2)"></div>
-          <div style="position:absolute;top:34%;right:4%;width:1px;height:52%;background:rgba(201,168,76,0.2)"></div>
-          <div style="position:absolute;top:36%;left:5%;width:27%;height:5%;background:rgba(240,240,240,0.3);border-radius:2px"></div>
-          <div style="position:absolute;top:44%;left:5%;width:27%;height:5%;background:rgba(240,240,240,0.22);border-radius:2px"></div>
-          <div style="position:absolute;top:52%;left:5%;width:27%;height:5%;background:rgba(240,240,240,0.18);border-radius:2px"></div>
-          <div style="position:absolute;top:36%;left:36%;width:27%;height:5%;background:rgba(240,240,240,0.3);border-radius:2px"></div>
-          <div style="position:absolute;top:44%;left:36%;width:27%;height:5%;background:rgba(240,240,240,0.22);border-radius:2px"></div>
-          <div style="position:absolute;top:52%;left:36%;width:27%;height:5%;background:rgba(240,240,240,0.18);border-radius:2px"></div>
-          <div style="position:absolute;top:36%;right:5%;width:27%;height:5%;background:rgba(240,240,240,0.3);border-radius:2px"></div>
-          <div style="position:absolute;top:44%;right:5%;width:27%;height:5%;background:rgba(240,240,240,0.22);border-radius:2px"></div>
-          <div style="position:absolute;top:52%;right:5%;width:27%;height:5%;background:rgba(240,240,240,0.18);border-radius:2px"></div>
-          <div style="position:absolute;bottom:4%;left:4%;right:4%;height:5%;background:#9e9e9e18;border-radius:2px"></div>
-        </div>
-        <div class="tmpl-info"><span class="tmpl-name">Menu Board</span><span class="tmpl-desc">3-column dark menu layout</span><span class="tmpl-cat-tag">Restaurant</span></div>
-      </button>
-
-      <!-- 8. Welcome Screen -->
-      <button class="tmpl-card" data-category="business" data-name="welcome screen business lobby" onclick="selectTemplate('welcomescreen')">
-        <div class="tmpl-preview" style="background:#fafafa">
-          <div style="position:absolute;top:0;left:0;right:0;height:1.5%;background:#1565c0"></div>
-          <div style="position:absolute;bottom:0;left:0;right:0;height:1.5%;background:#1565c0"></div>
-          <div style="position:absolute;top:6%;left:36%;right:36%;height:13%;background:#e3f2fd;border-radius:6px"></div>
-          <div style="position:absolute;top:26%;left:8%;right:8%;height:17%;background:rgba(13,27,42,0.12);border-radius:3px"></div>
-          <div style="position:absolute;top:47%;left:38%;right:38%;height:1.5%;background:#1565c0;border-radius:2px"></div>
-          <div style="position:absolute;top:54%;left:16%;right:16%;height:8%;background:rgba(21,101,192,0.3);border-radius:2px"></div>
-          <div style="position:absolute;top:66%;left:22%;right:22%;height:6%;background:rgba(96,125,139,0.25);border-radius:2px"></div>
-          <div style="position:absolute;bottom:8%;left:24%;right:24%;height:5%;background:rgba(144,164,174,0.3);border-radius:2px"></div>
-        </div>
-        <div class="tmpl-info"><span class="tmpl-name">Welcome Screen</span><span class="tmpl-desc">Clean lobby display</span><span class="tmpl-cat-tag">Business</span></div>
-      </button>
-
-      <!-- 9. Safety Notice -->
-      <button class="tmpl-card" data-category="business" data-name="safety notice warning caution business" onclick="selectTemplate('safetynotice')">
-        <div class="tmpl-preview" style="background:#fdd835">
-          <div style="position:absolute;top:0;left:0;right:0;height:11%;background:#000"></div>
-          <div style="position:absolute;top:1%;left:18%;right:18%;height:9%;background:rgba(253,216,53,0.7);border-radius:2px"></div>
-          <div style="position:absolute;top:12%;left:40%;width:20%;aspect-ratio:1/1;background:#000;border-radius:50%"></div>
-          <div style="position:absolute;top:39%;left:8%;right:8%;height:15%;background:rgba(0,0,0,0.75);border-radius:3px"></div>
-          <div style="position:absolute;top:57%;left:8%;right:8%;height:0.8%;background:#000"></div>
-          <div style="position:absolute;top:62%;left:12%;right:12%;height:7%;background:rgba(33,33,33,0.55);border-radius:2px"></div>
-          <div style="position:absolute;top:72%;left:12%;right:12%;height:7%;background:rgba(33,33,33,0.4);border-radius:2px"></div>
-          <div style="position:absolute;bottom:4%;left:32%;right:32%;height:9%;background:rgba(0,0,0,0.15);border-radius:5px"></div>
-        </div>
-        <div class="tmpl-info"><span class="tmpl-name">Safety Notice</span><span class="tmpl-desc">High-contrast warning display</span><span class="tmpl-cat-tag">Business</span></div>
-      </button>
-
-      <!-- 10. Opening Hours -->
-      <button class="tmpl-card" data-category="retail" data-name="opening hours business times retail" onclick="selectTemplate('openinghours')">
+      <!-- 9. New Arrival -->
+      <button class="tmpl-card" data-category="retail" data-name="new arrival product launch minimal white retail" onclick="selectTemplate('newarrival')">
         <div class="tmpl-preview" style="background:#ffffff">
-          <div style="position:absolute;top:0;left:0;right:0;height:15%;background:#1565c0"></div>
-          <div style="position:absolute;top:2%;left:10%;right:10%;height:10%;background:rgba(255,255,255,0.7);border-radius:2px"></div>
-          <div style="position:absolute;top:18%;left:8%;right:8%;height:5%;background:rgba(21,101,192,0.3);border-radius:2px"></div>
-          <div style="position:absolute;top:25%;left:6%;right:6%;height:0.5%;background:#e0e0e0"></div>
-          <div style="position:absolute;top:28%;left:6%;right:6%;height:5.5%;background:#f5f5f5;border-radius:3px"></div>
-          <div style="position:absolute;top:35%;left:6%;right:6%;height:5.5%;background:#f5f5f5;border-radius:3px"></div>
-          <div style="position:absolute;top:42%;left:6%;right:6%;height:5.5%;background:#f5f5f5;border-radius:3px"></div>
-          <div style="position:absolute;top:49%;left:6%;right:6%;height:5.5%;background:#f5f5f5;border-radius:3px"></div>
-          <div style="position:absolute;top:56%;left:6%;right:6%;height:5.5%;background:#e3f2fd;border-radius:3px;border:1px solid #90caf9"></div>
-          <div style="position:absolute;top:63%;left:6%;right:6%;height:5.5%;background:#f5f5f5;border-radius:3px"></div>
-          <div style="position:absolute;top:70%;left:6%;right:6%;height:5.5%;background:#f5f5f5;border-radius:3px"></div>
-          <div style="position:absolute;bottom:3%;left:8%;right:8%;height:0.5%;background:#e0e0e0"></div>
+          <div style="position:absolute;top:0;left:0;right:0;height:0.7%;background:#111"></div>
+          <div style="position:absolute;bottom:0;left:0;right:0;height:0.7%;background:#111"></div>
+          <div style="position:absolute;top:5%;left:36%;right:36%;height:7%;background:rgba(0,0,0,0.14);border-radius:2px"></div>
+          <div style="position:absolute;top:15%;left:26%;right:26%;bottom:27%;background:#f5f5f5;border-radius:8px;border:1px solid #ddd"></div>
+          <div style="position:absolute;top:16%;left:27%;right:27%;height:14%;background:rgba(0,0,0,0.06);border-radius:6px"></div>
+          <div style="position:absolute;bottom:21%;left:16%;right:16%;height:6%;background:rgba(0,0,0,0.55);border-radius:2px"></div>
+          <div style="position:absolute;bottom:13%;left:32%;right:32%;height:5%;background:rgba(0,0,0,0.35);border-radius:2px"></div>
+          <div style="position:absolute;bottom:6%;left:36%;right:36%;height:4%;background:rgba(0,0,0,0.18);border-radius:2px"></div>
         </div>
-        <div class="tmpl-info"><span class="tmpl-name">Opening Hours</span><span class="tmpl-desc">Weekly hours with highlights</span><span class="tmpl-cat-tag">Retail</span></div>
+        <div class="tmpl-info"><span class="tmpl-name">New Arrival</span><span class="tmpl-desc">Minimalist white, product focus</span><span class="tmpl-cat-tag">Retail</span></div>
       </button>
 
-      <!-- 11. Holiday Greeting -->
-      <button class="tmpl-card" data-category="holiday" data-name="holiday greeting christmas seasonal festive" onclick="selectTemplate('holidaygreeting')">
-        <div class="tmpl-preview" style="background:linear-gradient(135deg,#b71c1c,#880e4f,#1a237e)">
-          <div style="position:absolute;top:4%;left:0;right:0;height:0.8%;background:#c9a84c"></div>
-          <div style="position:absolute;bottom:4%;left:0;right:0;height:0.8%;background:#c9a84c"></div>
-          <div style="position:absolute;top:8%;left:6%;right:6%;height:5%;display:flex;justify-content:space-around;align-items:center">
-            <div style="width:5%;height:100%;background:rgba(255,255,255,0.3);border-radius:50%"></div>
-            <div style="width:5%;height:100%;background:rgba(255,255,255,0.3);border-radius:50%"></div>
-            <div style="width:5%;height:100%;background:rgba(255,255,255,0.3);border-radius:50%"></div>
-            <div style="width:5%;height:100%;background:rgba(255,255,255,0.3);border-radius:50%"></div>
-            <div style="width:5%;height:100%;background:rgba(255,255,255,0.3);border-radius:50%"></div>
-          </div>
-          <div style="position:absolute;top:20%;left:8%;right:8%;height:17%;background:rgba(255,255,255,0.85);border-radius:3px"></div>
-          <div style="position:absolute;top:40%;left:22%;right:22%;height:5%;background:rgba(201,168,76,0.6);border-radius:2px"></div>
-          <div style="position:absolute;top:49%;left:10%;right:10%;height:8%;background:rgba(255,236,179,0.55);border-radius:2px"></div>
-          <div style="position:absolute;top:60%;left:10%;right:10%;height:8%;background:rgba(255,236,179,0.4);border-radius:2px"></div>
-          <div style="position:absolute;top:72%;left:16%;right:16%;height:8%;background:rgba(201,168,76,0.45);border-radius:2px"></div>
-          <div style="position:absolute;bottom:8%;left:36%;right:36%;height:5%;background:rgba(255,255,255,0.18);border-radius:2px"></div>
+      <!-- 10. Event Promo -->
+      <button class="tmpl-card" data-category="events" data-name="event promo dark radial date location register events" onclick="selectTemplate('eventpromo')">
+        <div class="tmpl-preview" style="background:radial-gradient(ellipse at center,#2a1a4a 0%,#050818 70%)">
+          <div style="position:absolute;top:7%;left:6%;right:6%;height:0.7%;background:rgba(168,85,247,0.5);border-radius:1px"></div>
+          <div style="position:absolute;bottom:7%;left:6%;right:6%;height:0.7%;background:rgba(168,85,247,0.5);border-radius:1px"></div>
+          <div style="position:absolute;top:14%;left:22%;right:22%;height:8%;background:rgba(192,132,252,0.35);border-radius:2px"></div>
+          <div style="position:absolute;top:26%;left:10%;right:10%;height:22%;background:rgba(255,255,255,0.88);border-radius:4px"></div>
+          <div style="position:absolute;top:52%;left:38%;right:38%;height:0.7%;background:rgba(168,85,247,0.6)"></div>
+          <div style="position:absolute;top:57%;left:14%;right:14%;height:8%;background:rgba(196,181,253,0.35);border-radius:2px"></div>
+          <div style="position:absolute;top:68%;left:20%;right:20%;height:7%;background:rgba(196,181,253,0.25);border-radius:2px"></div>
+          <div style="position:absolute;bottom:9%;left:32%;right:32%;height:9%;background:rgba(124,58,237,0.7);border-radius:12px"></div>
         </div>
-        <div class="tmpl-info"><span class="tmpl-name">Holiday Greeting</span><span class="tmpl-desc">Festive seasonal message</span><span class="tmpl-cat-tag">Holiday</span></div>
+        <div class="tmpl-info"><span class="tmpl-name">Event Promo</span><span class="tmpl-desc">Dark radial gradient, Raleway</span><span class="tmpl-cat-tag">Events</span></div>
       </button>
 
-      <!-- 12. Motivational Quote -->
-      <button class="tmpl-card" data-category="business" data-name="motivational quote inspiration business" onclick="selectTemplate('motivationalquote')">
-        <div class="tmpl-preview" style="background:#37474f">
-          <div style="position:absolute;inset:0;background:rgba(0,0,0,0.6)"></div>
-          <div style="position:absolute;top:6%;left:6%;width:12%;height:22%;background:rgba(255,255,255,0.12);border-radius:3px"></div>
-          <div style="position:absolute;top:30%;left:8%;right:8%;height:9%;background:rgba(255,255,255,0.8);border-radius:3px"></div>
-          <div style="position:absolute;top:42%;left:8%;right:8%;height:9%;background:rgba(255,255,255,0.72);border-radius:3px"></div>
-          <div style="position:absolute;top:54%;left:8%;right:28%;height:9%;background:rgba(255,255,255,0.65);border-radius:3px"></div>
-          <div style="position:absolute;top:66%;left:44%;right:44%;height:1.5%;background:#4f8ef7;border-radius:2px"></div>
-          <div style="position:absolute;top:71%;left:28%;right:28%;height:6%;background:rgba(170,170,170,0.55);border-radius:2px"></div>
-          <div style="position:absolute;bottom:7%;left:38%;right:38%;height:9%;background:rgba(255,255,255,0.07);border-radius:5px"></div>
+      <!-- 11. Countdown -->
+      <button class="tmpl-card" data-category="events" data-name="countdown days until event timer number events" onclick="selectTemplate('countdown')">
+        <div class="tmpl-preview" style="background:#ffffff">
+          <div style="position:absolute;top:7%;left:8%;right:8%;height:0.6%;background:#4f8ef7;border-radius:2px"></div>
+          <div style="position:absolute;top:13%;left:24%;right:24%;height:8%;background:rgba(0,0,0,0.22);border-radius:2px"></div>
+          <div style="position:absolute;top:25%;left:18%;right:18%;height:38%;background:#eff6ff;border-radius:10px;border:2px solid rgba(96,165,250,0.4)"></div>
+          <div style="position:absolute;top:28%;left:28%;right:28%;height:28%;background:rgba(29,78,216,0.35);border-radius:6px"></div>
+          <div style="position:absolute;top:67%;left:40%;right:40%;height:0.6%;background:#4f8ef7;border-radius:2px"></div>
+          <div style="position:absolute;top:72%;left:14%;right:14%;height:9%;background:rgba(26,39,68,0.5);border-radius:2px"></div>
+          <div style="position:absolute;bottom:6%;left:22%;right:22%;height:7%;background:rgba(107,114,128,0.3);border-radius:2px"></div>
         </div>
-        <div class="tmpl-info"><span class="tmpl-name">Motivational Quote</span><span class="tmpl-desc">Dark image overlay with quote</span><span class="tmpl-cat-tag">Business</span></div>
+        <div class="tmpl-info"><span class="tmpl-name">Countdown</span><span class="tmpl-desc">Giant number, days until event</span><span class="tmpl-cat-tag">Events</span></div>
+      </button>
+
+      <!-- 12. Waiting Room Welcome -->
+      <button class="tmpl-card" data-category="healthcare" data-name="waiting room welcome clinic hospital healthcare teal" onclick="selectTemplate('waitingroomwelcome')">
+        <div class="tmpl-preview" style="background:#e6f7f5">
+          <div style="position:absolute;top:0;left:0;right:0;height:16%;background:#00897b"></div>
+          <div style="position:absolute;top:1.5%;left:10%;right:10%;height:13%;background:rgba(255,255,255,0.65);border-radius:2px"></div>
+          <div style="position:absolute;top:18%;left:4%;width:35%;bottom:5%;background:rgba(0,137,123,0.14);border-radius:8px"></div>
+          <div style="position:absolute;top:22%;left:44%;right:4%;height:20%;background:rgba(0,105,92,0.5);border-radius:3px"></div>
+          <div style="position:absolute;top:46%;left:44%;right:4%;height:11%;background:rgba(0,137,123,0.4);border-radius:2px"></div>
+          <div style="position:absolute;top:61%;left:44%;right:8%;height:8%;background:rgba(0,0,0,0.18);border-radius:2px"></div>
+          <div style="position:absolute;top:72%;left:44%;right:8%;height:8%;background:rgba(0,0,0,0.13);border-radius:2px"></div>
+          <div style="position:absolute;bottom:4%;left:8%;right:8%;height:0.5%;background:rgba(0,137,123,0.4)"></div>
+        </div>
+        <div class="tmpl-info"><span class="tmpl-name">Waiting Room Welcome</span><span class="tmpl-desc">Calm teal, friendly welcome</span><span class="tmpl-cat-tag">Healthcare</span></div>
+      </button>
+
+      <!-- 13. Health Tip -->
+      <button class="tmpl-card" data-category="healthcare" data-name="health tip wellness advice daily healthcare" onclick="selectTemplate('healthtip')">
+        <div class="tmpl-preview" style="background:#ffffff">
+          <div style="position:absolute;top:0;left:0;width:1.2%;height:100%;background:#16a34a"></div>
+          <div style="position:absolute;top:7%;left:5%;width:14%;height:22%;background:#dcfce7;border-radius:50%;border:2px solid #16a34a"></div>
+          <div style="position:absolute;top:10%;left:24%;right:6%;height:11%;background:rgba(22,163,74,0.6);border-radius:2px"></div>
+          <div style="position:absolute;top:25%;left:5%;right:5%;height:0.5%;background:#e5e7eb"></div>
+          <div style="position:absolute;top:30%;left:5%;right:6%;height:9%;background:rgba(0,0,0,0.55);border-radius:2px"></div>
+          <div style="position:absolute;top:42%;left:5%;right:8%;height:8%;background:rgba(0,0,0,0.38);border-radius:2px"></div>
+          <div style="position:absolute;top:53%;left:5%;right:10%;height:8%;background:rgba(0,0,0,0.28);border-radius:2px"></div>
+          <div style="position:absolute;top:64%;left:5%;right:12%;height:7%;background:rgba(0,0,0,0.2);border-radius:2px"></div>
+          <div style="position:absolute;top:74%;left:5%;right:14%;height:7%;background:rgba(0,0,0,0.14);border-radius:2px"></div>
+          <div style="position:absolute;bottom:5%;left:5%;right:52%;height:4%;background:rgba(22,163,74,0.25);border-radius:2px"></div>
+        </div>
+        <div class="tmpl-info"><span class="tmpl-name">Health Tip</span><span class="tmpl-desc">Clean white, green accent bar</span><span class="tmpl-cat-tag">Healthcare</span></div>
+      </button>
+
+      <!-- 14. Season's Greetings -->
+      <button class="tmpl-card" data-category="holiday" data-name="seasons greetings christmas forest green gold holiday" onclick="selectTemplate('seasonsgreetings')">
+        <div class="tmpl-preview" style="background:#1b4332">
+          <div style="position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(212,175,55,0.14) 0%,transparent 70%)"></div>
+          <div style="position:absolute;top:5%;left:6%;right:6%;height:0.6%;background:#C9A84C;border-radius:1px"></div>
+          <div style="position:absolute;bottom:5%;left:6%;right:6%;height:0.6%;background:#C9A84C;border-radius:1px"></div>
+          <div style="position:absolute;top:10%;left:7%;width:5%;height:8%;background:rgba(255,255,255,0.2);border-radius:50%"></div>
+          <div style="position:absolute;top:10%;right:7%;width:5%;height:8%;background:rgba(255,255,255,0.2);border-radius:50%"></div>
+          <div style="position:absolute;top:10%;left:20%;width:3%;height:5%;background:rgba(255,255,255,0.14);border-radius:50%"></div>
+          <div style="position:absolute;top:10%;right:20%;width:3%;height:5%;background:rgba(255,255,255,0.14);border-radius:50%"></div>
+          <div style="position:absolute;top:24%;left:10%;right:10%;height:22%;background:rgba(232,213,163,0.3);border-radius:3px"></div>
+          <div style="position:absolute;top:50%;left:20%;right:20%;height:0.6%;background:rgba(201,168,76,0.55)"></div>
+          <div style="position:absolute;top:55%;left:14%;right:14%;height:8%;background:rgba(255,236,179,0.45);border-radius:2px"></div>
+          <div style="position:absolute;top:66%;left:18%;right:18%;height:8%;background:rgba(201,168,76,0.4);border-radius:2px"></div>
+          <div style="position:absolute;bottom:8%;left:36%;right:36%;height:8%;background:rgba(255,255,255,0.1);border-radius:2px"></div>
+        </div>
+        <div class="tmpl-info"><span class="tmpl-name">Season's Greetings</span><span class="tmpl-desc">Forest green, gold Playfair script</span><span class="tmpl-cat-tag">Holiday</span></div>
+      </button>
+
+      <!-- 15. New Year -->
+      <button class="tmpl-card" data-category="holiday" data-name="new year 2026 gold black confetti holiday celebration" onclick="selectTemplate('newyear')">
+        <div class="tmpl-preview" style="background:#000000">
+          <div style="position:absolute;top:8%;left:14%;width:3%;aspect-ratio:1;background:#C9A84C;border-radius:50%"></div>
+          <div style="position:absolute;top:11%;right:18%;width:2%;aspect-ratio:1;background:#C9A84C;border-radius:50%"></div>
+          <div style="position:absolute;top:5%;left:40%;width:2%;aspect-ratio:1;background:rgba(255,255,255,0.5);border-radius:50%"></div>
+          <div style="position:absolute;top:18%;left:8%;width:2%;aspect-ratio:1;background:rgba(201,168,76,0.7);border-radius:50%"></div>
+          <div style="position:absolute;top:15%;right:10%;width:4%;aspect-ratio:1;background:rgba(255,255,255,0.18);border-radius:50%"></div>
+          <div style="position:absolute;top:22%;left:10%;right:10%;height:40%;background:rgba(201,168,76,0.55);border-radius:4px"></div>
+          <div style="position:absolute;top:65%;left:14%;right:14%;height:12%;background:rgba(255,255,255,0.55);border-radius:2px"></div>
+          <div style="position:absolute;top:80%;left:22%;right:22%;height:8%;background:rgba(201,168,76,0.4);border-radius:2px"></div>
+          <div style="position:absolute;bottom:12%;left:12%;width:3%;aspect-ratio:1;background:#C9A84C;border-radius:50%"></div>
+          <div style="position:absolute;bottom:8%;right:16%;width:2%;aspect-ratio:1;background:rgba(255,255,255,0.4);border-radius:50%"></div>
+        </div>
+        <div class="tmpl-info"><span class="tmpl-name">New Year</span><span class="tmpl-desc">Black, gold 2026, confetti</span><span class="tmpl-cat-tag">Holiday</span></div>
+      </button>
+
+      <!-- 16. Instagram Wall -->
+      <button class="tmpl-card" data-category="socialmedia" data-name="instagram social media photo wall grid follow" onclick="selectTemplate('instagramwall')">
+        <div class="tmpl-preview" style="background:#ffffff">
+          <div style="position:absolute;top:4%;left:8%;right:8%;height:11%;background:rgba(0,0,0,0.6);border-radius:2px"></div>
+          <div style="position:absolute;top:18%;left:4%;right:4%;height:0.5%;background:#E1306C"></div>
+          <div style="position:absolute;top:20%;left:4%;width:29%;height:35%;background:#f3e8ff;border-radius:4px;border:1px solid #d8b4fe"></div>
+          <div style="position:absolute;top:20%;left:35%;width:29%;height:35%;background:#fce7f3;border-radius:4px;border:1px solid #f9a8d4"></div>
+          <div style="position:absolute;top:20%;right:4%;width:29%;height:35%;background:#fef3c7;border-radius:4px;border:1px solid #fcd34d"></div>
+          <div style="position:absolute;top:57%;left:4%;width:29%;height:35%;background:#dbeafe;border-radius:4px;border:1px solid #93c5fd"></div>
+          <div style="position:absolute;top:57%;left:35%;width:29%;height:35%;background:#dcfce7;border-radius:4px;border:1px solid #86efac"></div>
+          <div style="position:absolute;top:57%;right:4%;width:29%;height:35%;background:#ffe4e6;border-radius:4px;border:1px solid #fca5a5"></div>
+          <div style="position:absolute;bottom:2%;left:20%;right:20%;height:9%;background:rgba(225,48,108,0.6);border-radius:2px"></div>
+        </div>
+        <div class="tmpl-info"><span class="tmpl-name">Instagram Wall</span><span class="tmpl-desc">White, 3×2 photo grid layout</span><span class="tmpl-cat-tag">Social Media</span></div>
       </button>
 
       <div class="gallery-empty" id="galleryEmpty">No templates match your search.</div>
@@ -7138,244 +7212,433 @@ function applyTemplate(name) {
   if (!fabricCanvas) return;
   const W = 1920, H = 1080;
 
-  // ── 1. Bold Announcement ─────────────────────────────────────────────────
-  if (name === 'boldannouncement' || name === 'announcement') {
-    fabricCanvas.backgroundColor = '#0d1b2a';
-    tmplRect(W*0.1, H*0.08, W*0.8, 8, { fill:'#4f8ef7', rx:4 });
+  // ── 1. Corporate Announcement ────────────────────────────────────────────
+  if (name === 'corporateannouncement') {
+    fabricCanvas.backgroundColor = '#1a2744';
     loadGoogleFont('Montserrat');
-    tmplText('YOUR HEADLINE HERE', W/2, H*0.38, {
-      fontSize:112, fontWeight:'bold', textAlign:'center', fontFamily:'Montserrat',
-      shadow: new fabric.Shadow({ color:'rgba(0,0,0,0.4)', blur:20, offsetX:0, offsetY:6 })
+    loadGoogleFont('Open Sans');
+    tmplRect(W*0.08, H*0.082, W*0.84, 5, { fill:'#C9A84C', rx:3 });
+    tmplText('CORPORATE ANNOUNCEMENT', W/2, H*0.38, {
+      fontSize:96, fontWeight:'bold', textAlign:'center', fontFamily:'Montserrat',
+      shadow: new fabric.Shadow({ color:'rgba(0,0,0,0.35)', blur:16, offsetX:0, offsetY:4 })
     });
-    tmplRect((W-560)/2, H*0.51, 560, 10, { fill:'#4f8ef7', rx:5 });
-    tmplText('Supporting details and announcement information here', W/2, H*0.64, {
-      fontSize:52, fill:'#a0b4c8', textAlign:'center'
+    tmplRect((W-640)/2, H*0.495, 640, 5, { fill:'#C9A84C', rx:3 });
+    tmplText('Supporting information and key details go here', W/2, H*0.60, {
+      fontSize:52, fill:'#a8bcd4', textAlign:'center', fontFamily:'Open Sans', fontWeight:'300'
     });
-    tmplRect(W*0.1, H*0.875, W*0.8, 8, { fill:'#4f8ef7', rx:4 });
+    tmplText('COMPANY NAME', W/2, H*0.875, {
+      fontSize:36, fill:'rgba(201,168,76,0.75)', textAlign:'center', fontFamily:'Montserrat', charSpacing:160
+    });
+    tmplRect(W*0.08, H*0.925, W*0.84, 5, { fill:'#C9A84C', rx:3 });
   }
 
-  // ── 2. Restaurant Special ────────────────────────────────────────────────
-  else if (name === 'restaurantspecial') {
-    tmplRect(0, 0, W, H, { fill: new fabric.Gradient({ type:'linear',
-      coords:{x1:0,y1:0,x2:W,y2:H},
-      colorStops:[{offset:0,color:'#e65100'},{offset:1,color:'#b71c1c'}] }), rx:0 });
-    tmplRect(W*0.1, H*0.06, W*0.8, H*0.44, { fill:'rgba(255,255,255,0.10)', rx:16 });
-    tmplText('[  FOOD PHOTO  ]', W/2, H*0.28, { fontSize:44, fill:'rgba(255,255,255,0.32)', textAlign:'center' });
-    tmplRect(W*0.25, H*0.535, W*0.5, 4, { fill:'rgba(255,255,255,0.4)', rx:2 });
-    loadGoogleFont('Oswald');
-    tmplText('HOUSE SPECIAL PASTA', W/2, H*0.625, {
-      fontSize:88, fontWeight:'bold', textAlign:'center', fontFamily:'Oswald', charSpacing:40
+  // ── 2. Employee of the Month ──────────────────────────────────────────────
+  else if (name === 'employeeofmonth') {
+    fabricCanvas.backgroundColor = '#ffffff';
+    loadGoogleFont('Playfair Display');
+    tmplRect(0, 0, W*0.40, H, { fill:'#1a56a0', rx:0 });
+    const circR = 200, circCx = W*0.20, circCy = H*0.38;
+    const empCircle = new fabric.Circle({
+      left: circCx-circR, top: circCy-circR,
+      radius: circR, fill:'rgba(255,255,255,0.16)',
+      stroke:'rgba(255,255,255,0.45)', strokeWidth:5
     });
-    tmplText('$18.99', W/2, H*0.755, { fontSize:76, fontWeight:'bold', fill:'#ffd54f', textAlign:'center' });
-    tmplRect((W-320)/2, H*0.855, 320, 58, { fill:'#ffffff', rx:29 });
-    tmplText('TODAY ONLY', W/2, H*0.884, { fontSize:34, fontWeight:'bold', fill:'#e65100', textAlign:'center' });
+    fabricCanvas.add(empCircle);
+    tmplText('PHOTO', circCx, circCy, { fontSize:48, fill:'rgba(255,255,255,0.5)', textAlign:'center' });
+    tmplRect(W*0.05, H*0.76, W*0.30, H*0.13, { fill:'#0d3d7a', rx:12 });
+    tmplText('EMPLOYEE OF\nTHE MONTH', W*0.20, H*0.825, {
+      fontSize:30, fontWeight:'bold', fill:'#ffffff', textAlign:'center', lineHeight:1.3
+    });
+    [-130, 0, 130].forEach(dx =>
+      tmplText('\u2605', W*0.20+dx, H*0.13, { fontSize:38, fill:'#C9A84C', textAlign:'center' })
+    );
+    tmplText('Employee Name', W*0.70, H*0.28, {
+      fontSize:74, fontWeight:'bold', fill:'#1a2744', textAlign:'center', fontFamily:'Playfair Display'
+    });
+    tmplText('Senior Manager  \u00B7  Operations', W*0.70, H*0.42, { fontSize:44, fill:'#1a56a0', textAlign:'center' });
+    tmplRect(W*0.47, H*0.50, W*0.46, 3, { fill:'#e0e0e0', rx:2 });
+    tmplText('\u201CAn outstanding contributor who\nconsistently exceeds expectations.\u201D', W*0.70, H*0.625, {
+      fontSize:40, fill:'#555555', textAlign:'center', lineHeight:1.6,
+      fontStyle:'italic', fontFamily:'Playfair Display'
+    });
+    tmplText('\u2605  8 Years of Service  \u2605', W*0.70, H*0.80, { fontSize:38, fill:'#C9A84C', textAlign:'center' });
   }
 
   // ── 3. Now Hiring ────────────────────────────────────────────────────────
   else if (name === 'nowhiring') {
-    fabricCanvas.backgroundColor = '#1b5e20';
-    tmplRect(0, 0, W, H*0.12, { fill:'#388e3c', rx:0 });
-    tmplRect(W*0.76, H*0.025, W*0.21, H*0.07, { fill:'rgba(255,255,255,0.15)', rx:8 });
-    tmplText('COMPANY LOGO', W*0.865, H*0.06, { fontSize:26, fill:'rgba(255,255,255,0.5)', textAlign:'center' });
-    loadGoogleFont('Montserrat');
-    tmplText("WE'RE HIRING", W/2, H*0.295, {
-      fontSize:148, fontWeight:'bold', fill:'#ffffff', textAlign:'center', fontFamily:'Montserrat',
-      shadow: new fabric.Shadow({ color:'rgba(0,0,0,0.3)', blur:16, offsetX:0, offsetY:4 })
-    });
-    tmplRect(W*0.12, H*0.44, W*0.76, 4, { fill:'rgba(255,255,255,0.35)', rx:2 });
-    tmplText('FULL STACK DEVELOPER', W/2, H*0.53, {
-      fontSize:62, fontWeight:'bold', fill:'#a5d6a7', textAlign:'center', charSpacing:40
-    });
-    ['\u2726  Competitive salary + benefits','\u2726  Remote-friendly work environment','\u2726  Career growth opportunities']
-      .forEach((b,i) => tmplText(b, W/2, H*(0.635+i*0.097), { fontSize:44, fill:'#c8e6c9', textAlign:'center' }));
-    tmplText('Apply: careers.yourcompany.com', W/2, H*0.925, { fontSize:40, fill:'#69f0ae', textAlign:'center' });
-  }
-
-  // ── 4. Employee Spotlight ────────────────────────────────────────────────
-  else if (name === 'spotlight') {
-    fabricCanvas.backgroundColor = '#ffffff';
-    tmplRect(0, 0, W*0.42, H, { fill:'#1565c0', rx:0 });
-    tmplRect(W*0.04, H*0.10, W*0.34, H*0.58, { fill:'rgba(255,255,255,0.12)', rx:12 });
-    tmplText('PHOTO', W*0.21, H*0.39, { fontSize:46, fill:'rgba(255,255,255,0.4)', textAlign:'center' });
-    tmplRect(W*0.04, H*0.74, W*0.34, H*0.14, { fill:'#0d47a1', rx:10 });
-    tmplText('EMPLOYEE\nOF THE MONTH', W*0.21, H*0.81, {
-      fontSize:30, fontWeight:'bold', fill:'#ffffff', textAlign:'center', lineHeight:1.3
-    });
-    tmplText('Employee Name', W*0.71, H*0.265, { fontSize:84, fontWeight:'bold', fill:'#0d1b2a', textAlign:'center' });
-    tmplText('Job Title  \u00B7  Department', W*0.71, H*0.40, { fontSize:46, fill:'#1565c0', textAlign:'center' });
-    tmplRect(W*0.50, H*0.475, W*0.46, 3, { fill:'#e0e0e0', rx:2 });
-    tmplText('"A short quote about this person\nand their impact on the team."', W*0.71, H*0.60, {
-      fontSize:40, fill:'#555555', textAlign:'center', lineHeight:1.5, fontStyle:'italic'
-    });
-    tmplText('5 Years of Service', W*0.71, H*0.785, { fontSize:38, fill:'#888888', textAlign:'center' });
-  }
-
-  // ── 5. Event Promo ───────────────────────────────────────────────────────
-  else if (name === 'eventpromo') {
-    fabricCanvas.backgroundColor = '#050a14';
-    tmplRect(0, 0, W, H, { fill: new fabric.Gradient({ type:'linear',
-      coords:{x1:0,y1:0,x2:W,y2:H},
-      colorStops:[{offset:0,color:'rgba(74,20,140,0.9)'},{offset:1,color:'rgba(21,101,192,0.9)'}] }), rx:0 });
-    tmplRect(W*0.08, H*0.09, W*0.84, 3, { fill:'rgba(255,255,255,0.25)', rx:2 });
-    tmplRect(W*0.08, H*0.91, W*0.84, 3, { fill:'rgba(255,255,255,0.25)', rx:2 });
-    tmplText('UPCOMING EVENT', W/2, H*0.17, { fontSize:36, fill:'#ce93d8', textAlign:'center', charSpacing:220 });
-    loadGoogleFont('Oswald');
-    tmplText('EVENT TITLE HERE', W/2, H*0.35, {
-      fontSize:130, fontWeight:'bold', textAlign:'center', fontFamily:'Oswald'
-    });
-    tmplRect((W-180)/2, H*0.47, 180, 6, { fill:'#7e57c2', rx:3 });
-    tmplText('Friday, April 18  \u00B7  7:00 PM', W/2, H*0.58, { fontSize:54, fill:'#e1bee7', textAlign:'center' });
-    tmplText('Venue Name  \u00B7  City, State', W/2, H*0.695, { fontSize:48, fill:'#b0bec5', textAlign:'center' });
-    tmplRect((W-380)/2, H*0.79, 380, 66, { fill:'#7e57c2', rx:33 });
-    tmplText('REGISTER NOW', W/2, H*0.823, { fontSize:38, fontWeight:'bold', textAlign:'center' });
-  }
-
-  // ── 6. Sale Promotion ────────────────────────────────────────────────────
-  else if (name === 'salepromo') {
-    fabricCanvas.backgroundColor = '#fff8e1';
-    tmplRect(0, 0, W, H*0.095, { fill:'#e65100', rx:0 });
-    tmplText('LIMITED TIME OFFER', W/2, H*0.048, {
-      fontSize:40, fontWeight:'bold', fill:'#ffffff', textAlign:'center', charSpacing:100
-    });
-    tmplText('50%', W*0.28, H*0.375, {
-      fontSize:260, fontWeight:'bold', fill:'#e65100', textAlign:'center',
-      shadow: new fabric.Shadow({ color:'rgba(230,81,0,0.18)', blur:20, offsetX:4, offsetY:4 })
-    });
-    tmplText('OFF', W*0.28, H*0.655, { fontSize:110, fontWeight:'bold', fill:'#bf360c', textAlign:'center', charSpacing:60 });
-    tmplRect(W*0.54, H*0.11, W*0.4, H*0.65, { fill:'#fff3e0', rx:16 });
-    tmplText('PRODUCT\nIMAGE', W*0.74, H*0.435, { fontSize:44, fill:'#ffcc80', textAlign:'center', lineHeight:1.4 });
-    tmplText('Sale ends December 31st', W/2, H*0.845, { fontSize:42, fill:'#795548', textAlign:'center' });
-    tmplRect((W-400)/2, H*0.88, 400, 68, { fill:'#e65100', rx:34 });
-    tmplText('SHOP NOW', W/2, H*0.914, { fontSize:40, fontWeight:'bold', textAlign:'center' });
-  }
-
-  // ── 7. Menu Board ────────────────────────────────────────────────────────
-  else if (name === 'menuboard') {
-    fabricCanvas.backgroundColor = '#0d0d0d';
-    tmplRect(0, 0, W, H*0.18, { fill:'#1a0a00', rx:0 });
-    loadGoogleFont('Playfair Display');
-    tmplText('THE DAILY MENU', W/2, H*0.09, {
-      fontSize:82, fontWeight:'bold', fill:'#ffd54f', textAlign:'center', fontFamily:'Playfair Display', charSpacing:60
-    });
-    tmplRect(W*0.05, H*0.18, W*0.9, 3, { fill:'#c9a84c', rx:2 });
-    const colX = [W*0.18, W*0.5, W*0.82];
-    [['STARTERS','Spring Rolls \u2014 $8','Soup of Day \u2014 $7','Garlic Bread \u2014 $5'],
-     ['MAINS','Grilled Salmon \u2014 $24','Pasta Primavera \u2014 $16','Ribeye Steak \u2014 $36'],
-     ['DESSERTS','Cheesecake \u2014 $9','Tiramisu \u2014 $8','Sorbet \u2014 $6']]
-    .forEach(([hdr,...items], ci) => {
-      tmplText(hdr, colX[ci], H*0.275, { fontSize:50, fontWeight:'bold', fill:'#ffd54f', textAlign:'center', charSpacing:80 });
-      tmplRect(colX[ci]-W*0.12, H*0.352, W*0.24, 2, { fill:'rgba(201,168,76,0.35)', rx:1 });
-      items.forEach((itm,ii) => tmplText(itm, colX[ci], H*(0.435+ii*0.14), { fontSize:42, fill:'#f0f0f0', textAlign:'center' }));
-    });
-    tmplRect(W*0.34, H*0.22, 2, H*0.6, { fill:'rgba(201,168,76,0.22)', rx:1 });
-    tmplRect(W*0.66, H*0.22, 2, H*0.6, { fill:'rgba(201,168,76,0.22)', rx:1 });
-    tmplRect(W*0.05, H*0.87, W*0.9, 3, { fill:'rgba(201,168,76,0.35)', rx:2 });
-    tmplText('Ask your server about daily specials and allergen information', W/2, H*0.935, {
-      fontSize:34, fill:'#9e9e9e', textAlign:'center'
-    });
-  }
-
-  // ── 8. Welcome Screen ────────────────────────────────────────────────────
-  else if (name === 'welcomescreen') {
-    fabricCanvas.backgroundColor = '#fafafa';
-    tmplRect(0, 0, W, 18, { fill:'#1565c0', rx:0 });
-    tmplRect(0, H-18, W, 18, { fill:'#1565c0', rx:0 });
-    tmplRect(W*0.37, H*0.06, W*0.26, H*0.14, { fill:'#e3f2fd', rx:12 });
-    tmplText('COMPANY LOGO', W/2, H*0.13, { fontSize:36, fill:'#90caf9', textAlign:'center' });
-    loadGoogleFont('Raleway');
-    tmplText('Welcome', W/2, H*0.415, {
-      fontSize:164, fill:'#0d1b2a', textAlign:'center', fontFamily:'Raleway', fontWeight:'300'
-    });
-    tmplRect((W-320)/2, H*0.54, 320, 5, { fill:'#1565c0', rx:3 });
-    tmplText('YOUR COMPANY NAME', W/2, H*0.645, {
-      fontSize:54, fontWeight:'bold', fill:'#1565c0', textAlign:'center', charSpacing:80
-    });
-    tmplText("We\u2019re glad you\u2019re here", W/2, H*0.745, { fontSize:44, fill:'#607d8b', textAlign:'center' });
-    tmplText('Monday, January 1  \u00B7  9:00 AM', W/2, H*0.88, { fontSize:38, fill:'#90a4ae', textAlign:'center' });
-  }
-
-  // ── 9. Safety Notice ─────────────────────────────────────────────────────
-  else if (name === 'safetynotice') {
-    fabricCanvas.backgroundColor = '#fdd835';
-    tmplRect(0, 0, W, H*0.12, { fill:'#000000', rx:0 });
-    tmplText('SAFETY NOTICE', W/2, H*0.06, {
-      fontSize:46, fontWeight:'bold', fill:'#fdd835', textAlign:'center', charSpacing:150
-    });
-    tmplRect((W-220)/2, H*0.13, 220, 220, { fill:'#000000', rx:110 });
-    tmplText('!', W/2, H*0.245, { fontSize:170, fontWeight:'bold', fill:'#fdd835', textAlign:'center' });
-    tmplText('CAUTION', W/2, H*0.445, { fontSize:130, fontWeight:'bold', fill:'#000000', textAlign:'center' });
-    tmplRect(W*0.1, H*0.555, W*0.8, 5, { fill:'#000000', rx:3 });
-    tmplText('Please read all safety guidelines\nbefore operating equipment.', W/2, H*0.675, {
-      fontSize:52, fill:'#212121', textAlign:'center', lineHeight:1.5
-    });
-    tmplRect(W*0.35, H*0.845, W*0.3, H*0.1, { fill:'rgba(0,0,0,0.12)', rx:10 });
-    tmplText('COMPANY NAME', W/2, H*0.895, { fontSize:38, fill:'#000000', textAlign:'center' });
-  }
-
-  // ── 10. Opening Hours ────────────────────────────────────────────────────
-  else if (name === 'openinghours') {
-    fabricCanvas.backgroundColor = '#ffffff';
-    tmplRect(0, 0, W, H*0.155, { fill:'#1565c0', rx:0 });
-    tmplText('BUSINESS NAME', W/2, H*0.078, { fontSize:72, fontWeight:'bold', fill:'#ffffff', textAlign:'center' });
-    tmplText('OPENING HOURS', W/2, H*0.21, {
-      fontSize:48, fontWeight:'bold', fill:'#1565c0', textAlign:'center', charSpacing:100
-    });
-    tmplRect(W*0.1, H*0.27, W*0.8, 3, { fill:'#e0e0e0', rx:2 });
-    const days  = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
-    const hrs   = ['9:00 AM \u2013 6:00 PM','9:00 AM \u2013 6:00 PM','9:00 AM \u2013 6:00 PM','9:00 AM \u2013 6:00 PM','9:00 AM \u2013 8:00 PM','10:00 AM \u2013 5:00 PM','Closed'];
-    days.forEach((day,i) => {
-      const y = H*(0.36+i*0.082), today = i===4;
-      if (today) tmplRect(W*0.08, y-H*0.032, W*0.84, H*0.068, { fill:'#e3f2fd', rx:8 });
-      tmplText(day,  W*0.28, y, { fontSize:38, fill:today?'#1565c0':'#333', textAlign:'center', fontWeight:today?'bold':'normal' });
-      tmplText(hrs[i], W*0.72, y, { fontSize:38, fill:today?'#1565c0':hrs[i]==='Closed'?'#e53935':'#555', textAlign:'center', fontWeight:today?'bold':'normal' });
-    });
-    tmplRect(W*0.1, H*0.92, W*0.8, 3, { fill:'#e0e0e0', rx:2 });
-    tmplText('(555) 123-4567  \u00B7  www.yourbusiness.com', W/2, H*0.96, { fontSize:36, fill:'#607d8b', textAlign:'center' });
-  }
-
-  // ── 11. Holiday Greeting ─────────────────────────────────────────────────
-  else if (name === 'holidaygreeting') {
-    tmplRect(0, 0, W, H, { fill: new fabric.Gradient({ type:'linear',
-      coords:{x1:0,y1:0,x2:W,y2:H},
-      colorStops:[{offset:0,color:'#b71c1c'},{offset:0.5,color:'#880e4f'},{offset:1,color:'#1a237e'}] }), rx:0 });
-    tmplRect(0, H*0.04, W, 5, { fill:'#c9a84c', rx:3 });
-    tmplRect(0, H*0.96, W, 5, { fill:'#c9a84c', rx:3 });
-    [W*0.1,W*0.25,W*0.5,W*0.75,W*0.9].forEach(x =>
-      tmplText('\u2605', x, H*0.14, { fontSize:44, fill:'rgba(255,255,255,0.35)', textAlign:'center' })
+    fabricCanvas.backgroundColor = '#FF6B35';
+    loadGoogleFont('Anton');
+    [[0,0],[W-160,0],[0,H-160],[W-160,H-160]].forEach(([x,y]) =>
+      tmplRect(x, y, 160, 160, { fill:'rgba(255,255,255,0.12)', rx:0 })
     );
-    loadGoogleFont('Playfair Display');
-    tmplText("Season\u2019s Greetings", W/2, H*0.35, {
-      fontSize:110, fill:'#ffffff', textAlign:'center', fontFamily:'Playfair Display', fontStyle:'italic',
-      shadow: new fabric.Shadow({ color:'rgba(0,0,0,0.5)', blur:24, offsetX:0, offsetY:0 })
+    tmplText('WE ARE HIRING', W/2, H*0.27, {
+      fontSize:148, fontWeight:'bold', fill:'#ffffff', textAlign:'center', fontFamily:'Anton',
+      shadow: new fabric.Shadow({ color:'rgba(0,0,0,0.2)', blur:12, offsetX:0, offsetY:4 })
     });
-    tmplText('\u2666  \u2666  \u2666  \u2666  \u2666', W/2, H*0.49, { fontSize:40, fill:'rgba(201,168,76,0.8)', textAlign:'center', charSpacing:60 });
-    tmplText('Wishing you joy, peace, and\nhappiness this holiday season', W/2, H*0.635, {
-      fontSize:56, fill:'#ffecb3', textAlign:'center', lineHeight:1.5
+    [['POSITION: Senior Developer', 0.50],['LOCATION: Remote / Hybrid', 0.615],['SALARY: Competitive Package', 0.73]]
+      .forEach(([txt, yp]) => {
+        tmplRect(W*0.15, H*yp - H*0.042, W*0.70, H*0.078, { fill:'rgba(255,255,255,0.92)', rx:16 });
+        tmplText(txt, W/2, H*yp, { fontSize:44, fill:'#FF6B35', textAlign:'center', fontWeight:'bold' });
+      });
+    tmplText('APPLY AT: careers.yourcompany.com', W/2, H*0.905, {
+      fontSize:42, fill:'rgba(255,255,255,0.92)', textAlign:'center'
     });
-    tmplText('FROM YOUR COMPANY NAME', W/2, H*0.80, {
-      fontSize:44, fontWeight:'bold', fill:'#c9a84c', textAlign:'center', charSpacing:80
-    });
-    tmplText('2025', W/2, H*0.905, { fontSize:66, fill:'rgba(255,255,255,0.2)', textAlign:'center' });
   }
 
-  // ── 12. Motivational Quote ───────────────────────────────────────────────
-  else if (name === 'motivationalquote') {
-    tmplRect(0, 0, W, H, { fill:'#37474f', rx:0 });
-    tmplRect(0, 0, W, H, { fill:'rgba(0,0,0,0.62)', rx:0 });
-    loadGoogleFont('Playfair Display');
-    tmplText('\u201C', W*0.12, H*0.22, { fontSize:240, fill:'rgba(255,255,255,0.12)', fontFamily:'Playfair Display' });
-    tmplText('The only way to do great work\nis to love what you do.', W/2, H*0.44, {
-      fontSize:80, fill:'#ffffff', textAlign:'center', lineHeight:1.55,
-      fontStyle:'italic', fontFamily:'Playfair Display',
-      shadow: new fabric.Shadow({ color:'rgba(0,0,0,0.6)', blur:10, offsetX:0, offsetY:3 })
+  // ── 4. KPI Dashboard ──────────────────────────────────────────────────────
+  else if (name === 'kpidashboard') {
+    fabricCanvas.backgroundColor = '#1e2433';
+    tmplRect(0, 0, W, H*0.14, { fill:'#2563eb', rx:0 });
+    tmplText('PERFORMANCE DASHBOARD', W*0.44, H*0.07, {
+      fontSize:52, fontWeight:'bold', fill:'#ffffff', textAlign:'center', charSpacing:60
     });
-    tmplRect((W-120)/2, H*0.615, 120, 5, { fill:'#4f8ef7', rx:3 });
-    tmplText('\u2014 Steve Jobs', W/2, H*0.70, { fontSize:46, fill:'#aaaaaa', textAlign:'center' });
-    tmplRect(W*0.4, H*0.82, W*0.2, H*0.1, { fill:'rgba(255,255,255,0.07)', rx:10 });
-    tmplText('YOUR BRAND', W/2, H*0.87, { fontSize:34, fill:'rgba(255,255,255,0.35)', textAlign:'center' });
+    tmplRect(W*0.82, H*0.018, W*0.15, H*0.105, { fill:'rgba(255,255,255,0.15)', rx:8 });
+    tmplText('LOGO', W*0.895, H*0.07, { fontSize:30, fill:'rgba(255,255,255,0.45)', textAlign:'center' });
+    const metrics = [
+      ['TOTAL REVENUE','$124,850','+12.5% this month'],
+      ['NEW CUSTOMERS','2,840','+8.2% this month'],
+      ['SATISFACTION SCORE','96.4%','+2.1% this week'],
+      ['ORDERS TODAY','1,247','+15.3% vs yesterday'],
+    ];
+    [[0,0],[1,0],[0,1],[1,1]].forEach(([col, row], i) => {
+      const cx = W*(0.06 + col*0.50), cy = H*(0.175 + row*0.40);
+      const cw = W*0.42, ch = H*0.355;
+      tmplRect(cx, cy, cw, ch, { fill:'#252d3d', rx:14 });
+      tmplText(metrics[i][0], cx+cw/2, cy+ch*0.17, { fontSize:28, fill:'#64748b', textAlign:'center', charSpacing:60 });
+      tmplText(metrics[i][1], cx+cw/2, cy+ch*0.52, { fontSize:76, fontWeight:'bold', fill:'#60a5fa', textAlign:'center' });
+      tmplText(metrics[i][2], cx+cw/2, cy+ch*0.83, { fontSize:28, fill:'#44c97a', textAlign:'center' });
+    });
+  }
+
+  // ── 5. Daily Special ──────────────────────────────────────────────────────
+  else if (name === 'dailyspecial') {
+    fabricCanvas.backgroundColor = '#FDF6E3';
+    loadGoogleFont('Playfair Display');
+    tmplRect(0, 0, W*0.45, H, { fill:'rgba(180,140,90,0.18)', rx:0 });
+    tmplRect(W*0.03, H*0.06, W*0.39, H*0.88, { fill:'rgba(150,110,70,0.13)', rx:14 });
+    tmplText('[ FOOD PHOTO ]', W*0.225, H/2, { fontSize:42, fill:'rgba(150,110,70,0.4)', textAlign:'center' });
+    tmplRect(W*0.475, H*0.10, 4, H*0.80, { fill:'rgba(180,140,90,0.35)', rx:2 });
+    tmplText('Chef\'s Special\nTonight', W*0.725, H*0.30, {
+      fontSize:88, fontWeight:'bold', fill:'#1a120b', textAlign:'center',
+      fontFamily:'Playfair Display', lineHeight:1.2
+    });
+    tmplText('$28.00', W*0.725, H*0.54, { fontSize:72, fontWeight:'bold', fill:'#b45309', textAlign:'center' });
+    tmplText('\u2726  \u2014\u2014\u2014\u2014\u2014  \u2726', W*0.725, H*0.635, { fontSize:34, fill:'rgba(180,140,90,0.6)', textAlign:'center' });
+    tmplText('Pan-seared salmon with lemon butter\nsauce, roasted vegetables & wild rice', W*0.725, H*0.765, {
+      fontSize:38, fill:'#5c4a32', textAlign:'center', lineHeight:1.5
+    });
+  }
+
+  // ── 6. Menu Board ────────────────────────────────────────────────────────
+  else if (name === 'menuboard') {
+    fabricCanvas.backgroundColor = '#2C2C2C';
+    loadGoogleFont('Playfair Display');
+    loadGoogleFont('Open Sans');
+    tmplRect(0, 0, W, H*0.195, { fill:'#1a1a1a', rx:0 });
+    tmplText('THE GOLDEN FORK', W/2, H*0.098, {
+      fontSize:96, fontWeight:'bold', fill:'#D4AF37', textAlign:'center', fontFamily:'Playfair Display', charSpacing:40
+    });
+    tmplRect(W*0.05, H*0.196, W*0.9, 3, { fill:'rgba(212,175,55,0.5)', rx:2 });
+    const mbCols = [W*0.185, W*0.50, W*0.815];
+    const mbCats = [
+      ['STARTERS', ['Spring Rolls \u2014 $9','Soup du Jour \u2014 $7','Bruschetta \u2014 $8','Calamari \u2014 $12']],
+      ['MAINS',    ['Grilled Salmon \u2014 $26','Filet Mignon \u2014 $42','Pasta Primavera \u2014 $18','Herb Chicken \u2014 $22']],
+      ['DESSERTS', ['Cr\u00E8me Br\u00FBl\u00E9e \u2014 $10','Tiramisu \u2014 $9','Cheesecake \u2014 $9','Gelato \u2014 $7']],
+    ];
+    mbCats.forEach(([hdr, items], ci) => {
+      tmplText(hdr, mbCols[ci], H*0.275, {
+        fontSize:48, fontWeight:'bold', fill:'#D4AF37', textAlign:'center', charSpacing:100, fontFamily:'Open Sans'
+      });
+      tmplRect(mbCols[ci]-160, H*0.34, 320, 2, { fill:'rgba(212,175,55,0.35)', rx:1 });
+      items.forEach((itm, ii) =>
+        tmplText(itm, mbCols[ci], H*(0.415+ii*0.135), { fontSize:40, fill:'#e8e8e8', textAlign:'center' })
+      );
+    });
+    tmplRect(W*0.345, H*0.21, 2, H*0.72, { fill:'rgba(212,175,55,0.2)', rx:1 });
+    tmplRect(W*0.655, H*0.21, 2, H*0.72, { fill:'rgba(212,175,55,0.2)', rx:1 });
+    tmplRect(W*0.05, H*0.895, W*0.9, 2, { fill:'rgba(212,175,55,0.35)', rx:1 });
+    tmplText('Ask your server about our daily specials and allergen information', W/2, H*0.945, {
+      fontSize:32, fill:'#9e9e9e', textAlign:'center'
+    });
+  }
+
+  // ── 7. Happy Hour ─────────────────────────────────────────────────────────
+  else if (name === 'happyhour') {
+    tmplRect(0, 0, W, H, { fill: new fabric.Gradient({ type:'linear',
+      coords:{x1:0,y1:0,x2:W,y2:H},
+      colorStops:[{offset:0,color:'#3d0066'},{offset:1,color:'#e91e8c'}] }), rx:0 });
+    loadGoogleFont('Bebas Neue');
+    tmplRect(W*0.06, H*0.04, W*0.88, 4, { fill:'rgba(255,255,255,0.22)', rx:2 });
+    tmplRect(W*0.06, H*0.96, W*0.88, 4, { fill:'rgba(255,255,255,0.22)', rx:2 });
+    tmplText('\u2605', W*0.88, H*0.14, { fontSize:120, fill:'rgba(255,215,0,0.35)', textAlign:'center' });
+    tmplText('HAPPY HOUR', W/2, H*0.32, {
+      fontSize:200, fontWeight:'bold', fill:'#ffffff', textAlign:'center', fontFamily:'Bebas Neue',
+      shadow: new fabric.Shadow({ color:'rgba(0,0,0,0.4)', blur:24, offsetX:0, offsetY:6 })
+    });
+    tmplText('EVERY DAY  3PM \u2014 7PM', W/2, H*0.52, {
+      fontSize:72, fill:'rgba(255,255,255,0.88)', textAlign:'center', fontFamily:'Bebas Neue', charSpacing:60
+    });
+    tmplRect(W*0.35, H*0.60, W*0.30, H*0.24, { fill:'rgba(255,255,255,0.10)', rx:16 });
+    tmplText('[ DRINKS IMAGE ]', W/2, H*0.72, { fontSize:36, fill:'rgba(255,255,255,0.4)', textAlign:'center' });
+    tmplText('50% OFF ALL COCKTAILS + BEER', W/2, H*0.895, {
+      fontSize:52, fontWeight:'bold', fill:'#FFD700', textAlign:'center', fontFamily:'Bebas Neue', charSpacing:30
+    });
+  }
+
+  // ── 8. Sale Event ────────────────────────────────────────────────────────
+  else if (name === 'saleevent') {
+    fabricCanvas.backgroundColor = '#e0000a';
+    loadGoogleFont('Anton');
+    tmplRect(0, 0, W*0.28, H*0.28, { fill:'rgba(255,255,255,0.06)', rx:0 });
+    tmplRect(W*0.72, H*0.72, W*0.28, H*0.28, { fill:'rgba(255,255,255,0.06)', rx:0 });
+    tmplText('50%', W/2, H*0.28, {
+      fontSize:280, fontWeight:'bold', fill:'#ffffff', textAlign:'center', fontFamily:'Anton',
+      shadow: new fabric.Shadow({ color:'rgba(0,0,0,0.25)', blur:20, offsetX:4, offsetY:4 })
+    });
+    tmplText('OFF', W/2, H*0.55, {
+      fontSize:160, fontWeight:'bold', fill:'rgba(255,255,255,0.92)', textAlign:'center', fontFamily:'Anton', charSpacing:80
+    });
+    tmplText('SALE ITEM NAME HERE', W/2, H*0.71, { fontSize:58, fill:'rgba(255,255,255,0.75)', textAlign:'center' });
+    tmplText('WAS $199.99  \u00B7  NOW $99.99', W/2, H*0.80, { fontSize:50, fill:'rgba(255,255,255,0.65)', textAlign:'center' });
+    tmplRect((W-440)/2, H*0.875, 440, 76, { fill:'#ffffff', rx:38 });
+    tmplText('TODAY ONLY', W/2, H*0.913, { fontSize:46, fontWeight:'bold', fill:'#e0000a', textAlign:'center' });
+  }
+
+  // ── 9. New Arrival ────────────────────────────────────────────────────────
+  else if (name === 'newarrival') {
+    fabricCanvas.backgroundColor = '#ffffff';
+    loadGoogleFont('Raleway');
+    tmplRect(0, 0, W, 8, { fill:'#000000', rx:0 });
+    tmplRect(0, H-8, W, 8, { fill:'#000000', rx:0 });
+    tmplText('N E W  A R R I V A L', W/2, H*0.10, {
+      fontSize:44, fill:'rgba(0,0,0,0.5)', textAlign:'center', charSpacing:160
+    });
+    tmplRect(W*0.28, H*0.16, W*0.44, H*0.55, { fill:'#f5f5f5', rx:12 });
+    tmplText('[ PRODUCT IMAGE ]', W/2, H*0.435, { fontSize:40, fill:'rgba(0,0,0,0.25)', textAlign:'center' });
+    tmplText('Product Name Here', W/2, H*0.77, {
+      fontSize:72, fontWeight:'300', fill:'#111111', textAlign:'center', fontFamily:'Raleway'
+    });
+    tmplText('$129.00', W/2, H*0.855, { fontSize:56, fontWeight:'bold', fill:'#333333', textAlign:'center' });
+    tmplText('Available now in stores and online', W/2, H*0.926, { fontSize:36, fill:'#888888', textAlign:'center' });
+  }
+
+  // ── 10. Event Promo ───────────────────────────────────────────────────────
+  else if (name === 'eventpromo') {
+    fabricCanvas.backgroundColor = '#050818';
+    tmplRect(0, 0, W, H, { fill: new fabric.Gradient({ type:'radial',
+      coords:{x1:W/2,y1:H/2,x2:W/2,y2:H/2,r1:0,r2:W*0.65},
+      colorStops:[{offset:0,color:'rgba(80,30,180,0.7)'},{offset:1,color:'rgba(5,8,24,0.95)'}] }), rx:0 });
+    loadGoogleFont('Raleway');
+    tmplRect(W*0.06, H*0.07, W*0.88, 3, { fill:'rgba(180,130,255,0.35)', rx:2 });
+    tmplRect(W*0.06, H*0.93, W*0.88, 3, { fill:'rgba(180,130,255,0.35)', rx:2 });
+    [W*0.06, W*0.94].forEach(x => [H*0.07, H*0.93].forEach(y =>
+      tmplText('\u25C6', x, y, { fontSize:28, fill:'rgba(180,130,255,0.5)', textAlign:'center' })
+    ));
+    tmplText('UPCOMING EVENT', W/2, H*0.185, {
+      fontSize:38, fill:'#c084fc', textAlign:'center', charSpacing:220, fontFamily:'Raleway'
+    });
+    tmplText('EVENT TITLE HERE', W/2, H*0.37, {
+      fontSize:130, fontWeight:'bold', fill:'#ffffff', textAlign:'center', fontFamily:'Raleway',
+      shadow: new fabric.Shadow({ color:'rgba(150,80,255,0.6)', blur:30, offsetX:0, offsetY:0 })
+    });
+    tmplRect((W-200)/2, H*0.485, 200, 5, { fill:'#a855f7', rx:3 });
+    tmplText('Saturday, June 14  \u00B7  7:00 PM', W/2, H*0.595, { fontSize:54, fill:'#e9d5ff', textAlign:'center' });
+    tmplText('Grand Ballroom  \u00B7  City Convention Center', W/2, H*0.705, { fontSize:46, fill:'#c4b5fd', textAlign:'center' });
+    tmplRect((W-400)/2, H*0.80, 400, 70, { fill:'#7c3aed', rx:35 });
+    tmplText('GET TICKETS', W/2, H*0.836, { fontSize:40, fontWeight:'bold', fill:'#ffffff', textAlign:'center' });
+  }
+
+  // ── 11. Countdown ─────────────────────────────────────────────────────────
+  else if (name === 'countdown') {
+    fabricCanvas.backgroundColor = '#ffffff';
+    loadGoogleFont('Montserrat');
+    tmplRect(W*0.08, H*0.07, W*0.84, 5, { fill:'#4f8ef7', rx:3 });
+    tmplText('DAYS UNTIL', W/2, H*0.175, {
+      fontSize:54, fill:'#6b7280', textAlign:'center', fontFamily:'Montserrat', charSpacing:100
+    });
+    tmplRect(W*0.22, H*0.23, W*0.56, H*0.44, { fill:'#eff6ff', rx:20, stroke:'#bfdbfe', strokeWidth:3 });
+    tmplText('30', W/2, H*0.455, {
+      fontSize:260, fontWeight:'bold', fill:'#1d4ed8', textAlign:'center', fontFamily:'Montserrat'
+    });
+    tmplRect((W-160)/2, H*0.70, 160, 5, { fill:'#4f8ef7', rx:3 });
+    tmplText('YOUR EVENT NAME HERE', W/2, H*0.78, {
+      fontSize:58, fontWeight:'bold', fill:'#1a2744', textAlign:'center', fontFamily:'Montserrat'
+    });
+    tmplText('Saturday, July 12, 2026', W/2, H*0.875, { fontSize:44, fill:'#6b7280', textAlign:'center' });
+    tmplRect(W*0.42, H*0.935, W*0.16, H*0.045, { fill:'#f0f2f5', rx:6 });
+    tmplText('COMPANY', W/2, H*0.957, { fontSize:26, fill:'#9ca3af', textAlign:'center' });
+  }
+
+  // ── 12. Waiting Room Welcome ───────────────────────────────────────────────
+  else if (name === 'waitingroomwelcome') {
+    fabricCanvas.backgroundColor = '#e6f7f5';
+    loadGoogleFont('Nunito');
+    loadGoogleFont('Open Sans');
+    tmplRect(0, 0, W, H*0.155, { fill:'#00897b', rx:0 });
+    tmplText('RIVERSIDE MEDICAL CENTER', W/2, H*0.078, {
+      fontSize:56, fontWeight:'bold', fill:'#ffffff', textAlign:'center', charSpacing:40
+    });
+    tmplRect(W*0.04, H*0.175, W*0.38, H*0.795, { fill:'rgba(0,137,123,0.14)', rx:14 });
+    tmplText('[ CALMING IMAGE ]', W*0.23, H*0.57, { fontSize:36, fill:'rgba(0,137,123,0.4)', textAlign:'center' });
+    tmplText('Welcome', W*0.70, H*0.345, {
+      fontSize:120, fill:'#00695c', textAlign:'center', fontFamily:'Nunito', fontWeight:'300',
+      shadow: new fabric.Shadow({ color:'rgba(0,0,0,0.08)', blur:12, offsetX:0, offsetY:3 })
+    });
+    tmplText('YOUR PRACTICE NAME', W*0.70, H*0.515, {
+      fontSize:46, fontWeight:'bold', fill:'#00897b', textAlign:'center', charSpacing:60
+    });
+    tmplRect(W*0.46, H*0.575, W*0.48, H*0.095, { fill:'rgba(0,137,123,0.12)', rx:12 });
+    tmplText('Estimated wait: 15\u201320 minutes', W*0.70, H*0.622, { fontSize:42, fill:'#00695c', textAlign:'center' });
+    tmplText('Thank you for your patience.\nWe are here to help.', W*0.70, H*0.78, {
+      fontSize:40, fill:'#5c8b87', textAlign:'center', lineHeight:1.5
+    });
+    tmplRect(W*0.46, H*0.935, W*0.5, 4, { fill:'rgba(0,137,123,0.3)', rx:2 });
+    tmplText('For emergencies, please alert staff immediately', W*0.70, H*0.965, {
+      fontSize:30, fill:'#9e9e9e', textAlign:'center'
+    });
+  }
+
+  // ── 13. Health Tip ────────────────────────────────────────────────────────
+  else if (name === 'healthtip') {
+    fabricCanvas.backgroundColor = '#ffffff';
+    loadGoogleFont('Open Sans');
+    tmplRect(0, 0, 18, H, { fill:'#16a34a', rx:0 });
+    const htR = 70, htCx = W*0.10, htCy = H*0.13;
+    const htCircle = new fabric.Circle({
+      left: htCx-htR, top: htCy-htR,
+      radius: htR, fill:'#dcfce7', stroke:'#16a34a', strokeWidth:5
+    });
+    fabricCanvas.add(htCircle);
+    tmplText('+', htCx, htCy, { fontSize:80, fontWeight:'bold', fill:'#16a34a', textAlign:'center' });
+    tmplText('HEALTH TIP OF THE DAY', W*0.60, H*0.13, {
+      fontSize:46, fontWeight:'bold', fill:'#16a34a', textAlign:'center', charSpacing:80, fontFamily:'Open Sans'
+    });
+    tmplRect(W*0.06, H*0.255, W*0.88, 3, { fill:'#e5e7eb', rx:2 });
+    tmplText('Stay Hydrated \u2014\nDrink 8 Glasses of Water Daily', W/2, H*0.435, {
+      fontSize:76, fontWeight:'bold', fill:'#111827', textAlign:'center', lineHeight:1.3, fontFamily:'Open Sans'
+    });
+    tmplText('Proper hydration supports digestion, improves energy\nlevels, and maintains healthy skin. Aim for at least\n2 litres of clean water throughout the day.', W/2, H*0.675, {
+      fontSize:44, fill:'#4b5563', textAlign:'center', lineHeight:1.6
+    });
+    tmplText('Source: World Health Organization  \u00B7  WHO.int', W/2, H*0.875, {
+      fontSize:30, fill:'#9ca3af', textAlign:'center'
+    });
+    tmplRect(W*0.06, H*0.912, W*0.88, 3, { fill:'#e5e7eb', rx:2 });
+  }
+
+  // ── 14. Season's Greetings ───────────────────────────────────────────────
+  else if (name === 'seasonsgreetings') {
+    fabricCanvas.backgroundColor = '#1b4332';
+    loadGoogleFont('Playfair Display');
+    tmplRect(0, 0, W, H, { fill: new fabric.Gradient({ type:'radial',
+      coords:{x1:W/2,y1:H/2,x2:W/2,y2:H/2,r1:0,r2:W*0.5},
+      colorStops:[{offset:0,color:'rgba(212,175,55,0.15)'},{offset:1,color:'rgba(0,0,0,0)'}] }), rx:0 });
+    tmplRect(W*0.05, H*0.05, W*0.90, 4, { fill:'#C9A84C', rx:2 });
+    tmplRect(W*0.05, H*0.95, W*0.90, 4, { fill:'#C9A84C', rx:2 });
+    [W*0.08,W*0.22,W*0.50,W*0.78,W*0.92].forEach(x =>
+      tmplText('\u2744', x, H*0.14, { fontSize:52, fill:'rgba(255,255,255,0.25)', textAlign:'center' })
+    );
+    tmplText("Season\u2019s Greetings", W/2, H*0.375, {
+      fontSize:120, fill:'#E8D5A3', textAlign:'center',
+      fontFamily:'Playfair Display', fontStyle:'italic',
+      shadow: new fabric.Shadow({ color:'rgba(0,0,0,0.55)', blur:28, offsetX:0, offsetY:0 })
+    });
+    tmplText('\u2726  \u00B7  \u2726  \u00B7  \u2726', W/2, H*0.515, { fontSize:44, fill:'rgba(201,168,76,0.7)', textAlign:'center', charSpacing:40 });
+    tmplText('Wishing you and your family\njoy, peace, and happiness', W/2, H*0.655, {
+      fontSize:58, fill:'#d4f0d4', textAlign:'center', lineHeight:1.5
+    });
+    tmplText('FROM YOUR COMPANY NAME', W/2, H*0.81, {
+      fontSize:44, fontWeight:'bold', fill:'#C9A84C', textAlign:'center', charSpacing:80
+    });
+    tmplText('2026', W/2, H*0.905, { fontSize:60, fill:'rgba(255,255,255,0.15)', textAlign:'center' });
+  }
+
+  // ── 15. New Year ─────────────────────────────────────────────────────────
+  else if (name === 'newyear') {
+    fabricCanvas.backgroundColor = '#000000';
+    loadGoogleFont('Anton');
+    const nyConfetti = [
+      [W*0.08,H*0.08,20],[W*0.92,H*0.12,16],[W*0.15,H*0.82,24],[W*0.85,H*0.78,18],
+      [W*0.45,H*0.06,12],[W*0.55,H*0.90,14],[W*0.25,H*0.15,10],[W*0.75,H*0.85,16],
+      [W*0.70,H*0.08,18],[W*0.30,H*0.88,12],[W*0.12,H*0.50,10],[W*0.88,H*0.48,14],
+    ];
+    const nyColors = ['#C9A84C','rgba(255,255,255,0.4)','#C9A84C','rgba(255,215,0,0.5)'];
+    nyConfetti.forEach(([x,y,r],i) =>
+      tmplRect(x-r, y-r, r*2, r*2, { fill:nyColors[i%nyColors.length], rx:r })
+    );
+    tmplText('2026', W/2, H*0.37, {
+      fontSize:300, fontWeight:'bold', fill:'#C9A84C', textAlign:'center', fontFamily:'Anton',
+      shadow: new fabric.Shadow({ color:'rgba(201,168,76,0.4)', blur:40, offsetX:0, offsetY:0 })
+    });
+    tmplText('Happy New Year', W/2, H*0.65, {
+      fontSize:86, fill:'#ffffff', textAlign:'center', fontFamily:'Anton'
+    });
+    tmplText('FROM YOUR COMPANY NAME', W/2, H*0.795, {
+      fontSize:44, fill:'#C9A84C', textAlign:'center', charSpacing:80
+    });
+    tmplRect((W-500)/2, H*0.855, 500, 3, { fill:'rgba(201,168,76,0.4)', rx:2 });
+    tmplText('2026 \u2014 Wishing you a year full of success', W/2, H*0.922, {
+      fontSize:38, fill:'rgba(255,255,255,0.35)', textAlign:'center'
+    });
+  }
+
+  // ── 16. Instagram Wall ───────────────────────────────────────────────────
+  else if (name === 'instagramwall') {
+    fabricCanvas.backgroundColor = '#ffffff';
+    loadGoogleFont('Montserrat');
+    tmplText('Follow Us on Instagram', W/2, H*0.07, {
+      fontSize:72, fontWeight:'bold', fill:'#111827', textAlign:'center', fontFamily:'Montserrat'
+    });
+    tmplRect(W*0.06, H*0.13, W*0.88, 4, { fill:'#E1306C', rx:2 });
+    const igColors = ['#f3e8ff','#fce7f3','#fef3c7','#dbeafe','#dcfce7','#ffe4e6'];
+    const igBorder = ['#d8b4fe','#f9a8d4','#fcd34d','#93c5fd','#86efac','#fca5a5'];
+    [[0,0],[1,0],[2,0],[0,1],[1,1],[2,1]].forEach(([col, row], i) => {
+      const x = W*(0.06 + col*0.312), y = H*(0.155 + row*0.355);
+      tmplRect(x, y, W*0.28, H*0.32, { fill:igColors[i], rx:10, stroke:igBorder[i], strokeWidth:3 });
+      tmplText('[ PHOTO ]', x+W*0.14, y+H*0.16, { fontSize:40, fill:'rgba(0,0,0,0.22)', textAlign:'center' });
+    });
+    tmplText('@yourbrand', W/2, H*0.88, {
+      fontSize:80, fontWeight:'bold', fill:'#E1306C', textAlign:'center', fontFamily:'Montserrat'
+    });
+    tmplText('Follow for daily updates, tips, and inspiration', W/2, H*0.962, {
+      fontSize:36, fill:'#6b7280', textAlign:'center'
+    });
   }
 
   // ── Legacy templates (kept for backward compat) ──────────────────────────
+  // Old gallery keys redirect to nearest new template
+  else if (name === 'boldannouncement' || name === 'announcement') {
+    applyTemplate('corporateannouncement');
+    return;
+  }
+  else if (name === 'restaurantspecial') {
+    applyTemplate('dailyspecial');
+    return;
+  }
+  else if (name === 'spotlight') {
+    applyTemplate('employeeofmonth');
+    return;
+  }
+  else if (name === 'salepromo') {
+    applyTemplate('saleevent');
+    return;
+  }
+  else if (name === 'welcomescreen') {
+    applyTemplate('waitingroomwelcome');
+    return;
+  }
+  else if (name === 'safetynotice' || name === 'openinghours') {
+    applyTemplate('healthtip');
+    return;
+  }
+  else if (name === 'holidaygreeting') {
+    applyTemplate('seasonsgreetings');
+    return;
+  }
+  else if (name === 'motivationalquote') {
+    applyTemplate('eventpromo');
+    return;
+  }
   else if (name === 'imagecaption') {
     tmplRect(0, 0, W, H, { fill:'#607d8b', rx:0 });
     tmplRect(0, H*0.72, W, H*0.28, { fill:'rgba(0,0,0,0.7)', rx:0 });
