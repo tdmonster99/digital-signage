@@ -11,7 +11,7 @@
 <!-- Firebase SDK -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getFirestore, doc, onSnapshot, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyDYsip5Xx2N-gewNDqTj7EAnvabfbrBQTY",
@@ -31,11 +31,7 @@
   const urlParams = new URLSearchParams(window.location.search);
   const previewId = urlParams.get("slideshow");
 
-  let screenId = localStorage.getItem("signage-screen-id");
-  if (!screenId && !previewId) {
-    screenId = crypto.randomUUID();
-    localStorage.setItem("signage-screen-id", screenId);
-  }
+  let screenId = localStorage.getItem("signage-screen-id"); // may be null if unregistered
 
   // ── Offline cache ─────────────────────────────────────────────────────────
   function saveCache(id, data) {
@@ -520,28 +516,25 @@
   }
 
   // ── Screen registration & slideshow assignment ────────────────────────────
-  async function initScreen() {
-    // Preview mode (?slideshow=xxx): skip screen registration entirely
-    if (previewId) {
-      subscribeToSlideshow(previewId);
-      return;
-    }
+  async function startNormalMode(resolvedScreenId) {
+    screenId = resolvedScreenId;
+    localStorage.setItem("signage-screen-id", screenId);
 
     let currentSlideshowId = null;
     const screenRef = doc(db, "screens", screenId);
 
-    // Heartbeat: keep lastSeen fresh every 5 min so admin knows screen is alive
+    // Heartbeat every 30s so admin can detect online/offline within 60s
     async function heartbeat() {
       try { await setDoc(screenRef, { lastSeen: new Date().toISOString() }, { merge: true }); }
       catch(e) {}
     }
-    setInterval(heartbeat, 5 * 60 * 1000);
+    heartbeat();
+    setInterval(heartbeat, 30 * 1000);
 
     onSnapshot(
       screenRef,
       snap => {
         if (!snap.exists()) {
-          // First boot — register this screen in Firestore
           const shortId = screenId.slice(0, 6).toUpperCase();
           setDoc(screenRef, {
             slideshowId:  "main",
@@ -549,13 +542,13 @@
             registeredAt: new Date().toISOString(),
             lastSeen:     new Date().toISOString(),
           }).catch(e => console.warn("Screen registration failed:", e.message));
-          // Subscribe to 'main' immediately while the doc write completes
           if (!currentSlideshowId) {
             currentSlideshowId = "main";
             subscribeToSlideshow("main");
           }
         } else {
-          const newId = snap.data().slideshowId || "main";
+          const data  = snap.data();
+          const newId = data.slideshowId || "main";
           heartbeat();
           if (newId !== currentSlideshowId) {
             currentSlideshowId = newId;
@@ -572,6 +565,83 @@
         }
       }
     );
+  }
+
+  async function initScreen() {
+    // Preview mode (?slideshow=xxx): skip screen registration entirely
+    if (previewId) {
+      subscribeToSlideshow(previewId);
+      return;
+    }
+
+    // Pairing mode (?code=XXXXXX): show pairing UI and wait for admin
+    const pairingCode = urlParams.get("code");
+    if (pairingCode) {
+      showPairingUI(pairingCode);
+      return;
+    }
+
+    // Normal mode: use existing screenId or start fresh
+    await startNormalMode(screenId || crypto.randomUUID());
+  }
+
+  // ── Pairing UI ────────────────────────────────────────────────────────────
+  function showPairingUI(code) {
+    loader.style.display = "none";
+    const pairEl = document.getElementById("pairingScreen");
+    document.getElementById("pairingCodeEl").textContent = code;
+    pairEl.style.display = "flex";
+
+    // Poll Firestore until admin confirms pairing
+    const pollInterval = setInterval(async () => {
+      try {
+        const snap = await getDoc(doc(db, "pairingCodes", code));
+        if (!snap.exists()) return;
+        const data = snap.data();
+
+        // Check expiry
+        if (data.expiresAt && new Date() > new Date(data.expiresAt)) {
+          clearInterval(pollInterval);
+          document.getElementById("pairingStatusEl").textContent = "Code expired — please generate a new code in the admin panel.";
+          return;
+        }
+
+        if (data.status === "pending") {
+          // Generate screenId and claim the pairing code
+          const newScreenId = crypto.randomUUID();
+          const shortId     = newScreenId.slice(0, 6).toUpperCase();
+          const screenName  = "Screen " + shortId;
+
+          // Create the screen doc
+          await setDoc(doc(db, "screens", newScreenId), {
+            name:         screenName,
+            slideshowId:  "main",
+            registeredAt: new Date().toISOString(),
+            lastSeen:     new Date().toISOString(),
+          });
+
+          // Mark pairing code as paired
+          await updateDoc(doc(db, "pairingCodes", code), {
+            status:     "paired",
+            screenId:   newScreenId,
+            screenName: screenName,
+            pairedAt:   new Date().toISOString(),
+          });
+
+          clearInterval(pollInterval);
+          document.getElementById("pairingStatusEl").textContent = "Paired! Starting display…";
+
+          setTimeout(() => {
+            pairEl.style.display = "none";
+            // Remove ?code= from URL and start normal mode
+            window.history.replaceState({}, "", window.location.pathname);
+            startNormalMode(newScreenId);
+          }, 1500);
+        }
+      } catch(e) {
+        console.warn("Pairing poll error:", e.message);
+      }
+    }, 3000);
   }
 
   initScreen();
@@ -693,6 +763,24 @@
   @keyframes spin { to { transform: rotate(360deg); } }
   #loader p { font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; }
 
+  /* ── Pairing screen ────────────────────────────────────────────────── */
+  #pairingScreen {
+    display: none; position: absolute; inset: 0; z-index: 40;
+    background: #0a0a0a; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 20px; padding: 40px; text-align: center;
+    color: #fff;
+  }
+  #pairingScreen h2 { font-size: 22px; font-weight: 600; margin: 0; }
+  #pairingScreen p  { font-size: 14px; color: #777; margin: 0; max-width: 420px; line-height: 1.6; }
+  #pairingCodeEl {
+    font-family: 'Courier New', monospace; font-size: 64px; font-weight: 700;
+    letter-spacing: 16px; color: #fff; line-height: 1;
+    background: #1a1a1a; border: 2px dashed #333;
+    padding: 24px 40px; border-radius: 16px;
+  }
+  #pairingStatusEl { font-size: 13px; color: #555; }
+
   /* ── Error overlay ─────────────────────────────────────────────────── */
   #errBox {
     display: none;
@@ -751,6 +839,19 @@
 <div id="tickerWrap" class="ticker-bottom">
   <div class="ticker-badge" id="tickerBadge">LIVE</div>
   <div class="ticker-track" id="tickerTrack"></div>
+</div>
+
+<!-- Pairing screen -->
+<div id="pairingScreen">
+  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="1.5">
+    <rect x="2" y="3" width="20" height="14" rx="2"/>
+    <line x1="8" y1="21" x2="16" y2="21"/>
+    <line x1="12" y1="17" x2="12" y2="21"/>
+  </svg>
+  <h2>Pairing Display</h2>
+  <div id="pairingCodeEl">------</div>
+  <p>This device is waiting to be paired.<br>Enter this code in the admin panel under Screens → Add Screen.</p>
+  <p id="pairingStatusEl">Waiting for admin to confirm…</p>
 </div>
 
 <!-- Initial loader -->

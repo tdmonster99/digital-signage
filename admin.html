@@ -233,40 +233,152 @@ body {
 
 /* ── Screens page ───────────────────────────────────────────────────────── */
 #page-screens.active { flex-direction: column; padding: 32px; gap: 24px; }
+.screens-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.screens-header-left h1 { font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+.screens-header-left p  { font-size: 13px; color: var(--muted); }
+.screens-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
 .screen-card {
   background: var(--surface); border: 1px solid var(--border);
-  border-radius: 12px; padding: 18px 20px;
-  display: flex; align-items: center; gap: 16px;
-  box-shadow: var(--card-shadow);
+  border-radius: 14px; overflow: hidden;
+  box-shadow: var(--card-shadow); cursor: pointer;
+  transition: border-color 0.15s, transform 0.15s;
 }
+.screen-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+.screen-thumb {
+  width: 100%; aspect-ratio: 16/9;
+  background: var(--surface2);
+  display: flex; align-items: center; justify-content: center;
+  position: relative; overflow: hidden;
+}
+.screen-thumb-label {
+  font-size: 11px; color: var(--muted); text-align: center; padding: 8px;
+}
+.screen-thumb-monitor {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.screen-card-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
+.screen-card-row  { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.screen-card-name { font-size: 14px; font-weight: 600; color: var(--text); }
+.screen-status-badge {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 11px; font-weight: 500; padding: 3px 8px;
+  border-radius: 20px;
+}
+.screen-status-badge.online  { background: rgba(34,197,94,.12); color: #22c55e; }
+.screen-status-badge.offline { background: var(--surface2); color: var(--muted); }
 .screen-status-dot {
-  width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
-  background: var(--success); box-shadow: 0 0 6px var(--success);
+  width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
 }
-.screen-status-dot.stale { background: var(--muted); box-shadow: none; }
-.screen-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
-.screen-name-input {
-  font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600;
-  color: var(--text); background: none; border: none; padding: 0;
-  width: 100%; outline: none; cursor: text;
+.screen-status-badge.online  .screen-status-dot { background: #22c55e; box-shadow: 0 0 4px #22c55e; }
+.screen-status-badge.offline .screen-status-dot { background: var(--muted); }
+.screen-card-meta { font-size: 11px; color: var(--muted); display: flex; gap: 10px; align-items: center; }
+.screen-card-location { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.screen-card-show  {
+  font-size: 11px; color: var(--accent); background: var(--accent-bg);
+  padding: 2px 8px; border-radius: 10px; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; max-width: 140px;
 }
-.screen-name-input:focus {
-  background: var(--surface2); border-radius: 4px; padding: 2px 6px;
-  border: 1px solid var(--accent); margin: -2px -6px;
+
+/* ── Pairing modal ───────────────────────────────────────────────────── */
+#pairingModal {
+  display: none; position: fixed; inset: 0; z-index: 1100;
+  background: rgba(0,0,0,.55); backdrop-filter: blur(4px);
+  align-items: center; justify-content: center;
 }
-.screen-meta { font-size: 11px; color: var(--muted); display: flex; gap: 12px; }
-.screen-id-tag {
-  font-family: 'DM Mono', monospace; font-size: 11px;
+.pairing-modal-inner {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 20px; padding: 36px 40px; width: 100%; max-width: 480px;
+  box-shadow: 0 24px 60px rgba(0,0,0,.3); text-align: center;
+  position: relative;
+}
+.pairing-modal-close {
+  position: absolute; top: 16px; right: 16px;
+  background: none; border: none; cursor: pointer; color: var(--muted);
+  padding: 4px; border-radius: 6px;
+}
+.pairing-modal-close:hover { color: var(--text); background: var(--surface2); }
+.pairing-modal-title { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+.pairing-modal-sub   { font-size: 13px; color: var(--muted); margin-bottom: 28px; }
+.pairing-code-box {
+  background: var(--surface2); border: 2px dashed var(--border);
+  border-radius: 16px; padding: 24px 32px; margin-bottom: 20px;
+}
+.pairing-code {
+  font-family: 'DM Mono', monospace; font-size: 48px; font-weight: 700;
+  letter-spacing: 12px; color: var(--text); line-height: 1;
+  margin-bottom: 8px;
+}
+.pairing-expires { font-size: 11px; color: var(--muted); }
+.pairing-url-box {
   background: var(--surface2); border: 1px solid var(--border);
-  padding: 1px 6px; border-radius: 4px; color: var(--muted);
+  border-radius: 10px; padding: 10px 14px; margin-bottom: 24px;
+  display: flex; align-items: center; gap: 10px;
 }
-.screen-show-select {
-  font-family: 'DM Sans', sans-serif; font-size: 13px;
+.pairing-url-text { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; flex: 1; text-align: left; word-break: break-all; }
+.pairing-copy-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; font-size: 11px; color: var(--muted); cursor: pointer; flex-shrink: 0;
+}
+.pairing-copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+.pairing-waiting { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.pairing-spinner {
+  width: 14px; height: 14px; border: 2px solid var(--border);
+  border-top-color: var(--accent); border-radius: 50%;
+  animation: spin 0.8s linear infinite; flex-shrink: 0;
+}
+.pairing-success { display: none; flex-direction: column; align-items: center; gap: 12px; }
+.pairing-success-icon {
+  width: 56px; height: 56px; border-radius: 50%;
+  background: rgba(34,197,94,.15); display: flex; align-items: center; justify-content: center;
+  animation: pairPop 0.4s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes pairPop { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.pairing-success-title { font-size: 16px; font-weight: 700; color: var(--text); }
+.pairing-success-sub   { font-size: 13px; color: var(--muted); }
+
+/* ── Screen edit panel ───────────────────────────────────────────────── */
+#screenEditPanel {
+  display: none; position: fixed; top: 0; right: 0; bottom: 0; z-index: 1050;
+  width: 380px; background: var(--surface); border-left: 1px solid var(--border);
+  box-shadow: -8px 0 32px rgba(0,0,0,.15);
+  flex-direction: column; overflow: hidden;
+}
+#screenEditPanel.open { display: flex; }
+.sep-header {
+  padding: 20px 24px 16px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.sep-title { font-size: 16px; font-weight: 700; color: var(--text); }
+.sep-close-btn {
+  background: none; border: none; cursor: pointer; color: var(--muted); padding: 4px;
+  border-radius: 6px;
+}
+.sep-close-btn:hover { background: var(--surface2); color: var(--text); }
+.sep-body { flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 16px; }
+.sep-field label { display: block; font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
+.sep-field input, .sep-field select, .sep-field textarea {
+  width: 100%; font-family: 'DM Sans', sans-serif; font-size: 13px;
   background: var(--surface2); border: 1px solid var(--border);
-  border-radius: 8px; padding: 7px 10px; color: var(--text);
-  cursor: pointer; transition: border-color 0.15s; flex-shrink: 0;
+  border-radius: 8px; padding: 9px 12px; color: var(--text); outline: none;
+  transition: border-color 0.15s;
 }
-.screen-show-select:focus { outline: none; border-color: var(--accent); }
+.sep-field input:focus, .sep-field select:focus { border-color: var(--accent); }
+.sep-footer {
+  padding: 16px 24px; border-top: 1px solid var(--border);
+  display: flex; gap: 8px;
+}
+.sep-footer .btn { flex: 1; justify-content: center; }
+.btn-danger {
+  background: rgba(239,68,68,.12); color: #ef4444; border: 1px solid rgba(239,68,68,.2);
+  font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600;
+  border-radius: 8px; padding: 8px 16px; cursor: pointer; transition: background 0.15s;
+}
+.btn-danger:hover { background: rgba(239,68,68,.2); }
 
 /* ── Schedules list page ────────────────────────────────────────────────── */
 #page-schedules.active { flex-direction: column; padding: 32px; gap: 24px; }
@@ -2125,19 +2237,103 @@ section.content {
 
   <!-- Screens -->
   <div id="page-screens" class="page">
-    <div>
-      <h1 style="font-size:22px;font-weight:700;color:var(--text);margin-bottom:4px">Screens</h1>
-      <p style="font-size:13px;color:var(--muted)">Registered display screens — open display.html on a TV to register it automatically</p>
+    <div class="screens-header">
+      <div class="screens-header-left">
+        <h1>Screens</h1>
+        <p>Manage your registered display devices</p>
+      </div>
+      <button class="btn btn-primary" onclick="openAddScreenModal()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add Screen
+      </button>
     </div>
     <div id="screensList">
-      <div class="empty" style="padding:60px 0">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <div class="empty" style="padding:80px 0" id="screensEmptyState">
+        <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
           <rect x="2" y="3" width="20" height="14" rx="2"/>
           <line x1="8" y1="21" x2="16" y2="21"/>
           <line x1="12" y1="17" x2="12" y2="21"/>
         </svg>
-        <p>No screens registered yet.<br>Open display.html on a TV to register it automatically.</p>
+        <p style="margin-bottom:16px">No screens registered yet.</p>
+        <button class="btn btn-primary" onclick="openAddScreenModal()">Add Your First Screen</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Pairing modal -->
+  <div id="pairingModal">
+    <div class="pairing-modal-inner">
+      <button class="pairing-modal-close" onclick="closePairingModal()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+      <div id="pairingPendingSection">
+        <div class="pairing-modal-title">Pair a New Screen</div>
+        <div class="pairing-modal-sub">Enter this code on your display device to pair it</div>
+        <div class="pairing-code-box">
+          <div class="pairing-code" id="pairingCodeDisplay">------</div>
+          <div class="pairing-expires" id="pairingExpiresText">Expires in 10:00</div>
+        </div>
+        <div class="pairing-url-box">
+          <div class="pairing-url-text" id="pairingUrlText"></div>
+          <button class="pairing-copy-btn" onclick="copyPairingUrl()">Copy</button>
+        </div>
+        <div class="pairing-waiting">
+          <div class="pairing-spinner"></div>
+          <span>Waiting for display device to connect…</span>
+        </div>
+      </div>
+      <div class="pairing-success" id="pairingSuccessSection">
+        <div class="pairing-success-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div class="pairing-success-title">Screen Paired!</div>
+        <div class="pairing-success-sub" id="pairingSuccessName">Your display is now connected.</div>
+        <button class="btn btn-primary" onclick="closePairingModal()" style="margin-top:8px">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Screen edit panel -->
+  <div id="screenEditPanel">
+    <div class="sep-header">
+      <div class="sep-title">Edit Screen</div>
+      <button class="sep-close-btn" onclick="closeScreenEdit()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="sep-body">
+      <div class="sep-field">
+        <label>Screen Name</label>
+        <input type="text" id="sepName" placeholder="e.g. Lobby Display">
+      </div>
+      <div class="sep-field">
+        <label>Location / Description</label>
+        <input type="text" id="sepLocation" placeholder="e.g. Main entrance, ground floor">
+      </div>
+      <div class="sep-field">
+        <label>Assigned Slideshow</label>
+        <select id="sepSlideshow"><option value="">— None —</option></select>
+      </div>
+      <div class="sep-field">
+        <label>Assigned Schedule</label>
+        <select id="sepSchedule"><option value="">— None —</option></select>
+      </div>
+      <div class="sep-field">
+        <label>Orientation</label>
+        <select id="sepOrientation">
+          <option value="landscape">Landscape (default)</option>
+          <option value="portrait">Portrait</option>
+        </select>
+      </div>
+      <div class="sep-field">
+        <label>Tags (comma separated)</label>
+        <input type="text" id="sepTags" placeholder="e.g. lobby, floor-1, retail">
+      </div>
+    </div>
+    <div class="sep-footer">
+      <button class="btn-danger" onclick="confirmDeleteScreen()">Delete</button>
+      <button class="btn btn-secondary" onclick="sendTestSignal()">Test Signal</button>
+      <button class="btn btn-primary" onclick="saveScreenEdit()">Save</button>
     </div>
   </div>
 
@@ -3860,7 +4056,7 @@ section.content {
 <!-- Firebase SDK -->
 <script type="module">
 import { initializeApp }              from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, doc, collection, setDoc, onSnapshot, getDoc }
+import { getFirestore, doc, collection, setDoc, onSnapshot, getDoc, deleteDoc }
                                        from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut }
                                        from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -8201,89 +8397,268 @@ function syncPreviewSelect() {
 }
 
 // ── Screens page ───────────────────────────────────────────────────────────
-let screensUnsub = null;
+let screensUnsub    = null;
+let editingScreenId = null;
+let pairingInterval = null;
+let pairingExpiry   = null;
+let pairingTimerInterval = null;
+let _cachedScreens  = [];
 
 function initScreensPage() {
-  if (screensUnsub) return; // already listening
-
+  if (screensUnsub) return;
   screensUnsub = onSnapshot(
     collection(db, 'screens'),
-    snap => renderScreens(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
-    err  => console.warn('Screens listener error:', err.message)
+    snap => {
+      _cachedScreens = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderScreens(_cachedScreens);
+    },
+    err => console.warn('Screens listener error:', err.message)
   );
+}
+
+function fmtLastSeen(lastSeen) {
+  if (!lastSeen) return 'never';
+  const secsAgo = Math.floor((Date.now() - new Date(lastSeen)) / 1000);
+  if (secsAgo < 60)  return 'just now';
+  if (secsAgo < 3600) return Math.floor(secsAgo / 60) + 'm ago';
+  return Math.floor(secsAgo / 3600) + 'h ago';
+}
+
+function isOnline(lastSeen) {
+  if (!lastSeen) return false;
+  return (Date.now() - new Date(lastSeen)) < 60000;
 }
 
 function renderScreens(screens) {
   const list = document.getElementById('screensList');
+
   if (!screens.length) {
-    list.innerHTML = `<div class="empty" style="padding:60px 0">
-      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-        <rect x="2" y="3" width="20" height="14" rx="2"/>
-        <line x1="8" y1="21" x2="16" y2="21"/>
-        <line x1="12" y1="17" x2="12" y2="21"/>
-      </svg>
-      <p>No screens registered yet.<br>Open display.html on a TV to register it automatically.</p>
-    </div>`;
+    list.innerHTML = '';
+    const empty = document.getElementById('screensEmptyState');
+    if (!empty) {
+      list.innerHTML = `<div class="empty" id="screensEmptyState" style="padding:80px 0">
+        <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+          <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+        <p style="margin-bottom:16px">No screens registered yet.</p>
+        <button class="btn btn-primary" onclick="openAddScreenModal()">Add Your First Screen</button>
+      </div>`;
+    } else {
+      list.appendChild(empty);
+    }
     return;
   }
 
-  const now = Date.now();
-  list.innerHTML = '';
+  // Remove empty state if it exists
+  const emptyEl = document.getElementById('screensEmptyState');
+  if (emptyEl) emptyEl.remove();
 
-  screens
+  // Build or update grid
+  let grid = list.querySelector('.screens-grid');
+  if (!grid) {
+    grid = document.createElement('div');
+    grid.className = 'screens-grid';
+    list.innerHTML = '';
+    list.appendChild(grid);
+  }
+
+  const shows = getAllShows();
+  const now   = Date.now();
+
+  grid.innerHTML = screens
     .sort((a, b) => (a.registeredAt || '') < (b.registeredAt || '') ? -1 : 1)
-    .forEach(screen => {
-      const lastSeen = screen.lastSeen ? new Date(screen.lastSeen) : null;
-      const minsAgo  = lastSeen ? Math.floor((now - lastSeen) / 60000) : Infinity;
-      const isOnline = minsAgo < 10;
+    .map(screen => {
+      const online       = isOnline(screen.lastSeen);
+      const lastSeenStr  = fmtLastSeen(screen.lastSeen);
+      const showName     = shows.find(s => s.id === screen.slideshowId)?.name || screen.slideshowId || 'main';
+      const locationStr  = screen.location ? escHtml(screen.location) : '<span style="color:var(--muted);font-style:italic">No location set</span>';
 
-      // Build slideshow options
-      const showItems = document.querySelectorAll('#showList .show-item');
-      const showOpts  = Array.from(showItems).map(el => {
-        const id   = el.dataset.id;
-        const name = el.querySelector('.show-item-name')?.textContent || id;
-        const sel  = id === (screen.slideshowId || 'main') ? ' selected' : '';
-        return `<option value="${id}"${sel}>${name}</option>`;
-      }).join('');
-
-      const lastSeenStr = lastSeen
-        ? (minsAgo < 1 ? 'just now' : minsAgo < 60 ? minsAgo + 'm ago' : Math.floor(minsAgo/60) + 'h ago')
-        : 'never';
-
-      const card = document.createElement('div');
-      card.className = 'screen-card';
-      card.innerHTML = `
-        <div class="screen-status-dot ${isOnline ? '' : 'stale'}" title="${isOnline ? 'Online' : 'Last seen ' + lastSeenStr}"></div>
-        <div class="screen-info">
-          <input class="screen-name-input" value="${screen.name || screen.id}"
-                 onblur="saveScreenName('${screen.id}', this.value)"
-                 onkeydown="if(event.key==='Enter')this.blur()">
-          <div class="screen-meta">
-            <span class="screen-id-tag">${screen.id.slice(0,8)}…</span>
-            <span>Last seen: ${lastSeenStr}</span>
-            <span style="color:${isOnline ? 'var(--success)' : 'var(--muted)'}">${isOnline ? '● Online' : '○ Offline'}</span>
+      return `<div class="screen-card" onclick="openScreenEdit('${screen.id}')">
+        <div class="screen-thumb">
+          <div class="screen-thumb-monitor">
+            <svg width="64" height="40" viewBox="0 0 64 40" fill="none" opacity="0.15">
+              <rect x="1" y="1" width="62" height="38" rx="4" stroke="currentColor" stroke-width="2"/>
+              <line x1="24" y1="38" x2="40" y2="38" stroke="currentColor" stroke-width="2"/>
+              <line x1="32" y1="38" x2="32" y2="40" stroke="currentColor" stroke-width="2"/>
+            </svg>
+          </div>
+          <div class="screen-thumb-label">${escHtml(showName)}</div>
+        </div>
+        <div class="screen-card-body">
+          <div class="screen-card-row">
+            <div class="screen-card-name">${escHtml(screen.name || screen.id)}</div>
+            <div class="screen-status-badge ${online ? 'online' : 'offline'}">
+              <div class="screen-status-dot"></div>
+              ${online ? 'Online' : 'Offline'}
+            </div>
+          </div>
+          <div class="screen-card-location">${locationStr}</div>
+          <div class="screen-card-row">
+            <div class="screen-card-meta">Last seen: ${lastSeenStr}</div>
+            <div class="screen-card-show">${escHtml(showName)}</div>
           </div>
         </div>
-        <select class="screen-show-select" onchange="assignScreenShow('${screen.id}', this.value)">
-          ${showOpts}
-        </select>`;
-      list.appendChild(card);
-    });
+      </div>`;
+    }).join('');
 }
 
-window.saveScreenName = async function(screenId, name) {
-  if (!name.trim()) return;
-  try { await setDoc(doc(db, 'screens', screenId), { name: name.trim() }, { merge: true }); }
-  catch(e) { toast('Could not rename screen: ' + e.message, true); }
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Add Screen / Pairing ──────────────────────────────────────────────────
+function genPairingCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
+}
+
+window.openAddScreenModal = async function() {
+  const code    = genPairingCode();
+  const now     = new Date();
+  const expires = new Date(now.getTime() + 10 * 60 * 1000);
+  pairingExpiry = expires;
+
+  try {
+    await setDoc(doc(db, 'pairingCodes', code), {
+      status:    'pending',
+      createdAt: now.toISOString(),
+      expiresAt: expires.toISOString(),
+    });
+  } catch(e) {
+    toast('Could not create pairing code: ' + e.message, true);
+    return;
+  }
+
+  const url = window.location.origin + '/display.html?code=' + code;
+  document.getElementById('pairingCodeDisplay').textContent = code;
+  document.getElementById('pairingUrlText').textContent     = url;
+  document.getElementById('pairingPendingSection').style.display = 'block';
+  document.getElementById('pairingSuccessSection').style.display = 'none';
+  document.getElementById('pairingModal').style.display = 'flex';
+
+  // Countdown timer
+  if (pairingTimerInterval) clearInterval(pairingTimerInterval);
+  pairingTimerInterval = setInterval(() => {
+    const remaining = Math.max(0, Math.floor((pairingExpiry - Date.now()) / 1000));
+    const m = String(Math.floor(remaining / 60)).padStart(2, '0');
+    const s = String(remaining % 60).padStart(2, '0');
+    document.getElementById('pairingExpiresText').textContent = remaining > 0 ? `Expires in ${m}:${s}` : 'Code expired';
+    if (remaining === 0) {
+      clearInterval(pairingTimerInterval);
+      clearInterval(pairingInterval);
+    }
+  }, 1000);
+
+  // Poll Firestore for pairing confirmation
+  if (pairingInterval) clearInterval(pairingInterval);
+  pairingInterval = setInterval(async () => {
+    try {
+      const snap = await getDoc(doc(db, 'pairingCodes', code));
+      if (!snap.exists()) return;
+      const data = snap.data();
+      if (data.status === 'paired') {
+        clearInterval(pairingInterval);
+        clearInterval(pairingTimerInterval);
+        const screenName = data.screenName || 'New Screen';
+        document.getElementById('pairingPendingSection').style.display = 'none';
+        document.getElementById('pairingSuccessSection').style.display = 'flex';
+        document.getElementById('pairingSuccessName').textContent = `"${screenName}" is now connected.`;
+        logActivity('Screen "' + screenName + '" paired successfully');
+      }
+    } catch(e) {}
+  }, 3000);
 };
 
-window.assignScreenShow = async function(screenId, slideshowId) {
+window.closePairingModal = function() {
+  document.getElementById('pairingModal').style.display = 'none';
+  if (pairingInterval)      { clearInterval(pairingInterval);      pairingInterval = null; }
+  if (pairingTimerInterval) { clearInterval(pairingTimerInterval); pairingTimerInterval = null; }
+};
+
+window.copyPairingUrl = function() {
+  const url = document.getElementById('pairingUrlText').textContent;
+  navigator.clipboard.writeText(url).then(() => toast('URL copied ✓'));
+};
+
+// ── Screen edit panel ────────────────────────────────────────────────────
+window.openScreenEdit = function(screenId) {
+  const screen = _cachedScreens.find(s => s.id === screenId);
+  if (!screen) return;
+  editingScreenId = screenId;
+
+  document.getElementById('sepName').value        = screen.name || '';
+  document.getElementById('sepLocation').value    = screen.location || '';
+  document.getElementById('sepOrientation').value = screen.orientation || 'landscape';
+  document.getElementById('sepTags').value        = (screen.tags || []).join(', ');
+
+  // Populate slideshow dropdown
+  const shows = getAllShows();
+  const sepShow = document.getElementById('sepSlideshow');
+  sepShow.innerHTML = '<option value="">— None —</option>'
+    + shows.map(s => `<option value="${s.id}" ${s.id === screen.slideshowId ? 'selected' : ''}>${escHtml(s.name)}</option>`).join('');
+
+  // Populate schedule dropdown
+  const sepSched = document.getElementById('sepSchedule');
+  sepSched.innerHTML = '<option value="">— None —</option>'
+    + allSchedules.map(s => `<option value="${s.id}" ${s.id === screen.scheduleId ? 'selected' : ''}>${escHtml(s.name)}</option>`).join('');
+
+  document.getElementById('screenEditPanel').classList.add('open');
+};
+
+window.closeScreenEdit = function() {
+  document.getElementById('screenEditPanel').classList.remove('open');
+  editingScreenId = null;
+};
+
+window.saveScreenEdit = async function() {
+  if (!editingScreenId) return;
+  const name        = document.getElementById('sepName').value.trim();
+  const location    = document.getElementById('sepLocation').value.trim();
+  const slideshowId = document.getElementById('sepSlideshow').value;
+  const scheduleId  = document.getElementById('sepSchedule').value;
+  const orientation = document.getElementById('sepOrientation').value;
+  const tagsRaw     = document.getElementById('sepTags').value;
+  const tags        = tagsRaw.split(',').map(t => t.trim()).filter(Boolean);
+
   try {
-    await setDoc(doc(db, 'screens', screenId), { slideshowId }, { merge: true });
-    logActivity('Screen assigned to slideshow "' + slideshowId + '"');
-    toast('Screen updated ✓');
+    await setDoc(doc(db, 'screens', editingScreenId), {
+      ...(name        && { name }),
+      location, slideshowId, scheduleId, orientation, tags,
+    }, { merge: true });
+    toast('Screen saved ✓');
+    closeScreenEdit();
+    logActivity('Screen "' + (name || editingScreenId) + '" updated');
   } catch(e) {
-    toast('Could not update screen: ' + e.message, true);
+    toast('Save failed: ' + e.message, true);
+  }
+};
+
+window.confirmDeleteScreen = async function() {
+  if (!editingScreenId) return;
+  const screen = _cachedScreens.find(s => s.id === editingScreenId);
+  const name   = screen?.name || editingScreenId;
+  if (!confirm(`Delete screen "${name}"? This cannot be undone.`)) return;
+  try {
+    await deleteDoc(doc(db, 'screens', editingScreenId));
+    toast('Screen deleted');
+    closeScreenEdit();
+    logActivity('Screen "' + name + '" deleted');
+  } catch(e) {
+    toast('Delete failed: ' + e.message, true);
+  }
+};
+
+window.sendTestSignal = async function() {
+  if (!editingScreenId) return;
+  try {
+    await setDoc(doc(db, 'screens', editingScreenId),
+      { testSignal: true, testSignalAt: new Date().toISOString() },
+      { merge: true });
+    toast('Test signal sent ✓');
+  } catch(e) {
+    toast('Could not send test signal: ' + e.message, true);
   }
 };
 
