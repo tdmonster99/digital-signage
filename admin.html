@@ -1147,6 +1147,83 @@ section.content {
   background: var(--accent-bg); color: var(--accent); margin-top: 4px;
 }
 
+/* ── AI Generate ─────────────────────────────────────────────────────────── */
+.btn-ai {
+  background: linear-gradient(135deg, #7c3aed 0%, #db2777 100%);
+  color: #fff !important; border: none; font-weight: 600;
+  display: flex; align-items: center; gap: 6px;
+  white-space: nowrap; letter-spacing: -0.01em;
+}
+.btn-ai:hover { opacity: 0.88; }
+#aiModal {
+  position: fixed; inset: 0; z-index: 400;
+  display: none; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.72); backdrop-filter: blur(8px); padding: 20px;
+}
+.ai-modal-inner {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 20px; padding: 36px;
+  width: min(640px, 96vw); max-height: 90vh; overflow-y: auto;
+  box-shadow: 0 20px 80px rgba(0,0,0,0.3);
+}
+.ai-field { margin-bottom: 20px; }
+.ai-label {
+  display: block; font-size: 11px; font-weight: 600;
+  color: var(--muted); text-transform: uppercase;
+  letter-spacing: 0.09em; margin-bottom: 8px;
+}
+.ai-textarea {
+  width: 100%; background: var(--surface2);
+  border: 1px solid var(--border); border-radius: 10px;
+  padding: 12px 14px; color: var(--text);
+  font-family: 'DM Sans', sans-serif; font-size: 14px;
+  line-height: 1.55; resize: vertical; min-height: 108px;
+  transition: border-color 0.15s; box-sizing: border-box;
+}
+.ai-textarea:focus { outline: none; border-color: #a855f7; }
+.ai-textarea::placeholder { color: var(--muted); opacity: 0.65; }
+.ai-pill-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.ai-style-btn, .ai-color-btn {
+  padding: 7px 16px; border-radius: 20px;
+  border: 1px solid var(--border); background: var(--surface2);
+  color: var(--muted); font-family: 'DM Sans', sans-serif;
+  font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.12s;
+}
+.ai-style-btn:hover, .ai-color-btn:hover { border-color: #a855f7; color: #a855f7; }
+.ai-style-btn.active, .ai-color-btn.active {
+  background: linear-gradient(135deg, #7c3aed, #db2777);
+  border-color: transparent; color: #fff;
+}
+.ai-generate-btn { width: 100%; padding: 13px; font-size: 15px; border-radius: 10px; justify-content: center; }
+.ai-loader-sparkles { display: flex; gap: 14px; justify-content: center; }
+.ai-loader-sparkles span { font-size: 30px; color: #a855f7; animation: aiSparkle 1.4s ease-in-out infinite; }
+.ai-loader-sparkles span:nth-child(2) { animation-delay: 0.25s; color: #db2777; }
+.ai-loader-sparkles span:nth-child(3) { animation-delay: 0.5s;  color: #7c3aed; }
+.ai-loader-sparkles span:nth-child(4) { animation-delay: 0.75s; color: #db2777; }
+@keyframes aiSparkle {
+  0%, 100% { transform: scale(0.6) rotate(0deg); opacity: 0.3; }
+  50%       { transform: scale(1.35) rotate(180deg); opacity: 1; }
+}
+.tmpl-card-ai {
+  border: 2px solid transparent;
+  background: linear-gradient(var(--surface2), var(--surface2)) padding-box,
+              linear-gradient(135deg, #7c3aed, #db2777) border-box;
+}
+.tmpl-card-ai:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 28px rgba(124,58,237,0.28);
+}
+.tmpl-preview-ai {
+  background: linear-gradient(135deg, #2d0050 0%, #0e0018 45%, #3d0040 100%);
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column; gap: 6px;
+}
+.tmpl-cat-tag-ai {
+  display: inline-block; padding: 2px 8px; border-radius: 10px;
+  font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;
+  background: linear-gradient(135deg, #7c3aed, #db2777); color: #fff; margin-top: 4px;
+}
+
 /* ── Properties Panel ────────────────────────────────────────────────────── */
 .designer-props {
   width: 240px; flex-shrink: 0;
@@ -2209,6 +2286,23 @@ section.content {
     </div>
     <div class="gallery-grid" id="galleryGrid">
 
+      <!-- AI Create -->
+      <button class="tmpl-card tmpl-card-ai" data-category="all" data-name="ai create generate intelligence claude" onclick="closeTemplateGallery();openAiModal()">
+        <div class="tmpl-preview tmpl-preview-ai">
+          <div style="display:flex;gap:10px">
+            <span style="font-size:28px;color:#c084fc;animation:aiSparkle 1.4s ease-in-out infinite">✦</span>
+            <span style="font-size:28px;color:#f472b6;animation:aiSparkle 1.4s 0.35s ease-in-out infinite">✦</span>
+            <span style="font-size:28px;color:#a78bfa;animation:aiSparkle 1.4s 0.7s ease-in-out infinite">✦</span>
+          </div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.55);font-weight:600;letter-spacing:0.08em;text-transform:uppercase;margin-top:4px">Powered by Claude</div>
+        </div>
+        <div class="tmpl-info">
+          <span class="tmpl-name">AI Create</span>
+          <span class="tmpl-desc">Describe it, Claude designs it</span>
+          <span class="tmpl-cat-tag-ai">AI</span>
+        </div>
+      </button>
+
       <!-- Blank -->
       <button class="tmpl-card" data-category="all" data-name="blank start" onclick="selectTemplate('blank')">
         <div class="tmpl-preview" style="background:var(--surface)">
@@ -2495,6 +2589,100 @@ section.content {
   </div>
 </div>
 
+<!-- ── AI Generate Modal ──────────────────────────────────────────────────── -->
+<div id="aiModal">
+  <div class="ai-modal-inner">
+
+    <!-- Header -->
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:26px">
+      <div>
+        <h2 style="font-size:22px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:9px">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="flex-shrink:0">
+            <defs><linearGradient id="aiGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#7c3aed"/><stop offset="100%" stop-color="#db2777"/></linearGradient></defs>
+            <path d="M12 2l2.09 6.26L20 10l-5.91 1.74L12 18l-2.09-6.26L4 10l5.91-1.74z" fill="url(#aiGrad)"/>
+          </svg>
+          AI Slide Generator
+        </h2>
+        <p style="font-size:13px;color:var(--muted);margin-top:4px">Describe your slide and Claude AI will design it for you</p>
+      </div>
+      <button class="gallery-close" onclick="closeAiModal()" style="margin-top:2px">✕</button>
+    </div>
+
+    <!-- Input section -->
+    <div id="aiInputSection">
+      <div class="ai-field">
+        <label class="ai-label">Describe the slide you want to create</label>
+        <textarea id="aiPrompt" class="ai-textarea"
+          placeholder="Examples:&#10;• A happy hour promotion for Friday 5-8pm with a dark moody bar vibe&#10;• Employee of the month for Sarah Johnson, 5 years of service&#10;• Weekly safety reminder about wearing PPE in the warehouse"></textarea>
+      </div>
+
+      <div class="ai-field">
+        <label class="ai-label">Style</label>
+        <div class="ai-pill-row">
+          <button class="ai-style-btn active" data-value="Professional">Professional</button>
+          <button class="ai-style-btn" data-value="Bold &amp; Energetic">Bold &amp; Energetic</button>
+          <button class="ai-style-btn" data-value="Elegant">Elegant</button>
+          <button class="ai-style-btn" data-value="Minimal">Minimal</button>
+          <button class="ai-style-btn" data-value="Playful">Playful</button>
+        </div>
+      </div>
+
+      <div class="ai-field">
+        <label class="ai-label">Color Scheme</label>
+        <div class="ai-pill-row">
+          <button class="ai-color-btn active" data-value="Brand Colors">Brand Colors</button>
+          <button class="ai-color-btn" data-value="Dark">Dark</button>
+          <button class="ai-color-btn" data-value="Light">Light</button>
+          <button class="ai-color-btn" data-value="Colorful">Colorful</button>
+          <button class="ai-color-btn" data-value="Monochrome">Monochrome</button>
+        </div>
+      </div>
+
+      <div id="aiErrorMsg" style="display:none;color:var(--danger);font-size:13px;margin-bottom:14px;padding:10px 14px;background:var(--danger-bg);border:1px solid var(--danger-border);border-radius:8px"></div>
+
+      <button class="btn btn-ai ai-generate-btn" onclick="generateAiSlide()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2l2.09 6.26L20 10l-5.91 1.74L12 18l-2.09-6.26L4 10l5.91-1.74z"/>
+        </svg>
+        Generate Slide
+      </button>
+    </div>
+
+    <!-- Loading section -->
+    <div id="aiLoadingSection" style="display:none;flex-direction:column;align-items:center;padding:48px 0 40px">
+      <div class="ai-loader-sparkles">
+        <span>✦</span><span>✦</span><span>✦</span><span>✦</span>
+      </div>
+      <div id="aiLoadingMsg" style="font-size:16px;color:var(--muted);margin-top:22px;font-weight:500;transition:opacity 0.3s">Designing your slide…</div>
+    </div>
+
+    <!-- Preview section -->
+    <div id="aiPreviewSection" style="display:none">
+      <div id="aiPreviewCanvasWrap" style="margin-bottom:18px;border-radius:10px;overflow:hidden;border:2px solid var(--border);background:var(--surface2);min-height:80px;display:flex;align-items:center;justify-content:center">
+        <span style="color:var(--muted);font-size:13px">Rendering preview…</span>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="useAiSlide()" style="flex:1;min-width:120px">✓ Use This Slide</button>
+        <button class="btn btn-secondary" onclick="regenerateAiSlide()" style="flex:1;min-width:120px;display:flex;align-items:center;justify-content:center;gap:6px">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+            <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+          </svg>
+          Regenerate
+        </button>
+        <button class="btn btn-secondary" onclick="aiEditPrompt()" style="display:flex;align-items:center;gap:5px">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+          </svg>
+          Edit Prompt
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
 <!-- ── YouTube Slide Modal ────────────────────────────────────────────────── -->
 <div id="youtubeModal" style="display:none;position:fixed;inset:0;z-index:300;align-items:center;justify-content:center;background:#00000088;backdrop-filter:blur(6px)">
   <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;width:min(460px,92vw);box-shadow:0 8px 48px rgba(0,0,0,0.16)">
@@ -2652,6 +2840,13 @@ section.content {
           <line x1="12" y1="17" x2="12" y2="21"/>
         </svg>
         Preview
+      </button>
+      <div style="width:1px;height:22px;background:var(--border);margin:0 2px;align-self:center"></div>
+      <button class="btn btn-ai" onclick="openAiModal()" title="Generate a slide with AI">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2l2.09 6.26L20 10l-5.91 1.74L12 18l-2.09-6.26L4 10l5.91-1.74z"/>
+        </svg>
+        AI Generate
       </button>
       <div style="width:1px;height:22px;background:var(--border);margin:0 2px;align-self:center"></div>
       <button class="btn btn-secondary" onclick="closeDesigner()">Cancel</button>
@@ -3683,6 +3878,10 @@ const firebaseConfig = {
 // ── CLOUDINARY CONFIG ─────────────────────────────────────────────────────
 const CLOUDINARY_CLOUD_NAME    = "ded98r0f8";
 const CLOUDINARY_UPLOAD_PRESET = "signage_uploads";
+
+// ── ANTHROPIC API KEY ─────────────────────────────────────────────────────
+// REPLACE WITH YOUR ANTHROPIC API KEY
+const ANTHROPIC_API_KEY = 'REPLACE_WITH_YOUR_ANTHROPIC_API_KEY';
 // ─────────────────────────────────────────────────────────────────────────
 
 const app  = initializeApp(firebaseConfig);
@@ -4336,6 +4535,241 @@ let editingGroupIdx      = null; // index in slides[] of group open in group edi
 let editingGroupSlideIdx = null; // index within group.slides[] while in designer; null = new
 
 let pendingTemplate = 'blank';
+
+// ── AI Slide Generator ────────────────────────────────────────────────────
+
+const AI_LOADING_MSGS = [
+  'Designing your slide\u2026',
+  'Choosing colors\u2026',
+  'Adding typography\u2026',
+  'Composing the layout\u2026',
+  'Almost ready\u2026',
+];
+
+const AI_SYSTEM_PROMPT = `You are a professional digital signage slide designer. When given a description, you create complete Fabric.js canvas JSON for a 1920x1080 slide.
+
+Return ONLY a valid JSON object with this structure:
+{ "version": "6.0.0", "objects": [...], "background": "#hexcolor" }
+
+Rules:
+- Canvas is 1920px wide, 1080px tall
+- Use only these object types: textbox, rect, circle, line, triangle
+- Every object needs: type, left, top, width, height, fill, opacity
+- Textbox objects also need: text, fontSize, fontFamily, fontWeight, textAlign, fill
+- Use Google Fonts: Montserrat, Oswald, Raleway, Playfair Display, Anton, Open Sans, Bebas Neue, Lato
+- Create visually striking designs with strong typography hierarchy
+- Use at least 3 layers of visual interest: background, decorative shapes, text
+- Text sizes: headlines 60-120px, subheadings 32-56px, body 24-40px
+- All text must be at least 200px from any edge
+- Do not use images (no image objects) — use colored rectangles as placeholders
+- Return ONLY the JSON, no explanation, no markdown, no code blocks
+
+Example 1 — Corporate announcement on navy:
+{"version":"6.0.0","background":"#1a2744","objects":[{"type":"rect","left":0,"top":0,"width":1920,"height":1080,"fill":"#1a2744","opacity":1},{"type":"rect","left":153,"top":88,"width":1614,"height":5,"fill":"#C9A84C","opacity":1},{"type":"textbox","left":200,"top":340,"width":1520,"height":160,"text":"ANNUAL COMPANY MEETING","fontSize":110,"fontFamily":"Montserrat","fontWeight":"bold","textAlign":"center","fill":"#ffffff","opacity":1},{"type":"rect","left":760,"top":520,"width":400,"height":5,"fill":"#C9A84C","opacity":1},{"type":"textbox","left":200,"top":548,"width":1520,"height":70,"text":"Thursday, March 28  ·  10:00 AM  ·  Main Conference Room","fontSize":46,"fontFamily":"Open Sans","fontWeight":"normal","textAlign":"center","fill":"#a8bcd4","opacity":1},{"type":"textbox","left":200,"top":930,"width":1520,"height":50,"text":"ACME CORPORATION","fontSize":34,"fontFamily":"Montserrat","fontWeight":"bold","textAlign":"center","fill":"rgba(201,168,76,0.75)","opacity":1},{"type":"rect","left":153,"top":990,"width":1614,"height":5,"fill":"#C9A84C","opacity":1}]}
+
+Example 2 — Bold happy hour promo with gradient feel:
+{"version":"6.0.0","background":"#1a0030","objects":[{"type":"rect","left":0,"top":0,"width":1920,"height":1080,"fill":"#e91e8c","opacity":0.22},{"type":"rect","left":115,"top":43,"width":1690,"height":4,"fill":"rgba(255,255,255,0.2)","opacity":1},{"type":"rect","left":115,"top":1033,"width":1690,"height":4,"fill":"rgba(255,255,255,0.2)","opacity":1},{"type":"textbox","left":200,"top":180,"width":1520,"height":260,"text":"HAPPY HOUR","fontSize":200,"fontFamily":"Bebas Neue","fontWeight":"bold","textAlign":"center","fill":"#ffffff","opacity":1},{"type":"textbox","left":200,"top":460,"width":1520,"height":90,"text":"EVERY FRIDAY  ·  5 PM — 8 PM","fontSize":68,"fontFamily":"Bebas Neue","fontWeight":"bold","textAlign":"center","fill":"rgba(255,255,255,0.82)","opacity":1},{"type":"rect","left":710,"top":600,"width":500,"height":80,"fill":"#FFD700","opacity":1},{"type":"textbox","left":710,"top":616,"width":500,"height":50,"text":"50% OFF ALL DRINKS","fontSize":40,"fontFamily":"Montserrat","fontWeight":"bold","textAlign":"center","fill":"#1a0030","opacity":1},{"type":"circle","left":1680,"top":80,"width":220,"height":220,"radius":110,"fill":"rgba(255,215,0,0.12)","opacity":1},{"type":"circle","left":20,"top":800,"width":160,"height":160,"radius":80,"fill":"rgba(255,255,255,0.06)","opacity":1}]}
+
+Example 3 — Clean minimal new product launch:
+{"version":"6.0.0","background":"#ffffff","objects":[{"type":"rect","left":0,"top":0,"width":1920,"height":8,"fill":"#111111","opacity":1},{"type":"rect","left":0,"top":1072,"width":1920,"height":8,"fill":"#111111","opacity":1},{"type":"textbox","left":200,"top":80,"width":1520,"height":60,"text":"N E W  A R R I V A L","fontSize":44,"fontFamily":"Raleway","fontWeight":"normal","textAlign":"center","fill":"rgba(0,0,0,0.42)","opacity":1},{"type":"rect","left":538,"top":172,"width":844,"height":578,"fill":"#f5f5f5","opacity":1},{"type":"textbox","left":538,"top":390,"width":844,"height":120,"text":"PRODUCT IMAGE","fontSize":48,"fontFamily":"Montserrat","fontWeight":"normal","textAlign":"center","fill":"rgba(0,0,0,0.18)","opacity":1},{"type":"textbox","left":200,"top":800,"width":1520,"height":100,"text":"Premium Wireless Headphones","fontSize":72,"fontFamily":"Raleway","fontWeight":"300","textAlign":"center","fill":"#111111","opacity":1},{"type":"textbox","left":200,"top":908,"width":1520,"height":55,"text":"$149.00  ·  Free shipping on orders over $50","fontSize":38,"fontFamily":"Open Sans","fontWeight":"normal","textAlign":"center","fill":"#666666","opacity":1}]}`;
+
+let aiCurrentJson   = null;
+let aiLoadingTimer  = null;
+let aiLastPrompt    = '';
+let aiLastStyle     = 'Professional';
+let aiLastColor     = 'Brand Colors';
+
+window.openAiModal = function() {
+  document.getElementById('aiModal').style.display = 'flex';
+  document.getElementById('aiInputSection').style.display  = 'block';
+  document.getElementById('aiLoadingSection').style.display = 'none';
+  document.getElementById('aiPreviewSection').style.display = 'none';
+  document.getElementById('aiErrorMsg').style.display       = 'none';
+  setTimeout(() => document.getElementById('aiPrompt').focus(), 80);
+};
+
+window.closeAiModal = function() {
+  document.getElementById('aiModal').style.display = 'none';
+  if (aiLoadingTimer) { clearInterval(aiLoadingTimer); aiLoadingTimer = null; }
+};
+
+window.aiEditPrompt = function() {
+  document.getElementById('aiPreviewSection').style.display = 'none';
+  document.getElementById('aiInputSection').style.display   = 'block';
+};
+
+// Pill-button single-select
+document.addEventListener('click', e => {
+  if (e.target.classList.contains('ai-style-btn')) {
+    document.querySelectorAll('.ai-style-btn').forEach(b => b.classList.remove('active'));
+    e.target.classList.add('active');
+  }
+  if (e.target.classList.contains('ai-color-btn')) {
+    document.querySelectorAll('.ai-color-btn').forEach(b => b.classList.remove('active'));
+    e.target.classList.add('active');
+  }
+});
+
+window.generateAiSlide = async function() {
+  const prompt = document.getElementById('aiPrompt').value.trim();
+  if (!prompt) {
+    document.getElementById('aiPrompt').focus();
+    return;
+  }
+  if (!ANTHROPIC_API_KEY || ANTHROPIC_API_KEY.includes('REPLACE')) {
+    showAiError('Add your Anthropic API key in admin.html (search for ANTHROPIC_API_KEY).');
+    return;
+  }
+
+  aiLastPrompt = prompt;
+  aiLastStyle  = document.querySelector('.ai-style-btn.active')?.dataset.value  || 'Professional';
+  aiLastColor  = document.querySelector('.ai-color-btn.active')?.dataset.value  || 'Brand Colors';
+
+  document.getElementById('aiInputSection').style.display   = 'none';
+  document.getElementById('aiLoadingSection').style.display  = 'flex';
+  document.getElementById('aiPreviewSection').style.display  = 'none';
+  document.getElementById('aiErrorMsg').style.display        = 'none';
+
+  let msgIdx = 0;
+  const msgEl = document.getElementById('aiLoadingMsg');
+  msgEl.textContent = AI_LOADING_MSGS[0];
+  aiLoadingTimer = setInterval(() => {
+    msgIdx = (msgIdx + 1) % AI_LOADING_MSGS.length;
+    msgEl.style.opacity = '0';
+    setTimeout(() => { msgEl.textContent = AI_LOADING_MSGS[msgIdx]; msgEl.style.opacity = '1'; }, 200);
+  }, 2000);
+
+  const userMsg =
+    `Create a digital signage slide for: "${aiLastPrompt}"\n` +
+    `Style: ${aiLastStyle}\nColor scheme: ${aiLastColor}\n` +
+    `Canvas: 1920×1080px\nReturn ONLY the Fabric.js JSON.`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key':                            ANTHROPIC_API_KEY,
+        'anthropic-version':                    '2023-06-01',
+        'content-type':                         'application/json',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model:      'claude-sonnet-4-20250514',
+        max_tokens: 4096,
+        system:     AI_SYSTEM_PROMPT,
+        messages:   [{ role: 'user', content: userMsg }],
+      }),
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData?.error?.message || `API error ${res.status}`);
+    }
+
+    const data = await res.json();
+    const raw  = (data.content?.[0]?.text || '').trim();
+
+    // Strip any accidental markdown fences
+    let jsonStr = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+    // Find outermost { … }
+    const fi = jsonStr.indexOf('{'), li = jsonStr.lastIndexOf('}');
+    if (fi === -1 || li === -1) throw new Error('AI returned no valid JSON object.');
+    jsonStr = jsonStr.slice(fi, li + 1);
+
+    const canvasJson = JSON.parse(jsonStr);
+    if (!Array.isArray(canvasJson.objects)) throw new Error('AI JSON missing "objects" array.');
+
+    aiCurrentJson = canvasJson;
+
+    clearInterval(aiLoadingTimer); aiLoadingTimer = null;
+    document.getElementById('aiLoadingSection').style.display = 'none';
+    document.getElementById('aiPreviewSection').style.display = 'block';
+    document.getElementById('aiPreviewCanvasWrap').innerHTML  =
+      '<span style="color:var(--muted);font-size:13px">Rendering preview\u2026</span>';
+
+    renderAiPreview(canvasJson);
+
+  } catch(err) {
+    clearInterval(aiLoadingTimer); aiLoadingTimer = null;
+    document.getElementById('aiLoadingSection').style.display = 'none';
+    document.getElementById('aiInputSection').style.display   = 'block';
+    showAiError('Generation failed: ' + err.message);
+  }
+};
+
+function showAiError(msg) {
+  const el = document.getElementById('aiErrorMsg');
+  el.textContent  = msg;
+  el.style.display = 'block';
+}
+
+function renderAiPreview(canvasJson) {
+  // Load any needed Google fonts first
+  (canvasJson.objects || []).forEach(o => { if (o.fontFamily) loadGoogleFont(o.fontFamily); });
+
+  // Give fonts ~600 ms to start loading, then render off-screen
+  setTimeout(() => {
+    const el = document.createElement('canvas');
+    el.width  = 1920;
+    el.height = 1080;
+    document.body.appendChild(el); // must be in DOM for Fabric
+
+    const tmp = new fabric.Canvas(el, { width: 1920, height: 1080, selection: false, renderOnAddRemove: false });
+    tmp.loadFromJSON(canvasJson, () => {
+      tmp.renderAll();
+      let dataUrl;
+      try { dataUrl = tmp.toDataURL({ format: 'jpeg', quality: 0.88 }); }
+      catch(e) { dataUrl = tmp.toDataURL({ format: 'png' }); }
+      tmp.dispose();
+      document.body.removeChild(el);
+
+      const wrap = document.getElementById('aiPreviewCanvasWrap');
+      if (!wrap) return;
+      wrap.innerHTML = '';
+      const img = document.createElement('img');
+      img.src = dataUrl;
+      img.style.cssText = 'width:100%;display:block;border-radius:8px;';
+      wrap.appendChild(img);
+    });
+  }, 650);
+}
+
+window.useAiSlide = function() {
+  if (!aiCurrentJson) return;
+  closeAiModal();
+
+  const designerIsOpen = document.getElementById('designerModal').style.display === 'flex';
+  if (designerIsOpen) {
+    loadAiJsonIntoCanvas();
+  } else {
+    // Open the designer (blank), then inject the JSON once Fabric is ready
+    pendingTemplate = 'blank';
+    launchDesigner(null);
+    setTimeout(loadAiJsonIntoCanvas, 500);
+  }
+};
+
+function loadAiJsonIntoCanvas() {
+  if (!fabricCanvas || !aiCurrentJson) return;
+  (aiCurrentJson.objects || []).forEach(o => { if (o.fontFamily) loadGoogleFont(o.fontFamily); });
+  historyPaused = true;
+  fabricCanvas.loadFromJSON(aiCurrentJson, () => {
+    fabricCanvas.getObjects().forEach(applyLockState);
+    fabricCanvas.renderAll();
+    historyPaused = false;
+    historyStack = []; histIdx = -1;
+    historySave();
+    updatePropsPanel();
+  });
+}
+
+window.regenerateAiSlide = function() {
+  document.getElementById('aiPreviewSection').style.display = 'none';
+  document.getElementById('aiInputSection').style.display   = 'block';
+  generateAiSlide();
+};
+
+// ── End AI Slide Generator ────────────────────────────────────────────────
 
 window.openDesigner = function(existingSlide = null, slideIdx = null) {
   if (typeof fabric === 'undefined') {
