@@ -4619,7 +4619,7 @@ window.generateAiSlide = async function() {
 
     if (!res.ok) {
       const errData = await res.json().catch(() => ({}));
-      throw new Error(errData?.error?.message || `API error ${res.status}`);
+      throw new Error(errData?.error || `API error ${res.status}: ${JSON.stringify(errData)}`);
     }
 
     const data = await res.json();

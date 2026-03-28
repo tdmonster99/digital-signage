@@ -73,6 +73,7 @@ module.exports = async function handler(req, res) {
     if (!upstream.ok) {
       return res.status(upstream.status).json({
         error: data?.error?.message || `Upstream error ${upstream.status}`,
+        detail: data,
       });
     }
     return res.status(200).json(data);
