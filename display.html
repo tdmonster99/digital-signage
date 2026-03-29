@@ -612,12 +612,13 @@
           const shortId     = newScreenId.slice(0, 6).toUpperCase();
           const screenName  = "Screen " + shortId;
 
-          // Create the screen doc
+          // Create the screen doc (include orgId from pairing code if present)
           await setDoc(doc(db, "screens", newScreenId), {
             name:         screenName,
             slideshowId:  "main",
             registeredAt: new Date().toISOString(),
             lastSeen:     new Date().toISOString(),
+            ...(data.orgId && { orgId: data.orgId }),
           });
 
           // Mark pairing code as paired
