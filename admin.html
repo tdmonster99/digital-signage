@@ -2036,7 +2036,7 @@ body.role-editor .admin-action {
         </div>
         <div class="ob-field">
           <label>Industry</label>
-          <select id="obIndustry">
+          <select id="obIndustry" onchange="toggleOtherIndustry()">
             <option value="">Select your industry…</option>
             <option value="restaurant">Restaurant / Café / Bar</option>
             <option value="retail">Retail / Shop</option>
@@ -2047,6 +2047,10 @@ body.role-editor .admin-action {
             <option value="church">Church / Non-profit</option>
             <option value="other">Other</option>
           </select>
+        </div>
+        <div class="ob-field" id="obOtherIndustryField" style="display:none">
+          <label>Your Industry <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
+          <input type="text" id="obOtherIndustry" placeholder="e.g. Real Estate, Hospitality…">
         </div>
       </div>
 
@@ -4713,15 +4717,26 @@ function renderObStep() {
   if (obStep === 3) fireObConfetti();
 }
 
+window.toggleOtherIndustry = function() {
+  const val = document.getElementById('obIndustry').value;
+  document.getElementById('obOtherIndustryField').style.display = val === 'other' ? '' : 'none';
+};
+
 window.obNavigate = function(dir) {
   if (dir === 1) {
-    // Validate step 1
+    // Validate / save step 1
     if (obStep === 0) {
-      const name = document.getElementById('obOrgName').value.trim();
-      if (name && currentOrgId) {
-        // Save org name
-        updateDoc(doc(db, 'organizations', currentOrgId), { name })
-          .then(() => { if (currentOrg) currentOrg.name = name; })
+      const name         = document.getElementById('obOrgName').value.trim();
+      const industryVal  = document.getElementById('obIndustry').value;
+      const customIndustry = industryVal === 'other'
+        ? document.getElementById('obOtherIndustry').value.trim()
+        : '';
+      const updates = {};
+      if (name) updates.name = name;
+      if (customIndustry) updates.customIndustry = customIndustry;
+      if (Object.keys(updates).length && currentOrgId) {
+        updateDoc(doc(db, 'organizations', currentOrgId), updates)
+          .then(() => { if (currentOrg) Object.assign(currentOrg, updates); })
           .catch(() => {});
       }
     }
