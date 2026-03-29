@@ -1886,6 +1886,98 @@ body.role-editor .admin-action {
 }
 .invite-link-text { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; flex: 1; word-break: break-all; }
 
+/* ── Onboarding wizard ─────────────────────────────────────────────── */
+#onboardingOverlay {
+  display: none; position: fixed; inset: 0; z-index: 2000;
+  background: var(--bg); align-items: center; justify-content: center;
+  padding: 20px;
+}
+#onboardingOverlay.active { display: flex; }
+.ob-skip {
+  position: absolute; top: 20px; right: 24px;
+  background: none; border: none; cursor: pointer;
+  font-size: 13px; color: var(--muted); text-decoration: underline;
+}
+.ob-skip:hover { color: var(--text); }
+.ob-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 20px; width: 100%; max-width: 600px;
+  box-shadow: 0 24px 60px rgba(0,0,0,.15);
+  display: flex; flex-direction: column;
+  max-height: 90vh; overflow: hidden;
+}
+.ob-progress {
+  display: flex; align-items: center; justify-content: center;
+  gap: 8px; padding: 24px 24px 0;
+}
+.ob-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--border); transition: all 0.3s;
+}
+.ob-dot.active { background: var(--accent); transform: scale(1.25); }
+.ob-dot.done   { background: var(--accent); opacity: .4; }
+.ob-body { flex: 1; overflow-y: auto; padding: 32px 40px; }
+.ob-step { display: none; }
+.ob-step.active { display: block; }
+.ob-emoji  { font-size: 40px; margin-bottom: 16px; }
+.ob-title  { font-size: 24px; font-weight: 700; color: var(--text); margin-bottom: 8px; line-height: 1.2; }
+.ob-sub    { font-size: 14px; color: var(--muted); margin-bottom: 28px; line-height: 1.6; }
+.ob-field  { margin-bottom: 16px; }
+.ob-field label { display: block; font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
+.ob-field input, .ob-field select {
+  width: 100%; font-family: 'DM Sans', sans-serif; font-size: 14px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 11px 14px; color: var(--text); outline: none;
+  transition: border-color 0.15s;
+}
+.ob-field input:focus, .ob-field select:focus { border-color: var(--accent); }
+.ob-template-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 12px; }
+.ob-tmpl-card {
+  border: 2px solid var(--border); border-radius: 12px; overflow: hidden;
+  cursor: pointer; transition: border-color 0.15s, transform 0.15s;
+  background: var(--surface2);
+}
+.ob-tmpl-card:hover  { border-color: var(--accent); transform: translateY(-2px); }
+.ob-tmpl-card.active { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg); }
+.ob-tmpl-thumb { aspect-ratio: 16/9; display: flex; align-items: center; justify-content: center; }
+.ob-tmpl-name  { font-size: 11px; font-weight: 600; color: var(--text); padding: 8px; text-align: center; }
+.ob-choice-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.ob-choice-card {
+  border: 2px solid var(--border); border-radius: 12px; padding: 20px 16px;
+  cursor: pointer; transition: border-color 0.15s, transform 0.15s;
+  text-align: center; background: var(--surface2);
+}
+.ob-choice-card:hover  { border-color: var(--accent); transform: translateY(-2px); }
+.ob-choice-card.active { border-color: var(--accent); background: var(--accent-bg); }
+.ob-choice-icon { font-size: 28px; margin-bottom: 8px; }
+.ob-choice-label { font-size: 13px; font-weight: 600; color: var(--text); }
+.ob-choice-desc  { font-size: 11px; color: var(--muted); margin-top: 4px; }
+.ob-screen-url {
+  background: var(--surface2); border: 2px dashed var(--border);
+  border-radius: 12px; padding: 18px 20px; text-align: center;
+  font-family: 'DM Mono', monospace; font-size: 14px; font-weight: 600;
+  color: var(--text); margin-bottom: 20px; word-break: break-all;
+}
+.ob-qr { text-align: center; margin-bottom: 20px; }
+.ob-qr img { border-radius: 10px; border: 1px solid var(--border); }
+.ob-instructions { font-size: 13px; color: var(--muted); line-height: 1.7; }
+.ob-instructions li { margin-bottom: 4px; }
+.ob-done-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 8px; }
+.ob-done-card {
+  border: 1px solid var(--border); border-radius: 12px; padding: 16px;
+  cursor: pointer; transition: border-color 0.15s;
+  text-align: center; background: var(--surface2);
+}
+.ob-done-card:hover { border-color: var(--accent); }
+.ob-done-icon  { font-size: 24px; margin-bottom: 8px; }
+.ob-done-label { font-size: 12px; font-weight: 600; color: var(--text); }
+.ob-footer {
+  padding: 20px 40px; border-top: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  flex-shrink: 0;
+}
+.ob-footer-left { display: flex; gap: 8px; }
+
 /* ── Invite modal ──────────────────────────────────────────────────── */
 #inviteModal {
   display: none; position: fixed; inset: 0; z-index: 1100;
@@ -1919,6 +2011,126 @@ body.role-editor .admin-action {
 </script>
 </head>
 <body>
+
+<!-- ── Onboarding Wizard ──────────────────────────────────────────────── -->
+<div id="onboardingOverlay">
+  <button class="ob-skip" onclick="skipOnboarding()">Skip setup</button>
+  <div class="ob-card">
+    <div class="ob-progress">
+      <div class="ob-dot active" id="obDot0"></div>
+      <div class="ob-dot"        id="obDot1"></div>
+      <div class="ob-dot"        id="obDot2"></div>
+      <div class="ob-dot"        id="obDot3"></div>
+    </div>
+
+    <div class="ob-body">
+
+      <!-- Step 1: Welcome -->
+      <div class="ob-step active" id="obStep0">
+        <div class="ob-emoji">👋</div>
+        <div class="ob-title">Welcome! Let's get your first screen live.</div>
+        <div class="ob-sub">We'll have you up and running in under 5 minutes. First, tell us a little about yourself.</div>
+        <div class="ob-field">
+          <label>Organization / Company Name</label>
+          <input type="text" id="obOrgName" placeholder="e.g. Acme Coffee Co.">
+        </div>
+        <div class="ob-field">
+          <label>Industry</label>
+          <select id="obIndustry">
+            <option value="">Select your industry…</option>
+            <option value="restaurant">Restaurant / Café / Bar</option>
+            <option value="retail">Retail / Shop</option>
+            <option value="healthcare">Healthcare / Clinic</option>
+            <option value="education">Education / School</option>
+            <option value="corporate">Corporate Office</option>
+            <option value="gym">Gym / Fitness</option>
+            <option value="church">Church / Non-profit</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Step 2: First slide -->
+      <div class="ob-step" id="obStep1">
+        <div class="ob-emoji">🎨</div>
+        <div class="ob-title">Create your first slide</div>
+        <div class="ob-sub">Choose how you want to start:</div>
+        <div class="ob-choice-grid" style="margin-bottom:20px">
+          <div class="ob-choice-card" id="obChoiceTemplate" onclick="selectObChoice('template')">
+            <div class="ob-choice-icon">🖼️</div>
+            <div class="ob-choice-label">Pick a Template</div>
+            <div class="ob-choice-desc">Professionally designed</div>
+          </div>
+          <div class="ob-choice-card" id="obChoiceUpload" onclick="selectObChoice('upload')">
+            <div class="ob-choice-icon">📤</div>
+            <div class="ob-choice-label">Upload an Image</div>
+            <div class="ob-choice-desc">Use your own image</div>
+          </div>
+          <div class="ob-choice-card" id="obChoiceLater" onclick="selectObChoice('later')">
+            <div class="ob-choice-icon">⏭️</div>
+            <div class="ob-choice-label">I'll do this later</div>
+            <div class="ob-choice-desc">Skip for now</div>
+          </div>
+        </div>
+        <!-- Template picker (shown when 'template' selected) -->
+        <div id="obTemplateSection" style="display:none">
+          <div style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Recommended for you</div>
+          <div class="ob-template-grid" id="obTemplateGrid"></div>
+        </div>
+      </div>
+
+      <!-- Step 3: Screen setup -->
+      <div class="ob-step" id="obStep2">
+        <div class="ob-emoji">📺</div>
+        <div class="ob-title">Connect your display</div>
+        <div class="ob-sub">Open this URL on any TV or monitor connected to a computer:</div>
+        <div class="ob-screen-url">digital-signage-pi.vercel.app/display.html</div>
+        <div class="ob-qr">
+          <img id="obQrCode" src="" width="160" height="160" alt="QR Code">
+          <div style="font-size:12px;color:var(--muted);margin-top:8px">Scan with your phone to open on a TV</div>
+        </div>
+        <ul class="ob-instructions">
+          <li>Open the URL in <strong>Google Chrome</strong></li>
+          <li>Press <strong>F11</strong> for full screen</li>
+          <li>Your content will appear automatically</li>
+        </ul>
+      </div>
+
+      <!-- Step 4: Done -->
+      <div class="ob-step" id="obStep3">
+        <div style="text-align:center;padding:8px 0 20px">
+          <canvas id="confettiCanvas" style="position:fixed;inset:0;pointer-events:none;z-index:2100;width:100%;height:100%"></canvas>
+          <div style="font-size:56px;margin-bottom:16px">🎉</div>
+          <div class="ob-title" style="text-align:center">You're live!</div>
+          <div class="ob-sub" style="text-align:center">Your content is now showing on your screen. Here's what you can do next:</div>
+          <div class="ob-done-cards">
+            <div class="ob-done-card" onclick="completeOnboarding('slides')">
+              <div class="ob-done-icon">➕</div>
+              <div class="ob-done-label">Add more slides</div>
+            </div>
+            <div class="ob-done-card" onclick="completeOnboarding('templates')">
+              <div class="ob-done-icon">🖼️</div>
+              <div class="ob-done-label">Explore templates</div>
+            </div>
+            <div class="ob-done-card" onclick="completeOnboarding('team')">
+              <div class="ob-done-icon">👥</div>
+              <div class="ob-done-label">Invite your team</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /ob-body -->
+
+    <div class="ob-footer">
+      <div class="ob-footer-left">
+        <button class="btn btn-secondary" id="obBackBtn" onclick="obNavigate(-1)" style="display:none">← Back</button>
+      </div>
+      <button class="btn btn-primary" id="obNextBtn" onclick="obNavigate(1)">Next →</button>
+    </div>
+  </div>
+</div>
+
 
 <!-- ── Sidebar Navigation ─────────────────────────────────────────────── -->
 <nav class="sidebar">
@@ -4315,6 +4527,8 @@ async function initUserAndOrg(user) {
       currentRole    = userData.role || 'admin';
       const orgSnap  = await getDoc(doc(db, 'organizations', currentOrgId));
       currentOrg     = orgSnap.exists() ? { id: currentOrgId, ...orgSnap.data() } : null;
+      // Resume onboarding if not completed
+      if (!userData.onboardingComplete) setTimeout(showOnboarding, 200);
     } else if (inviteId) {
       await acceptInvitation(inviteId, user);
     } else {
@@ -4359,6 +4573,8 @@ async function createOrg(user) {
   } catch(_) {}
 
   currentOrg = { id: orgId, ...orgData };
+  // Will show onboarding after loadShowsFromOrg + loadBrandKit complete
+  setTimeout(showOnboarding, 200);
 }
 
 async function acceptInvitation(inviteId, user) {
@@ -4420,6 +4636,180 @@ async function loadShowsFromOrg() {
     showList.appendChild(item);
     if (i === 0) item.click();
   });
+}
+
+// ── Onboarding wizard ─────────────────────────────────────────────────────
+
+const INDUSTRY_TEMPLATES = {
+  restaurant: ['dailyspecial',   'menuboard',            'happyhour'],
+  retail:     ['saleevent',      'newarrival',           'instagramwall'],
+  healthcare: ['waitingroomwelcome', 'healthtip',        'corporateannouncement'],
+  education:  ['countdown',      'eventpromo',           'corporateannouncement'],
+  corporate:  ['corporateannouncement', 'kpidashboard',  'employeeofmonth'],
+  gym:        ['saleevent',      'happyhour',            'nowhiring'],
+  church:     ['eventpromo',     'seasonsgreetings',     'corporateannouncement'],
+  other:      ['corporateannouncement', 'eventpromo',    'newarrival'],
+};
+
+const OB_TMPL_INFO = {
+  dailyspecial:           { name: 'Daily Special',      bg: '#FDF6E3', text: '#5c4a1e' },
+  menuboard:              { name: 'Menu Board',          bg: '#2C2C2C', text: '#D4AF37' },
+  happyhour:              { name: 'Happy Hour',          bg: '#1a0030', text: '#FFD700' },
+  saleevent:              { name: 'Sale Event',          bg: '#e0000a', text: '#ffffff' },
+  newarrival:             { name: 'New Arrival',         bg: '#f5f5f5', text: '#111111' },
+  instagramwall:          { name: 'Social Wall',         bg: '#ffffff', text: '#E1306C' },
+  waitingroomwelcome:     { name: 'Welcome Screen',      bg: '#00897b', text: '#ffffff' },
+  healthtip:              { name: 'Health Tip',          bg: '#f0fdf4', text: '#166534' },
+  corporateannouncement:  { name: 'Announcement',        bg: '#1a2744', text: '#C9A84C' },
+  countdown:              { name: 'Countdown',           bg: '#ffffff', text: '#1a1a2e' },
+  eventpromo:             { name: 'Event Promo',         bg: '#0d0d1a', text: '#ffffff' },
+  kpidashboard:           { name: 'KPI Dashboard',       bg: '#1e2433', text: '#4fc3f7' },
+  employeeofmonth:        { name: 'Employee Spotlight',  bg: '#1a2744', text: '#ffffff' },
+  nowhiring:              { name: 'Now Hiring',          bg: '#FF6B35', text: '#ffffff' },
+  seasonsgreetings:       { name: "Season's Greetings",  bg: '#1b4332', text: '#ffffff' },
+};
+
+let obStep          = 0;
+let obTotalSteps    = 4;
+let obChoice        = null;   // 'template' | 'upload' | 'later'
+let obPickedTemplate = null;
+
+function showOnboarding() {
+  obStep = 0;
+  obChoice = null;
+  obPickedTemplate = null;
+  // Pre-fill org name if we have one
+  if (currentOrg?.name) document.getElementById('obOrgName').value = currentOrg.name;
+  document.getElementById('onboardingOverlay').classList.add('active');
+  renderObStep();
+  // Set QR code image
+  const displayUrl = 'https://digital-signage-pi.vercel.app/display.html';
+  document.getElementById('obQrCode').src =
+    'https://api.qrserver.com/v1/create-qr-code/?size=160x160&color=000000&bgcolor=ffffff&data=' +
+    encodeURIComponent(displayUrl);
+}
+
+function renderObStep() {
+  // Show correct step
+  document.querySelectorAll('.ob-step').forEach((el, i) => {
+    el.classList.toggle('active', i === obStep);
+  });
+  // Update dots
+  document.querySelectorAll('.ob-dot').forEach((el, i) => {
+    el.classList.toggle('active', i === obStep);
+    el.classList.toggle('done', i < obStep);
+  });
+  // Back button
+  document.getElementById('obBackBtn').style.display = obStep > 0 ? '' : 'none';
+  // Next button
+  const nextBtn = document.getElementById('obNextBtn');
+  if (obStep === obTotalSteps - 1) {
+    nextBtn.style.display = 'none'; // step 4 has its own cards
+  } else {
+    nextBtn.style.display = '';
+    nextBtn.textContent = obStep === obTotalSteps - 2 ? 'My screen is ready →' : 'Next →';
+  }
+  // Step 4: fire confetti
+  if (obStep === 3) fireObConfetti();
+}
+
+window.obNavigate = function(dir) {
+  if (dir === 1) {
+    // Validate step 1
+    if (obStep === 0) {
+      const name = document.getElementById('obOrgName').value.trim();
+      if (name && currentOrgId) {
+        // Save org name
+        updateDoc(doc(db, 'organizations', currentOrgId), { name })
+          .then(() => { if (currentOrg) currentOrg.name = name; })
+          .catch(() => {});
+      }
+    }
+    // Build template grid before showing step 2
+    if (obStep === 0) buildObTemplateGrid();
+    obStep = Math.min(obStep + 1, obTotalSteps - 1);
+  } else {
+    obStep = Math.max(obStep - 1, 0);
+  }
+  renderObStep();
+};
+
+function buildObTemplateGrid() {
+  const industry = document.getElementById('obIndustry').value || 'other';
+  const keys     = INDUSTRY_TEMPLATES[industry] || INDUSTRY_TEMPLATES.other;
+  const grid     = document.getElementById('obTemplateGrid');
+  grid.innerHTML = keys.map(k => {
+    const info = OB_TMPL_INFO[k] || { name: k, bg: '#1a1a2e', text: '#ffffff' };
+    return `<div class="ob-tmpl-card ${obPickedTemplate === k ? 'active' : ''}" onclick="pickObTemplate('${k}')">
+      <div class="ob-tmpl-thumb" style="background:${info.bg}">
+        <span style="font-size:11px;font-weight:700;color:${info.text};text-align:center;padding:4px 6px;letter-spacing:.04em">${info.name.toUpperCase()}</span>
+      </div>
+      <div class="ob-tmpl-name">${info.name}</div>
+    </div>`;
+  }).join('');
+}
+
+window.selectObChoice = function(choice) {
+  obChoice = choice;
+  document.querySelectorAll('.ob-choice-card').forEach(c => c.classList.remove('active'));
+  document.getElementById('obChoice' + choice.charAt(0).toUpperCase() + choice.slice(1)).classList.add('active');
+  const tmplSection = document.getElementById('obTemplateSection');
+  tmplSection.style.display = choice === 'template' ? 'block' : 'none';
+  if (choice === 'upload') {
+    // Trigger file upload after onboarding
+    obPickedTemplate = null;
+  }
+};
+
+window.pickObTemplate = function(name) {
+  obPickedTemplate = name;
+  document.querySelectorAll('.ob-tmpl-card').forEach(c => c.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+};
+
+async function fireObConfetti() {
+  // Dynamically load canvas-confetti
+  if (window.confetti) { launchConfetti(); return; }
+  const s = document.createElement('script');
+  s.src   = 'https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js';
+  s.onload = launchConfetti;
+  document.head.appendChild(s);
+}
+
+function launchConfetti() {
+  if (!window.confetti) return;
+  const end = Date.now() + 2500;
+  (function frame() {
+    confetti({ particleCount: 3, angle: 60,  spread: 55, origin: { x: 0, y: 0.6 } });
+    confetti({ particleCount: 3, angle: 120, spread: 55, origin: { x: 1, y: 0.6 } });
+    if (Date.now() < end) requestAnimationFrame(frame);
+  })();
+}
+
+window.completeOnboarding = async function(action) {
+  await finishOnboarding();
+  if (action === 'slides')    { /* already on dashboard, user can add slides */ }
+  if (action === 'templates') { setTimeout(() => openTemplateGallery(), 300); }
+  if (action === 'team')      { setTimeout(() => showPage('settings'), 300); }
+  // Apply pending template choice
+  if (obPickedTemplate) {
+    setTimeout(() => selectTemplate(obPickedTemplate), 400);
+  }
+};
+
+window.skipOnboarding = async function() {
+  await finishOnboarding();
+  if (obPickedTemplate) setTimeout(() => selectTemplate(obPickedTemplate), 400);
+};
+
+async function finishOnboarding() {
+  document.getElementById('onboardingOverlay').classList.remove('active');
+  // Mark complete in Firestore
+  if (currentUser) {
+    try {
+      await updateDoc(doc(db, 'users', currentUser.uid), { onboardingComplete: true });
+    } catch(e) {}
+  }
 }
 
 // ── Team management ───────────────────────────────────────────────────────
