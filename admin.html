@@ -4557,16 +4557,9 @@ window.sendInvite = async function() {
       }),
     }).then(async r => {
       const data = await r.json().catch(() => ({}));
-      if (!r.ok) {
-        console.error('Email send failed:', r.status, data);
-        toast('Invite created but email failed: ' + (data.error || r.status), true);
-      } else {
-        console.log('Email sent OK:', data);
-      }
-    }).catch(err => {
-      console.error('Email send error:', err.message);
-      toast('Invite created but email failed: ' + err.message, true);
-    });
+      if (!r.ok) console.warn('Email send failed:', r.status, data?.error);
+      else        console.log('Email sent OK');
+    }).catch(err => console.warn('Email send error:', err.message));
 
     const link = window.location.origin + '/admin.html?invite=' + inviteId;
     document.getElementById('inviteLinkText').textContent = link;
