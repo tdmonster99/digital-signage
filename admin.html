@@ -8767,45 +8767,20 @@ function _versionsCol(slideId) {
   return collection(db, 'slideshows', currentShowId, 'slideVersions', slideId, 'versions');
 }
 
-// Capture canvasJson + thumbnail for the current canvas state
-async function _captureVersionData() {
-  const canvasJson = JSON.stringify(fabricCanvas.toJSON(CANVAS_EXTRA_PROPS));
-  let thumbnailUrl = null;
-  try {
-    const dataUrl = fabricCanvas.toDataURL({ format: 'jpeg', quality: 0.6 });
-    const blob    = dataURLtoBlob(dataUrl);
-    const fd = new FormData();
-    fd.append('file',           blob, 'thumb.jpg');
-    fd.append('upload_preset',  CLOUDINARY_UPLOAD_PRESET);
-    fd.append('folder',         'signage/versions');
-    const res  = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
-                             { method: 'POST', body: fd });
-    const data = await res.json();
-    thumbnailUrl = data.secure_url || null;
-  } catch(e) { /* thumbnail optional */ }
-  return { canvasJson, thumbnailUrl };
-}
-
 // Save a new version snapshot. Prunes oldest if > MAX_VERSIONS.
-async function saveSlideVersion(slideId) {
-  if (!slideId || !auth.currentUser) return;
+// canvasJson and thumbnailUrl are passed in (already captured by caller).
+async function saveSlideVersion(slideId, canvasJson, thumbnailUrl) {
+  if (!slideId || !auth.currentUser || !canvasJson) return;
   const col = _versionsCol(slideId);
-  const { canvasJson, thumbnailUrl } = await _captureVersionData();
 
-  const versionDoc = {
+  await addDoc(col, {
     canvasJson,
-    thumbnailUrl,
+    thumbnailUrl: thumbnailUrl || null,
     savedAt:  new Date().toISOString(),
     savedBy:  auth.currentUser.email || auth.currentUser.uid,
-  };
+  });
 
-  // Firestore write + prune in a batch to stay consistent
-  const newRef  = doc(col); // auto-ID
-  const batch   = writeBatch(db);
-  batch.set(newRef, versionDoc);
-  await batch.commit();
-
-  // Prune: fetch all versions ordered by savedAt asc, delete those beyond limit
+  // Prune: keep only MAX_VERSIONS newest
   const allSnap = await getDocs(query(col, orderBy('savedAt', 'asc')));
   if (allSnap.size > MAX_VERSIONS) {
     const excess     = allSnap.docs.slice(0, allSnap.size - MAX_VERSIONS);
@@ -8912,8 +8887,21 @@ async function executeRestore(versionId) {
   btn.disabled = true; btn.textContent = 'Restoring…';
 
   try {
-    // 1. Save current state as a new version first
-    await saveSlideVersion(slideId);
+    // 1. Save current state as a new version before restoring
+    const curJson  = JSON.stringify(fabricCanvas.toJSON(CANVAS_EXTRA_PROPS));
+    let   curThumb = null;
+    try {
+      const dataUrl = fabricCanvas.toDataURL({ format: 'jpeg', quality: 0.6 });
+      const blob    = dataURLtoBlob(dataUrl);
+      const fd = new FormData();
+      fd.append('file', blob, 'thumb.jpg');
+      fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+      fd.append('folder', 'signage/versions');
+      const res  = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, { method: 'POST', body: fd });
+      const data = await res.json();
+      curThumb = data.secure_url || null;
+    } catch(_) {}
+    await saveSlideVersion(slideId, curJson, curThumb);
 
     // 2. Fetch the chosen version
     const vSnap = await getDoc(doc(_versionsCol(slideId), versionId));
@@ -10024,8 +10012,8 @@ window.saveDesignedSlide = async function() {
       await setDoc(doc(db, 'slideshows', currentShowId),
         { draftCanvasJson: null, draftSlideId: null }, { merge: true });
     } catch(_) {}
-    // Save version snapshot (non-blocking — don't fail save if this errors)
-    try { await saveSlideVersion(slide.id); } catch(_) {}
+    // Fire-and-forget version snapshot — uses already-captured data, never blocks save
+    saveSlideVersion(slide.id, canvasJson, thumbnailUrl).catch(() => {});
     designerDirty = false;
     updateDesignerStatus('saved');
     toast('Slide saved ✓');
