@@ -2,8 +2,16 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Signage Admin</title>
+<!-- PWA -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#f07c00">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Signage">
+<link rel="apple-touch-icon" href="/icons/icon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
@@ -771,12 +779,151 @@ section.content {
 .empty svg { margin-bottom: 16px; opacity: 0.2; }
 .empty p { font-size: 14px; line-height: 1.7; }
 
-/* Responsive */
+/* ── Mobile layout ───────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
-  .sidebar { display: none; }
-  .app-main { margin-left: 0; }
+  /* Hide desktop sidebar, show bottom tab bar */
+  .sidebar       { display: none; }
+  .mobile-tabs   { display: flex !important; }
+
+  /* Main area fills full width with bottom padding for tab bar + safe area */
+  .app-main {
+    margin-left: 0;
+    padding-bottom: calc(64px + env(safe-area-inset-bottom));
+  }
+
+  /* Single-column layouts */
   #page-slideshows.active { grid-template-columns: 1fr; }
   aside { border-right: none; border-bottom: 1px solid var(--border); }
+  .slide-grid { grid-template-columns: 1fr !important; }
+
+  /* Ensure all interactive elements are at least 44 px tall */
+  .btn, .nav-item, select, input[type="text"],
+  input[type="email"], input[type="number"], input[type="url"],
+  input[type="search"], textarea { min-height: 44px; }
+
+  /* Tighten page header spacing */
+  .page > *:first-child { padding-top: 16px; }
+
+  /* Show mobile FAB */
+  .mobile-fab { display: flex !important; }
+}
+
+/* ── Bottom tab bar (mobile only) ────────────────────────────────────────── */
+.mobile-tabs {
+  display: none;
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 100;
+  height: calc(64px + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  align-items: stretch;
+  justify-content: space-around;
+  box-shadow: 0 -2px 12px rgba(0,0,0,0.06);
+}
+.mob-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  border: none;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0;
+  min-height: 44px;
+  transition: color 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.mob-tab.active { color: var(--accent); }
+.mob-tab svg    { transition: transform 0.15s; }
+.mob-tab.active svg { transform: scale(1.15); }
+
+/* ── Quick-upload FAB ─────────────────────────────────────────────────────── */
+.mobile-fab {
+  display: none;
+  position: fixed;
+  right: 16px;
+  bottom: calc(76px + env(safe-area-inset-bottom));
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.28);
+  cursor: pointer;
+  z-index: 90;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+}
+.mobile-fab:active { transform: scale(0.93); }
+
+/* ── Quick-upload bottom sheet ───────────────────────────────────────────── */
+#quickUploadSheet {
+  display: none;
+  position: fixed; inset: 0; z-index: 1300;
+  background: rgba(0,0,0,0.45);
+  align-items: flex-end; justify-content: center;
+}
+.quick-sheet-inner {
+  background: var(--surface);
+  border-radius: 20px 20px 0 0;
+  padding: 24px 20px calc(20px + env(safe-area-inset-bottom));
+  width: 100%; max-width: 480px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.quick-sheet-inner h3 {
+  font-size: 17px; font-weight: 700; color: var(--text); margin: 0 0 4px;
+}
+.quick-sheet-inner p {
+  font-size: 13px; color: var(--muted); margin: 0 0 8px;
+}
+.quick-upload-btn {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  width: 100%; min-height: 52px;
+  border-radius: 12px; border: none; cursor: pointer;
+  font-size: 15px; font-weight: 600;
+  background: var(--accent); color: #fff;
+}
+.quick-upload-btn:active { opacity: 0.85; }
+
+/* ── PWA install banner ───────────────────────────────────────────────────── */
+#installBanner {
+  display: none;
+  position: fixed;
+  bottom: calc(64px + env(safe-area-inset-bottom));
+  left: 8px; right: 8px;
+  z-index: 200;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px 14px;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+}
+#installBanner img { border-radius: 10px; flex-shrink: 0; }
+#installBanner p   { flex: 1; font-size: 13px; color: var(--text); margin: 0; line-height: 1.4; }
+
+/* ── Pull-to-refresh indicator ────────────────────────────────────────────── */
+#pullRefreshIndicator {
+  display: none;
+  position: fixed; top: 0; left: 0; right: 0;
+  z-index: 300;
+  justify-content: center; align-items: center;
+  height: 52px; gap: 8px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  font-size: 13px; color: var(--muted);
+  transition: transform 0.2s;
+}
+#pullRefreshIndicator .ptr-spinner {
+  width: 18px; height: 18px;
+  border: 2px solid var(--border); border-top-color: var(--accent);
+  border-radius: 50%; animation: spin 0.8s linear infinite;
 }
 
 /* ── Auto-save status indicator ─────────────────────────────────────────── */
@@ -2410,6 +2557,40 @@ body.role-editor .admin-action {
     </div>
     <button id="authBtn" class="btn btn-secondary" style="padding:7px 14px;font-size:12px" onclick="handleAuth()">Sign In</button>
   </div>
+</nav>
+
+<!-- ── Mobile bottom tab bar ─────────────────────────────────────────────── -->
+<nav class="mobile-tabs" id="mobileTabs">
+  <button class="mob-tab active" data-page="dashboard" onclick="showPage('dashboard')">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+      <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+      <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+    </svg>
+  </button>
+  <button class="mob-tab" data-page="slideshows" onclick="showPage('slideshows')">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+      <rect x="2" y="5" width="20" height="14" rx="2"/><polyline points="2 10 12 14 22 10"/>
+    </svg>
+  </button>
+  <button class="mob-tab" data-page="screens" onclick="showPage('screens')">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+      <rect x="2" y="3" width="20" height="14" rx="2"/>
+      <line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+    </svg>
+  </button>
+  <button class="mob-tab" data-page="analytics" onclick="showPage('analytics')">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+      <line x1="18" y1="20" x2="18" y2="10"/>
+      <line x1="12" y1="20" x2="12" y2="4"/>
+      <line x1="6"  y1="20" x2="6"  y2="14"/>
+    </svg>
+  </button>
+  <button class="mob-tab" data-page="settings" onclick="showPage('settings')">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+    </svg>
+  </button>
 </nav>
 
 <!-- ── App Main ────────────────────────────────────────────────────────── -->
@@ -4842,6 +5023,8 @@ import { getFirestore, doc, collection, setDoc, onSnapshot, getDoc, deleteDoc,
                                        from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut }
                                        from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getMessaging, getToken, onMessage }
+                                       from "https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js";
 
 // ── FIREBASE CONFIG ───────────────────────────────────────────────────────
 const firebaseConfig = {
@@ -11395,6 +11578,266 @@ function exportAnalyticsCSV() {
   a.click();
   URL.revokeObjectURL(url);
 }
+
+// ════════════════════════════════════════════════════════════════════════════
+//  PWA — service worker, FCM, install prompt, FAB, pull-to-refresh
+// ════════════════════════════════════════════════════════════════════════════
+
+// ── Service worker registration ───────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/service-worker.js')
+    .then(reg => console.log('[SW] Registered, scope:', reg.scope))
+    .catch(err => console.warn('[SW] Registration failed:', err));
+}
+
+// ── Sync mobile tab bar active state with showPage ────────────────────────
+(function patchShowPageForMobileTabs() {
+  const orig = window.showPage;
+  window.showPage = function(name) {
+    orig(name);
+    document.querySelectorAll('.mob-tab').forEach(b =>
+      b.classList.toggle('active', b.dataset.page === name)
+    );
+  };
+})();
+
+// ── Mobile: block designer, show message instead ──────────────────────────
+(function patchOpenDesignerForMobile() {
+  const orig = window.openDesigner;
+  window.openDesigner = function(existingSlide, slideIdx) {
+    if (window.innerWidth < 768) {
+      toast('The slide designer requires a desktop browser. Switch to desktop to design slides.');
+      return;
+    }
+    orig(existingSlide, slideIdx);
+  };
+})();
+
+// ── FCM push notifications ────────────────────────────────────────────────
+// VAPID key: Firebase Console → Project Settings → Cloud Messaging →
+//            Web Push certificates → Key pair
+const FCM_VAPID_KEY = 'YOUR_VAPID_KEY_FROM_FIREBASE_CONSOLE';
+
+let fcmMessaging = null;
+
+async function initFCM() {
+  if (FCM_VAPID_KEY === 'YOUR_VAPID_KEY_FROM_FIREBASE_CONSOLE') return; // not configured
+  try {
+    fcmMessaging = getMessaging(app);
+
+    // Foreground message handler
+    onMessage(fcmMessaging, payload => {
+      const n = payload.notification || {};
+      toast((n.title ? n.title + ': ' : '') + (n.body || 'Screen alert'), true);
+    });
+
+    // Request notification permission and register token
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') return;
+
+    const token = await getToken(fcmMessaging, {
+      vapidKey:        FCM_VAPID_KEY,
+      serviceWorkerRegistration: await navigator.serviceWorker.ready,
+    });
+    if (!token) return;
+
+    // Store token against the current user so Cloud Functions can target it
+    if (auth.currentUser) {
+      await setDoc(doc(db, 'users', auth.currentUser.uid),
+        { fcmToken: token, fcmUpdatedAt: new Date().toISOString() },
+        { merge: true }
+      ).catch(() => {});
+    }
+    console.log('[FCM] Token registered');
+  } catch(e) {
+    console.warn('[FCM] Init error:', e.message);
+  }
+}
+
+// Call initFCM once the user is signed in
+onAuthStateChanged(auth, user => { if (user) initFCM(); });
+
+// ── Screen offline notifications (local, while admin is open) ─────────────
+const _notifiedOffline = new Set();
+
+function checkScreenOnline(screenData) {
+  if (!screenData?.lastSeen || !screenData?.name) return;
+  const ageMs = Date.now() - new Date(screenData.lastSeen).getTime();
+  const id    = screenData.id || screenData.name;
+  if (ageMs > 2 * 60 * 1000) {          // offline if no heartbeat for 2 min
+    if (!_notifiedOffline.has(id)) {
+      _notifiedOffline.add(id);
+      if (Notification.permission === 'granted') {
+        new Notification('Screen Offline', {
+          body:  `"${screenData.name}" has gone offline`,
+          icon:  '/icons/icon.svg',
+          badge: '/icons/icon.svg',
+          tag:   'offline-' + id,
+        });
+      } else {
+        toast(`⚠ Screen "${screenData.name}" is offline`, true);
+      }
+    }
+  } else {
+    _notifiedOffline.delete(id); // back online — allow re-notification later
+  }
+}
+window._checkScreenOnline = checkScreenOnline; // called by initScreensPage listener
+
+// ── PWA install prompt ────────────────────────────────────────────────────
+let _deferredInstallPrompt = null;
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  _deferredInstallPrompt = e;
+  const visits = parseInt(localStorage.getItem('pwa-visits') || '0') + 1;
+  localStorage.setItem('pwa-visits', visits);
+  if (visits >= 2) {
+    document.getElementById('installBanner').style.display = 'flex';
+  }
+});
+
+window.installPWA = async function() {
+  if (!_deferredInstallPrompt) return;
+  _deferredInstallPrompt.prompt();
+  const { outcome } = await _deferredInstallPrompt.userChoice;
+  _deferredInstallPrompt = null;
+  document.getElementById('installBanner').style.display = 'none';
+  if (outcome === 'accepted') toast('App installed ✓');
+};
+
+window.dismissInstallBanner = function() {
+  document.getElementById('installBanner').style.display = 'none';
+  localStorage.setItem('pwa-visits', '0'); // reset so it may show again later
+};
+
+// Count this page load towards the visit threshold
+(function countVisit() {
+  const v = parseInt(localStorage.getItem('pwa-visits') || '0') + 1;
+  localStorage.setItem('pwa-visits', v);
+})();
+
+// ── Quick-upload FAB ──────────────────────────────────────────────────────
+window.openQuickUpload = function() {
+  document.getElementById('quickUploadSheet').style.display = 'flex';
+};
+window.closeQuickUpload = function() {
+  document.getElementById('quickUploadSheet').style.display = 'none';
+};
+
+async function _handleQuickUploadFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  closeQuickUpload();
+  if (!auth.currentUser) { toast('Sign in to upload.', true); return; }
+  if (!currentShowId)     { toast('Select a slideshow first.', true); return; }
+  input.value = '';
+  toast('Uploading…');
+  try {
+    await handleFiles([file]); // reuse the existing Cloudinary + Firestore pipeline
+  } catch(e) {
+    toast('Upload failed: ' + e.message, true);
+  }
+}
+
+document.getElementById('quickUploadInput').addEventListener('change', function() {
+  _handleQuickUploadFile(this);
+});
+document.getElementById('quickUploadInputCamera').addEventListener('change', function() {
+  _handleQuickUploadFile(this);
+});
+
+// ── Pull-to-refresh (on the app-main scroll area) ─────────────────────────
+(function setupPullToRefresh() {
+  const appMain = document.querySelector('.app-main');
+  if (!appMain) return;
+
+  const indicator = document.getElementById('pullRefreshIndicator');
+  let startY = 0, pulling = false, triggered = false;
+  const THRESHOLD = 80;
+
+  appMain.addEventListener('touchstart', e => {
+    if (appMain.scrollTop > 0) return; // only trigger at top
+    startY   = e.touches[0].clientY;
+    pulling  = true;
+    triggered = false;
+  }, { passive: true });
+
+  appMain.addEventListener('touchmove', e => {
+    if (!pulling) return;
+    const dy = e.touches[0].clientY - startY;
+    if (dy < 10) return;
+    const pct = Math.min(dy / THRESHOLD, 1);
+    indicator.style.display   = 'flex';
+    indicator.style.transform = `translateY(${(pct - 1) * 52}px)`;
+    if (dy >= THRESHOLD && !triggered) {
+      triggered = true;
+      indicator.innerHTML = '<div class="ptr-spinner"></div><span>Release to refresh</span>';
+    }
+  }, { passive: true });
+
+  appMain.addEventListener('touchend', () => {
+    if (!pulling) return;
+    pulling = false;
+    if (triggered) {
+      indicator.innerHTML = '<div class="ptr-spinner"></div><span>Refreshing…</span>';
+      // Force re-subscribe to current slideshow
+      if (typeof currentShowId !== 'undefined' && currentShowId) {
+        subscribeToShow(currentShowId);
+      }
+      setTimeout(() => {
+        indicator.style.display   = 'none';
+        indicator.style.transform = '';
+        indicator.innerHTML       = '';
+      }, 1200);
+    } else {
+      indicator.style.display   = 'none';
+      indicator.style.transform = '';
+    }
+  }, { passive: true });
+})();
+
 </script>
+
+<!-- ── Quick-upload bottom sheet ─────────────────────────────────────────── -->
+<div id="quickUploadSheet" onclick="if(event.target===this)closeQuickUpload()">
+  <div class="quick-sheet-inner">
+    <h3>Quick Upload</h3>
+    <p>Add a photo to your current slideshow</p>
+    <label class="quick-upload-btn">
+      <input type="file" id="quickUploadInput" accept="image/*" style="display:none">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      Choose from Library
+    </label>
+    <label class="quick-upload-btn" style="background:var(--surface2);color:var(--text);border:1px solid var(--border)">
+      <input type="file" id="quickUploadInputCamera" accept="image/*" capture="environment" style="display:none">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      Take Photo
+    </label>
+    <button onclick="closeQuickUpload()" class="btn btn-secondary" style="min-height:44px">Cancel</button>
+  </div>
+</div>
+
+<!-- ── PWA install banner ─────────────────────────────────────────────────── -->
+<div id="installBanner">
+  <img src="/icons/icon.svg" width="40" height="40" alt="">
+  <p>Install the app for quick access from your phone</p>
+  <button class="btn btn-primary" onclick="installPWA()" style="white-space:nowrap;min-height:36px;padding:8px 14px;font-size:13px">Install</button>
+  <button class="btn btn-secondary" onclick="dismissInstallBanner()" style="min-height:36px;padding:8px 10px;font-size:13px">✕</button>
+</div>
+
+<!-- ── Pull-to-refresh indicator ─────────────────────────────────────────── -->
+<div id="pullRefreshIndicator">
+  <div class="ptr-spinner"></div>
+  <span>Pull to refresh</span>
+</div>
+
+<!-- ── Quick-upload FAB (mobile only) ────────────────────────────────────── -->
+<button class="mobile-fab" onclick="openQuickUpload()" title="Quick upload" aria-label="Quick upload photo">
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+  </svg>
+</button>
+
 </body>
 </html>

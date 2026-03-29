@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background -->
+  <rect width="512" height="512" rx="96" fill="#f07c00"/>
+  <!-- Monitor frame -->
+  <rect x="64" y="128" width="384" height="240" rx="24" fill="none" stroke="white" stroke-width="22"/>
+  <!-- Stand neck -->
+  <line x1="256" y1="368" x2="256" y2="408" stroke="white" stroke-width="22" stroke-linecap="round"/>
+  <!-- Stand base -->
+  <line x1="176" y1="408" x2="336" y2="408" stroke="white" stroke-width="22" stroke-linecap="round"/>
+  <!-- Play triangle (content indicator) -->
+  <polygon points="214,198 214,298 318,248" fill="white"/>
+</svg>
