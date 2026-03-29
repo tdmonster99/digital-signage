@@ -4544,6 +4544,19 @@ window.sendInvite = async function() {
     };
     await setDoc(doc(db, 'invitations', inviteId), inviteData);
 
+    // Send email (non-blocking — show link regardless of email result)
+    fetch('/api/send-invite', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        email,
+        inviteId,
+        inviterEmail: currentUser.email,
+        orgName:      currentOrg?.name || 'our organization',
+        role,
+      }),
+    }).catch(() => {});
+
     const link = window.location.origin + '/admin.html?invite=' + inviteId;
     document.getElementById('inviteLinkText').textContent = link;
     document.getElementById('inviteFormSection').style.display = 'none';
