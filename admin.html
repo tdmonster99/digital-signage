@@ -9937,32 +9937,23 @@ window.saveDesignedSlide = async function() {
   btn.textContent = 'Saving…';
 
   try {
-    console.time('saveDesignedSlide:total');
-    console.time('saveDesignedSlide:toJSON');
     const canvasJson = JSON.stringify(fabricCanvas.toJSON(CANVAS_EXTRA_PROPS));
-    console.timeEnd('saveDesignedSlide:toJSON');
-    console.log('saveDesignedSlide: canvasJson size =', (canvasJson.length / 1024).toFixed(1), 'KB');
 
     // Generate thumbnail — may fail if canvas has tainted images (CORS)
-    // Use multiplier:0.25 so we upload a 480×270 JPEG instead of full 1920×1080
+    // multiplier:0.25 → 480×270 JPEG instead of full 1920×1080
     let thumbnailUrl = null;
     try {
-      console.time('saveDesignedSlide:toDataURL');
       const dataUrl = fabricCanvas.toDataURL({ format: 'jpeg', quality: 0.7, multiplier: 0.25 });
-      console.timeEnd('saveDesignedSlide:toDataURL');
       const blob    = dataURLtoBlob(dataUrl);
-      console.log('saveDesignedSlide: thumbnail blob size =', (blob.size / 1024).toFixed(1), 'KB');
       const fd = new FormData();
       fd.append('file',           blob, 'thumbnail.jpg');
       fd.append('upload_preset',  CLOUDINARY_UPLOAD_PRESET);
       fd.append('folder',         'signage/thumbnails');
-      console.time('saveDesignedSlide:cloudinaryUpload');
       const res  = await fetch(
         `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
         { method: 'POST', body: fd }
       );
       const data = await res.json();
-      console.timeEnd('saveDesignedSlide:cloudinaryUpload');
       thumbnailUrl = data.secure_url || null;
     } catch(e) {
       console.warn('Thumbnail generation skipped:', e.message);
@@ -9987,11 +9978,8 @@ window.saveDesignedSlide = async function() {
       }
       renderGrid();
       updateCount();
-      console.time('saveDesignedSlide:pushToFirestore(group)');
       await pushToFirestore();
-      console.timeEnd('saveDesignedSlide:pushToFirestore(group)');
       try { await setDoc(doc(db, 'slideshows', currentShowId), { draftCanvasJson: null, draftSlideId: null }, { merge: true }); } catch(_) {}
-      console.timeEnd('saveDesignedSlide:total');
       designerDirty = false;
       updateDesignerStatus('saved');
       toast('Slide saved ✓');
@@ -10021,11 +10009,7 @@ window.saveDesignedSlide = async function() {
 
     renderGrid();
     updateCount();
-    const firestorePayloadKb = JSON.stringify(slides).length / 1024;
-    console.log('saveDesignedSlide: full slides payload =', firestorePayloadKb.toFixed(1), 'KB');
-    console.time('saveDesignedSlide:pushToFirestore');
     await pushToFirestore();
-    console.timeEnd('saveDesignedSlide:pushToFirestore');
     // Clear the draft from Firestore now that the live version is saved
     try {
       await setDoc(doc(db, 'slideshows', currentShowId),
@@ -10033,7 +10017,6 @@ window.saveDesignedSlide = async function() {
     } catch(_) {}
     // Fire-and-forget version snapshot — uses already-captured data, never blocks save
     saveSlideVersion(slide.id, canvasJson, thumbnailUrl).catch(() => {});
-    console.timeEnd('saveDesignedSlide:total');
     designerDirty = false;
     updateDesignerStatus('saved');
     toast('Slide saved ✓');
