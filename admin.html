@@ -1345,6 +1345,57 @@ section.content {
   padding: 16px;
   display: flex; flex-direction: column; gap: 14px;
 }
+
+/* ── Version History panel ─────────────────────────────────────────── */
+#historyPanel { display: none; }
+.history-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px; border-radius: 8px; cursor: pointer;
+  border: 1px solid transparent; transition: background .15s, border-color .15s;
+  position: relative;
+}
+.history-item:hover { background: var(--surface2); border-color: var(--border); }
+.history-item.is-current { border-color: var(--accent); background: var(--accent-bg); }
+.history-thumb {
+  width: 64px; height: 36px; flex-shrink: 0; border-radius: 5px;
+  object-fit: cover; background: var(--surface2); border: 1px solid var(--border);
+}
+.history-thumb-placeholder {
+  width: 64px; height: 36px; flex-shrink: 0; border-radius: 5px;
+  background: var(--surface2); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--muted); font-size: 10px;
+}
+.history-meta { flex: 1; min-width: 0; }
+.history-date { font-size: 11px; font-weight: 600; color: var(--text); line-height: 1.3; }
+.history-by   { font-size: 10px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.history-current-badge {
+  font-size: 9px; font-weight: 700; color: var(--accent);
+  text-transform: uppercase; letter-spacing: .06em; margin-top: 2px;
+}
+.history-restore-btn {
+  display: none; position: absolute; right: 8px; bottom: 8px;
+  font-size: 11px; padding: 3px 10px; border-radius: 6px;
+  background: var(--accent); color: #fff; border: none; cursor: pointer;
+  font-family: inherit; font-weight: 600;
+}
+.history-item:hover .history-restore-btn { display: block; }
+.history-item.is-current .history-restore-btn { display: none !important; }
+.history-loading { text-align: center; padding: 24px 0; color: var(--muted); font-size: 12px; }
+.history-empty   { text-align: center; padding: 24px 0; color: var(--muted); font-size: 12px; }
+/* Confirm restore modal */
+#historyConfirmOverlay {
+  display: none; position: fixed; inset: 0; z-index: 9100;
+  background: rgba(0,0,0,.55); align-items: center; justify-content: center;
+}
+#historyConfirmOverlay.open { display: flex; }
+.history-confirm-box {
+  background: var(--surface); border-radius: 14px; padding: 28px 32px;
+  max-width: 380px; width: 90%; box-shadow: 0 16px 48px rgba(0,0,0,.35);
+}
+.history-confirm-title { font-size: 16px; font-weight: 700; margin-bottom: 10px; }
+.history-confirm-body  { font-size: 13px; color: var(--muted); line-height: 1.6; margin-bottom: 22px; }
+.history-confirm-actions { display: flex; gap: 10px; justify-content: flex-end; }
 .props-title {
   font-size: 10px; font-weight: 600; letter-spacing: 0.1em;
   text-transform: uppercase; color: var(--muted);
@@ -2875,6 +2926,18 @@ body.role-editor .admin-action {
     </div>
   </div>
 
+  <!-- Version History confirm restore modal -->
+  <div id="historyConfirmOverlay">
+    <div class="history-confirm-box">
+      <div class="history-confirm-title">Restore this version?</div>
+      <div class="history-confirm-body">Your current slide will be saved as a version before restoring, so you can always get it back.</div>
+      <div class="history-confirm-actions">
+        <button class="btn btn-secondary" onclick="closeHistoryConfirm()">Cancel</button>
+        <button class="btn btn-primary"   id="historyConfirmBtn">Restore</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Settings -->
   <!-- Upgrade prompt -->
   <div class="upgrade-prompt" id="upgradePrompt">
@@ -3741,6 +3804,14 @@ body.role-editor .admin-action {
         AI Generate
       </button>
       <div style="width:1px;height:22px;background:var(--border);margin:0 2px;align-self:center"></div>
+      <button class="btn btn-secondary" id="btnHistory" title="Version History" onclick="toggleHistoryPanel()" style="display:flex;align-items:center;gap:6px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <polyline points="12 6 12 12 16 14"/>
+        </svg>
+        History
+      </button>
+      <div style="width:1px;height:22px;background:var(--border);margin:0 2px;align-self:center"></div>
       <button class="btn btn-secondary" onclick="closeDesigner()">Cancel</button>
       <button class="btn btn-primary" id="btnDesignerSave" onclick="saveDesignedSlide()">Save Slide</button>
     </div>
@@ -4033,6 +4104,19 @@ body.role-editor .admin-action {
         <div id="checkContent">
           <div class="check-empty">Press Check to analyze this slide</div>
         </div>
+      </div>
+
+      <!-- Version History panel -->
+      <div id="historyPanel">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div class="props-title" style="margin:0">Version History</div>
+          <button onclick="closeHistoryPanel()" title="Close" style="background:none;border:none;cursor:pointer;color:var(--muted);padding:2px;display:flex;align-items:center">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+        <div id="historyList"><div class="history-loading">Loading…</div></div>
       </div>
 
       <!-- No selection: canvas background -->
@@ -4753,7 +4837,8 @@ body.role-editor .admin-action {
 <script type="module">
 import { initializeApp }              from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, doc, collection, setDoc, onSnapshot, getDoc, deleteDoc,
-         updateDoc, arrayUnion, arrayRemove, query, where, getDocs }
+         updateDoc, arrayUnion, arrayRemove, query, where, getDocs,
+         addDoc, writeBatch, orderBy, limit }
                                        from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut }
                                        from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -6521,6 +6606,12 @@ function doCloseDesigner() {
   stockCollectionsLoaded = false;
   document.querySelectorAll('.stock-tab').forEach((btn, i) => btn.classList.toggle('active', i === 0));
   document.querySelectorAll('.stock-tab-pane').forEach((p, i) => p.classList.toggle('active', i === 0));
+  // Reset history panel
+  historyPanelOpen = false;
+  const hBtn = document.getElementById('btnHistory');
+  if (hBtn) hBtn.classList.remove('active');
+  const hPanel = document.getElementById('historyPanel');
+  if (hPanel) hPanel.style.display = 'none';
 }
 
 window.unsavedCancel = function() {
@@ -8666,6 +8757,190 @@ window.applyIconColor = function(color) {
   historySave();
 };
 
+// ── Version History ───────────────────────────────────────────────────────
+const MAX_VERSIONS     = 20;
+let historyPanelOpen   = false;
+let _pendingRestoreVer = null;  // version object waiting for confirm
+
+// Returns the Firestore path for versions of a given slideId in the current show
+function _versionsCol(slideId) {
+  return collection(db, 'slideshows', currentShowId, 'slideVersions', slideId, 'versions');
+}
+
+// Capture canvasJson + thumbnail for the current canvas state
+async function _captureVersionData() {
+  const canvasJson = JSON.stringify(fabricCanvas.toJSON(CANVAS_EXTRA_PROPS));
+  let thumbnailUrl = null;
+  try {
+    const dataUrl = fabricCanvas.toDataURL({ format: 'jpeg', quality: 0.6 });
+    const blob    = dataURLtoBlob(dataUrl);
+    const fd = new FormData();
+    fd.append('file',           blob, 'thumb.jpg');
+    fd.append('upload_preset',  CLOUDINARY_UPLOAD_PRESET);
+    fd.append('folder',         'signage/versions');
+    const res  = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+                             { method: 'POST', body: fd });
+    const data = await res.json();
+    thumbnailUrl = data.secure_url || null;
+  } catch(e) { /* thumbnail optional */ }
+  return { canvasJson, thumbnailUrl };
+}
+
+// Save a new version snapshot. Prunes oldest if > MAX_VERSIONS.
+async function saveSlideVersion(slideId) {
+  if (!slideId || !auth.currentUser) return;
+  const col = _versionsCol(slideId);
+  const { canvasJson, thumbnailUrl } = await _captureVersionData();
+
+  const versionDoc = {
+    canvasJson,
+    thumbnailUrl,
+    savedAt:  new Date().toISOString(),
+    savedBy:  auth.currentUser.email || auth.currentUser.uid,
+  };
+
+  // Firestore write + prune in a batch to stay consistent
+  const newRef  = doc(col); // auto-ID
+  const batch   = writeBatch(db);
+  batch.set(newRef, versionDoc);
+  await batch.commit();
+
+  // Prune: fetch all versions ordered by savedAt asc, delete those beyond limit
+  const allSnap = await getDocs(query(col, orderBy('savedAt', 'asc')));
+  if (allSnap.size > MAX_VERSIONS) {
+    const excess     = allSnap.docs.slice(0, allSnap.size - MAX_VERSIONS);
+    const pruneBatch = writeBatch(db);
+    excess.forEach(d => pruneBatch.delete(d.ref));
+    await pruneBatch.commit();
+  }
+}
+
+// Load and render the history list for the current slide
+async function loadHistoryList() {
+  const listEl = document.getElementById('historyList');
+  if (!listEl) return;
+
+  // Need a slideId — only meaningful when editing an existing designed slide
+  const slideId = editingSlideIdx !== null ? slides[editingSlideIdx]?.id : null;
+  if (!slideId) {
+    listEl.innerHTML = '<div class="history-empty">Save the slide first to track versions.</div>';
+    return;
+  }
+
+  listEl.innerHTML = '<div class="history-loading">Loading…</div>';
+
+  try {
+    const snap = await getDocs(query(_versionsCol(slideId), orderBy('savedAt', 'desc')));
+    if (snap.empty) {
+      listEl.innerHTML = '<div class="history-empty">No versions saved yet.<br>Versions are saved each time you click Save Slide.</div>';
+      return;
+    }
+
+    listEl.innerHTML = snap.docs.map((d, i) => {
+      const v       = d.data();
+      const vId     = d.id;
+      const dt      = new Date(v.savedAt);
+      const dateStr = dt.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+      const timeStr = dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const isCurrent = i === 0;
+      const thumb   = v.thumbnailUrl
+        ? `<img class="history-thumb" src="${v.thumbnailUrl}" alt="version thumbnail">`
+        : `<div class="history-thumb-placeholder">No preview</div>`;
+      return `
+        <div class="history-item${isCurrent ? ' is-current' : ''}"
+             data-version-id="${vId}">
+          ${thumb}
+          <div class="history-meta">
+            <div class="history-date">${dateStr}<br>${timeStr}</div>
+            <div class="history-by">${v.savedBy || ''}</div>
+            ${isCurrent ? '<div class="history-current-badge">Current</div>' : ''}
+          </div>
+          ${!isCurrent ? `<button class="history-restore-btn" onclick="confirmRestoreVersion('${vId}')">Restore</button>` : ''}
+        </div>`;
+    }).join('');
+  } catch(e) {
+    listEl.innerHTML = `<div class="history-empty">Could not load history: ${e.message}</div>`;
+  }
+}
+
+window.toggleHistoryPanel = function() {
+  historyPanelOpen ? closeHistoryPanel() : openHistoryPanel();
+};
+
+function openHistoryPanel() {
+  historyPanelOpen = true;
+  document.getElementById('btnHistory').classList.add('active');
+  document.getElementById('historyPanel').style.display = 'block';
+  // Close other right-panel content
+  window.closeCheckPanel  && window.closeCheckPanel();
+  window.closeIconPanel   && window.closeIconPanel();
+  window.closeStockPanel  && window.closeStockPanel();
+  ['propsNone','propsText','propsImage','propsShape','propsIcon','propsTicker','propsAnimation'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  loadHistoryList();
+}
+
+function closeHistoryPanel() {
+  historyPanelOpen = false;
+  const btn = document.getElementById('btnHistory');
+  if (btn) btn.classList.remove('active');
+  document.getElementById('historyPanel').style.display = 'none';
+  updatePropsPanel();
+}
+
+window.confirmRestoreVersion = function(versionId) {
+  // Find the version data from the rendered list
+  _pendingRestoreVer = versionId;
+  document.getElementById('historyConfirmOverlay').classList.add('open');
+  document.getElementById('historyConfirmBtn').onclick = () => executeRestore(versionId);
+};
+
+function closeHistoryConfirm() {
+  _pendingRestoreVer = null;
+  document.getElementById('historyConfirmOverlay').classList.remove('open');
+}
+window.closeHistoryConfirm = closeHistoryConfirm;
+
+async function executeRestore(versionId) {
+  closeHistoryConfirm();
+  const slideId = editingSlideIdx !== null ? slides[editingSlideIdx]?.id : null;
+  if (!slideId) return;
+
+  const btn = document.getElementById('btnDesignerSave');
+  btn.disabled = true; btn.textContent = 'Restoring…';
+
+  try {
+    // 1. Save current state as a new version first
+    await saveSlideVersion(slideId);
+
+    // 2. Fetch the chosen version
+    const vSnap = await getDoc(doc(_versionsCol(slideId), versionId));
+    if (!vSnap.exists()) { toast('Version not found.', true); return; }
+    const { canvasJson } = vSnap.data();
+
+    // 3. Load into canvas
+    await new Promise((resolve, reject) => {
+      fabricCanvas.loadFromJSON(canvasJson, () => {
+        fabricCanvas.renderAll();
+        resolve();
+      });
+    });
+
+    designerDirty = true;
+    updateDesignerStatus('unsaved');
+    toast('Version restored — your previous version has been saved');
+    // Refresh the history list to reflect new order
+    loadHistoryList();
+
+  } catch(e) {
+    toast('Restore failed: ' + e.message, true);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Save Slide';
+  }
+}
+
 // ── Readability Checker ────────────────────────────────────────────────────
 let checkPanelOpen = false;
 let _checkIssues   = [];
@@ -8680,6 +8955,7 @@ function openCheckPanel() {
   document.getElementById('checkPanel').style.display = 'block';
   closeIconPanel();
   closeStockPanel();
+  closeHistoryPanel();
   ['propsNone','propsText','propsImage','propsShape','propsIcon','propsTicker','propsAnimation'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
@@ -9748,6 +10024,8 @@ window.saveDesignedSlide = async function() {
       await setDoc(doc(db, 'slideshows', currentShowId),
         { draftCanvasJson: null, draftSlideId: null }, { merge: true });
     } catch(_) {}
+    // Save version snapshot (non-blocking — don't fail save if this errors)
+    try { await saveSlideVersion(slide.id); } catch(_) {}
     designerDirty = false;
     updateDesignerStatus('saved');
     toast('Slide saved ✓');
