@@ -1886,6 +1886,56 @@ body.role-editor .admin-action {
 }
 .invite-link-text { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; flex: 1; word-break: break-all; }
 
+/* ── Billing section ───────────────────────────────────────────────── */
+.plan-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+  padding: 4px 12px; border-radius: 20px;
+}
+.plan-badge.free    { background: var(--surface2);          color: var(--muted); }
+.plan-badge.starter { background: rgba(59,130,246,.12);     color: #3b82f6; }
+.plan-badge.pro     { background: rgba(139,92,246,.12);     color: #8b5cf6; }
+.plan-badge.pro::before { content: '✦ '; }
+.usage-bar-wrap { background: var(--border); border-radius: 99px; height: 6px; flex: 1; overflow: hidden; }
+.usage-bar-fill { height: 100%; border-radius: 99px; background: var(--accent); transition: width 0.4s; }
+.usage-bar-fill.warn  { background: #f59e0b; }
+.usage-bar-fill.full  { background: #ef4444; }
+.plan-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.plan-table th {
+  padding: 10px 14px; text-align: left; font-size: 11px; font-weight: 600;
+  color: var(--muted); text-transform: uppercase; letter-spacing: .06em;
+  border-bottom: 1px solid var(--border);
+}
+.plan-table th.plan-col { text-align: center; }
+.plan-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); color: var(--text); }
+.plan-table td.plan-col { text-align: center; color: var(--muted); }
+.plan-table .plan-check { color: #22c55e; font-size: 15px; }
+.plan-table .plan-x     { color: var(--muted); font-size: 13px; }
+.plan-table tr.current-plan-row td { background: var(--accent-bg); }
+.plan-upgrade-btn {
+  font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600;
+  padding: 6px 14px; border-radius: 8px; cursor: pointer; border: none;
+  transition: opacity 0.15s;
+}
+.plan-upgrade-btn.primary { background: var(--accent); color: #fff; }
+.plan-upgrade-btn.outline { background: none; border: 1px solid var(--border); color: var(--muted); }
+.plan-upgrade-btn:hover   { opacity: .85; }
+.upgrade-prompt {
+  position: fixed; inset: 0; z-index: 1200;
+  background: rgba(0,0,0,.55); backdrop-filter: blur(4px);
+  display: none; align-items: center; justify-content: center; padding: 20px;
+}
+.upgrade-prompt.active { display: flex; }
+.upgrade-prompt-inner {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 20px; padding: 36px 40px; max-width: 440px; width: 100%;
+  text-align: center; box-shadow: 0 24px 60px rgba(0,0,0,.25);
+}
+.upgrade-prompt-icon  { font-size: 40px; margin-bottom: 16px; }
+.upgrade-prompt-title { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+.upgrade-prompt-sub   { font-size: 13px; color: var(--muted); margin-bottom: 24px; line-height: 1.6; }
+.upgrade-prompt-btns  { display: flex; gap: 10px; justify-content: center; }
+
 /* ── Onboarding wizard ─────────────────────────────────────────────── */
 #onboardingOverlay {
   display: none; position: fixed; inset: 0; z-index: 2000;
@@ -2649,8 +2699,94 @@ body.role-editor .admin-action {
   </div>
 
   <!-- Settings -->
+  <!-- Upgrade prompt -->
+  <div class="upgrade-prompt" id="upgradePrompt">
+    <div class="upgrade-prompt-inner">
+      <div class="upgrade-prompt-icon">🚀</div>
+      <div class="upgrade-prompt-title" id="upgradePromptTitle">Upgrade your plan</div>
+      <div class="upgrade-prompt-sub"   id="upgradePromptSub"></div>
+      <div class="upgrade-prompt-btns">
+        <button class="btn btn-secondary" onclick="closeUpgradePrompt()">Not now</button>
+        <button class="btn btn-primary"   onclick="closeUpgradePrompt();showPage('settings')">View Plans</button>
+      </div>
+    </div>
+  </div>
+
   <div id="page-settings" class="page">
     <div class="settings-layout">
+
+      <!-- Billing -->
+      <div class="settings-section">
+        <div class="settings-section-header">
+          <div class="settings-section-title">Billing &amp; Plan</div>
+          <button class="btn btn-secondary" id="manageBillingBtn" onclick="openBillingPortal()" style="display:none">Manage Billing</button>
+        </div>
+        <div class="settings-section-body">
+
+          <!-- Current plan + usage -->
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:24px;flex-wrap:wrap">
+            <div>
+              <div style="font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.06em">Current Plan</div>
+              <div style="display:flex;align-items:center;gap:10px">
+                <span class="plan-badge free" id="currentPlanBadge">Free</span>
+                <span id="billingPeriodText" style="font-size:12px;color:var(--muted)"></span>
+              </div>
+            </div>
+            <div id="usageDisplay" style="display:flex;flex-direction:column;gap:10px;min-width:200px"></div>
+          </div>
+
+          <!-- Plan comparison table -->
+          <div style="overflow-x:auto">
+            <table class="plan-table">
+              <thead>
+                <tr>
+                  <th style="width:35%">Feature</th>
+                  <th class="plan-col">Free</th>
+                  <th class="plan-col">Starter</th>
+                  <th class="plan-col">Pro</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>Price</td>
+                  <td class="plan-col">Free</td>
+                  <td class="plan-col">$9 / mo</td>
+                  <td class="plan-col">$19 / mo</td></tr>
+                <tr><td>Screens</td>
+                  <td class="plan-col">1</td>
+                  <td class="plan-col">3</td>
+                  <td class="plan-col">Unlimited</td></tr>
+                <tr><td>Users</td>
+                  <td class="plan-col">1</td>
+                  <td class="plan-col">3</td>
+                  <td class="plan-col">Unlimited</td></tr>
+                <tr><td>Storage</td>
+                  <td class="plan-col">1 GB</td>
+                  <td class="plan-col">5 GB</td>
+                  <td class="plan-col">50 GB</td></tr>
+                <tr><td>All Templates</td>
+                  <td class="plan-col"><span class="plan-x">✗</span></td>
+                  <td class="plan-col"><span class="plan-check">✓</span></td>
+                  <td class="plan-col"><span class="plan-check">✓</span></td></tr>
+                <tr><td>Scheduling</td>
+                  <td class="plan-col"><span class="plan-x">✗</span></td>
+                  <td class="plan-col"><span class="plan-check">✓</span></td>
+                  <td class="plan-col"><span class="plan-check">✓</span></td></tr>
+                <tr><td>Support</td>
+                  <td class="plan-col">—</td>
+                  <td class="plan-col">Email</td>
+                  <td class="plan-col">Priority</td></tr>
+                <tr id="planActionRow">
+                  <td></td>
+                  <td class="plan-col" id="freePlanAction"></td>
+                  <td class="plan-col" id="starterPlanAction"></td>
+                  <td class="plan-col" id="proPlanAction"></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+      </div>
 
       <!-- Organization -->
       <div class="settings-section">
@@ -4547,9 +4683,19 @@ async function initUserAndOrg(user) {
   // Remove invite param from URL without reload
   if (inviteId) window.history.replaceState({}, '', window.location.pathname);
 
+  // Load subscription from org doc
+  currentSubscription = currentOrg?.subscription || null;
+
   applyRole(currentRole);
   await loadShowsFromOrg();
   loadBrandKit();
+
+  // Show billing success toast if returning from Stripe
+  if (window._pendingBillingSuccess) {
+    const planName = window._pendingBillingSuccess;
+    window._pendingBillingSuccess = null;
+    setTimeout(() => toast(`You're now on the ${planName.charAt(0).toUpperCase() + planName.slice(1)} plan! 🎉`), 800);
+  }
 }
 
 async function createOrg(user) {
@@ -4563,6 +4709,7 @@ async function createOrg(user) {
     members:    [{ uid: user.uid, email: user.email, displayName: user.displayName || '', role: 'admin', addedAt: new Date().toISOString() }],
     slideshows: [{ id: 'main', name: 'Main Slideshow' }],
     createdAt:  new Date().toISOString(),
+    subscription: { plan: 'free', status: 'active', ...PLAN_LIMITS.free },
   };
 
   await setDoc(doc(db, 'organizations', orgId), orgData);
@@ -4641,6 +4788,169 @@ async function loadShowsFromOrg() {
     if (i === 0) item.click();
   });
 }
+
+// ── Billing ────────────────────────────────────────────────────────────────
+
+const PLAN_LIMITS = {
+  free:    { screensAllowed: 1,    usersAllowed: 1,    storageGb: 1  },
+  starter: { screensAllowed: 3,    usersAllowed: 3,    storageGb: 5  },
+  pro:     { screensAllowed: 9999, usersAllowed: 9999, storageGb: 50 },
+};
+
+let currentSubscription = null;
+
+function getSubscription() {
+  return currentSubscription || { plan: 'free', status: 'active', ...PLAN_LIMITS.free };
+}
+
+function renderBillingSection() {
+  const sub  = getSubscription();
+  const plan = sub.plan || 'free';
+  const limits = PLAN_LIMITS[plan] || PLAN_LIMITS.free;
+
+  // Plan badge
+  const badge = document.getElementById('currentPlanBadge');
+  badge.textContent = plan.charAt(0).toUpperCase() + plan.slice(1);
+  badge.className   = 'plan-badge ' + plan;
+
+  // Next billing date
+  const periodEl = document.getElementById('billingPeriodText');
+  if (sub.currentPeriodEnd && plan !== 'free') {
+    periodEl.textContent = 'Renews ' + new Date(sub.currentPeriodEnd).toLocaleDateString();
+  } else {
+    periodEl.textContent = '';
+  }
+
+  // Manage billing button
+  document.getElementById('manageBillingBtn').style.display =
+    sub.stripeCustomerId ? '' : 'none';
+
+  // Usage bars
+  const screenCount = _cachedScreens.length;
+  const memberCount = (currentOrg?.members || []).length;
+  const usageEl     = document.getElementById('usageDisplay');
+  usageEl.innerHTML = [
+    renderUsageBar('Screens', screenCount, limits.screensAllowed),
+    renderUsageBar('Users',   memberCount, limits.usersAllowed),
+  ].join('');
+
+  // Plan action buttons
+  const actions = { free: '', starter: '', pro: '' };
+  if (plan === 'free') {
+    actions.starter = `<button class="plan-upgrade-btn primary" onclick="startCheckout('starter')">Upgrade</button>`;
+    actions.pro     = `<button class="plan-upgrade-btn primary" onclick="startCheckout('pro')">Upgrade</button>`;
+    actions.free    = `<span style="font-size:12px;color:var(--accent)">Current</span>`;
+  } else if (plan === 'starter') {
+    actions.starter = `<span style="font-size:12px;color:var(--accent)">Current</span>`;
+    actions.pro     = `<button class="plan-upgrade-btn primary" onclick="startCheckout('pro')">Upgrade</button>`;
+    actions.free    = `<button class="plan-upgrade-btn outline" onclick="openBillingPortal()">Downgrade</button>`;
+  } else if (plan === 'pro') {
+    actions.pro     = `<span style="font-size:12px;color:var(--accent)">Current</span>`;
+    actions.starter = `<button class="plan-upgrade-btn outline" onclick="openBillingPortal()">Downgrade</button>`;
+    actions.free    = `<button class="plan-upgrade-btn outline" onclick="openBillingPortal()">Downgrade</button>`;
+  }
+  document.getElementById('freePlanAction').innerHTML    = actions.free;
+  document.getElementById('starterPlanAction').innerHTML = actions.starter;
+  document.getElementById('proPlanAction').innerHTML     = actions.pro;
+
+  // Highlight current plan column
+  document.querySelectorAll('#planActionRow td').forEach(td => {
+    td.closest('tr')?.parentElement?.querySelectorAll('tr').forEach(row => {
+      row.classList.remove('current-plan-row');
+    });
+  });
+}
+
+function renderUsageBar(label, used, max) {
+  const unlimited  = max >= 9999;
+  const pct        = unlimited ? 0 : Math.min(100, Math.round((used / max) * 100));
+  const fillClass  = pct >= 100 ? 'full' : pct >= 80 ? 'warn' : '';
+  const maxLabel   = unlimited ? 'Unlimited' : max;
+  return `<div style="display:flex;flex-direction:column;gap:4px">
+    <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted)">
+      <span>${label}</span><span>${used} / ${maxLabel}</span>
+    </div>
+    <div class="usage-bar-wrap">
+      <div class="usage-bar-fill ${fillClass}" style="width:${unlimited ? 100 : pct}%;opacity:${unlimited ? 0.25 : 1}"></div>
+    </div>
+  </div>`;
+}
+
+window.startCheckout = async function(plan) {
+  if (!currentOrgId || !currentUser) { toast('Sign in first.', true); return; }
+  try {
+    const sub = getSubscription();
+    const res = await fetch('/api/stripe-checkout', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        orgId:            currentOrgId,
+        plan,
+        customerEmail:    currentUser.email,
+        stripeCustomerId: sub.stripeCustomerId || null,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) { toast('Checkout error: ' + (data.error || res.status), true); return; }
+    window.location.href = data.url;
+  } catch(e) {
+    toast('Checkout failed: ' + e.message, true);
+  }
+};
+
+window.openBillingPortal = async function() {
+  const sub = getSubscription();
+  if (!sub.stripeCustomerId) { toast('No billing account found. Upgrade to a paid plan first.', true); return; }
+  try {
+    const res  = await fetch('/api/stripe-portal', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ stripeCustomerId: sub.stripeCustomerId }),
+    });
+    const data = await res.json();
+    if (!res.ok) { toast('Portal error: ' + (data.error || res.status), true); return; }
+    window.location.href = data.url;
+  } catch(e) {
+    toast('Portal failed: ' + e.message, true);
+  }
+};
+
+// Plan enforcement helpers
+function canAddScreen() {
+  const sub = getSubscription();
+  return _cachedScreens.length < (sub.screensAllowed || 1);
+}
+
+function canAddUser() {
+  const sub     = getSubscription();
+  const members = currentOrg?.members || [];
+  return members.length < (sub.usersAllowed || 1);
+}
+
+window.showUpgradePrompt = function(title, message) {
+  document.getElementById('upgradePromptTitle').textContent = title;
+  document.getElementById('upgradePromptSub').textContent   = message;
+  document.getElementById('upgradePrompt').classList.add('active');
+};
+
+window.closeUpgradePrompt = function() {
+  document.getElementById('upgradePrompt').classList.remove('active');
+};
+
+// Handle ?billing=success / ?billing=cancelled after Stripe redirect
+(function handleBillingReturn() {
+  const params = new URLSearchParams(window.location.search);
+  const status = params.get('billing');
+  const plan   = params.get('plan');
+  if (status === 'success' && plan) {
+    window.history.replaceState({}, '', window.location.pathname);
+    // Toast shown after org loads
+    window._pendingBillingSuccess = plan;
+  } else if (status === 'cancelled') {
+    window.history.replaceState({}, '', window.location.pathname);
+    // silently ignore
+  }
+})();
 
 // ── Onboarding wizard ─────────────────────────────────────────────────────
 
@@ -4832,6 +5142,8 @@ async function finishOnboarding() {
 function renderTeamPage() {
   if (!currentOrg) return;
 
+  renderBillingSection();
+
   // Org name
   document.getElementById('orgNameInput').value = currentOrg.name || '';
 
@@ -4919,6 +5231,15 @@ window.sendInvite = async function() {
   const email = document.getElementById('inviteEmail').value.trim().toLowerCase();
   const role  = document.getElementById('inviteRole').value;
   const errEl = document.getElementById('inviteError');
+
+  if (!canAddUser()) {
+    closeInviteModal();
+    showUpgradePrompt(
+      'Team member limit reached',
+      `Your ${getSubscription().plan} plan allows ${getSubscription().usersAllowed} user${getSubscription().usersAllowed === 1 ? '' : 's'}. Upgrade to invite more team members.`
+    );
+    return;
+  }
 
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     errEl.textContent = 'Please enter a valid email address.';
@@ -9427,6 +9748,13 @@ function genPairingCode() {
 }
 
 window.openAddScreenModal = async function() {
+  if (!canAddScreen()) {
+    showUpgradePrompt(
+      'Screen limit reached',
+      `Your ${getSubscription().plan} plan allows ${getSubscription().screensAllowed} screen${getSubscription().screensAllowed === 1 ? '' : 's'}. Upgrade to add more.`
+    );
+    return;
+  }
   const code    = genPairingCode();
   const now     = new Date();
   const expires = new Date(now.getTime() + 10 * 60 * 1000);
