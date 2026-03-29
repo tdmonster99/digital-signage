@@ -10,8 +10,10 @@
 
 <!-- Firebase SDK -->
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, doc, collection, onSnapshot, setDoc, getDoc, updateDoc, addDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { initializeApp }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, doc, collection, onSnapshot, setDoc, getDoc, updateDoc, addDoc }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyDYsip5Xx2N-gewNDqTj7EAnvabfbrBQTY",
@@ -44,12 +46,23 @@
     } catch(e) { return null; }
   }
 
-  // ── State ───────────────────────────────────────────────────────────────────
+  // ── State ─────────────────────────────────────────────────────────────────
   let slides        = [];
   let current       = 0;
   let timer         = null;
   let defaultDwell  = 6000;
   let clockInterval = null;
+
+  // ── Resilience state ──────────────────────────────────────────────────────
+  let isOffline         = false;
+  let reconnectBackoff  = 5000;            // starts 5 s, doubles on each error
+  const MAX_BACKOFF     = 5 * 60 * 1000;  // cap at 5 minutes
+  let reconnectTimer    = null;
+  let activeSlideshowId = null;
+  let lastUpdateTime    = null;
+  let watchdogHandle    = null;
+  let debugVisible      = false;
+  const PAGE_LOAD_TIME  = Date.now();
 
   // ── Analytics batch queue ─────────────────────────────────────────────────
   let analyticsQueue  = [];
@@ -252,48 +265,60 @@
   }
 
   function loadDesignedSlide(canvasJson) {
-    return new Promise(async resolve => {
-      await preloadFontsForSlide(canvasJson);
+    return new Promise(async (resolve, reject) => {
+      // Validate JSON up-front — rejects immediately for corrupt slides
+      let parsed;
+      try {
+        parsed = typeof canvasJson === 'string' ? JSON.parse(canvasJson) : canvasJson;
+      } catch(e) {
+        return reject(new Error('Invalid canvasJson: ' + e.message));
+      }
 
-      // Extract any tickerBar objects before passing to Fabric
+      try { await preloadFontsForSlide(parsed); } catch(_) {}
+
+      // Extract tickerBar objects before passing to Fabric
       let tickerCfg = null;
       try {
-        const parsed = typeof canvasJson === 'string' ? JSON.parse(canvasJson) : canvasJson;
         const remaining = [];
         (parsed.objects || []).forEach(obj => {
           if (obj.type === 'tickerBar') { tickerCfg = obj; }
           else { remaining.push(obj); }
         });
-        if (tickerCfg) {
-          const cleaned = Object.assign({}, parsed, { objects: remaining });
-          canvasJson = JSON.stringify(cleaned);
-        }
+        if (tickerCfg) parsed = Object.assign({}, parsed, { objects: remaining });
       } catch(e) {}
 
-      displayFabric.loadFromJSON(canvasJson, () => {
-        fitFabricToScreen();
-        if (tickerCfg) renderTicker(tickerCfg);
-        else stopTicker();
-        // Collect animated objects and set their initial hidden state
-        pendingAnimations = [];
-        displayFabric.getObjects().forEach(obj => {
-          const a = obj.animation;
-          if (!a || !a.type || a.type === 'none') return;
-          const orig = {
-            opacity: obj.opacity ?? 1,
-            left:    obj.left,
-            top:     obj.top,
-            scaleX:  obj.scaleX ?? 1,
-            scaleY:  obj.scaleY ?? 1,
-          };
-          const init = _animInitProps(a.type, orig);
-          if (!init) return;
-          for (const k in init) obj.set(k, init[k]);
-          pendingAnimations.push({ obj, type: a.type, delay: a.delay || 0, duration: a.duration || 0.8, orig });
+      // Guard against Fabric.js hanging (e.g. waiting on a CORS image that never loads)
+      const loadTimeout = setTimeout(() => reject(new Error('Canvas load timed out after 15 s')), 15000);
+
+      try {
+        displayFabric.loadFromJSON(JSON.stringify(parsed), () => {
+          clearTimeout(loadTimeout);
+          fitFabricToScreen();
+          if (tickerCfg) renderTicker(tickerCfg);
+          else stopTicker();
+          pendingAnimations = [];
+          displayFabric.getObjects().forEach(obj => {
+            const a = obj.animation;
+            if (!a || !a.type || a.type === 'none') return;
+            const orig = {
+              opacity: obj.opacity ?? 1,
+              left:    obj.left,
+              top:     obj.top,
+              scaleX:  obj.scaleX ?? 1,
+              scaleY:  obj.scaleY ?? 1,
+            };
+            const init = _animInitProps(a.type, orig);
+            if (!init) return;
+            for (const k in init) obj.set(k, init[k]);
+            pendingAnimations.push({ obj, type: a.type, delay: a.delay || 0, duration: a.duration || 0.8, orig });
+          });
+          if (pendingAnimations.length) displayFabric.renderAll();
+          resolve();
         });
-        if (pendingAnimations.length) displayFabric.renderAll();
-        resolve();
-      });
+      } catch(e) {
+        clearTimeout(loadTimeout);
+        reject(e);
+      }
     });
   }
 
@@ -354,10 +379,115 @@
     if (clockInterval) { clearInterval(clockInterval); clockInterval = null; }
   }
 
+  // ── Offline indicator ─────────────────────────────────────────────────────
+  function setOffline(offline) {
+    isOffline = offline;
+    const dot = document.getElementById('offlineDot');
+    if (dot) dot.style.display = offline ? 'flex' : 'none';
+  }
+
+  // ── Next-slide preloading (called during current slide's dwell) ───────────
+  async function preloadNext() {
+    if (!slides.length) return;
+    const nextIdx = (current + 1) % slides.length;
+    const next    = slides[nextIdx];
+    try {
+      if (next.type === 'designed' && next.canvasJson) {
+        await preloadFontsForSlide(next.canvasJson);
+      } else if (next.url) {
+        await preload(next.url);
+      }
+    } catch(_) {}
+  }
+
+  // ── Watchdog: force-advance if slideshow stalls ───────────────────────────
+  function resetWatchdog(dwell) {
+    clearTimeout(watchdogHandle);
+    const timeout = Math.max((dwell ?? defaultDwell) * 3, 45000); // min 45 s
+    watchdogHandle = setTimeout(async () => {
+      console.warn('[Watchdog] Playback stalled — forcing advance');
+      try {
+        if (analyticsOrgId) {
+          await addDoc(collection(db, 'organizations', analyticsOrgId, 'analytics'), {
+            type: 'watchdog_restart', screenId,
+            slideshowId: currentSlideshowIdForAnalytics,
+            timestamp:   new Date().toISOString(),
+          });
+        }
+      } catch(_) {}
+      advance();
+    }, timeout);
+  }
+
+  // ── Nightly 3am reload (clears memory leaks after 24 h uptime) ───────────
+  function scheduleNightlyReload() {
+    setInterval(() => {
+      if (Date.now() - PAGE_LOAD_TIME < 23 * 3600 * 1000) return; // need 23 h+
+      const now = new Date();
+      if (now.getHours() === 3 && now.getMinutes() === 0) {
+        console.log('[Nightly] Reloading at 3 am after',
+          Math.round((Date.now() - PAGE_LOAD_TIME) / 3600000), 'h uptime');
+        window.location.reload();
+      }
+    }, 30 * 1000);
+  }
+
+  // ── Debug overlay (Ctrl+Shift+D) ──────────────────────────────────────────
+  function updateDebugOverlay() {
+    const el = document.getElementById('debugOverlay');
+    if (!el || !debugVisible) return;
+    const slide = slides[current];
+    const mem   = performance.memory
+      ? (performance.memory.usedJSHeapSize  / 1048576).toFixed(1) + ' / '
+        + (performance.memory.jsHeapSizeLimit / 1048576).toFixed(1) + ' MB'
+      : 'n/a';
+    const uptimeMs  = Date.now() - PAGE_LOAD_TIME;
+    const uptimeStr = uptimeMs < 3600000
+      ? Math.round(uptimeMs / 60000) + ' min'
+      : (uptimeMs / 3600000).toFixed(1) + ' h';
+    const rows = [
+      ['Screen ID',        screenId || '—'],
+      ['Slideshow ID',     activeSlideshowId || '—'],
+      ['Slide',            slides.length
+        ? `${current + 1} / ${slides.length}  —  ${slide ? (slide.name || slide.type || 'image') : '?'}`
+        : 'none'],
+      ['Firebase',         isOffline ? '⚠ Offline (cached)' : '● Live',
+                           isOffline ? 'dbg-warn' : 'dbg-ok'],
+      ['Cache',            activeSlideshowId && loadCache(activeSlideshowId) ? '✓ present' : '✗ empty'],
+      ['Last live update', lastUpdateTime ? new Date(lastUpdateTime).toLocaleTimeString() : 'never'],
+      ['Uptime',           uptimeStr],
+      ['Memory',           mem],
+      ['Reconnect backoff', isOffline ? (reconnectBackoff / 1000).toFixed(0) + ' s' : '—'],
+    ];
+    el.innerHTML = '<div class="dbg-title">Debug  ·  Ctrl+Shift+D to close</div>'
+      + rows.map(([k, v, cls]) =>
+          `<div class="dbg-row"><span>${k}</span>`
+        + `<span${cls ? ` class="${cls}"` : ''}>${v}</span></div>`
+        ).join('');
+  }
+
+  setInterval(updateDebugOverlay, 1000);
+
+  document.addEventListener('keydown', e => {
+    if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+      e.preventDefault();
+      debugVisible = !debugVisible;
+      const el = document.getElementById('debugOverlay');
+      if (el) el.style.display = debugVisible ? 'block' : 'none';
+      updateDebugOverlay();
+    }
+  });
+
   // ── Crossfade ────────────────────────────────────────────────────────────────
+  // Returns true if slide was shown, false if it should be skipped.
   async function crossfadeTo(slide) {
     if (slide.type === "designed" && slide.canvasJson) {
-      await loadDesignedSlide(slide.canvasJson);
+      try {
+        await loadDesignedSlide(slide.canvasJson);
+      } catch(e) {
+        console.error('[Skip] Designed slide failed:', e.message);
+        return false;
+      }
       stageDesigned.style.opacity = "1";
       active.style.opacity        = "0";
       stageVideo.style.opacity    = "0"; videoEl.pause(); videoEl.src = "";
@@ -419,7 +549,7 @@
 
     } else {
       stopTicker();
-      // Image slide — existing behaviour
+      // Image slide
       const url = slide.url;
       const fit = slide.fit || "contain";
       const bg  = slide.bg  || "#000000";
@@ -428,7 +558,12 @@
       inactive.style.backgroundSize  = fit;
       inactive.style.backgroundColor = bg;
 
-      try { await preload(url); } catch (_) { /* show anyway */ }
+      try {
+        await preload(url);
+      } catch(_) {
+        console.warn('[Skip] Image failed to load:', url);
+        return false;
+      }
 
       inactive.style.opacity      = "1";
       active.style.opacity        = "0";
@@ -442,12 +577,16 @@
       active    = inactive;
       inactive  = tmp;
     }
+
+    return true;
   }
 
-  // ── Playback ─────────────────────────────────────────────────────────────────
+  // ── Playback ──────────────────────────────────────────────────────────────
   function scheduleNext(dwell) {
     clearTimeout(timer);
     timer = setTimeout(advance, dwell);
+    resetWatchdog(dwell);
+    preloadNext().catch(() => {});
   }
 
   async function advance() {
@@ -460,7 +599,7 @@
         const duration = Math.round((Date.now() - slideViewStart) / 1000);
         queueAnalyticsEvent({
           type:        'slide_view',
-          screenId:    screenId,
+          screenId,
           slideshowId: currentSlideshowIdForAnalytics,
           slideId:     prev.id   || prev.name || String(current),
           slideName:   prev.name || prev.id   || 'Slide ' + (current + 1),
@@ -469,11 +608,23 @@
       }
     }
 
-    current      = (current + 1) % slides.length;
-    slideViewStart = Date.now();
-    const slide  = slides[current];
-    await crossfadeTo(slide);
-    scheduleNext(slide.dwell ?? defaultDwell);
+    // Try slides in order until one renders successfully.
+    // Bounded to slides.length attempts so we can never loop forever.
+    for (let attempt = 0; attempt < slides.length; attempt++) {
+      current        = (current + 1) % slides.length;
+      slideViewStart = Date.now();
+      const slide    = slides[current];
+      const ok       = await crossfadeTo(slide);
+      if (ok) {
+        scheduleNext(slide.dwell ?? defaultDwell);
+        return;
+      }
+      console.warn(`[Skip] Slide ${current + 1}/${slides.length} failed, trying next`);
+    }
+
+    // Every slide failed
+    console.error('[Error] All', slides.length, 'slides failed to display');
+    showError('All slides failed to load. Check your content in the Admin Panel.');
   }
 
   async function applyPlaylist(data) {
@@ -512,28 +663,38 @@
     if (wasEmpty) {
       clearTimeout(timer);
       slideViewStart = Date.now();
-      await crossfadeTo(slides[current]);
-      scheduleNext(slides[current].dwell ?? defaultDwell);
+      const ok = await crossfadeTo(slides[current]);
+      if (ok) {
+        scheduleNext(slides[current].dwell ?? defaultDwell);
+      } else {
+        advance(); // first slide failed — find one that works
+      }
     }
   }
 
-  // ── Slideshow subscription ────────────────────────────────────────────────
+  // ── Slideshow subscription — exponential backoff reconnection ─────────────
   let slideshowUnsub = null;
 
   function subscribeToSlideshow(slideshowId) {
     if (slideshowUnsub) { slideshowUnsub(); slideshowUnsub = null; }
+    clearTimeout(reconnectTimer);
+    activeSlideshowId = slideshowId;
 
-    // Play cached playlist immediately so the TV never goes black
+    // Serve cached content immediately so TV never goes black
     const cached = loadCache(slideshowId);
     if (cached) {
       loader.style.display = "none";
       errBox.style.display = "none";
+      setOffline(true);
       applyPlaylist(cached);
     }
 
     slideshowUnsub = onSnapshot(
       doc(db, "slideshows", slideshowId),
       snap => {
+        reconnectBackoff = 5000;         // reset backoff on any successful event
+        lastUpdateTime   = Date.now();
+        setOffline(false);
         if (snap.exists()) {
           const data = snap.data();
           saveCache(slideshowId, data);
@@ -545,12 +706,24 @@
       },
       err => {
         loader.style.display = "none";
+        console.warn('[Firebase] Listener error:', err.code, err.message);
+
         const cached = loadCache(slideshowId);
         if (cached) {
+          setOffline(true);
           applyPlaylist(cached);
-          console.warn("Firebase offline — playing from cache:", err.message);
         } else {
           showError("Firebase connection error: " + err.message);
+        }
+
+        // Retry with exponential backoff for connectivity errors.
+        // Permission/not-found errors won't self-heal, so don't retry those.
+        const retryable = ['unavailable', 'unknown', 'deadline-exceeded', 'internal'];
+        if (!err.code || retryable.includes(err.code)) {
+          slideshowUnsub = null;
+          console.log(`[Reconnect] Retrying in ${reconnectBackoff / 1000} s`);
+          reconnectTimer = setTimeout(() => subscribeToSlideshow(slideshowId), reconnectBackoff);
+          reconnectBackoff = Math.min(reconnectBackoff * 2, MAX_BACKOFF);
         }
       }
     );
@@ -706,6 +879,7 @@
     }, 3000);
   }
 
+  scheduleNightlyReload();
   initScreen();
 </script>
 
@@ -861,6 +1035,68 @@
     font-size: 11px; color: #333;
     letter-spacing: 0.05em; text-transform: uppercase;
   }
+
+  /* ── Offline indicator ─────────────────────────────────────────────────── */
+  #offlineDot {
+    display: none;
+    position: fixed;
+    bottom: 18px; right: 18px;
+    z-index: 50;
+    align-items: center;
+    gap: 6px;
+    background: rgba(0,0,0,0.55);
+    border-radius: 20px;
+    padding: 4px 10px 4px 8px;
+    pointer-events: none;
+    backdrop-filter: blur(4px);
+  }
+  .offline-circle {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #f07c00;
+    flex-shrink: 0;
+    animation: offlinePulse 2s ease-in-out infinite;
+  }
+  .offline-label {
+    font-size: 11px; color: #ccc;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    font-weight: 500;
+  }
+  @keyframes offlinePulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.35; }
+  }
+
+  /* ── Debug overlay (Ctrl+Shift+D) ──────────────────────────────────────── */
+  #debugOverlay {
+    display: none;
+    position: fixed;
+    top: 20px; left: 20px;
+    z-index: 999;
+    background: rgba(0,0,0,0.88);
+    color: #ccc;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 1.75;
+    border-radius: 10px;
+    padding: 16px 20px;
+    min-width: 390px;
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.08);
+    pointer-events: none;
+  }
+  .dbg-title {
+    color: #f07c00; font-weight: 700;
+    font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  .dbg-row { display: flex; justify-content: space-between; gap: 24px; }
+  .dbg-row span:first-child { color: #555; flex-shrink: 0; }
+  .dbg-row span:last-child  { color: #ddd; text-align: right; word-break: break-all; }
+  .dbg-ok   { color: #4caf50 !important; }
+  .dbg-warn { color: #f07c00 !important; }
 </style>
 </head>
 <body>
@@ -931,6 +1167,15 @@
   <p id="errMsg"></p>
   <small>display.html · check console for details</small>
 </div>
+
+<!-- Offline / cached-mode indicator (small, unobtrusive) -->
+<div id="offlineDot">
+  <div class="offline-circle"></div>
+  <span class="offline-label">Cached</span>
+</div>
+
+<!-- Debug overlay — toggle with Ctrl+Shift+D, invisible to viewers -->
+<div id="debugOverlay"></div>
 
 </body>
 </html>
