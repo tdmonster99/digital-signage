@@ -6138,8 +6138,9 @@ window.duplicateSlide = function(idx) {
 };
 
 function updateCount() {
-  const n = slides.filter(s => s.active !== false).length;
-  document.getElementById("slideCount").textContent = n + " slide" + (n !== 1 ? "s" : "");
+  const n  = slides.filter(s => s.active !== false).length;
+  const el = document.getElementById("slideCount");
+  if (el) el.textContent = n + " slide" + (n !== 1 ? "s" : "");
 }
 
 // ── New slideshow ─────────────────────────────────────────────────────────
@@ -6174,6 +6175,7 @@ window.newShowPrompt = async () => {
 // ── Toast ─────────────────────────────────────────────────────────────────
 window.toast = (msg, err=false) => {
   const t = document.getElementById("toast");
+  if (!t) { console.warn('toast element missing, msg:', msg); return; }
   t.textContent = msg;
   t.style.color = err ? "var(--danger)" : "var(--text)";
   t.classList.add("show");
@@ -10020,6 +10022,7 @@ window.saveDesignedSlide = async function() {
     doCloseDesigner();
 
   } catch(e) {
+    console.error('saveDesignedSlide error:', e);
     toast('Save failed: ' + e.message, true);
     updateDesignerStatus('unsaved');
   } finally {
