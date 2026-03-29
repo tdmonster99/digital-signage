@@ -1835,6 +1835,91 @@ body.role-editor .admin-action {
   opacity: .4; pointer-events: none; cursor: not-allowed;
 }
 
+/* ── Analytics page ────────────────────────────────────────────────── */
+#page-analytics.active { flex-direction: column; padding: 32px; gap: 24px; overflow-y: auto; }
+.analytics-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.analytics-header h1 { font-size: 24px; font-weight: 700; }
+.analytics-header p  { font-size: 13px; color: var(--muted); margin-top: 2px; }
+.analytics-controls  { display: flex; gap: 8px; align-items: center; }
+.date-range-btn {
+  padding: 6px 14px; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--surface); color: var(--text); font-size: 12px;
+  cursor: pointer; font-family: inherit; transition: background .15s;
+}
+.date-range-btn:hover  { background: var(--surface2); }
+.date-range-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; }
+.analytics-overview {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+}
+@media (max-width: 1100px) { .analytics-overview { grid-template-columns: repeat(2, 1fr); } }
+.analytics-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+  padding: 20px 24px;
+}
+.analytics-card-label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.analytics-card-value { font-size: 32px; font-weight: 700; color: var(--text); margin-top: 6px; line-height: 1; }
+.analytics-card-sub   { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.analytics-charts {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+}
+@media (max-width: 1000px) { .analytics-charts { grid-template-columns: 1fr; } }
+.analytics-chart-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+  padding: 22px 24px;
+}
+.analytics-chart-card.full-width { grid-column: 1 / -1; }
+.analytics-chart-title { font-size: 14px; font-weight: 700; margin-bottom: 16px; }
+/* Uptime bar chart */
+.uptime-bars { display: flex; flex-direction: column; gap: 10px; }
+.uptime-bar-row { display: flex; align-items: center; gap: 12px; }
+.uptime-bar-label { width: 110px; font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex-shrink: 0; }
+.uptime-bar-track { flex: 1; height: 10px; background: var(--surface2); border-radius: 5px; overflow: hidden; }
+.uptime-bar-fill  { height: 100%; background: var(--accent); border-radius: 5px; transition: width .4s; }
+.uptime-bar-pct   { width: 40px; font-size: 12px; color: var(--text); font-weight: 600; text-align: right; flex-shrink: 0; }
+/* Top slides horizontal bars */
+.slide-bars { display: flex; flex-direction: column; gap: 10px; }
+.slide-bar-row { display: flex; flex-direction: column; gap: 4px; }
+.slide-bar-info { display: flex; justify-content: space-between; font-size: 12px; }
+.slide-bar-name  { color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 70%; }
+.slide-bar-count { color: var(--muted); flex-shrink: 0; }
+.slide-bar-track { height: 8px; background: var(--surface2); border-radius: 4px; overflow: hidden; }
+.slide-bar-fill  { height: 100%; background: var(--accent2); border-radius: 4px; transition: width .4s; }
+/* Hourly heatmap */
+.heatmap-grid {
+  display: grid; grid-template-columns: 36px repeat(24, 1fr); gap: 3px; font-size: 10px;
+}
+.heatmap-day-label { display: flex; align-items: center; color: var(--muted); font-size: 10px; }
+.heatmap-cell {
+  aspect-ratio: 1; border-radius: 3px; background: var(--surface2);
+}
+.heatmap-hour-labels { display: flex; padding-left: 39px; gap: 3px; margin-bottom: 3px; }
+.heatmap-hour-label  { flex: 1; text-align: center; color: var(--muted); font-size: 9px; }
+/* Screen breakdown table */
+.analytics-table-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+  overflow: hidden;
+}
+.analytics-table-header {
+  padding: 18px 24px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.analytics-table-title { font-size: 14px; font-weight: 700; }
+.analytics-table      { width: 100%; border-collapse: collapse; }
+.analytics-table th   { text-align: left; font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; padding: 10px 24px; border-bottom: 1px solid var(--border); }
+.analytics-table td   { padding: 12px 24px; font-size: 13px; border-bottom: 1px solid var(--border); }
+.analytics-table tr:last-child td { border-bottom: none; }
+.analytics-table tr:hover td { background: var(--surface2); }
+.uptime-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 20px;
+  font-size: 11px; font-weight: 600;
+}
+.uptime-pill.high   { background: var(--success-bg); color: var(--success); }
+.uptime-pill.medium { background: rgba(234,179,8,.12); color: #ca8a04; }
+.uptime-pill.low    { background: var(--danger-bg); color: var(--danger); }
+.analytics-empty {
+  text-align: center; padding: 60px 24px; color: var(--muted); font-size: 13px;
+}
+
 /* ── Settings / Team page ──────────────────────────────────────────── */
 #page-settings.active { flex-direction: column; padding: 32px; gap: 0; }
 .settings-layout { display: flex; flex-direction: column; gap: 32px; max-width: 720px; }
@@ -2244,6 +2329,14 @@ body.role-editor .admin-action {
       </svg>
       Brand Kit
     </button>
+    <button class="nav-item" data-page="analytics" onclick="showPage('analytics')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <line x1="18" y1="20" x2="18" y2="10"/>
+        <line x1="12" y1="20" x2="12" y2="4"/>
+        <line x1="6"  y1="20" x2="6"  y2="14"/>
+      </svg>
+      Analytics
+    </button>
     <button class="nav-item" data-page="settings" onclick="showPage('settings')">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
         <circle cx="12" cy="12" r="3"/>
@@ -2597,6 +2690,90 @@ body.role-editor .admin-action {
   </div>
 
   <!-- Screens -->
+  <!-- ── Analytics page ─────────────────────────────────────────────────── -->
+  <div id="page-analytics" class="page">
+    <div class="analytics-header">
+      <div>
+        <h1>Analytics</h1>
+        <p>Track how your screens and slides are performing</p>
+      </div>
+      <div class="analytics-controls">
+        <button class="date-range-btn active" data-days="7"  onclick="setAnalyticsDays(7)">7d</button>
+        <button class="date-range-btn"        data-days="30" onclick="setAnalyticsDays(30)">30d</button>
+        <button class="date-range-btn"        data-days="90" onclick="setAnalyticsDays(90)">90d</button>
+        <button class="btn btn-secondary" style="font-size:12px;padding:6px 14px" onclick="exportAnalyticsCSV()">Export CSV</button>
+      </div>
+    </div>
+
+    <!-- Overview cards -->
+    <div class="analytics-overview">
+      <div class="analytics-card">
+        <div class="analytics-card-label">Total Screen Hours</div>
+        <div class="analytics-card-value" id="statScreenHours">—</div>
+        <div class="analytics-card-sub" id="statScreenHoursSub">across all screens</div>
+      </div>
+      <div class="analytics-card">
+        <div class="analytics-card-label">Slide Views</div>
+        <div class="analytics-card-value" id="statSlideViews">—</div>
+        <div class="analytics-card-sub">total impressions</div>
+      </div>
+      <div class="analytics-card">
+        <div class="analytics-card-label">Most Viewed Slide</div>
+        <div class="analytics-card-value" id="statTopSlide" style="font-size:18px;word-break:break-word">—</div>
+        <div class="analytics-card-sub" id="statTopSlideSub"></div>
+      </div>
+      <div class="analytics-card">
+        <div class="analytics-card-label">Avg Uptime</div>
+        <div class="analytics-card-value" id="statUptime">—</div>
+        <div class="analytics-card-sub">across all screens</div>
+      </div>
+    </div>
+
+    <!-- Charts row -->
+    <div class="analytics-charts">
+      <div class="analytics-chart-card">
+        <div class="analytics-chart-title">Screen Uptime</div>
+        <div id="uptimeBars" class="uptime-bars">
+          <div class="analytics-empty">No data yet</div>
+        </div>
+      </div>
+      <div class="analytics-chart-card">
+        <div class="analytics-chart-title">Top Slides by Views</div>
+        <div id="topSlideBars" class="slide-bars">
+          <div class="analytics-empty">No data yet</div>
+        </div>
+      </div>
+      <div class="analytics-chart-card full-width">
+        <div class="analytics-chart-title">Activity Heatmap — Slide Views by Hour</div>
+        <div id="heatmapHourLabels" class="heatmap-hour-labels"></div>
+        <div id="heatmapGrid" class="heatmap-grid">
+          <div class="analytics-empty" style="grid-column:1/-1">No data yet</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Per-screen table -->
+    <div class="analytics-table-card">
+      <div class="analytics-table-header">
+        <span class="analytics-table-title">Per-Screen Breakdown</span>
+      </div>
+      <table class="analytics-table">
+        <thead>
+          <tr>
+            <th>Screen</th>
+            <th>Slide Views</th>
+            <th>Online Time</th>
+            <th>Uptime</th>
+            <th>Last Seen</th>
+          </tr>
+        </thead>
+        <tbody id="analyticsScreenTable">
+          <tr><td colspan="5" class="analytics-empty">No data yet</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
   <div id="page-screens" class="page">
     <div class="screens-header">
       <div class="screens-header-left">
@@ -10389,6 +10566,7 @@ window.showPage = function(name) {
   _origShowPage(name);
   if (name === 'schedules') renderScheduleGrid();
   if (name === 'settings')  renderTeamPage();
+  if (name === 'analytics') loadAnalytics();
 };
 
 // ── Clock App ─────────────────────────────────────────────────────────────
@@ -10737,6 +10915,216 @@ preloadFavoriteFonts();
 
 // Init
 listenToShow("main");
+
+// ── Analytics ────────────────────────────────────────────────────────────────
+let analyticsDays = 7;
+let analyticsData = { events: [], screens: [] };
+
+function setAnalyticsDays(days) {
+  analyticsDays = days;
+  document.querySelectorAll('.date-range-btn').forEach(b =>
+    b.classList.toggle('active', +b.dataset.days === days));
+  loadAnalytics();
+}
+
+async function loadAnalytics() {
+  if (!currentOrgId) return;
+  const since   = new Date(Date.now() - analyticsDays * 86400000);
+
+  // Fetch analytics events
+  const evSnap = await getDocs(
+    query(
+      collection(db, 'organizations', currentOrgId, 'analytics'),
+      where('timestamp', '>=', since.toISOString())
+    )
+  );
+  const events = evSnap.docs.map(d => d.data());
+
+  // Fetch screens for names
+  const scSnap = await getDocs(
+    query(collection(db, 'screens'), where('orgId', '==', currentOrgId))
+  );
+  analyticsData.screens = scSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+  analyticsData.events  = events;
+
+  renderAnalytics();
+}
+
+function renderAnalytics() {
+  const { events, screens } = analyticsData;
+
+  const slideViews  = events.filter(e => e.type === 'slide_view');
+  const onlineEvts  = events.filter(e => e.type === 'screen_online');
+  const offlineEvts = events.filter(e => e.type === 'screen_offline');
+
+  // ── Overview cards ──────────────────────────────────────────────────────
+  // Screen hours: sum durations of online periods
+  const uptimeByScreen = calcUptimeByScreen(onlineEvts, offlineEvts, screens);
+  const totalMs        = Object.values(uptimeByScreen).reduce((s, v) => s + v.onlineMs, 0);
+  const totalHours     = (totalMs / 3600000).toFixed(1);
+  document.getElementById('statScreenHours').textContent = totalHours;
+
+  // Slide views count
+  document.getElementById('statSlideViews').textContent = slideViews.length.toLocaleString();
+
+  // Most viewed slide
+  const viewCounts = {};
+  slideViews.forEach(e => {
+    const k = e.slideName || e.slideId || 'Unknown';
+    viewCounts[k] = (viewCounts[k] || 0) + 1;
+  });
+  const topSlide = Object.entries(viewCounts).sort((a,b) => b[1]-a[1])[0];
+  document.getElementById('statTopSlide').textContent   = topSlide ? topSlide[0] : '—';
+  document.getElementById('statTopSlideSub').textContent = topSlide ? topSlide[1] + ' views' : '';
+
+  // Avg uptime %
+  const uptimePcts = Object.values(uptimeByScreen).map(v => v.pct);
+  const avgUptime  = uptimePcts.length
+    ? Math.round(uptimePcts.reduce((s,v) => s+v, 0) / uptimePcts.length) + '%'
+    : '—';
+  document.getElementById('statUptime').textContent = avgUptime;
+
+  // ── Uptime bars ──────────────────────────────────────────────────────────
+  const uptimeBarsEl = document.getElementById('uptimeBars');
+  if (!screens.length) {
+    uptimeBarsEl.innerHTML = '<div class="analytics-empty">No screens found</div>';
+  } else {
+    uptimeBarsEl.innerHTML = screens.map(sc => {
+      const info = uptimeByScreen[sc.id] || { pct: 0 };
+      const pct  = info.pct || 0;
+      return `<div class="uptime-bar-row">
+        <div class="uptime-bar-label" title="${sc.name || sc.id}">${sc.name || sc.id}</div>
+        <div class="uptime-bar-track"><div class="uptime-bar-fill" style="width:${pct}%"></div></div>
+        <div class="uptime-bar-pct">${pct}%</div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── Top slides bars ──────────────────────────────────────────────────────
+  const slideBarsEl = document.getElementById('topSlideBars');
+  const topSlides   = Object.entries(viewCounts).sort((a,b) => b[1]-a[1]).slice(0, 8);
+  if (!topSlides.length) {
+    slideBarsEl.innerHTML = '<div class="analytics-empty">No slide view data yet</div>';
+  } else {
+    const maxV = topSlides[0][1];
+    slideBarsEl.innerHTML = topSlides.map(([name, count]) => `
+      <div class="slide-bar-row">
+        <div class="slide-bar-info">
+          <span class="slide-bar-name" title="${name}">${name}</span>
+          <span class="slide-bar-count">${count} views</span>
+        </div>
+        <div class="slide-bar-track"><div class="slide-bar-fill" style="width:${Math.round(count/maxV*100)}%"></div></div>
+      </div>`).join('');
+  }
+
+  // ── Heatmap ──────────────────────────────────────────────────────────────
+  const DAYS  = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const grid  = Array.from({length:7}, () => new Array(24).fill(0));
+  slideViews.forEach(e => {
+    if (!e.timestamp) return;
+    const d = new Date(e.timestamp);
+    grid[d.getDay()][d.getHours()]++;
+  });
+  const maxCell = Math.max(1, ...grid.flat());
+
+  // Hour labels
+  const hourLabelsEl = document.getElementById('heatmapHourLabels');
+  hourLabelsEl.innerHTML = Array.from({length:24}, (_,h) =>
+    `<div class="heatmap-hour-label">${h === 0 ? '12a' : h < 12 ? h+'a' : h === 12 ? '12p' : (h-12)+'p'}</div>`
+  ).join('');
+
+  const gridEl = document.getElementById('heatmapGrid');
+  if (!slideViews.length) {
+    gridEl.innerHTML = '<div class="analytics-empty" style="grid-column:1/-1">No data yet</div>';
+  } else {
+    gridEl.innerHTML = DAYS.map((day, di) =>
+      `<div class="heatmap-day-label">${day}</div>` +
+      grid[di].map(v => {
+        const alpha = v === 0 ? 0.08 : 0.15 + 0.85 * (v / maxCell);
+        return `<div class="heatmap-cell" style="background:var(--accent);opacity:${alpha.toFixed(2)}" title="${v} views"></div>`;
+      }).join('')
+    ).join('');
+  }
+
+  // ── Per-screen table ─────────────────────────────────────────────────────
+  const tbodyEl = document.getElementById('analyticsScreenTable');
+  if (!screens.length) {
+    tbodyEl.innerHTML = '<tr><td colspan="5" class="analytics-empty">No screens yet</td></tr>';
+    return;
+  }
+
+  const viewsByScreen = {};
+  slideViews.forEach(e => {
+    viewsByScreen[e.screenId] = (viewsByScreen[e.screenId] || 0) + 1;
+  });
+
+  tbodyEl.innerHTML = screens.map(sc => {
+    const info       = uptimeByScreen[sc.id] || { onlineMs: 0, pct: 0 };
+    const hours      = (info.onlineMs / 3600000).toFixed(1);
+    const pct        = info.pct || 0;
+    const pillClass  = pct >= 80 ? 'high' : pct >= 40 ? 'medium' : 'low';
+    const views      = viewsByScreen[sc.id] || 0;
+    const lastSeen   = sc.lastSeen
+      ? new Date(sc.lastSeen).toLocaleString([], {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})
+      : 'Never';
+    return `<tr>
+      <td style="font-weight:600">${sc.name || sc.id}</td>
+      <td>${views.toLocaleString()}</td>
+      <td>${hours}h</td>
+      <td><span class="uptime-pill ${pillClass}">${pct}%</span></td>
+      <td style="color:var(--muted)">${lastSeen}</td>
+    </tr>`;
+  }).join('');
+}
+
+function calcUptimeByScreen(onlineEvts, offlineEvts, screens) {
+  const windowMs = analyticsDays * 86400000;
+  const result   = {};
+
+  screens.forEach(sc => {
+    const ons  = onlineEvts.filter(e => e.screenId === sc.id).map(e => new Date(e.timestamp).getTime()).sort();
+    const offs = offlineEvts.filter(e => e.screenId === sc.id).map(e => new Date(e.timestamp).getTime()).sort();
+    const now  = Date.now();
+    let onlineMs = 0;
+
+    ons.forEach(onTs => {
+      const offTs = offs.find(t => t > onTs) || now;
+      onlineMs += Math.min(offTs, now) - onTs;
+    });
+
+    onlineMs = Math.min(onlineMs, windowMs);
+    result[sc.id] = { onlineMs, pct: Math.round((onlineMs / windowMs) * 100) };
+  });
+
+  return result;
+}
+
+function exportAnalyticsCSV() {
+  const { events, screens } = analyticsData;
+  const screenMap = {};
+  screens.forEach(sc => { screenMap[sc.id] = sc.name || sc.id; });
+
+  const rows = [['Type','Screen','Slideshow','Slide Name','Timestamp','Duration(s)']];
+  events.forEach(e => {
+    rows.push([
+      e.type || '',
+      screenMap[e.screenId] || e.screenId || '',
+      e.slideshowId || '',
+      e.slideName   || '',
+      e.timestamp   || '',
+      e.duration    || '',
+    ]);
+  });
+
+  const csv  = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `analytics-${analyticsDays}d-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 </script>
 </body>
 </html>

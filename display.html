@@ -11,7 +11,7 @@
 <!-- Firebase SDK -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, doc, onSnapshot, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getFirestore, doc, collection, onSnapshot, setDoc, getDoc, updateDoc, addDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyDYsip5Xx2N-gewNDqTj7EAnvabfbrBQTY",
@@ -50,6 +50,28 @@
   let timer         = null;
   let defaultDwell  = 6000;
   let clockInterval = null;
+
+  // ── Analytics batch queue ─────────────────────────────────────────────────
+  let analyticsQueue  = [];
+  let analyticsOrgId  = null;   // set when screen doc is known
+  let currentSlideshowIdForAnalytics = null;
+  let slideViewStart  = null;   // timestamp when current slide became visible
+
+  function queueAnalyticsEvent(event) {
+    if (!analyticsOrgId) return;
+    analyticsQueue.push({ ...event, timestamp: new Date().toISOString() });
+  }
+
+  async function flushAnalytics() {
+    if (!analyticsOrgId || !analyticsQueue.length) return;
+    const batch = analyticsQueue.splice(0);
+    const col   = collection(db, 'organizations', analyticsOrgId, 'analytics');
+    for (const ev of batch) {
+      try { await addDoc(col, ev); } catch(e) { /* non-critical */ }
+    }
+  }
+
+  setInterval(flushAnalytics, 60 * 1000);
 
   // ── DOM refs ─────────────────────────────────────────────────────────────────
   const stageA        = document.getElementById("stageA");
@@ -430,8 +452,26 @@
 
   async function advance() {
     if (!slides.length) return;
-    current     = (current + 1) % slides.length;
-    const slide = slides[current];
+
+    // Record duration of slide that just finished
+    if (slideViewStart !== null) {
+      const prev = slides[current];
+      if (prev && analyticsOrgId) {
+        const duration = Math.round((Date.now() - slideViewStart) / 1000);
+        queueAnalyticsEvent({
+          type:        'slide_view',
+          screenId:    screenId,
+          slideshowId: currentSlideshowIdForAnalytics,
+          slideId:     prev.id   || prev.name || String(current),
+          slideName:   prev.name || prev.id   || 'Slide ' + (current + 1),
+          duration,
+        });
+      }
+    }
+
+    current      = (current + 1) % slides.length;
+    slideViewStart = Date.now();
+    const slide  = slides[current];
     await crossfadeTo(slide);
     scheduleNext(slide.dwell ?? defaultDwell);
   }
@@ -471,6 +511,7 @@
 
     if (wasEmpty) {
       clearTimeout(timer);
+      slideViewStart = Date.now();
       await crossfadeTo(slides[current]);
       scheduleNext(slides[current].dwell ?? defaultDwell);
     }
@@ -531,6 +572,24 @@
     heartbeat();
     setInterval(heartbeat, 30 * 1000);
 
+    // Emit analytics online event once we know orgId; offline on page unload
+    function emitOnline(orgId) {
+      if (!orgId || analyticsOrgId) return;
+      analyticsOrgId = orgId;
+      addDoc(collection(db, 'organizations', orgId, 'analytics'), {
+        type: 'screen_online', screenId, timestamp: new Date().toISOString(),
+      }).catch(() => {});
+    }
+    window.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden' && analyticsOrgId) {
+        // Best-effort flush + offline event when tab is hidden/closed
+        flushAnalytics();
+        addDoc(collection(db, 'organizations', analyticsOrgId, 'analytics'), {
+          type: 'screen_offline', screenId, timestamp: new Date().toISOString(),
+        }).catch(() => {});
+      }
+    });
+
     onSnapshot(
       screenRef,
       snap => {
@@ -550,8 +609,10 @@
           const data  = snap.data();
           const newId = data.slideshowId || "main";
           heartbeat();
+          emitOnline(data.orgId);
           if (newId !== currentSlideshowId) {
-            currentSlideshowId = newId;
+            currentSlideshowId                 = newId;
+            currentSlideshowIdForAnalytics     = newId;
             slides = []; current = 0; clearTimeout(timer);
             subscribeToSlideshow(newId);
           }
