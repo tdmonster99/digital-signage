@@ -4544,7 +4544,7 @@ window.sendInvite = async function() {
     };
     await setDoc(doc(db, 'invitations', inviteId), inviteData);
 
-    // Send email (non-blocking — show link regardless of email result)
+    // Send email
     fetch('/api/send-invite', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -4555,7 +4555,18 @@ window.sendInvite = async function() {
         orgName:      currentOrg?.name || 'our organization',
         role,
       }),
-    }).catch(() => {});
+    }).then(async r => {
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        console.error('Email send failed:', r.status, data);
+        toast('Invite created but email failed: ' + (data.error || r.status), true);
+      } else {
+        console.log('Email sent OK:', data);
+      }
+    }).catch(err => {
+      console.error('Email send error:', err.message);
+      toast('Invite created but email failed: ' + err.message, true);
+    });
 
     const link = window.location.origin + '/admin.html?invite=' + inviteId;
     document.getElementById('inviteLinkText').textContent = link;
