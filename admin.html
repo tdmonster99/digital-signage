@@ -6016,151 +6016,61 @@ window.addFromDropbox = function() {
 // ── Add from Google Drive ─────────────────────────────────────────────────
 // CONFIG — replace with values from Google Cloud Console:
 //   https://console.cloud.google.com → APIs & Services → Credentials
-const GDRIVE_API_KEY   = 'AIzaSyCG2D73JImsXwWvsOjARcWoNxyDYjxbh7s';
+const GDRIVE_API_KEY   = 'AIzaSyDkQSNMH83KxssqtQvghOCtIxlZtGSRR1I';
 const GDRIVE_CLIENT_ID = '952679135642-tlp5r8lptelklvt95q22rb1q51rm609r.apps.googleusercontent.com';
+const GDRIVE_SCOPE     = 'https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/drive.file';
 
-// LIMITATION NOTE:
-// Google Drive direct-download URLs (drive.google.com/uc?export=download&id=...)
-// only work for files that are shared publicly ("Anyone with the link can view").
-// For private files the URL requires a valid OAuth Bearer token in the request
-// header, which browsers cannot attach via a plain <img src> or background-image.
-// → Workaround: users should either (a) share the file publicly in Drive, or
-//   (b) download it locally and use the Upload Images button instead.
-
-let _gdTokenClient = null;  // Google Identity Services token client (re-used)
-let _gdPickerReady = false; // true once gapi.load('picker') has resolved
-let _gdApiReady    = false; // true once gapi.client.init has resolved
-
-// Load the Picker API once (called lazily on first Drive button click)
-function _ensureGapiReady() {
-  return new Promise((resolve, reject) => {
-    if (_gdPickerReady && _gdApiReady) { resolve(); return; }
-
-    if (typeof gapi === 'undefined') {
-      reject(new Error('Google API client library not loaded. Check your internet connection and refresh.'));
-      return;
-    }
-
-    gapi.load('client:picker', {
-      callback: async () => {
-        try {
-          await gapi.client.init({ apiKey: GDRIVE_API_KEY, discoveryDocs: [] });
-          _gdApiReady    = true;
-          _gdPickerReady = true;
-          resolve();
-        } catch(e) {
-          reject(e);
-        }
-      },
-      onerror: () => reject(new Error('Failed to load Google Picker library.')),
-    });
-  });
-}
-
-// Open the Picker once we have a valid OAuth access token
-function _openDrivePicker(accessToken) {
-  const imageMimes = 'image/jpeg,image/png,image/gif,image/webp,image/svg+xml,video/mp4';
-
-  const docsView = new google.picker.DocsView()
-    .setMimeTypes(imageMimes)
-    .setMode(google.picker.DocsViewMode.GRID)
-    .setIncludeFolders(false);
-
-  const photosView = new google.picker.DocsView(google.picker.ViewId.PHOTOS);
-
-  new google.picker.PickerBuilder()
-    .addView(docsView)
-    .addView(photosView)
-    .setOAuthToken(accessToken)
-    .setDeveloperKey(GDRIVE_API_KEY)
-    .enableFeature(google.picker.Feature.MULTISELECT_ENABLED)
-    .setCallback(async data => {
-      if (data.action !== google.picker.Action.PICKED) return; // cancelled or error
-
-      const picked = data[google.picker.Response.DOCUMENTS] || [];
-      if (!picked.length) return;
-
-      toast(`Uploading ${picked.length} file${picked.length !== 1 ? 's' : ''} from Drive…`);
-      let added = 0;
-
-      for (const file of picked) {
-        const fileId = file[google.picker.Document.ID];
-        const name   = (file[google.picker.Document.NAME] || 'Drive slide').replace(/\.[^.]+$/, '');
-
-        try {
-          // Fetch the file content via Drive API using the access token (avoids CORS/403)
-          const driveRes = await fetch(
-            `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
-            { headers: { Authorization: `Bearer ${accessToken}` } }
-          );
-          if (!driveRes.ok) throw new Error(`Drive API ${driveRes.status}`);
-          const blob = await driveRes.blob();
-
-          // Upload to Cloudinary so display.html has a stable public URL
-          const formData = new FormData();
-          formData.append('file', blob, name);
-          formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-          formData.append('folder', 'signage/slides');
-          const cloudRes = await fetch(
-            `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
-            { method: 'POST', body: formData }
-          );
-          if (!cloudRes.ok) throw new Error('Cloudinary upload failed');
-          const { secure_url } = await cloudRes.json();
-
-          slides.push({ id: crypto.randomUUID(), url: secure_url, name, active: true });
-          added++;
-        } catch(err) {
-          toast(`Could not import "${name}": ${err.message}`, true);
-        }
-      }
-
-      if (added) {
-        renderGrid();
-        updateCount();
-        await pushToFirestore();
-        toast(`Added ${added} slide${added !== 1 ? 's' : ''} from Google Drive ✓`);
-      }
-    })
-    .build()
-    .setVisible(true);
-}
-
-window.addFromGoogleDrive = async function() {
-  if (GDRIVE_API_KEY === 'REPLACE_WITH_YOUR_API_KEY' || GDRIVE_CLIENT_ID === 'REPLACE_WITH_YOUR_CLIENT_ID') {
-    toast('Google Drive is not configured yet — add your API key and Client ID.', true);
-    return;
-  }
-
-  try {
-    await _ensureGapiReady();
-  } catch(e) {
-    toast(e.message || 'Failed to load Google API. Please refresh and try again.', true);
-    return;
-  }
-
+// ── Google Drive — toolbar (adds slides to slideshow) ─────────────────────
+window.addFromGoogleDrive = function() {
   if (typeof google === 'undefined' || !google.accounts?.oauth2) {
-    toast('Google Identity Services not loaded. Check your internet connection and refresh.', true);
+    toast('Google Identity Services not loaded. Please refresh the page.', true);
     return;
   }
 
-  // Initialise the token client once; reuse on subsequent clicks
-  if (!_gdTokenClient) {
-    _gdTokenClient = google.accounts.oauth2.initTokenClient({
-      client_id: GDRIVE_CLIENT_ID,
-      scope:     'https://www.googleapis.com/auth/drive.readonly',
-      callback:  tokenResponse => {
-        if (tokenResponse.error) {
-          toast('Google sign-in required to import from Drive', true);
-          return;
-        }
-        _openDrivePicker(tokenResponse.access_token);
-      },
-    });
-  }
+  const tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: GDRIVE_CLIENT_ID,
+    scope:     GDRIVE_SCOPE,
+    callback:  tokenResponse => {
+      if (tokenResponse.error) {
+        toast('Google sign-in failed: ' + tokenResponse.error, true);
+        return;
+      }
 
-  // If we already have a non-expired token skip the consent screen
-  _gdTokenClient.requestAccessToken({ prompt: '' });
+      // Load picker only after we have a valid token
+      gapi.load('picker', () => {
+        const picker = new google.picker.PickerBuilder()
+          .addView(google.picker.ViewId.DOCS_IMAGES)
+          .setOAuthToken(tokenResponse.access_token)
+          .setDeveloperKey(GDRIVE_API_KEY)
+          .enableFeature(google.picker.Feature.MULTISELECT_ENABLED)
+          .setCallback(async data => {
+            if (data.action !== google.picker.Action.PICKED) return;
+            const picked = data[google.picker.Response.DOCUMENTS] || [];
+            if (!picked.length) return;
+
+            let added = 0;
+            for (const file of picked) {
+              const fileId = file[google.picker.Document.ID];
+              const name   = (file[google.picker.Document.NAME] || 'Drive slide').replace(/\.[^.]+$/, '');
+              const url    = `https://drive.google.com/uc?export=download&id=${fileId}`;
+              slides.push({ id: crypto.randomUUID(), url, name, active: true });
+              added++;
+            }
+
+            if (added) {
+              renderGrid();
+              updateCount();
+              await pushToFirestore();
+              toast(`Added ${added} slide${added !== 1 ? 's' : ''} from Google Drive ✓`);
+            }
+          })
+          .build();
+        picker.setVisible(true);
+      });
+    },
+  });
+
+  tokenClient.requestAccessToken();
 };
 
 // ── Clear all ─────────────────────────────────────────────────────────────
@@ -7762,74 +7672,44 @@ window.designerImageFromDropbox = function() {
   });
 };
 
-window.designerImageFromGoogleDrive = async function() {
+window.designerImageFromGoogleDrive = function() {
   document.getElementById('imagePopover').classList.remove('open');
 
-  if (GDRIVE_API_KEY === 'REPLACE_WITH_YOUR_API_KEY' || GDRIVE_CLIENT_ID === 'REPLACE_WITH_YOUR_CLIENT_ID') {
-    toast('Google Drive is not configured yet — add your API key and Client ID.', true);
-    return;
-  }
-
-  try {
-    await _ensureGapiReady();
-  } catch(e) {
-    toast(e.message || 'Failed to load Google API. Please refresh and try again.', true);
-    return;
-  }
-
   if (typeof google === 'undefined' || !google.accounts?.oauth2) {
-    toast('Google Identity Services not loaded. Check your internet connection and refresh.', true);
+    toast('Google Identity Services not loaded. Please refresh the page.', true);
     return;
   }
 
-  // Token client that adds selected image to canvas instead of the slides array
   const tokenClient = google.accounts.oauth2.initTokenClient({
     client_id: GDRIVE_CLIENT_ID,
-    scope:     'https://www.googleapis.com/auth/drive.readonly',
+    scope:     GDRIVE_SCOPE,
     callback:  tokenResponse => {
       if (tokenResponse.error) {
-        toast('Google sign-in required to import from Drive', true);
+        toast('Google sign-in failed: ' + tokenResponse.error, true);
         return;
       }
 
-      const imageMimes = 'image/jpeg,image/png,image/gif,image/webp,image/svg+xml';
-      const docsView = new google.picker.DocsView()
-        .setMimeTypes(imageMimes)
-        .setMode(google.picker.DocsViewMode.GRID)
-        .setIncludeFolders(false);
-
-      new google.picker.PickerBuilder()
-        .addView(docsView)
-        .addView(new google.picker.DocsView(google.picker.ViewId.PHOTOS))
-        .setOAuthToken(tokenResponse.access_token)
-        .setDeveloperKey(GDRIVE_API_KEY)
-        .setCallback(async data => {
-          if (data.action !== google.picker.Action.PICKED) return;
-          const file = (data[google.picker.Response.DOCUMENTS] || [])[0];
-          if (!file) return;
-
-          // Fetch via Drive API with the access token to avoid CORS/403 on direct URLs
-          toast('Loading image from Drive…');
-          try {
+      // Load picker only after we have a valid token
+      gapi.load('picker', () => {
+        const picker = new google.picker.PickerBuilder()
+          .addView(google.picker.ViewId.DOCS_IMAGES)
+          .setOAuthToken(tokenResponse.access_token)
+          .setDeveloperKey(GDRIVE_API_KEY)
+          .setCallback(async data => {
+            if (data.action !== google.picker.Action.PICKED) return;
+            const file = (data[google.picker.Response.DOCUMENTS] || [])[0];
+            if (!file) return;
             const fileId = file[google.picker.Document.ID];
-            const res = await fetch(
-              `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
-              { headers: { Authorization: `Bearer ${tokenResponse.access_token}` } }
-            );
-            if (!res.ok) throw new Error(`Drive API returned ${res.status}`);
-            const blob = await res.blob();
-            const blobUrl = URL.createObjectURL(blob);
-            await addImageToCanvas(blobUrl);
-          } catch(err) {
-            toast('Could not load image from Drive: ' + err.message, true);
-          }
-        })
-        .build()
-        .setVisible(true);
+            const url    = `https://drive.google.com/uc?export=download&id=${fileId}`;
+            await addImageToCanvas(url);
+          })
+          .build();
+        picker.setVisible(true);
+      });
     },
   });
 
-  tokenClient.requestAccessToken({ prompt: '' });
+  tokenClient.requestAccessToken();
 };
 
 document.getElementById('designerFileInput').addEventListener('change', async function() {
