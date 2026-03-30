@@ -19,6 +19,8 @@
 <!-- Google API client + Identity Services (for Drive Picker) -->
 <script src="https://apis.google.com/js/api.js" async defer></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
+<!-- Microsoft MSAL (for OneDrive Picker) -->
+<script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
 
 <style>
 /* ── Reset & tokens ─────────────────────────────────────────────────────── */
@@ -593,6 +595,18 @@ section.content {
 .btn-secondary:hover { border-color: var(--muted); }
 .btn-danger { background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger-border); }
 .btn-danger:hover { filter: brightness(0.96); }
+
+/* Media source picker buttons (My Device / Google Drive / OneDrive / Dropbox) */
+.media-source-group { display: flex; gap: 8px; align-items: stretch; }
+.btn-media-source {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 6px; width: 82px; padding: 14px 6px 10px;
+  border-radius: 10px; background: var(--surface2); color: var(--text);
+  border: 1px solid var(--border);
+  font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 500;
+  cursor: pointer; transition: all 0.15s; text-align: center; line-height: 1.3;
+}
+.btn-media-source:hover { border-color: var(--muted); background: var(--surface); }
 
 /* Upload drop zone */
 .dropzone {
@@ -2746,13 +2760,44 @@ body.role-editor .admin-action {
   <section class="content">
     <div class="toolbar">
       <h2 id="showTitle">Main Display</h2>
-      <button class="btn btn-secondary" onclick="document.getElementById('fileInput').click()">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-          <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
-        </svg>
-        Upload Images
-      </button>
+      <div class="media-source-group">
+        <button class="btn-media-source" onclick="document.getElementById('fileInput').click()">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+          My Device
+        </button>
+        <button class="btn-media-source" onclick="addFromGoogleDrive()">
+          <svg width="48" height="48" viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg">
+            <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
+            <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0-1.2 4.5h27.5z" fill="#00ac47"/>
+            <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.5l5.85 11.5z" fill="#ea4335"/>
+            <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
+            <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
+            <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
+          </svg>
+          Google Drive
+        </button>
+        <button class="btn-media-source" onclick="addFromOneDrive()">
+          <svg width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+            <path d="M29 15c-5.52 0-10.26 3.25-12.6 8h-.4a9 9 0 0 0 0 18h21a7 7 0 0 0 0-14c-.16 0-.32 0-.48.01A10 10 0 0 0 29 15z" fill="#1f9de2"/>
+            <path d="M17 24c-4.97 0-9 4.03-9 9s4.03 9 9 9h20a6 6 0 0 0 0-12c-.12 0-.24 0-.36.01A8 8 0 0 0 17 24z" fill="#0078d4"/>
+          </svg>
+          OneDrive
+        </button>
+        <button class="btn-media-source" onclick="addFromDropbox()">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#0061ff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2l-5 4 5 4 5-4-5-4z"/>
+            <path d="M2 10l5 4 5-4"/>
+            <path d="M12 10l5 4 5-4"/>
+            <path d="M7 18l5 4 5-4"/>
+            <line x1="12" y1="14" x2="12" y2="22"/>
+          </svg>
+          Dropbox
+        </button>
+      </div>
       <button class="btn btn-secondary" onclick="openYoutubeModal()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
           <path d="M23 7s-.3-2-1.2-2.8c-1.1-1.2-2.4-1.2-3-1.3C16.6 2.8 12 2.8 12 2.8s-4.6 0-6.8.1c-.6.1-1.9.1-3 1.3C1.3 5 1 7 1 7S.7 9.1.7 11.3v2c0 2.1.3 4.3.3 4.3s.3 2 1.2 2.8c1.1 1.2 2.6 1.1 3.3 1.2C7.3 21.8 12 21.8 12 21.8s4.6 0 6.8-.2c.6-.1 1.9-.1 3-1.3.9-.8 1.2-2.8 1.2-2.8s.3-2.1.3-4.3v-2C23.3 9.1 23 7 23 7zM9.7 15.5V8.4l8.1 3.6-8.1 3.5z"/>
@@ -2766,28 +2811,6 @@ body.role-editor .admin-action {
           <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
         </svg>
         Web Page
-      </button>
-      <button class="btn btn-secondary" onclick="addFromDropbox()">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 2l-5 4 5 4 5-4-5-4z"/>
-          <path d="M2 10l5 4 5-4"/>
-          <path d="M12 10l5 4 5-4"/>
-          <path d="M7 18l5 4 5-4"/>
-          <line x1="12" y1="14" x2="12" y2="22"/>
-        </svg>
-        Dropbox
-      </button>
-      <button class="btn btn-secondary" onclick="addFromGoogleDrive()">
-        <!-- Official Google Drive logo -->
-        <svg width="14" height="14" viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg">
-          <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
-          <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0-1.2 4.5h27.5z" fill="#00ac47"/>
-          <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.5l5.85 11.5z" fill="#ea4335"/>
-          <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
-          <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
-          <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
-        </svg>
-        Google Drive
       </button>
       <button class="btn btn-secondary" onclick="addByUrl()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -6071,6 +6094,131 @@ window.addFromGoogleDrive = function() {
   });
 
   tokenClient.requestAccessToken();
+};
+
+// ── OneDrive import ───────────────────────────────────────────────────────
+const AZURE_CLIENT_ID = '0eb0c0a8-0308-483b-b87e-580b1234575b';
+let _msalInstance = null;
+
+function _getMsalInstance() {
+  if (_msalInstance) return _msalInstance;
+  _msalInstance = new msal.PublicClientApplication({
+    auth: {
+      clientId: AZURE_CLIENT_ID,
+      authority: 'https://login.microsoftonline.com/common',
+      redirectUri: window.location.origin,
+    }
+  });
+  return _msalInstance;
+}
+
+function _openOneDrivePicker(accessToken) {
+  const pickerOptions = {
+    sdk: '8.0',
+    entry: { oneDrive: {} },
+    authentication: {},
+    messaging: { origin: window.location.origin, channelId: '27' },
+    selection: { mode: 'multiple' },
+    typesAndSources: {
+      mode: 'files',
+      filters: ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.mp4']
+    }
+  };
+
+  const popup = window.open(
+    'https://onedrive.live.com/picker?filePicker=' + encodeURIComponent(JSON.stringify(pickerOptions)),
+    'OneDrivePicker',
+    'width=1080,height=680'
+  );
+
+  if (!popup) {
+    toast('Please allow popups for this site to use OneDrive import', true);
+    return;
+  }
+
+  const messageHandler = async (event) => {
+    if (event.source !== popup) return;
+    const msg = event.data;
+    if (!msg?.type) return;
+
+    if (msg.type === 'notification' && msg.data?.type === 'command') {
+      const cmd = msg.data.data;
+      if (cmd?.command === 'authenticate') {
+        popup.postMessage({
+          type: 'notification',
+          data: { type: 'result', id: cmd.id, result: { token: `Bearer ${accessToken}` } }
+        }, '*');
+      } else if (cmd?.command === 'close') {
+        cleanup();
+      }
+    } else if (msg.type === 'success') {
+      cleanup();
+      const items = msg.data?.items || [];
+      let added = 0;
+      for (const item of items) {
+        const url  = item['@microsoft.graph.downloadUrl'];
+        const name = (item.name || 'OneDrive file').replace(/\.[^.]+$/, '');
+        if (url) {
+          slides.push({ id: crypto.randomUUID(), url, name, active: true });
+          added++;
+        } else {
+          toast(`No download URL for "${item.name || 'file'}" — make sure sharing is enabled`, true);
+        }
+      }
+      if (added) {
+        renderGrid();
+        updateCount();
+        await pushToFirestore();
+        toast(`Added ${added} slide${added !== 1 ? 's' : ''} from OneDrive ✓`);
+      }
+    } else if (msg.type === 'cancel') {
+      cleanup();
+    }
+  };
+
+  function cleanup() {
+    window.removeEventListener('message', messageHandler);
+    if (popup && !popup.closed) popup.close();
+  }
+
+  window.addEventListener('message', messageHandler);
+}
+
+window.addFromOneDrive = async function() {
+  if (typeof msal === 'undefined') {
+    toast('Microsoft authentication library not loaded. Please refresh the page.', true);
+    return;
+  }
+
+  const msalInst = _getMsalInstance();
+  const scopes = ['Files.Read', 'Files.Read.All', 'User.Read'];
+
+  try {
+    const accounts = msalInst.getAllAccounts();
+    if (accounts.length > 0) {
+      try {
+        const result = await msalInst.acquireTokenSilent({ scopes, account: accounts[0] });
+        _openOneDrivePicker(result.accessToken);
+        return;
+      } catch(e) { /* fall through to interactive login */ }
+    }
+    const loginResult = await msalInst.loginPopup({ scopes });
+    const tokenResult = await msalInst.acquireTokenSilent({ scopes, account: loginResult.account });
+    _openOneDrivePicker(tokenResult.accessToken);
+  } catch(err) {
+    if (err.errorCode === 'popup_window_error' || err.message?.includes('popup')) {
+      toast('Please allow popups for this site to use OneDrive import', true);
+    } else if (err.name === 'InteractionRequiredAuthError') {
+      try {
+        const result = await msalInst.acquireTokenPopup({ scopes });
+        _openOneDrivePicker(result.accessToken);
+      } catch(e) {
+        toast('Microsoft sign-in required to import from OneDrive', true);
+      }
+    } else {
+      toast('Microsoft sign-in required to import from OneDrive', true);
+    }
+  }
 };
 
 // ── Clear all ─────────────────────────────────────────────────────────────
