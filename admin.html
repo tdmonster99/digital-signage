@@ -6119,11 +6119,28 @@ function _getMsalInstance() {
   return _msalInstance;
 }
 
+async function _getOneDriveToken(msalInst) {
+  const scopes = ['Files.Read', 'Files.Read.All', 'User.Read', 'offline_access'];
+  const accounts = msalInst.getAllAccounts();
+  if (accounts.length > 0) {
+    try {
+      const response = await msalInst.acquireTokenSilent({ scopes, account: accounts[0] });
+      return response.accessToken;
+    } catch(e) { /* silent failed — fall through to popup */ }
+  }
+  try {
+    const response = await msalInst.loginPopup({ scopes });
+    return response.accessToken;
+  } catch(e) {
+    throw new Error('Microsoft sign-in cancelled or failed');
+  }
+}
+
 function _openOneDrivePicker(accessToken) {
   const pickerOptions = {
     sdk: '8.0',
     entry: { oneDrive: { files: {} } },
-    authentication: {},
+    authentication: { accessToken },
     messaging: { origin: window.location.origin, channelId: '27' },
     selection: { mode: 'multiple' },
     typesAndSources: {
@@ -6203,24 +6220,13 @@ window.addFromOneDrive = async function() {
   }
 
   const msalInst = _getMsalInstance();
-  const scopes = ['Files.Read', 'Files.Read.All', 'User.Read', 'offline_access'];
 
   try {
-    // Clear cached tokens to force fresh login with the correct account
-    await msalInst.clearCache();
-    const loginResult = await msalInst.loginPopup({ scopes });
-    const tokenResult = await msalInst.acquireTokenSilent({ scopes, account: loginResult.account });
-    _openOneDrivePicker(tokenResult.accessToken);
+    const accessToken = await _getOneDriveToken(msalInst);
+    _openOneDrivePicker(accessToken);
   } catch(err) {
     if (err.errorCode === 'popup_window_error' || err.message?.includes('popup')) {
       toast('Please allow popups for this site to use OneDrive import', true);
-    } else if (err.name === 'InteractionRequiredAuthError') {
-      try {
-        const result = await msalInst.acquireTokenPopup({ scopes });
-        _openOneDrivePicker(result.accessToken);
-      } catch(e) {
-        toast('Microsoft sign-in required to import from OneDrive', true);
-      }
     } else {
       toast('Microsoft sign-in required to import from OneDrive', true);
     }
@@ -7882,7 +7888,7 @@ window.designerImageFromOneDrive = function() {
     const pickerOptions = {
       sdk: '8.0',
       entry: { oneDrive: { files: {} } },
-      authentication: {},
+      authentication: { accessToken },
       messaging: { origin: window.location.origin, channelId: '28' },
       selection: { mode: 'single' },
       typesAndSources: {
@@ -7947,21 +7953,11 @@ window.designerImageFromOneDrive = function() {
 
   (async () => {
     try {
-      // Clear cached tokens to force fresh login with the correct account
-      await msalInst.clearCache();
-      const loginResult = await msalInst.loginPopup({ scopes });
-      const tokenResult = await msalInst.acquireTokenSilent({ scopes, account: loginResult.account });
-      openCanvasPicker(tokenResult.accessToken);
+      const accessToken = await _getOneDriveToken(msalInst);
+      openCanvasPicker(accessToken);
     } catch(err) {
       if (err.errorCode === 'popup_window_error' || err.message?.includes('popup')) {
         toast('Please allow popups for this site to use OneDrive import', true);
-      } else if (err.name === 'InteractionRequiredAuthError') {
-        try {
-          const result = await msalInst.acquireTokenPopup({ scopes });
-          openCanvasPicker(result.accessToken);
-        } catch(e) {
-          toast('Microsoft sign-in required to import from OneDrive', true);
-        }
       } else {
         toast('Microsoft sign-in required to import from OneDrive', true);
       }
