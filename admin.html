@@ -4056,6 +4056,17 @@ body.role-editor .admin-action {
             </svg>
             From Dropbox
           </button>
+          <button class="popover-item" onclick="designerImageFromGoogleDrive()">
+            <svg width="14" height="14" viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg">
+              <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
+              <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#00ac47"/>
+              <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/>
+              <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
+              <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
+              <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
+            </svg>
+            From Google Drive
+          </button>
         </div>
         <input type="file" id="designerFileInput" accept="image/*"
                style="position:absolute;width:0;height:0;opacity:0;pointer-events:none">
@@ -7721,6 +7732,62 @@ window.designerImageFromDropbox = function() {
     },
     cancel: function() {}
   });
+};
+
+window.designerImageFromGoogleDrive = async function() {
+  document.getElementById('imagePopover').classList.remove('open');
+
+  if (GDRIVE_API_KEY === 'REPLACE_WITH_YOUR_API_KEY' || GDRIVE_CLIENT_ID === 'REPLACE_WITH_YOUR_CLIENT_ID') {
+    toast('Google Drive is not configured yet — add your API key and Client ID.', true);
+    return;
+  }
+
+  try {
+    await _ensureGapiReady();
+  } catch(e) {
+    toast(e.message || 'Failed to load Google API. Please refresh and try again.', true);
+    return;
+  }
+
+  if (typeof google === 'undefined' || !google.accounts?.oauth2) {
+    toast('Google Identity Services not loaded. Check your internet connection and refresh.', true);
+    return;
+  }
+
+  // Token client that adds selected image to canvas instead of the slides array
+  const tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: GDRIVE_CLIENT_ID,
+    scope:     'https://www.googleapis.com/auth/drive.readonly',
+    callback:  tokenResponse => {
+      if (tokenResponse.error) {
+        toast('Google sign-in required to import from Drive', true);
+        return;
+      }
+
+      const imageMimes = 'image/jpeg,image/png,image/gif,image/webp,image/svg+xml';
+      const docsView = new google.picker.DocsView()
+        .setMimeTypes(imageMimes)
+        .setMode(google.picker.DocsViewMode.GRID)
+        .setIncludeFolders(false);
+
+      new google.picker.PickerBuilder()
+        .addView(docsView)
+        .addView(new google.picker.DocsView(google.picker.ViewId.PHOTOS))
+        .setOAuthToken(tokenResponse.access_token)
+        .setDeveloperKey(GDRIVE_API_KEY)
+        .setCallback(async data => {
+          if (data.action !== google.picker.Action.PICKED) return;
+          const file = (data[google.picker.Response.DOCUMENTS] || [])[0];
+          if (!file) return;
+          const url = `https://drive.google.com/uc?export=download&id=${file[google.picker.Document.ID]}`;
+          await addImageToCanvas(url);
+        })
+        .build()
+        .setVisible(true);
+    },
+  });
+
+  tokenClient.requestAccessToken({ prompt: '' });
 };
 
 document.getElementById('designerFileInput').addEventListener('change', async function() {
