@@ -16,6 +16,9 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
 <script src="https://www.dropbox.com/static/api/2/dropins.js" id="dropboxjs" data-app-key="363zjxwv9mk4zij"></script>
+<!-- Google API client + Identity Services (for Drive Picker) -->
+<script src="https://apis.google.com/js/api.js" async defer></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 
 <style>
 /* ── Reset & tokens ─────────────────────────────────────────────────────── */
@@ -2773,6 +2776,18 @@ body.role-editor .admin-action {
           <line x1="12" y1="14" x2="12" y2="22"/>
         </svg>
         Dropbox
+      </button>
+      <button class="btn btn-secondary" onclick="addFromGoogleDrive()">
+        <!-- Official Google Drive logo -->
+        <svg width="14" height="14" viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg">
+          <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
+          <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0-1.2 4.5h27.5z" fill="#00ac47"/>
+          <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.5l5.85 11.5z" fill="#ea4335"/>
+          <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
+          <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
+          <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
+        </svg>
+        Google Drive
       </button>
       <button class="btn btn-secondary" onclick="addByUrl()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -5985,6 +6000,128 @@ window.addFromDropbox = function() {
     },
     cancel: function() {}
   });
+};
+
+// ── Add from Google Drive ─────────────────────────────────────────────────
+// CONFIG — replace with values from Google Cloud Console:
+//   https://console.cloud.google.com → APIs & Services → Credentials
+const GDRIVE_API_KEY   = 'REPLACE_WITH_YOUR_API_KEY';
+const GDRIVE_CLIENT_ID = 'REPLACE_WITH_YOUR_CLIENT_ID';
+
+// LIMITATION NOTE:
+// Google Drive direct-download URLs (drive.google.com/uc?export=download&id=...)
+// only work for files that are shared publicly ("Anyone with the link can view").
+// For private files the URL requires a valid OAuth Bearer token in the request
+// header, which browsers cannot attach via a plain <img src> or background-image.
+// → Workaround: users should either (a) share the file publicly in Drive, or
+//   (b) download it locally and use the Upload Images button instead.
+
+let _gdTokenClient = null;  // Google Identity Services token client (re-used)
+let _gdPickerReady = false; // true once gapi.load('picker') has resolved
+let _gdApiReady    = false; // true once gapi.client.init has resolved
+
+// Load the Picker API once (called lazily on first Drive button click)
+function _ensureGapiReady() {
+  return new Promise((resolve, reject) => {
+    if (_gdPickerReady && _gdApiReady) { resolve(); return; }
+
+    if (typeof gapi === 'undefined') {
+      reject(new Error('Google API client library not loaded. Check your internet connection and refresh.'));
+      return;
+    }
+
+    gapi.load('client:picker', {
+      callback: async () => {
+        try {
+          await gapi.client.init({ apiKey: GDRIVE_API_KEY, discoveryDocs: [] });
+          _gdApiReady    = true;
+          _gdPickerReady = true;
+          resolve();
+        } catch(e) {
+          reject(e);
+        }
+      },
+      onerror: () => reject(new Error('Failed to load Google Picker library.')),
+    });
+  });
+}
+
+// Open the Picker once we have a valid OAuth access token
+function _openDrivePicker(accessToken) {
+  const imageMimes = 'image/jpeg,image/png,image/gif,image/webp,image/svg+xml,video/mp4';
+
+  const docsView = new google.picker.DocsView()
+    .setMimeTypes(imageMimes)
+    .setMode(google.picker.DocsViewMode.GRID)
+    .setIncludeFolders(false);
+
+  const photosView = new google.picker.DocsView(google.picker.ViewId.PHOTOS);
+
+  new google.picker.PickerBuilder()
+    .addView(docsView)
+    .addView(photosView)
+    .setOAuthToken(accessToken)
+    .setDeveloperKey(GDRIVE_API_KEY)
+    .enableFeature(google.picker.Feature.MULTISELECT_ENABLED)
+    .setCallback(async data => {
+      if (data.action !== google.picker.Action.PICKED) return; // cancelled or error
+
+      const picked = data[google.picker.Response.DOCUMENTS] || [];
+      if (!picked.length) return;
+
+      for (const file of picked) {
+        const fileId = file[google.picker.Document.ID];
+        const name   = (file[google.picker.Document.NAME] || 'Drive slide').replace(/\.[^.]+$/, '');
+        // Direct download URL — works for publicly shared files (see LIMITATION NOTE above)
+        const url    = `https://drive.google.com/uc?export=download&id=${fileId}`;
+
+        slides.push({ id: crypto.randomUUID(), url, name, active: true });
+      }
+
+      renderGrid();
+      updateCount();
+      await pushToFirestore();
+      toast(`Added ${picked.length} slide${picked.length !== 1 ? 's' : ''} from Google Drive ✓`);
+    })
+    .build()
+    .setVisible(true);
+}
+
+window.addFromGoogleDrive = async function() {
+  if (GDRIVE_API_KEY === 'REPLACE_WITH_YOUR_API_KEY' || GDRIVE_CLIENT_ID === 'REPLACE_WITH_YOUR_CLIENT_ID') {
+    toast('Google Drive is not configured yet — add your API key and Client ID.', true);
+    return;
+  }
+
+  try {
+    await _ensureGapiReady();
+  } catch(e) {
+    toast(e.message || 'Failed to load Google API. Please refresh and try again.', true);
+    return;
+  }
+
+  if (typeof google === 'undefined' || !google.accounts?.oauth2) {
+    toast('Google Identity Services not loaded. Check your internet connection and refresh.', true);
+    return;
+  }
+
+  // Initialise the token client once; reuse on subsequent clicks
+  if (!_gdTokenClient) {
+    _gdTokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: GDRIVE_CLIENT_ID,
+      scope:     'https://www.googleapis.com/auth/drive.readonly',
+      callback:  tokenResponse => {
+        if (tokenResponse.error) {
+          toast('Google sign-in required to import from Drive', true);
+          return;
+        }
+        _openDrivePicker(tokenResponse.access_token);
+      },
+    });
+  }
+
+  // If we already have a non-expired token skip the consent screen
+  _gdTokenClient.requestAccessToken({ prompt: '' });
 };
 
 // ── Clear all ─────────────────────────────────────────────────────────────
