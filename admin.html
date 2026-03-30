@@ -6140,7 +6140,7 @@ function _openOneDrivePicker(accessToken) {
   const pickerOptions = {
     sdk: '8.0',
     entry: { oneDrive: { files: {} } },
-    authentication: { accessToken },
+    authentication: {},
     messaging: { origin: window.location.origin, channelId: '27' },
     selection: { mode: 'multiple' },
     typesAndSources: {
@@ -6150,39 +6150,33 @@ function _openOneDrivePicker(accessToken) {
     }
   };
 
-  const popup = window.open(
+  const pickerWindow = window.open(
     'https://onedrive.live.com/picker?filePicker=' + encodeURIComponent(JSON.stringify(pickerOptions)),
     'OneDrivePicker',
     'width=1080,height=680'
   );
 
-  if (!popup) {
+  if (!pickerWindow) {
     toast('Please allow popups for this site to use OneDrive import', true);
     return;
   }
 
   const messageHandler = async (event) => {
-    if (event.source !== popup) return;
+    if (event.origin !== 'https://onedrive.live.com') return;
     const msg = event.data;
     if (!msg?.type) return;
 
-    if (msg.type === 'notification') {
-      console.log('[OneDrive picker notification]', JSON.stringify(msg.data));
-    }
+    console.log('[OneDrive picker]', msg.type, JSON.stringify(msg).slice(0, 200));
 
-    if (msg.type === 'notification' && msg.data?.type === 'command') {
-      const cmd = msg.data.data;
-      if (cmd?.command === 'authenticate') {
-        popup.postMessage({
-          type: 'notification',
-          data: { type: 'result', id: cmd.id, result: { token: `Bearer ${accessToken}` } }
-        }, '*');
-      } else if (cmd?.command === 'close') {
-        cleanup();
-      }
-    } else if (msg.type === 'success') {
+    if (msg.type === 'initialize' && msg.channelId === pickerOptions.messaging.channelId) {
+      event.source.postMessage({
+        type: 'authenticate',
+        token: accessToken,
+        channelId: pickerOptions.messaging.channelId
+      }, event.origin);
+    } else if (msg.type === 'result') {
       cleanup();
-      const items = msg.data?.items || [];
+      const items = msg.items || [];
       let added = 0;
       for (const item of items) {
         const url  = item['@microsoft.graph.downloadUrl'];
@@ -6207,7 +6201,7 @@ function _openOneDrivePicker(accessToken) {
 
   function cleanup() {
     window.removeEventListener('message', messageHandler);
-    if (popup && !popup.closed) popup.close();
+    if (pickerWindow && !pickerWindow.closed) pickerWindow.close();
   }
 
   window.addEventListener('message', messageHandler);
@@ -7888,7 +7882,7 @@ window.designerImageFromOneDrive = function() {
     const pickerOptions = {
       sdk: '8.0',
       entry: { oneDrive: { files: {} } },
-      authentication: { accessToken },
+      authentication: {},
       messaging: { origin: window.location.origin, channelId: '28' },
       selection: { mode: 'single' },
       typesAndSources: {
@@ -7898,39 +7892,33 @@ window.designerImageFromOneDrive = function() {
       }
     };
 
-    const popup = window.open(
+    const pickerWindow = window.open(
       'https://onedrive.live.com/picker?filePicker=' + encodeURIComponent(JSON.stringify(pickerOptions)),
       'OneDriveDesignerPicker',
       'width=1080,height=680'
     );
 
-    if (!popup) {
+    if (!pickerWindow) {
       toast('Please allow popups for this site to use OneDrive import', true);
       return;
     }
 
     const messageHandler = async (event) => {
-      if (event.source !== popup) return;
+      if (event.origin !== 'https://onedrive.live.com') return;
       const msg = event.data;
       if (!msg?.type) return;
 
-      if (msg.type === 'notification') {
-        console.log('[OneDrive designer picker notification]', JSON.stringify(msg.data));
-      }
+      console.log('[OneDrive designer picker]', msg.type, JSON.stringify(msg).slice(0, 200));
 
-      if (msg.type === 'notification' && msg.data?.type === 'command') {
-        const cmd = msg.data.data;
-        if (cmd?.command === 'authenticate') {
-          popup.postMessage({
-            type: 'notification',
-            data: { type: 'result', id: cmd.id, result: { token: `Bearer ${accessToken}` } }
-          }, '*');
-        } else if (cmd?.command === 'close') {
-          cleanup();
-        }
-      } else if (msg.type === 'success') {
+      if (msg.type === 'initialize' && msg.channelId === pickerOptions.messaging.channelId) {
+        event.source.postMessage({
+          type: 'authenticate',
+          token: accessToken,
+          channelId: pickerOptions.messaging.channelId
+        }, event.origin);
+      } else if (msg.type === 'result') {
         cleanup();
-        const item = (msg.data?.items || [])[0];
+        const item = (msg.items || [])[0];
         if (!item) return;
         const url = item['@microsoft.graph.downloadUrl'];
         if (url) {
@@ -7945,7 +7933,7 @@ window.designerImageFromOneDrive = function() {
 
     function cleanup() {
       window.removeEventListener('message', messageHandler);
-      if (popup && !popup.closed) popup.close();
+      if (pickerWindow && !pickerWindow.closed) pickerWindow.close();
     }
 
     window.addEventListener('message', messageHandler);
