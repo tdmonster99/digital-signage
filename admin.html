@@ -6181,14 +6181,25 @@ function _openOneDrivePicker(accessToken, mode) {
     switch (msg.type) {
       case 'initialize':
         initReceived = true;
-        pickerWindow.postMessage(
-          { type: 'authenticate', token: accessToken, channelId: msg.channelId || channelId },
-          event.origin
-        );
-        pickerWindow.postMessage(
-          { type: 'activate', channelId: msg.channelId || channelId },
-          event.origin
-        );
+        setTimeout(() => {
+          try {
+            pickerWindow.postMessage(
+              { type: 'authenticate', token: accessToken, channelId: msg.channelId || channelId },
+              event.origin
+            );
+          } catch(e) {
+            pickerWindow.postMessage(
+              { type: 'authenticate', token: accessToken, channelId: msg.channelId || channelId },
+              '*'
+            );
+          }
+          setTimeout(() => {
+            pickerWindow.postMessage(
+              { type: 'activate', channelId: msg.channelId || channelId },
+              event.origin
+            );
+          }, 100);
+        }, 50);
         break;
 
       case 'result':
@@ -10462,6 +10473,33 @@ function applyTemplate(name) {
   updatePropsPanel();
 }
 
+function sanitizeCanvasJson(jsonString) {
+  const validBaselines = ['top', 'hanging', 'middle', 'alphabetic', 'ideographic', 'bottom'];
+  try {
+    const data = JSON.parse(jsonString);
+    if (data.objects) {
+      data.objects = data.objects.map(obj => {
+        if (obj.textBaseline && !validBaselines.includes(obj.textBaseline)) {
+          obj.textBaseline = 'alphabetic';
+        }
+        if (obj.styles) {
+          Object.values(obj.styles).forEach(line => {
+            Object.values(line).forEach(charStyle => {
+              if (charStyle.textBaseline && !validBaselines.includes(charStyle.textBaseline)) {
+                charStyle.textBaseline = 'alphabetic';
+              }
+            });
+          });
+        }
+        return obj;
+      });
+    }
+    return JSON.stringify(data);
+  } catch(e) {
+    return jsonString;
+  }
+}
+
 window.saveDesignedSlide = async function() {
   if (!auth.currentUser) { toast('Sign in first to save.', true); return; }
   if (!fabricCanvas)     { toast('No canvas to save.', true);     return; }
@@ -10472,7 +10510,7 @@ window.saveDesignedSlide = async function() {
   btn.textContent = 'Saving…';
 
   try {
-    const canvasJson = JSON.stringify(fabricCanvas.toJSON(CANVAS_EXTRA_PROPS));
+    const canvasJson = sanitizeCanvasJson(JSON.stringify(fabricCanvas.toJSON(CANVAS_EXTRA_PROPS)));
 
     // Generate thumbnail — may fail if canvas has tainted images (CORS)
     // multiplier:0.25 → 480×270 JPEG instead of full 1920×1080
