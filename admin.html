@@ -6080,19 +6080,47 @@ function _openDrivePicker(accessToken) {
       const picked = data[google.picker.Response.DOCUMENTS] || [];
       if (!picked.length) return;
 
+      toast(`Uploading ${picked.length} file${picked.length !== 1 ? 's' : ''} from Drive…`);
+      let added = 0;
+
       for (const file of picked) {
         const fileId = file[google.picker.Document.ID];
         const name   = (file[google.picker.Document.NAME] || 'Drive slide').replace(/\.[^.]+$/, '');
-        // Direct download URL — works for publicly shared files (see LIMITATION NOTE above)
-        const url    = `https://drive.google.com/uc?export=download&id=${fileId}`;
 
-        slides.push({ id: crypto.randomUUID(), url, name, active: true });
+        try {
+          // Fetch the file content via Drive API using the access token (avoids CORS/403)
+          const driveRes = await fetch(
+            `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
+            { headers: { Authorization: `Bearer ${accessToken}` } }
+          );
+          if (!driveRes.ok) throw new Error(`Drive API ${driveRes.status}`);
+          const blob = await driveRes.blob();
+
+          // Upload to Cloudinary so display.html has a stable public URL
+          const formData = new FormData();
+          formData.append('file', blob, name);
+          formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+          formData.append('folder', 'signage/slides');
+          const cloudRes = await fetch(
+            `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+            { method: 'POST', body: formData }
+          );
+          if (!cloudRes.ok) throw new Error('Cloudinary upload failed');
+          const { secure_url } = await cloudRes.json();
+
+          slides.push({ id: crypto.randomUUID(), url: secure_url, name, active: true });
+          added++;
+        } catch(err) {
+          toast(`Could not import "${name}": ${err.message}`, true);
+        }
       }
 
-      renderGrid();
-      updateCount();
-      await pushToFirestore();
-      toast(`Added ${picked.length} slide${picked.length !== 1 ? 's' : ''} from Google Drive ✓`);
+      if (added) {
+        renderGrid();
+        updateCount();
+        await pushToFirestore();
+        toast(`Added ${added} slide${added !== 1 ? 's' : ''} from Google Drive ✓`);
+      }
     })
     .build()
     .setVisible(true);
@@ -7779,8 +7807,22 @@ window.designerImageFromGoogleDrive = async function() {
           if (data.action !== google.picker.Action.PICKED) return;
           const file = (data[google.picker.Response.DOCUMENTS] || [])[0];
           if (!file) return;
-          const url = `https://drive.google.com/uc?export=download&id=${file[google.picker.Document.ID]}`;
-          await addImageToCanvas(url);
+
+          // Fetch via Drive API with the access token to avoid CORS/403 on direct URLs
+          toast('Loading image from Drive…');
+          try {
+            const fileId = file[google.picker.Document.ID];
+            const res = await fetch(
+              `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
+              { headers: { Authorization: `Bearer ${tokenResponse.access_token}` } }
+            );
+            if (!res.ok) throw new Error(`Drive API returned ${res.status}`);
+            const blob = await res.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            await addImageToCanvas(blobUrl);
+          } catch(err) {
+            toast('Could not load image from Drive: ' + err.message, true);
+          }
         })
         .build()
         .setVisible(true);
