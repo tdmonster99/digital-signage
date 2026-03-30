@@ -6122,13 +6122,14 @@ function _getMsalInstance() {
 function _openOneDrivePicker(accessToken) {
   const pickerOptions = {
     sdk: '8.0',
-    entry: { oneDrive: {} },
+    entry: { oneDrive: { files: {} } },
     authentication: {},
     messaging: { origin: window.location.origin, channelId: '27' },
     selection: { mode: 'multiple' },
     typesAndSources: {
       mode: 'files',
-      filters: ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.mp4']
+      filters: ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.mp4'],
+      pivots: { oneDrive: true, recent: true, sharedLibraries: true }
     }
   };
 
@@ -6147,6 +6148,10 @@ function _openOneDrivePicker(accessToken) {
     if (event.source !== popup) return;
     const msg = event.data;
     if (!msg?.type) return;
+
+    if (msg.type === 'notification') {
+      console.log('[OneDrive picker notification]', JSON.stringify(msg.data));
+    }
 
     if (msg.type === 'notification' && msg.data?.type === 'command') {
       const cmd = msg.data.data;
@@ -6198,17 +6203,11 @@ window.addFromOneDrive = async function() {
   }
 
   const msalInst = _getMsalInstance();
-  const scopes = ['Files.Read', 'Files.Read.All', 'User.Read'];
+  const scopes = ['Files.Read', 'Files.Read.All', 'User.Read', 'offline_access'];
 
   try {
-    const accounts = msalInst.getAllAccounts();
-    if (accounts.length > 0) {
-      try {
-        const result = await msalInst.acquireTokenSilent({ scopes, account: accounts[0] });
-        _openOneDrivePicker(result.accessToken);
-        return;
-      } catch(e) { /* fall through to interactive login */ }
-    }
+    // Clear cached tokens to force fresh login with the correct account
+    await msalInst.clearCache();
     const loginResult = await msalInst.loginPopup({ scopes });
     const tokenResult = await msalInst.acquireTokenSilent({ scopes, account: loginResult.account });
     _openOneDrivePicker(tokenResult.accessToken);
@@ -7877,18 +7876,19 @@ window.designerImageFromOneDrive = function() {
 
   // Reuse the existing MSAL instance and picker, but deliver the image to the canvas
   const msalInst = _getMsalInstance();
-  const scopes = ['Files.Read', 'Files.Read.All', 'User.Read'];
+  const scopes = ['Files.Read', 'Files.Read.All', 'User.Read', 'offline_access'];
 
   const openCanvasPicker = (accessToken) => {
     const pickerOptions = {
       sdk: '8.0',
-      entry: { oneDrive: {} },
+      entry: { oneDrive: { files: {} } },
       authentication: {},
       messaging: { origin: window.location.origin, channelId: '28' },
       selection: { mode: 'single' },
       typesAndSources: {
         mode: 'files',
-        filters: ['.png', '.jpg', '.jpeg', '.gif', '.webp']
+        filters: ['.png', '.jpg', '.jpeg', '.gif', '.webp'],
+        pivots: { oneDrive: true, recent: true, sharedLibraries: true }
       }
     };
 
@@ -7907,6 +7907,10 @@ window.designerImageFromOneDrive = function() {
       if (event.source !== popup) return;
       const msg = event.data;
       if (!msg?.type) return;
+
+      if (msg.type === 'notification') {
+        console.log('[OneDrive designer picker notification]', JSON.stringify(msg.data));
+      }
 
       if (msg.type === 'notification' && msg.data?.type === 'command') {
         const cmd = msg.data.data;
@@ -7943,14 +7947,8 @@ window.designerImageFromOneDrive = function() {
 
   (async () => {
     try {
-      const accounts = msalInst.getAllAccounts();
-      if (accounts.length > 0) {
-        try {
-          const result = await msalInst.acquireTokenSilent({ scopes, account: accounts[0] });
-          openCanvasPicker(result.accessToken);
-          return;
-        } catch(e) { /* fall through */ }
-      }
+      // Clear cached tokens to force fresh login with the correct account
+      await msalInst.clearCache();
       const loginResult = await msalInst.loginPopup({ scopes });
       const tokenResult = await msalInst.acquireTokenSilent({ scopes, account: loginResult.account });
       openCanvasPicker(tokenResult.accessToken);
