@@ -6160,38 +6160,72 @@ function _openOneDrivePicker(accessToken, mode) {
     + '?login_hint=' + encodeURIComponent(loginHint)
     + '&filePicker='  + encodeURIComponent(JSON.stringify(pickerOptions));
 
-  const win = window.open(pickerUrl, 'OneDrivePicker', 'width=1080,height=680');
-  if (!win) {
-    toast('Please allow popups for this site to use OneDrive import', true);
-    return;
-  }
+  let pickerWindow = null;
+  let initReceived = false;
 
+  // Set up listener BEFORE opening the popup so we never miss initialize
   const messageHandler = async (event) => {
+    // Allow messages from onedrive, 1drv, or sharepoint origins
     if (!event.origin.includes('onedrive.live.com') &&
+        !event.origin.includes('1drv.com') &&
         !event.origin.includes('sharepoint.com')) return;
+
+    // Once window is open, also gate on source identity
+    if (pickerWindow && event.source !== pickerWindow) return;
 
     const msg = event.data;
     if (!msg?.type) return;
 
-    if (msg.type === 'initialize') {
-      win.postMessage({ type: 'authenticate', token: accessToken, channelId }, event.origin);
-      win.postMessage({ type: 'activate',     channelId },                     event.origin);
-    }
+    console.log('[OneDrive]', msg.type, msg);
 
-    if (msg.type === 'result') {
-      window.removeEventListener('message', messageHandler);
-      win.close();
-      const items = msg.items || [];
-      if (items.length) await _handleOneDriveItems(items, accessToken, mode);
-    }
+    switch (msg.type) {
+      case 'initialize':
+        initReceived = true;
+        pickerWindow.postMessage(
+          { type: 'authenticate', token: accessToken, channelId: msg.channelId || channelId },
+          event.origin
+        );
+        pickerWindow.postMessage(
+          { type: 'activate', channelId: msg.channelId || channelId },
+          event.origin
+        );
+        break;
 
-    if (msg.type === 'cancel') {
-      window.removeEventListener('message', messageHandler);
-      win.close();
+      case 'result':
+        cleanup();
+        if (msg.items?.length) await _handleOneDriveItems(msg.items, accessToken, mode);
+        break;
+
+      case 'cancel':
+      case 'close':
+        cleanup();
+        break;
     }
   };
 
+  function cleanup() {
+    clearTimeout(timeoutId);
+    window.removeEventListener('message', messageHandler);
+    if (pickerWindow && !pickerWindow.closed) pickerWindow.close();
+  }
+
+  // Register listener first, then open window
   window.addEventListener('message', messageHandler);
+
+  pickerWindow = window.open(pickerUrl, 'OneDrivePicker', 'width=1080,height=680,left=200,top=100');
+  if (!pickerWindow) {
+    window.removeEventListener('message', messageHandler);
+    toast('Please allow popups for this site to use OneDrive import', true);
+    return;
+  }
+
+  // 10-second timeout if initialize never arrives
+  const timeoutId = setTimeout(() => {
+    if (!initReceived) {
+      cleanup();
+      toast('OneDrive connection timed out — please try again', true);
+    }
+  }, 10000);
 }
 
 async function _handleOneDriveItems(items, accessToken, mode) {
