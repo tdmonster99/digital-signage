@@ -4069,16 +4069,6 @@ body.role-editor .admin-action {
             </svg>
             Paste image URL
           </button>
-          <button class="popover-item" onclick="designerImageFromDropbox()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 2l-5 4 5 4 5-4-5-4z"/>
-              <path d="M2 10l5 4 5-4"/>
-              <path d="M12 10l5 4 5-4"/>
-              <path d="M7 18l5 4 5-4"/>
-              <line x1="12" y1="14" x2="12" y2="22"/>
-            </svg>
-            From Dropbox
-          </button>
           <button class="popover-item" onclick="designerImageFromGoogleDrive()">
             <svg width="14" height="14" viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg">
               <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
@@ -4089,6 +4079,23 @@ body.role-editor .admin-action {
               <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
             </svg>
             From Google Drive
+          </button>
+          <button class="popover-item" onclick="designerImageFromOneDrive()">
+            <svg width="14" height="14" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+              <path d="M29 15c-5.52 0-10.26 3.25-12.6 8h-.4a9 9 0 0 0 0 18h21a7 7 0 0 0 0-14c-.16 0-.32 0-.48.01A10 10 0 0 0 29 15z" fill="#1f9de2"/>
+              <path d="M17 24c-4.97 0-9 4.03-9 9s4.03 9 9 9h20a6 6 0 0 0 0-12c-.12 0-.24 0-.36.01A8 8 0 0 0 17 24z" fill="#0078d4"/>
+            </svg>
+            From OneDrive
+          </button>
+          <button class="popover-item" onclick="designerImageFromDropbox()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2l-5 4 5 4 5-4-5-4z"/>
+              <path d="M2 10l5 4 5-4"/>
+              <path d="M12 10l5 4 5-4"/>
+              <path d="M7 18l5 4 5-4"/>
+              <line x1="12" y1="14" x2="12" y2="22"/>
+            </svg>
+            From Dropbox
           </button>
         </div>
         <input type="file" id="designerFileInput" accept="image/*"
@@ -7858,6 +7865,110 @@ window.designerImageFromGoogleDrive = function() {
   });
 
   tokenClient.requestAccessToken();
+};
+
+window.designerImageFromOneDrive = function() {
+  document.getElementById('imagePopover').classList.remove('open');
+
+  if (typeof msal === 'undefined') {
+    toast('Microsoft authentication library not loaded. Please refresh the page.', true);
+    return;
+  }
+
+  // Reuse the existing MSAL instance and picker, but deliver the image to the canvas
+  const msalInst = _getMsalInstance();
+  const scopes = ['Files.Read', 'Files.Read.All', 'User.Read'];
+
+  const openCanvasPicker = (accessToken) => {
+    const pickerOptions = {
+      sdk: '8.0',
+      entry: { oneDrive: {} },
+      authentication: {},
+      messaging: { origin: window.location.origin, channelId: '28' },
+      selection: { mode: 'single' },
+      typesAndSources: {
+        mode: 'files',
+        filters: ['.png', '.jpg', '.jpeg', '.gif', '.webp']
+      }
+    };
+
+    const popup = window.open(
+      'https://onedrive.live.com/picker?filePicker=' + encodeURIComponent(JSON.stringify(pickerOptions)),
+      'OneDriveDesignerPicker',
+      'width=1080,height=680'
+    );
+
+    if (!popup) {
+      toast('Please allow popups for this site to use OneDrive import', true);
+      return;
+    }
+
+    const messageHandler = async (event) => {
+      if (event.source !== popup) return;
+      const msg = event.data;
+      if (!msg?.type) return;
+
+      if (msg.type === 'notification' && msg.data?.type === 'command') {
+        const cmd = msg.data.data;
+        if (cmd?.command === 'authenticate') {
+          popup.postMessage({
+            type: 'notification',
+            data: { type: 'result', id: cmd.id, result: { token: `Bearer ${accessToken}` } }
+          }, '*');
+        } else if (cmd?.command === 'close') {
+          cleanup();
+        }
+      } else if (msg.type === 'success') {
+        cleanup();
+        const item = (msg.data?.items || [])[0];
+        if (!item) return;
+        const url = item['@microsoft.graph.downloadUrl'];
+        if (url) {
+          await addImageToCanvas(url);
+        } else {
+          toast('No download URL for this file — make sure sharing is enabled', true);
+        }
+      } else if (msg.type === 'cancel') {
+        cleanup();
+      }
+    };
+
+    function cleanup() {
+      window.removeEventListener('message', messageHandler);
+      if (popup && !popup.closed) popup.close();
+    }
+
+    window.addEventListener('message', messageHandler);
+  };
+
+  (async () => {
+    try {
+      const accounts = msalInst.getAllAccounts();
+      if (accounts.length > 0) {
+        try {
+          const result = await msalInst.acquireTokenSilent({ scopes, account: accounts[0] });
+          openCanvasPicker(result.accessToken);
+          return;
+        } catch(e) { /* fall through */ }
+      }
+      const loginResult = await msalInst.loginPopup({ scopes });
+      const tokenResult = await msalInst.acquireTokenSilent({ scopes, account: loginResult.account });
+      openCanvasPicker(tokenResult.accessToken);
+    } catch(err) {
+      if (err.errorCode === 'popup_window_error' || err.message?.includes('popup')) {
+        toast('Please allow popups for this site to use OneDrive import', true);
+      } else if (err.name === 'InteractionRequiredAuthError') {
+        try {
+          const result = await msalInst.acquireTokenPopup({ scopes });
+          openCanvasPicker(result.accessToken);
+        } catch(e) {
+          toast('Microsoft sign-in required to import from OneDrive', true);
+        }
+      } else {
+        toast('Microsoft sign-in required to import from OneDrive', true);
+      }
+    }
+  })();
 };
 
 document.getElementById('designerFileInput').addEventListener('change', async function() {
