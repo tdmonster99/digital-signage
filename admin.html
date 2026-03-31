@@ -5253,6 +5253,7 @@ window.handleAuth = async () => {
     await signOut(auth);
   } else {
     const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
     try { await signInWithPopup(auth, provider); }
     catch(e) { toast("Sign-in failed: " + e.message, true); }
   }
