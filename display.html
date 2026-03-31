@@ -765,13 +765,13 @@
     let currentSlideshowId = null;
     const screenRef = doc(db, "screens", screenId);
 
-    // Heartbeat every 30s so admin can detect online/offline within 60s
+    // Heartbeat every 2 min — admin detects offline within ~3 min
     async function heartbeat() {
       try { await setDoc(screenRef, { lastSeen: new Date().toISOString() }, { merge: true }); }
       catch(e) {}
     }
     heartbeat();
-    setInterval(heartbeat, 30 * 1000);
+    setInterval(heartbeat, 2 * 60 * 1000);
 
     // Emit analytics online event once we know orgId; offline on page unload
     function emitOnline(orgId) {

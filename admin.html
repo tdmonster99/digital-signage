@@ -608,6 +608,89 @@ section.content {
 }
 .btn-media-source:hover { border-color: var(--muted); background: var(--surface); }
 
+/* ── OneDrive Browser Modal ─────────────────────────────────────────────── */
+#odbModal {
+  display: none; position: fixed; inset: 0; z-index: 600;
+  background: rgba(0,0,0,0.65); backdrop-filter: blur(6px);
+  align-items: center; justify-content: center; padding: 20px;
+}
+.odb-box {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 20px; width: min(900px, 96vw); max-height: 88vh;
+  display: flex; flex-direction: column;
+  box-shadow: 0 20px 80px rgba(0,0,0,0.35); overflow: hidden;
+}
+.odb-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 18px 24px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+.odb-head h3 { font-size: 16px; font-weight: 700; flex: 1; margin: 0; }
+.odb-head-close {
+  background: none; border: none; cursor: pointer; color: var(--muted);
+  padding: 4px; border-radius: 6px; display: flex; align-items: center;
+}
+.odb-head-close:hover { color: var(--text); background: var(--surface2); }
+.odb-nav {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 24px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+.odb-crumbs {
+  display: flex; align-items: center; gap: 4px; flex-wrap: wrap;
+  font-size: 13px; flex: 1;
+}
+.odb-crumb-btn { background: none; border: none; cursor: pointer; color: var(--accent); font-size: 13px; padding: 0; }
+.odb-crumb-btn:hover { text-decoration: underline; }
+.odb-crumb-cur { font-size: 13px; color: var(--text); font-weight: 500; }
+.odb-crumb-sep { color: var(--muted); }
+.odb-search {
+  padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--surface2); color: var(--text); font-size: 13px; width: 180px;
+}
+.odb-search:focus { outline: none; border-color: var(--accent); }
+.odb-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 10px; padding: 16px 24px; overflow-y: auto; flex: 1;
+}
+.odb-cell {
+  display: flex; flex-direction: column; gap: 6px; cursor: pointer;
+  border-radius: 10px; padding: 8px; border: 2px solid transparent;
+  transition: background 0.12s, border-color 0.12s;
+}
+.odb-cell:hover { background: var(--surface2); }
+.odb-cell.odb-on { border-color: var(--accent); background: var(--surface2); }
+.odb-thumb {
+  position: relative; width: 100%; aspect-ratio: 1;
+  background: var(--surface2); border-radius: 8px; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+}
+.odb-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.odb-tick {
+  position: absolute; top: 5px; right: 5px; width: 20px; height: 20px;
+  border-radius: 50%; background: rgba(0,0,0,0.3); border: 2px solid #fff;
+  display: flex; align-items: center; justify-content: center; transition: background 0.12s;
+}
+.odb-on .odb-tick { background: var(--accent); border-color: var(--accent); }
+.odb-lbl {
+  font-size: 11px; color: var(--text); line-height: 1.3;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center;
+}
+.odb-msg {
+  grid-column: 1/-1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 12px;
+  padding: 60px 20px; color: var(--muted); font-size: 14px; text-align: center;
+}
+.odb-spin {
+  width: 32px; height: 32px; border: 3px solid var(--border);
+  border-top-color: var(--accent); border-radius: 50%;
+  animation: odbSpin 0.7s linear infinite;
+}
+@keyframes odbSpin { to { transform: rotate(360deg); } }
+.odb-foot {
+  display: flex; align-items: center; gap: 10px; padding: 14px 24px;
+  border-top: 1px solid var(--border); flex-shrink: 0;
+}
+.odb-foot-count { flex: 1; font-size: 13px; color: var(--muted); }
+
 /* Upload drop zone */
 .dropzone {
   border: 2px dashed var(--border);
@@ -3324,6 +3407,34 @@ body.role-editor .admin-action {
         <div class="invite-modal-footer">
           <button class="btn btn-primary" onclick="closeInviteModal()">Done</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OneDrive browser modal -->
+  <div id="odbModal">
+    <div class="odb-box">
+      <div class="odb-head">
+        <svg width="20" height="20" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+          <path d="M29 15c-5.52 0-10.26 3.25-12.6 8h-.4a9 9 0 0 0 0 18h21a7 7 0 0 0 0-14c-.16 0-.32 0-.48.01A10 10 0 0 0 29 15z" fill="#1f9de2"/>
+          <path d="M17 24c-4.97 0-9 4.03-9 9s4.03 9 9 9h20a6 6 0 0 0 0-12c-.12 0-.24 0-.36.01A8 8 0 0 0 17 24z" fill="#0078d4"/>
+        </svg>
+        <h3>Import from OneDrive</h3>
+        <button class="odb-head-close" onclick="odbClose()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="odb-nav">
+        <div class="odb-crumbs" id="odbCrumbs"></div>
+        <input class="odb-search" id="odbSearch" type="search" placeholder="Search…" oninput="odbSearch()">
+      </div>
+      <div class="odb-grid" id="odbGrid"></div>
+      <div class="odb-foot">
+        <span class="odb-foot-count" id="odbCount">No files selected</span>
+        <button class="btn btn-secondary" onclick="odbClose()">Cancel</button>
+        <button class="btn btn-primary" id="odbImport" onclick="odbImport()" disabled>Import Selected</button>
       </div>
     </div>
   </div>
@@ -6137,117 +6248,195 @@ async function _getOneDriveToken(msalInst) {
 }
 
 // ── OneDrive native picker (v8 postMessage) ───────────────────────────────
-function _openOneDrivePicker(accessToken, mode) {
-  const msalInst  = _getMsalInstance();
-  const account   = msalInst?.getAllAccounts()[0];
-  const loginHint = account?.username ?? '';
-  const channelId = '27';
+// ── OneDrive Graph Browser ────────────────────────────────────────────────
+let _odbToken    = null;
+let _odbMode     = 'slides';
+let _odbPath     = [];          // [{id,name}, …]
+let _odbAllItems = [];          // unfiltered items for current folder
+let _odbSelected = new Set();
 
-  const pickerOptions = {
-    sdk: '8.0',
-    entry: { oneDrive: { files: {} } },
-    authentication: {},
-    messaging: { origin: window.location.origin, channelId },
-    selection: { mode: mode === 'canvas' ? 'single' : 'multiple' },
-    typesAndSources: {
-      mode: 'files',
-      filters: ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.mp4'],
-      pivots: { oneDrive: true, recent: true }
-    }
-  };
+function _odbGraphHeaders() {
+  return { Authorization: `Bearer ${_odbToken}` };
+}
 
-  const pickerUrl = 'https://onedrive.live.com/picker'
-    + '?login_hint=' + encodeURIComponent(loginHint)
-    + '&filePicker='  + encodeURIComponent(JSON.stringify(pickerOptions));
+async function _odbFetch(folderId) {
+  const base = folderId === 'root'
+    ? 'https://graph.microsoft.com/v1.0/me/drive/root/children'
+    : `https://graph.microsoft.com/v1.0/me/drive/items/${encodeURIComponent(folderId)}/children`;
+  const url = base + '?$select=id,name,file,folder,image,@microsoft.graph.downloadUrl&$orderby=name&$top=200';
+  const res = await fetch(url, { headers: _odbGraphHeaders() });
+  if (!res.ok) throw new Error(`Graph API ${res.status}`);
+  const data = await res.json();
+  return data.value || [];
+}
 
-  let pickerWindow = null;
-  let initReceived = false;
+async function _odbThumb(itemId) {
+  try {
+    const res = await fetch(
+      `https://graph.microsoft.com/v1.0/me/drive/items/${encodeURIComponent(itemId)}/thumbnails/0/medium`,
+      { headers: _odbGraphHeaders() }
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.url || null;
+  } catch { return null; }
+}
 
-  // Set up listener BEFORE opening the popup so we never miss initialize
-  const messageHandler = async (event) => {
-    // Allow messages from onedrive, 1drv, or sharepoint origins
-    if (!event.origin.includes('onedrive.live.com') &&
-        !event.origin.includes('1drv.com') &&
-        !event.origin.includes('sharepoint.com')) return;
+function _odbIsImage(item) {
+  return !!item.image || (item.file?.mimeType || '').includes('image');
+}
 
-    // Once window is open, also gate on source identity
-    if (pickerWindow && event.source !== pickerWindow) return;
+function _odbRender(items) {
+  const grid   = document.getElementById('odbGrid');
+  const single = _odbMode === 'canvas';
+  const q      = (document.getElementById('odbSearch')?.value || '').toLowerCase();
+  const shown  = items.filter(i =>
+    (i.folder || _odbIsImage(i)) && (!q || i.name.toLowerCase().includes(q))
+  );
 
-    const msg = event.data;
-    if (!msg?.type) return;
-
-    console.log('[OneDrive]', msg.type, msg);
-
-    switch (msg.type) {
-      case 'initialize':
-        initReceived = true;
-        setTimeout(() => {
-          try {
-            pickerWindow.postMessage(
-              { type: 'authenticate', token: accessToken, channelId: msg.channelId || channelId },
-              event.origin
-            );
-          } catch(e) {
-            pickerWindow.postMessage(
-              { type: 'authenticate', token: accessToken, channelId: msg.channelId || channelId },
-              '*'
-            );
-          }
-          setTimeout(() => {
-            pickerWindow.postMessage(
-              { type: 'activate', channelId: msg.channelId || channelId },
-              event.origin
-            );
-          }, 100);
-        }, 50);
-        break;
-
-      case 'result':
-        cleanup();
-        if (msg.items?.length) await _handleOneDriveItems(msg.items, accessToken, mode);
-        break;
-
-      case 'cancel':
-      case 'close':
-        cleanup();
-        break;
-    }
-  };
-
-  function cleanup() {
-    clearTimeout(timeoutId);
-    window.removeEventListener('message', messageHandler);
-    if (pickerWindow && !pickerWindow.closed) pickerWindow.close();
-  }
-
-  // Register listener first, then open window
-  window.addEventListener('message', messageHandler);
-
-  pickerWindow = window.open(pickerUrl, 'OneDrivePicker', 'width=1080,height=680,left=200,top=100');
-  if (!pickerWindow) {
-    window.removeEventListener('message', messageHandler);
-    toast('Please allow popups for this site to use OneDrive import', true);
+  if (!shown.length) {
+    grid.innerHTML = '<div class="odb-msg"><p>No images or folders found.</p></div>';
     return;
   }
 
-  // 10-second timeout if initialize never arrives
-  const timeoutId = setTimeout(() => {
-    if (!initReceived) {
-      cleanup();
-      toast('OneDrive connection timed out — please try again', true);
-    }
-  }, 10000);
+  grid.innerHTML = shown.map(item => {
+    const isFolder = !!item.folder;
+    const sel      = _odbSelected.has(item.id);
+    const tick     = (!isFolder && !single)
+      ? `<div class="odb-tick"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3.5"><polyline points="20 6 9 17 4 12"/></svg></div>` : '';
+    const icon = isFolder
+      ? `<svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>`
+      : `<img id="odbThumb_${item.id}" src="" alt="" loading="lazy" style="display:none;width:100%;height:100%;object-fit:cover">
+         <svg id="odbIcon_${item.id}" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`;
+
+    return `<div class="odb-cell${sel ? ' odb-on' : ''}" data-id="${item.id}" data-folder="${isFolder}" onclick="odbCellClick(this)">
+      <div class="odb-thumb">${icon}${tick}</div>
+      <div class="odb-lbl" title="${item.name.replace(/"/g,'&quot;')}">${item.name}</div>
+    </div>`;
+  }).join('');
+
+  // Load thumbnails lazily
+  shown.filter(i => !i.folder && _odbIsImage(i)).forEach(item => {
+    _odbThumb(item.id).then(url => {
+      if (!url) return;
+      const img  = document.getElementById(`odbThumb_${item.id}`);
+      const icon = document.getElementById(`odbIcon_${item.id}`);
+      if (img)  { img.src = url; img.style.display = 'block'; }
+      if (icon) icon.style.display = 'none';
+    });
+  });
 }
 
-async function _handleOneDriveItems(items, accessToken, mode) {
+function _odbCrumbs() {
+  const el = document.getElementById('odbCrumbs');
+  if (!el) return;
+  el.innerHTML = _odbPath.map((seg, i) => {
+    const last = i === _odbPath.length - 1;
+    return last
+      ? `<span class="odb-crumb-cur">${seg.name}</span>`
+      : `<button class="odb-crumb-btn" onclick="odbNav(${i})">${seg.name}</button><span class="odb-crumb-sep">›</span>`;
+  }).join('');
+}
+
+function _odbUpdateCount() {
+  const n   = _odbSelected.size;
+  const btn = document.getElementById('odbImport');
+  const cnt = document.getElementById('odbCount');
+  if (btn) btn.disabled = n === 0;
+  if (cnt) cnt.textContent = n === 0 ? 'No files selected' : `${n} file${n !== 1 ? 's' : ''} selected`;
+}
+
+async function _odbLoad(folderId) {
+  const grid = document.getElementById('odbGrid');
+  grid.innerHTML = '<div class="odb-msg"><div class="odb-spin"></div><p>Loading…</p></div>';
+  _odbSelected = new Set();
+  _odbUpdateCount();
+  try {
+    _odbAllItems = await _odbFetch(folderId);
+    _odbRender(_odbAllItems);
+    _odbCrumbs();
+  } catch(err) {
+    grid.innerHTML = `<div class="odb-msg"><p style="color:var(--danger)">Failed to load: ${err.message}</p></div>`;
+  }
+}
+
+// Public API
+window.odbCellClick = function(el) {
+  const id       = el.dataset.id;
+  const isFolder = el.dataset.folder === 'true';
+  if (isFolder) {
+    const item = _odbAllItems.find(i => i.id === id);
+    if (!item) return;
+    _odbPath.push({ id: item.id, name: item.name });
+    _odbLoad(item.id);
+    return;
+  }
+  if (_odbMode === 'canvas') {
+    // Single-select: import immediately
+    const token = _odbToken;
+    const item  = _odbAllItems.find(i => i.id === id);
+    odbClose();
+    if (item) _odbImport([item], token, 'canvas');
+    return;
+  }
+  if (_odbSelected.has(id)) _odbSelected.delete(id);
+  else _odbSelected.add(id);
+  el.classList.toggle('odb-on', _odbSelected.has(id));
+  _odbUpdateCount();
+};
+
+window.odbNav = function(idx) {
+  _odbPath = _odbPath.slice(0, idx + 1);
+  _odbLoad(_odbPath[_odbPath.length - 1].id);
+};
+
+window.odbSearch = function() {
+  _odbRender(_odbAllItems);
+};
+
+window.odbClose = function() {
+  document.getElementById('odbModal').style.display = 'none';
+  _odbSelected = new Set();
+};
+
+window.odbOpen = function(token, mode) {
+  _odbToken    = token;
+  _odbMode     = mode || 'slides';
+  _odbPath     = [{ id: 'root', name: 'OneDrive' }];
+  _odbSelected = new Set();
+  document.getElementById('odbSearch').value = '';
+  document.getElementById('odbModal').style.display = 'flex';
+  _odbUpdateCount();
+  _odbLoad('root');
+};
+
+window.odbImport = async function() {
+  const selected = _odbAllItems.filter(i => _odbSelected.has(i.id));
+  if (!selected.length) return;
+  const token = _odbToken;
+  const mode  = _odbMode;
+  odbClose();
+  await _odbImport(selected, token, mode);
+};
+
+async function _odbImport(items, token, mode) {
   if (mode !== 'canvas') toast(`Importing ${items.length} file${items.length !== 1 ? 's' : ''} from OneDrive…`);
   let added = 0;
 
   for (const item of items) {
-    const name = (item.name || 'OneDrive file').replace(/\.[^.]+$/, '');
+    const name = item.name.replace(/\.[^.]+$/, '');
     try {
-      const downloadUrl = item['@microsoft.graph.downloadUrl'];
-      if (!downloadUrl) throw new Error('No download URL in picker response');
+      // Use download URL from listing; fetch fresh copy if missing
+      let downloadUrl = item['@microsoft.graph.downloadUrl'];
+      if (!downloadUrl) {
+        const metaRes = await fetch(
+          `https://graph.microsoft.com/v1.0/me/drive/items/${encodeURIComponent(item.id)}?$select=@microsoft.graph.downloadUrl`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (!metaRes.ok) throw new Error(`Graph API ${metaRes.status}`);
+        downloadUrl = (await metaRes.json())['@microsoft.graph.downloadUrl'];
+      }
+      if (!downloadUrl) throw new Error('No download URL available');
 
       const fileRes = await fetch(downloadUrl);
       if (!fileRes.ok) throw new Error('File download failed');
@@ -6293,7 +6482,7 @@ window.addFromOneDrive = async function() {
   }
   try {
     const token = await _getOneDriveToken(_getMsalInstance());
-    _openOneDrivePicker(token, 'slides');
+    odbOpen(token, 'slides');
   } catch(err) {
     toast('Microsoft sign-in required to import from OneDrive', true);
   }
@@ -10679,7 +10868,7 @@ function fmtLastSeen(lastSeen) {
 
 function isOnline(lastSeen) {
   if (!lastSeen) return false;
-  return (Date.now() - new Date(lastSeen)) < 60000;
+  return (Date.now() - new Date(lastSeen)) < 3 * 60 * 1000;
 }
 
 function renderScreens(screens) {
@@ -12054,7 +12243,7 @@ function checkScreenOnline(screenData) {
   if (!screenData?.lastSeen || !screenData?.name) return;
   const ageMs = Date.now() - new Date(screenData.lastSeen).getTime();
   const id    = screenData.id || screenData.name;
-  if (ageMs > 2 * 60 * 1000) {          // offline if no heartbeat for 2 min
+  if (ageMs > 4 * 60 * 1000) {          // offline if no heartbeat for 4 min
     if (!_notifiedOffline.has(id)) {
       _notifiedOffline.add(id);
       if (Notification.permission === 'granted') {
