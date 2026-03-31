@@ -12270,6 +12270,8 @@ let _deferredInstallPrompt = null;
 window.addEventListener('beforeinstallprompt', e => {
   e.preventDefault();
   _deferredInstallPrompt = e;
+  const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if (!isMobile) return;
   const visits = parseInt(localStorage.getItem('pwa-visits') || '0') + 1;
   localStorage.setItem('pwa-visits', visits);
   if (visits >= 2) {
