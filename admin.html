@@ -246,6 +246,30 @@ body {
 
 /* ── Screens page ───────────────────────────────────────────────────────── */
 #page-screens.active { flex-direction: column; padding: 32px; gap: 24px; }
+
+/* ── Media library page ─────────────────────────────────────────────────── */
+#page-media.active { flex-direction: column; padding: 32px; gap: 24px; }
+.media-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.media-header-left h1 { font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+.media-header-left p  { font-size: 13px; color: var(--muted); }
+.media-toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.media-filter-tabs { display: flex; gap: 4px; }
+.media-filter-tab { padding: 6px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--muted); font-size: 13px; cursor: pointer; transition: background 0.12s; }
+.media-filter-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.media-search { padding: 7px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-size: 13px; width: 200px; outline: none; }
+.media-search:focus { border-color: var(--accent); }
+.media-count { font-size: 13px; color: var(--muted); }
+.media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; }
+.media-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; cursor: pointer; transition: border-color 0.15s, transform 0.15s; position: relative; }
+.media-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+.media-thumb { width: 100%; aspect-ratio: 16/9; object-fit: cover; background: var(--surface2); display: block; }
+.media-thumb-video { width: 100%; aspect-ratio: 16/9; background: var(--surface2); display: flex; align-items: center; justify-content: center; }
+.media-card-body { padding: 10px 12px; }
+.media-card-name { font-size: 12px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.media-card-meta { font-size: 11px; color: var(--muted); margin-top: 3px; }
+.media-card-delete { position: absolute; top: 6px; right: 6px; background: rgba(0,0,0,0.6); border: none; border-radius: 6px; color: #fff; width: 26px; height: 26px; cursor: pointer; display: none; align-items: center; justify-content: center; padding: 0; }
+.media-card:hover .media-card-delete { display: flex; }
+.media-type-badge { position: absolute; top: 6px; left: 6px; background: rgba(0,0,0,0.55); color: #fff; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 6px; letter-spacing: .03em; }
 .screens-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .screens-header-left h1 { font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
 .screens-header-left p  { font-size: 13px; color: var(--muted); }
@@ -3014,14 +3038,31 @@ body.role-editor .admin-action {
 
   <!-- Media -->
   <div id="page-media" class="page">
-    <div class="coming-soon">
-      <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-        <rect x="3" y="3" width="18" height="18" rx="2"/>
-        <circle cx="8.5" cy="8.5" r="1.5"/>
-        <polyline points="21 15 16 10 5 21"/>
-      </svg>
-      <h2>Media Library</h2>
-      <p>Coming soon — manage all your uploaded images and videos in one place.</p>
+    <div class="media-header">
+      <div class="media-header-left">
+        <h1>Media Library</h1>
+        <p>All images and videos uploaded to your account</p>
+      </div>
+      <button class="btn btn-primary" onclick="showPage('slideshows');setTimeout(()=>document.getElementById('fileInput').click(),100)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Upload Media
+      </button>
+    </div>
+    <div class="media-toolbar">
+      <div class="media-filter-tabs">
+        <button class="media-filter-tab active" onclick="setMediaFilter(this,'all')">All</button>
+        <button class="media-filter-tab" onclick="setMediaFilter(this,'image')">Images</button>
+        <button class="media-filter-tab" onclick="setMediaFilter(this,'video')">Videos</button>
+      </div>
+      <input class="media-search" type="search" placeholder="Search…" oninput="filterMediaSearch(this.value)">
+      <span class="media-count" id="mediaCount"></span>
+    </div>
+    <div class="media-grid" id="mediaGrid">
+      <div class="empty" style="grid-column:1/-1;padding:60px 0">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        <p style="margin:12px 0 16px">No media uploaded yet.</p>
+        <button class="btn btn-primary" onclick="showPage('slideshows');setTimeout(()=>document.getElementById('fileInput').click(),100)">Upload Media</button>
+      </div>
     </div>
   </div>
 
@@ -6044,6 +6085,7 @@ async function handleFiles(files) {
         if (isVideo) slide.type = "video";
         slides.push(slide);
         renderGrid(); updateCount();
+        saveMediaRecord(data.secure_url, file.name, isVideo ? 'video' : 'image', data.public_id);
       } else {
         toast(`Upload failed for ${file.name}: ${data.error?.message || "Unknown error"}`, true);
       }
@@ -6456,8 +6498,10 @@ async function _odbImport(items, token, mode) {
           { method: 'POST', body: fd }
         );
         if (!cloudRes.ok) throw new Error('Cloudinary upload failed');
-        const { secure_url } = await cloudRes.json();
+        const cloudData = await cloudRes.json();
+        const { secure_url } = cloudData;
         slides.push({ id: crypto.randomUUID(), url: secure_url, name, active: true });
+        saveMediaRecord(secure_url, name, 'image', cloudData.public_id);
         added++;
       }
     } catch(err) {
@@ -8168,6 +8212,7 @@ document.getElementById('designerFileInput').addEventListener('change', async fu
       fabricImg._element.src = data.secure_url;
       if (fabricImg._originalElement) fabricImg._originalElement.src = data.secure_url;
       URL.revokeObjectURL(blobUrl);
+      saveMediaRecord(data.secure_url, file.name, 'image', data.public_id);
       toast('Saved to cloud ✓');
     } else {
       toast('Cloud upload failed: ' + (data.error?.message || 'Unknown error'), true);
@@ -10200,6 +10245,7 @@ window.showPage = function(name) {
     page.classList.add('active');
     if (name === 'dashboard') updateDashboard();
     if (name === 'screens')   initScreensPage();
+    if (name === 'media')     initMediaPage();
     if (name === 'brandkit')  renderBkPage();
   }
 };
@@ -10948,6 +10994,122 @@ function renderScreens(screens) {
 function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+
+// ── Media Library ─────────────────────────────────────────────────────────
+let _cachedMedia  = [];
+let _mediaUnsub   = null;
+let _mediaFilter  = 'all';
+let _mediaSearch  = '';
+
+async function saveMediaRecord(url, name, type, publicId) {
+  if (!currentOrgId) return;
+  try {
+    await addDoc(collection(db, 'organizations', currentOrgId, 'media'), {
+      url,
+      name:      name || 'Untitled',
+      type,
+      publicId:  publicId || '',
+      uploadedAt: new Date().toISOString(),
+    });
+  } catch(_) { /* non-critical — media library will just miss this item */ }
+}
+
+function initMediaPage() {
+  if (_mediaUnsub) { renderMediaGrid(); return; }
+  if (!currentOrgId) return;
+  const q = query(
+    collection(db, 'organizations', currentOrgId, 'media'),
+    orderBy('uploadedAt', 'desc'),
+    limit(200)
+  );
+  _mediaUnsub = onSnapshot(q,
+    snap => {
+      _cachedMedia = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderMediaGrid();
+    },
+    err => console.warn('Media listener error:', err.message)
+  );
+}
+
+function renderMediaGrid() {
+  const grid    = document.getElementById('mediaGrid');
+  const countEl = document.getElementById('mediaCount');
+  if (!grid) return;
+
+  let items = _cachedMedia;
+  if (_mediaFilter !== 'all') items = items.filter(m => m.type === _mediaFilter);
+  if (_mediaSearch) {
+    const q = _mediaSearch.toLowerCase();
+    items = items.filter(m => (m.name || '').toLowerCase().includes(q));
+  }
+
+  if (countEl) countEl.textContent = `${_cachedMedia.length} item${_cachedMedia.length !== 1 ? 's' : ''}`;
+
+  if (!items.length) {
+    grid.innerHTML = `<div class="empty" style="grid-column:1/-1;padding:60px 0">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+      <p style="margin:12px 0 16px">${_cachedMedia.length ? 'No results match your filter.' : 'No media uploaded yet.'}</p>
+      ${!_cachedMedia.length ? `<button class="btn btn-primary" onclick="showPage('slideshows');setTimeout(()=>document.getElementById('fileInput').click(),100)">Upload Media</button>` : ''}
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = items.map(m => {
+    const date    = m.uploadedAt ? new Date(m.uploadedAt).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+    const isVideo = m.type === 'video';
+    const thumb   = isVideo
+      ? `<div class="media-thumb-video"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.4"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>`
+      : `<img class="media-thumb" src="${escHtml(m.url)}" loading="lazy" alt="${escHtml(m.name || '')}">`;
+    return `<div class="media-card" onclick="insertOrCopyMedia(${JSON.stringify(m.url)},${JSON.stringify(m.type)})">
+      ${thumb}
+      <span class="media-type-badge">${isVideo ? 'VIDEO' : 'IMG'}</span>
+      <button class="media-card-delete" onclick="event.stopPropagation();deleteMediaRecord('${m.id}')" title="Remove from library">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+      <div class="media-card-body">
+        <div class="media-card-name">${escHtml(m.name || 'Untitled')}</div>
+        <div class="media-card-meta">${date}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+window.setMediaFilter = function(tab, type) {
+  _mediaFilter = type;
+  document.querySelectorAll('.media-filter-tab').forEach(t => t.classList.remove('active'));
+  tab.classList.add('active');
+  renderMediaGrid();
+};
+
+window.filterMediaSearch = function(val) {
+  _mediaSearch = val;
+  renderMediaGrid();
+};
+
+window.insertOrCopyMedia = function(url, type) {
+  if (type === 'video') {
+    navigator.clipboard.writeText(url).then(() => toast('Video URL copied ✓'));
+    return;
+  }
+  // If designer slide is open, insert into canvas
+  if (fabricCanvas && document.getElementById('page-slideshows')?.classList.contains('active')) {
+    addImageToCanvas(url);
+    toast('Image added to canvas ✓');
+    return;
+  }
+  navigator.clipboard.writeText(url).then(() => toast('Image URL copied ✓'));
+};
+
+window.deleteMediaRecord = async function(id) {
+  if (!currentOrgId) return;
+  if (!confirm('Remove this item from your media library? (The file stays on Cloudinary.)')) return;
+  try {
+    await deleteDoc(doc(db, 'organizations', currentOrgId, 'media', id));
+    toast('Removed from library ✓');
+  } catch(e) {
+    toast('Could not remove: ' + e.message, true);
+  }
+};
 
 // ── Add Screen / Pairing ──────────────────────────────────────────────────
 function genPairingCode() {
