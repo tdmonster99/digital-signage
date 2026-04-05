@@ -104,10 +104,14 @@ body {
 }
 .zigns-mark {
   width: 30px; height: 30px; flex-shrink: 0;
-  border: 2.5px solid var(--accent);
+  border: 2.5px solid #111827;
   display: flex; align-items: center; justify-content: center;
   font-weight: 800; font-size: 16px; line-height: 1;
-  color: var(--accent); letter-spacing: -0.5px;
+  color: #111827; letter-spacing: -0.5px;
+}
+[data-theme="dark"] .zigns-mark {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 .zigns-wordmark {
   font-size: 17px; font-weight: 700; letter-spacing: 2px;
