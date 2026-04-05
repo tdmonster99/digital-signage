@@ -16,8 +16,7 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
 <script src="https://www.dropbox.com/static/api/2/dropins.js" id="dropboxjs" data-app-key="363zjxwv9mk4zij"></script>
-<!-- Google API client + Identity Services (for Drive Picker) -->
-<script src="https://apis.google.com/js/api.js" async defer></script>
+<!-- Google Identity Services (for Drive OAuth) -->
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <!-- Microsoft MSAL (for OneDrive Picker) -->
 <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
@@ -632,6 +631,136 @@ section.content {
 }
 .btn-media-source:hover { border-color: var(--muted); background: var(--surface); }
 
+
+/* ── Google Drive Modal ──────────────────────────────────────────────────── */
+#gdriveModal {
+  display: none; position: fixed; inset: 0; z-index: 600;
+  background: rgba(0,0,0,0.55); backdrop-filter: blur(4px);
+  align-items: center; justify-content: center; padding: 20px;
+}
+#gdriveModal.open { display: flex; }
+.gdrive-box {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+  width: min(860px, 96vw); max-height: 86vh; display: flex; flex-direction: column;
+  box-shadow: 0 8px 48px rgba(0,0,0,0.22); overflow: hidden;
+}
+.gdrive-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 20px 24px 0; flex-shrink: 0;
+}
+.gdrive-head h3 { font-size: 16px; font-weight: 700; flex: 1; margin: 0; color: var(--text); }
+.gdrive-head-close {
+  background: none; border: none; cursor: pointer; color: var(--muted);
+  padding: 4px; border-radius: 6px; display: flex; align-items: center;
+}
+.gdrive-head-close:hover { color: var(--text); background: var(--surface2); }
+.gdrive-tabs {
+  display: flex; padding: 12px 24px 0;
+  border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+.gdrive-tab {
+  background: none; border: none; border-bottom: 2px solid transparent; margin-bottom: -1px;
+  cursor: pointer; padding: 8px 16px; font-size: 13px; font-weight: 500;
+  color: var(--muted); border-radius: 4px 4px 0 0;
+  transition: color 0.12s, border-color 0.12s;
+}
+.gdrive-tab:hover { color: #1a73e8; background: rgba(26,115,232,0.06); }
+.gdrive-tab.active { color: #1a73e8; border-bottom-color: #1a73e8; }
+.gdrive-toolbar {
+  padding: 12px 24px 4px; flex-shrink: 0;
+}
+.gdrive-search {
+  width: 100%; padding: 8px 14px; border-radius: 24px;
+  border: 1px solid var(--border); background: var(--surface2);
+  font-size: 13px; color: var(--text); outline: none; box-sizing: border-box;
+}
+.gdrive-search:focus { border-color: #1a73e8; box-shadow: 0 0 0 3px rgba(26,115,232,0.12); }
+.gdrive-crumbs {
+  display: flex; align-items: center; gap: 2px; flex-wrap: wrap;
+  padding: 6px 24px 2px; font-size: 12px; flex-shrink: 0; min-height: 30px;
+}
+.gdrive-crumb-btn {
+  background: none; border: none; cursor: pointer; color: #1a73e8;
+  font-size: 12px; padding: 2px 6px; border-radius: 4px;
+}
+.gdrive-crumb-btn:hover { background: rgba(26,115,232,0.08); text-decoration: underline; }
+.gdrive-crumb-cur { font-size: 12px; color: var(--muted); padding: 2px 6px; }
+.gdrive-crumb-sep { color: var(--muted); font-size: 14px; line-height: 1; }
+.gdrive-body { flex: 1; overflow-y: auto; padding: 8px 24px 16px; }
+.gdrive-section-label {
+  font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--muted); margin: 12px 0 8px;
+}
+.gdrive-folder-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 6px;
+  margin-bottom: 16px;
+}
+.gdrive-folder-card {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+  border-radius: 8px; cursor: pointer; border: 1px solid transparent;
+  transition: background 0.1s, border-color 0.1s;
+}
+.gdrive-folder-card:hover { background: rgba(26,115,232,0.07); border-color: rgba(26,115,232,0.2); }
+.gdrive-folder-name {
+  font-size: 13px; color: var(--text); overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap;
+}
+.gdrive-file-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px;
+}
+.gdrive-file-card {
+  display: flex; flex-direction: column; border-radius: 10px;
+  border: 2px solid transparent; cursor: pointer; overflow: hidden;
+  background: var(--surface2); position: relative;
+  transition: border-color 0.12s;
+}
+.gdrive-file-card:hover { border-color: rgba(26,115,232,0.35); }
+.gdrive-file-card.gd-sel { border-color: #1a73e8; }
+.gdrive-thumb-wrap {
+  width: 100%; aspect-ratio: 1; position: relative;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--surface2); overflow: hidden;
+}
+.gdrive-thumb-wrap img {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; opacity: 0; transition: opacity 0.2s;
+}
+.gdrive-thumb-wrap img.gd-loaded { opacity: 1; }
+.gdrive-cb {
+  position: absolute; top: 6px; left: 6px; width: 20px; height: 20px;
+  border-radius: 50%; border: 2px solid rgba(255,255,255,0.85);
+  background: rgba(0,0,0,0.28); display: flex; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity 0.12s, background 0.12s, border-color 0.12s;
+}
+.gdrive-file-card:hover .gdrive-cb,
+.gdrive-file-card.gd-sel .gdrive-cb { opacity: 1; }
+.gdrive-file-card.gd-sel .gdrive-cb { background: #1a73e8; border-color: #1a73e8; }
+.gdrive-file-name {
+  font-size: 11px; color: var(--text); padding: 6px 8px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.gdrive-msg {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 12px; padding: 60px 20px; color: var(--muted); font-size: 14px; text-align: center;
+}
+.gdrive-spin {
+  width: 30px; height: 30px; border: 3px solid var(--border);
+  border-top-color: #1a73e8; border-radius: 50%;
+  animation: gdSpin 0.7s linear infinite;
+}
+@keyframes gdSpin { to { transform: rotate(360deg); } }
+.gdrive-foot {
+  display: flex; align-items: center; gap: 10px; padding: 14px 24px;
+  border-top: 1px solid var(--border); flex-shrink: 0;
+}
+.gdrive-foot-count { flex: 1; font-size: 13px; color: var(--muted); }
+.gdrive-btn-select {
+  background: #1a73e8; color: #fff; border: none; border-radius: 8px;
+  padding: 8px 20px; font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: background 0.12s;
+}
+.gdrive-btn-select:hover:not(:disabled) { background: #1557b0; }
+.gdrive-btn-select:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* Upload drop zone */
 .dropzone {
@@ -3535,6 +3664,45 @@ body.role-editor .admin-action {
     </div>
   </div>
 
+  <!-- Google Drive browser modal -->
+  <div id="gdriveModal">
+    <div class="gdrive-box">
+      <div class="gdrive-head">
+        <svg width="22" height="20" viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg">
+          <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
+          <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0-1.2 4.5h27.5z" fill="#00ac47"/>
+          <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.5l5.85 11.5z" fill="#ea4335"/>
+          <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
+          <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
+          <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
+        </svg>
+        <h3>Import from Google Drive</h3>
+        <button class="gdrive-head-close" onclick="gdriveClose()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="gdrive-tabs">
+        <button class="gdrive-tab active" data-tab="myDrive"      onclick="gdriveTab('myDrive')">My Drive</button>
+        <button class="gdrive-tab"        data-tab="sharedWithMe" onclick="gdriveTab('sharedWithMe')">Shared with me</button>
+        <button class="gdrive-tab"        data-tab="sharedDrives" onclick="gdriveTab('sharedDrives')">Shared drives</button>
+      </div>
+      <div class="gdrive-toolbar">
+        <input class="gdrive-search" id="gdriveSearch" type="search" placeholder="Search…" oninput="gdriveSearchFilter()">
+      </div>
+      <div class="gdrive-crumbs" id="gdriveCrumbs"></div>
+      <div class="gdrive-body" id="gdriveBody">
+        <div class="gdrive-msg"><div class="gdrive-spin"></div></div>
+      </div>
+      <div class="gdrive-foot">
+        <span class="gdrive-foot-count" id="gdriveCount">No files selected</span>
+        <button class="btn btn-secondary" onclick="gdriveClose()">Cancel</button>
+        <button class="gdrive-btn-select" id="gdriveSelectBtn" onclick="gdriveImport()" disabled>Select</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ── Brand Kit Page ──────────────────────────────────────────────────── -->
   <div id="page-brandkit" class="page">
     <div class="bk-header">
@@ -6252,60 +6420,261 @@ window.addFromDropbox = function() {
   });
 };
 
-// ── Add from Google Drive ─────────────────────────────────────────────────
-const GDRIVE_API_KEY   = 'AIzaSyCG2D73JImsXwWvsOjARcWoNxyDYjxbh7s';
+// ── Google Drive modal browser ────────────────────────────────────────────
 const GDRIVE_CLIENT_ID = '952679135642-tlp5r8lptelklvt95q22rb1q51rm609r.apps.googleusercontent.com';
 const GDRIVE_SCOPE     = 'https://www.googleapis.com/auth/drive.readonly';
+const GDRIVE_FOLDER    = 'application/vnd.google-apps.folder';
 
-const GDRIVE_IMAGE_MIME = 'image/png,image/jpeg,image/gif,image/webp,image/svg+xml';
-const GDRIVE_SLIDE_MIME = GDRIVE_IMAGE_MIME + ',video/mp4,video/webm';
+let _gdToken     = null;   // OAuth access token
+let _gdMode      = 'slides';
+let _gdTab       = 'myDrive';
+let _gdPath      = [];     // [{id, name}] breadcrumb stack
+let _gdAllItems  = [];     // raw Drive items for current view
+let _gdSelected  = new Set();   // selected file IDs
+let _gdItemMap   = new Map();   // id → item
 
-function _gdriveAuth(callback) {
+function _gdAuth(callback) {
   if (typeof google === 'undefined' || !google.accounts?.oauth2) {
     toast('Google Identity Services not loaded. Please refresh the page.', true);
     return;
   }
   google.accounts.oauth2.initTokenClient({
     client_id: GDRIVE_CLIENT_ID,
-    scope:     GDRIVE_SCOPE,
+    scope: GDRIVE_SCOPE,
     callback,
   }).requestAccessToken();
 }
 
-function _openGoogleDrivePicker(token, mode) {
-  const mimes  = mode === 'canvas' ? GDRIVE_IMAGE_MIME : GDRIVE_SLIDE_MIME;
-  const view   = new google.picker.DocsView()
-    .setIncludeFolders(true)
-    .setMimeTypes(mimes);
-
-  const builder = new google.picker.PickerBuilder()
-    .addView(view)
-    .setOAuthToken(token)
-    .setDeveloperKey(GDRIVE_API_KEY)
-    .setCallback(async data => {
-      if (data.action !== google.picker.Action.PICKED) return;
-      const picked = data[google.picker.Response.DOCUMENTS] || [];
-      if (!picked.length) return;
-      await _handleGdriveItems(picked, token, mode);
-    });
-
-  if (mode !== 'canvas') builder.enableFeature(google.picker.Feature.MULTISELECT_ENABLED);
-
-  builder.build().setVisible(true);
+async function _gdFetch(url) {
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${_gdToken}` } });
+  if (!res.ok) throw new Error(`Drive API ${res.status}`);
+  return res.json();
 }
 
-async function _handleGdriveItems(files, token, mode) {
-  if (mode !== 'canvas') toast(`Importing ${files.length} file${files.length !== 1 ? 's' : ''} from Google Drive…`);
+async function _gdLoadItems() {
+  const FIELDS = 'files(id,name,mimeType,thumbnailLink)';
+  const tab    = _gdTab;
+  const depth  = _gdPath.length;
+
+  if (tab === 'myDrive') {
+    const folderId = depth ? _gdPath[depth - 1].id : 'root';
+    const q = encodeURIComponent(`'${folderId}' in parents and trashed=false`);
+    const data = await _gdFetch(
+      `https://www.googleapis.com/drive/v3/files?q=${q}&fields=${encodeURIComponent(FIELDS)}&orderBy=folder%2Cname&pageSize=200`
+    );
+    _gdAllItems = data.files || [];
+
+  } else if (tab === 'sharedWithMe') {
+    if (!depth) {
+      const q = encodeURIComponent('sharedWithMe=true and trashed=false');
+      const data = await _gdFetch(
+        `https://www.googleapis.com/drive/v3/files?q=${q}&fields=${encodeURIComponent(FIELDS)}&orderBy=folder%2Cname&pageSize=200`
+      );
+      _gdAllItems = data.files || [];
+    } else {
+      const folderId = _gdPath[depth - 1].id;
+      const q = encodeURIComponent(`'${folderId}' in parents and trashed=false`);
+      const data = await _gdFetch(
+        `https://www.googleapis.com/drive/v3/files?q=${q}&fields=${encodeURIComponent(FIELDS)}&orderBy=folder%2Cname&pageSize=200&includeItemsFromAllDrives=true&supportsAllDrives=true`
+      );
+      _gdAllItems = data.files || [];
+    }
+
+  } else if (tab === 'sharedDrives') {
+    if (!depth) {
+      // List shared drives
+      const data = await _gdFetch(
+        `https://www.googleapis.com/drive/v3/drives?pageSize=50`
+      );
+      _gdAllItems = (data.drives || []).map(d => ({
+        id: d.id, name: d.name, mimeType: GDRIVE_FOLDER, _isDrive: true
+      }));
+    } else {
+      // depth 1 = inside a drive root; depth 2+ = inside a subfolder
+      const driveId  = _gdPath[0].id;
+      const folderId = _gdPath[depth - 1].id;
+      const parentQ  = depth === 1
+        ? encodeURIComponent(`'${driveId}' in parents and trashed=false`)
+        : encodeURIComponent(`'${folderId}' in parents and trashed=false`);
+      const data = await _gdFetch(
+        `https://www.googleapis.com/drive/v3/files?q=${parentQ}&fields=${encodeURIComponent(FIELDS)}&orderBy=folder%2Cname&pageSize=200&includeItemsFromAllDrives=true&supportsAllDrives=true&corpora=drive&driveId=${driveId}`
+      );
+      _gdAllItems = data.files || [];
+    }
+  }
+  _gdItemMap = new Map(_gdAllItems.map(i => [i.id, i]));
+}
+
+function _gdRender() {
+  const body  = document.getElementById('gdriveBody');
+  const q     = (document.getElementById('gdriveSearch')?.value || '').toLowerCase();
+  const single = _gdMode === 'canvas';
+
+  const shown = _gdAllItems.filter(i =>
+    (!q || i.name.toLowerCase().includes(q)) &&
+    (i.mimeType === GDRIVE_FOLDER || i.mimeType?.startsWith('image/'))
+  );
+
+  const folders = shown.filter(i => i.mimeType === GDRIVE_FOLDER);
+  const files   = shown.filter(i => i.mimeType?.startsWith('image/'));
+
+  if (!shown.length) {
+    body.innerHTML = '<div class="gdrive-msg"><p>No images or folders found.</p></div>';
+    return;
+  }
+
+  const folderIcon = `<svg width="28" height="24" viewBox="0 0 24 24" fill="#5f6368"><path d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>`;
+  const fileIcon   = `<svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`;
+  const checkIcon  = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5"><polyline points="20 6 9 17 4 12"/></svg>`;
+
+  let html = '';
+
+  if (folders.length) {
+    html += `<div class="gdrive-section-label">Folders</div>
+    <div class="gdrive-folder-grid">
+      ${folders.map(f => `
+        <div class="gdrive-folder-card" data-id="${f.id}" data-name="${f.name.replace(/"/g, '&quot;')}" onclick="gdriveFolderClick(this)">
+          ${folderIcon}
+          <span class="gdrive-folder-name">${f.name}</span>
+        </div>`).join('')}
+    </div>`;
+  }
+
+  if (files.length) {
+    html += `<div class="gdrive-section-label">Files</div>
+    <div class="gdrive-file-grid">
+      ${files.map(f => {
+        const sel   = _gdSelected.has(f.id);
+        const thumb = f.thumbnailLink || '';
+        return `<div class="gdrive-file-card${sel ? ' gd-sel' : ''}" data-id="${f.id}" onclick="gdriveFileClick(this)">
+          <div class="gdrive-thumb-wrap">
+            ${fileIcon}
+            ${thumb ? `<img src="${thumb}" alt="" onload="this.classList.add('gd-loaded')" onerror="this.remove()">` : ''}
+            <div class="gdrive-cb">${checkIcon}</div>
+          </div>
+          <div class="gdrive-file-name" title="${f.name.replace(/"/g, '&quot;')}">${f.name}</div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }
+
+  body.innerHTML = html;
+}
+
+function _gdCrumbs() {
+  const el = document.getElementById('gdriveCrumbs');
+  if (!el) return;
+  const tabLabel = { myDrive: 'My Drive', sharedWithMe: 'Shared with me', sharedDrives: 'Shared drives' }[_gdTab];
+  const segs = [{ label: tabLabel, idx: -1 }, ..._gdPath.map((s, i) => ({ label: s.name, idx: i }))];
+  el.innerHTML = segs.map((s, i) => {
+    const last = i === segs.length - 1;
+    return last
+      ? `<span class="gdrive-crumb-cur">${s.label}</span>`
+      : `<button class="gdrive-crumb-btn" onclick="gdriveNav(${s.idx})">${s.label}</button><span class="gdrive-crumb-sep">›</span>`;
+  }).join('');
+}
+
+function _gdUpdateCount() {
+  const n   = _gdSelected.size;
+  const btn = document.getElementById('gdriveSelectBtn');
+  const cnt = document.getElementById('gdriveCount');
+  if (btn) btn.disabled = n === 0;
+  if (cnt) cnt.textContent = n === 0 ? 'No files selected' : `${n} file${n !== 1 ? 's' : ''} selected`;
+}
+
+async function _gdLoadAndRender() {
+  const body = document.getElementById('gdriveBody');
+  body.innerHTML = '<div class="gdrive-msg"><div class="gdrive-spin"></div></div>';
+  _gdSelected.clear();
+  _gdUpdateCount();
+  try {
+    await _gdLoadItems();
+    _gdRender();
+    _gdCrumbs();
+  } catch(err) {
+    body.innerHTML = `<div class="gdrive-msg"><p style="color:var(--danger)">Failed to load: ${err.message}</p></div>`;
+  }
+}
+
+// Public handlers
+window.gdriveOpen = function(token, mode) {
+  _gdToken    = token;
+  _gdMode     = mode || 'slides';
+  _gdTab      = 'myDrive';
+  _gdPath     = [];
+  _gdSelected = new Set();
+  document.querySelectorAll('.gdrive-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === 'myDrive'));
+  document.getElementById('gdriveSearch').value = '';
+  document.getElementById('gdriveModal').classList.add('open');
+  _gdLoadAndRender();
+};
+
+window.gdriveClose = function() {
+  document.getElementById('gdriveModal').classList.remove('open');
+  _gdSelected = new Set();
+};
+
+window.gdriveTab = function(tab) {
+  _gdTab  = tab;
+  _gdPath = [];
+  _gdSelected = new Set();
+  document.querySelectorAll('.gdrive-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  document.getElementById('gdriveSearch').value = '';
+  _gdLoadAndRender();
+};
+
+window.gdriveFolderClick = function(el) {
+  _gdPath.push({ id: el.dataset.id, name: el.dataset.name });
+  _gdSelected = new Set();
+  document.getElementById('gdriveSearch').value = '';
+  _gdLoadAndRender();
+};
+
+window.gdriveNav = function(idx) {
+  // idx === -1 means tab root; otherwise slice path to idx+1
+  _gdPath = idx === -1 ? [] : _gdPath.slice(0, idx + 1);
+  _gdSelected = new Set();
+  document.getElementById('gdriveSearch').value = '';
+  _gdLoadAndRender();
+};
+
+window.gdriveFileClick = function(el) {
+  const id = el.dataset.id;
+  if (_gdMode === 'canvas') {
+    // single-select: import immediately
+    const item = _gdItemMap.get(id);
+    if (item) { gdriveClose(); _gdImportItems([item]); }
+    return;
+  }
+  if (_gdSelected.has(id)) _gdSelected.delete(id);
+  else _gdSelected.add(id);
+  el.classList.toggle('gd-sel', _gdSelected.has(id));
+  el.querySelector('.gdrive-cb').style.opacity = _gdSelected.has(id) ? '1' : '';
+  _gdUpdateCount();
+};
+
+window.gdriveSearchFilter = function() {
+  _gdRender();
+};
+
+window.gdriveImport = async function() {
+  const items = [..._gdSelected].map(id => _gdItemMap.get(id)).filter(Boolean);
+  if (!items.length) return;
+  gdriveClose();
+  await _gdImportItems(items);
+};
+
+async function _gdImportItems(items) {
+  const mode = _gdMode;
+  if (mode !== 'canvas') toast(`Importing ${items.length} file${items.length !== 1 ? 's' : ''} from Google Drive…`);
   let added = 0;
 
-  for (const file of files) {
-    const fileId  = file[google.picker.Document.ID];
-    const name    = (file[google.picker.Document.NAME] || 'Drive file').replace(/\.[^.]+$/, '');
-    const fname   = file[google.picker.Document.NAME] || 'file';
+  for (const item of items) {
+    const name = (item.name || 'Drive file').replace(/\.[^.]+$/, '');
     try {
       const fileRes = await fetch(
-        `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        `https://www.googleapis.com/drive/v3/files/${item.id}?alt=media`,
+        { headers: { Authorization: `Bearer ${_gdToken}` } }
       );
       if (!fileRes.ok) throw new Error(`Drive API ${fileRes.status}`);
       const blob = await fileRes.blob();
@@ -6315,7 +6684,7 @@ async function _handleGdriveItems(files, token, mode) {
         added++;
       } else {
         const fd = new FormData();
-        fd.append('file', blob, fname);
+        fd.append('file', blob, item.name);
         fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
         fd.append('folder', 'signage/slides');
         const cloudRes = await fetch(
@@ -6345,9 +6714,9 @@ async function _handleGdriveItems(files, token, mode) {
 }
 
 window.addFromGoogleDrive = function() {
-  _gdriveAuth(resp => {
+  _gdAuth(resp => {
     if (resp.error) { toast('Google sign-in failed: ' + resp.error, true); return; }
-    gapi.load('picker', () => _openGoogleDrivePicker(resp.access_token, 'slides'));
+    gdriveOpen(resp.access_token, 'slides');
   });
 };
 
@@ -8153,9 +8522,9 @@ window.designerImageFromDropbox = function() {
 
 window.designerImageFromGoogleDrive = function() {
   document.getElementById('imagePopover').classList.remove('open');
-  _gdriveAuth(resp => {
+  _gdAuth(resp => {
     if (resp.error) { toast('Google sign-in failed: ' + resp.error, true); return; }
-    gapi.load('picker', () => _openGoogleDrivePicker(resp.access_token, 'canvas'));
+    gdriveOpen(resp.access_token, 'canvas');
   });
 };
 
