@@ -6354,16 +6354,14 @@ function _isMsOrigin(origin) {
   } catch { return false; }
 }
 
-function _openOneDrivePicker(accessToken, mode) {
-  const msalInst  = _getMsalInstance();
-  const account   = msalInst?.getAllAccounts()[0];
-  const loginHint = account?.username ?? '';
+function _openOneDrivePicker(mode) {
   const channelId = '27';
 
+  // No authentication: {} — personal OneDrive authenticates via browser session.
+  // Providing a token causes the picker to stall waiting for a token type it can't use.
   const pickerOptions = {
     sdk: '8.0',
     entry: { oneDrive: { files: {} } },
-    authentication: {},
     messaging: { origin: window.location.origin, channelId },
     selection: { mode: mode === 'canvas' ? 'single' : 'multiple' },
     typesAndSources: {
@@ -6374,8 +6372,7 @@ function _openOneDrivePicker(accessToken, mode) {
   };
 
   const pickerUrl = 'https://onedrive.live.com/picker'
-    + '?login_hint=' + encodeURIComponent(loginHint)
-    + '&filePicker='  + encodeURIComponent(JSON.stringify(pickerOptions));
+    + '?filePicker=' + encodeURIComponent(JSON.stringify(pickerOptions));
 
   let pickerWindow = null;
   let initReceived = false;
@@ -6401,7 +6398,7 @@ function _openOneDrivePicker(accessToken, mode) {
       case 'initialize': {
         initReceived = true;
         const port = msg.replyTo;
-        console.log('[OneDrive] initialize — port:', port, 'channelId:', msg.channelId, 'token prefix:', accessToken?.slice(0,20));
+        console.log('[OneDrive] initialize — port:', port, 'channelId:', msg.channelId);
         if (!port) { console.warn('[OneDrive] no replyTo port!'); break; }
 
         port.addEventListener('message', async (pe) => {
@@ -6409,32 +6406,26 @@ function _openOneDrivePicker(accessToken, mode) {
           console.log('[OneDrive] port message', pm);
           if (pm?.type === 'result') {
             cleanup();
-            if (pm.items?.length) await _handleOneDriveItems(pm.items, accessToken, mode);
+            if (pm.items?.length) await _handleOneDriveItems(pm.items, mode);
           } else if (pm?.type === 'cancel' || pm?.type === 'close') {
             cleanup();
           }
         });
         port.start();
-        console.log('[OneDrive] port started, sending authenticate…');
 
+        // Personal OneDrive uses browser session for auth — just activate, no token needed.
         setTimeout(() => {
           try {
-            port.postMessage({ type: 'authenticate', token: accessToken });
-            console.log('[OneDrive] sent authenticate');
-          } catch(e) { console.error('[OneDrive] authenticate error', e); }
-          setTimeout(() => {
-            try {
-              port.postMessage({ type: 'activate' });
-              console.log('[OneDrive] sent activate');
-            } catch(e) { console.error('[OneDrive] activate error', e); }
-          }, 100);
+            port.postMessage({ type: 'activate' });
+            console.log('[OneDrive] sent activate');
+          } catch(e) { console.error('[OneDrive] activate error', e); }
         }, 50);
         break;
       }
 
       case 'result':
         cleanup();
-        if (msg.items?.length) await _handleOneDriveItems(msg.items, accessToken, mode);
+        if (msg.items?.length) await _handleOneDriveItems(msg.items, mode);
         break;
 
       case 'cancel':
@@ -6469,7 +6460,7 @@ function _openOneDrivePicker(accessToken, mode) {
   }, 30000);
 }
 
-async function _handleOneDriveItems(items, accessToken, mode) {
+async function _handleOneDriveItems(items, mode) {
   if (mode !== 'canvas') toast(`Importing ${items.length} file${items.length !== 1 ? 's' : ''} from OneDrive…`);
   let added = 0;
 
@@ -6518,17 +6509,8 @@ async function _handleOneDriveItems(items, accessToken, mode) {
   }
 }
 
-window.addFromOneDrive = async function() {
-  if (typeof msal === 'undefined') {
-    toast('Microsoft authentication library not loaded. Please refresh the page.', true);
-    return;
-  }
-  try {
-    const token = await _getOneDriveToken(_getMsalInstance());
-    _openOneDrivePicker(token, 'slides');
-  } catch(err) {
-    toast('Microsoft sign-in required to import from OneDrive', true);
-  }
+window.addFromOneDrive = function() {
+  _openOneDrivePicker('slides');
 };
 
 // ── Clear all ─────────────────────────────────────────────────────────────
@@ -8172,13 +8154,7 @@ window.designerImageFromGoogleDrive = function() {
 
 window.designerImageFromOneDrive = function() {
   document.getElementById('imagePopover').classList.remove('open');
-  if (typeof msal === 'undefined') {
-    toast('Microsoft authentication library not loaded. Please refresh the page.', true);
-    return;
-  }
-  _getOneDriveToken(_getMsalInstance())
-    .then(token => _openOneDrivePicker(token, 'canvas'))
-    .catch(() => toast('Microsoft sign-in required to import from OneDrive', true));
+  _openOneDrivePicker('canvas');
 };
 
 document.getElementById('designerFileInput').addEventListener('change', async function() {
