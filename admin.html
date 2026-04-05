@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Signage Admin</title>
+<title>Zigns</title>
 <!-- PWA -->
 <link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#f07c00">
+<meta name="theme-color" content="#0043ce">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -31,9 +31,9 @@
   --surface:         #ffffff;
   --surface2:        #f5f7fa;
   --border:          #e2e6ec;
-  --accent:          #f07c00;
-  --accent2:         #d96b00;
-  --accent-bg:       rgba(240, 124, 0, 0.09);
+  --accent:          #0043ce;
+  --accent2:         #003ab5;
+  --accent-bg:       rgba(0, 67, 206, 0.08);
   --danger:          #dc2626;
   --danger-bg:       rgba(220, 38, 38, 0.09);
   --danger-border:   rgba(220, 38, 38, 0.25);
@@ -56,9 +56,9 @@
   --surface:         #151820;
   --surface2:        #1c2030;
   --border:          #252a38;
-  --accent:          #4f8ef7;
-  --accent2:         #7c5cfc;
-  --accent-bg:       rgba(79, 142, 247, 0.10);
+  --accent:          #4d8bff;
+  --accent2:         #1a56e8;
+  --accent-bg:       rgba(77, 139, 255, 0.12);
   --danger:          #e05252;
   --danger-bg:       rgba(224, 82, 82, 0.10);
   --danger-border:   rgba(224, 82, 82, 0.20);
@@ -97,22 +97,23 @@ body {
   z-index: 50;
 }
 .sidebar-logo {
-  display: flex; align-items: center; gap: 10px;
-  padding: 18px 16px 14px;
-  font-weight: 700; font-size: 14px; letter-spacing: -0.01em;
+  display: flex; align-items: center; gap: 8px;
+  padding: 16px 16px 14px;
   border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
+  flex-shrink: 0; text-decoration: none;
 }
-.logo-dot {
-  width: 8px; height: 8px; border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 8px var(--accent);
-  animation: pulse 2s ease-in-out infinite;
-  flex-shrink: 0;
+.zigns-mark {
+  width: 30px; height: 30px; flex-shrink: 0;
+  border: 2.5px solid var(--accent);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 16px; line-height: 1;
+  color: var(--accent); letter-spacing: -0.5px;
 }
-@keyframes pulse {
-  0%,100% { opacity: 1; } 50% { opacity: 0.4; }
+.zigns-wordmark {
+  font-size: 17px; font-weight: 700; letter-spacing: 2px;
+  color: var(--text);
 }
+
 .sidebar-nav {
   flex: 1;
   padding: 10px 8px;
@@ -2685,8 +2686,8 @@ body.role-editor .admin-action {
 <!-- ── Sidebar Navigation ─────────────────────────────────────────────── -->
 <nav class="sidebar">
   <div class="sidebar-logo">
-    <div class="logo-dot"></div>
-    Signage
+    <div class="zigns-mark">Z</div>
+    <div class="zigns-wordmark">IGNS</div>
   </div>
   <div class="sidebar-nav">
     <button class="nav-item active" data-page="dashboard" onclick="showPage('dashboard')">
@@ -2813,7 +2814,7 @@ body.role-editor .admin-action {
   <div id="page-dashboard" class="page active">
     <div>
       <h1 style="font-size:22px;font-weight:700;color:var(--text);margin-bottom:4px">Dashboard</h1>
-      <p style="font-size:13px;color:var(--muted)">Overview of your digital signage</p>
+      <p style="font-size:13px;color:var(--muted)">Overview of your Zigns screens</p>
     </div>
     <div class="dash-grid">
 

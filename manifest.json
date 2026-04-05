@@ -1,12 +1,12 @@
 {
-  "name": "Signage Admin",
-  "short_name": "Signage",
+  "name": "Zigns",
+  "short_name": "Zigns",
   "description": "Digital signage management — control your screens from anywhere",
   "start_url": "/admin.html",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "theme_color": "#f07c00",
+  "theme_color": "#0043ce",
   "background_color": "#111111",
   "icons": [
     {
