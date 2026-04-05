@@ -6400,40 +6400,32 @@ function _openOneDrivePicker(accessToken, mode) {
     switch (msg.type) {
       case 'initialize': {
         initReceived = true;
-        // Reply to event.source (the iframe inside the popup that sent initialize),
-        // NOT pickerWindow — posting to the wrong frame is why auth was silently ignored.
-        const src = event.source;
-        const org = event.origin;
+        // The picker passes a MessagePort as msg.replyTo — all auth and result
+        // messages must go through this port, not via window.postMessage.
+        const port = msg.replyTo;
+        if (!port) break;
+
+        // Listen on the port for result/cancel coming back from the picker
+        port.addEventListener('message', async (pe) => {
+          const pm = pe.data;
+          console.log('[OneDrive] port message', pm);
+          if (pm?.type === 'result') {
+            cleanup();
+            if (pm.items?.length) await _handleOneDriveItems(pm.items, accessToken, mode);
+          } else if (pm?.type === 'cancel' || pm?.type === 'close') {
+            cleanup();
+          }
+        });
+        port.start();
+
         setTimeout(() => {
-          src.postMessage(
-            { type: 'authenticate', token: accessToken, channelId: msg.channelId || channelId },
-            org
-          );
+          port.postMessage({ type: 'authenticate', token: accessToken });
           setTimeout(() => {
-            src.postMessage(
-              { type: 'activate', channelId: msg.channelId || channelId },
-              org
-            );
+            port.postMessage({ type: 'activate' });
           }, 100);
         }, 50);
         break;
       }
-
-      case 'notification':
-        // v8 also sends notification-style messages; handle requiresToken
-        if (msg.data?.notification === 'requiresToken') {
-          initReceived = true;
-          event.source.postMessage(
-            { type: 'command', data: { command: 'authenticate', type: 'OneDrive', token: accessToken } },
-            event.origin
-          );
-        } else if (msg.data?.notification === 'picked') {
-          cleanup();
-          if (msg.data?.items?.length) await _handleOneDriveItems(msg.data.items, accessToken, mode);
-        } else if (msg.data?.notification === 'closed') {
-          cleanup();
-        }
-        break;
 
       case 'result':
         cleanup();
