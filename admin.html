@@ -603,10 +603,103 @@ section.content {
 
 /* Toolbar */
 .toolbar {
-  display: flex; align-items: center; gap: 12px;
-  flex-wrap: wrap;
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
 }
-.toolbar h2 { font-size: 20px; font-weight: 600; flex: 1; }
+.toolbar h2 { font-size: 20px; font-weight: 600; flex: 1; min-width: 0; }
+.toolbar-actions {
+  display: flex; align-items: center; gap: 8px; flex: 1; justify-content: space-between;
+}
+.toolbar-left { display: flex; align-items: center; gap: 8px; }
+.toolbar-right { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.toolbar-divider {
+  width: 1px; height: 22px; background: var(--border); margin: 0 4px; flex-shrink: 0;
+}
+
+/* Mobile overflow menu */
+.toolbar-overflow-btn { display: none; padding: 9px 12px; position: relative; }
+.toolbar-overflow-menu {
+  display: none; position: absolute; top: calc(100% + 6px); right: 0; z-index: 200;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12); min-width: 180px; overflow: hidden;
+}
+.toolbar-overflow-menu.open { display: block; }
+.toolbar-overflow-item {
+  display: flex; align-items: center; gap: 9px;
+  width: 100%; padding: 11px 16px; background: none; border: none;
+  font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
+  color: var(--text); cursor: pointer; text-align: left;
+}
+.toolbar-overflow-item:hover { background: var(--surface2); }
+.toolbar-overflow-item.danger { color: var(--danger); }
+.toolbar-overflow-sep { height: 1px; background: var(--border); margin: 4px 0; }
+.toolbar-overflow-wrap { position: relative; }
+
+@media (max-width: 768px) {
+  .toolbar-hide-mobile { display: none; }
+  .toolbar-overflow-btn { display: inline-flex; }
+}
+
+/* Add Media modal */
+#addMediaModal {
+  display: none; position: fixed; inset: 0; z-index: 600;
+  background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
+  align-items: center; justify-content: center; padding: 20px;
+}
+#addMediaModal.open { display: flex; }
+.add-media-box {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+  width: min(520px, 96vw); box-shadow: 0 8px 48px rgba(0,0,0,0.18); overflow: hidden;
+}
+.add-media-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 22px 14px; border-bottom: 1px solid var(--border);
+}
+.add-media-head h3 { font-size: 15px; font-weight: 700; margin: 0; }
+.add-media-close {
+  background: none; border: none; cursor: pointer; color: var(--muted);
+  padding: 4px; border-radius: 6px; display: flex; align-items: center;
+}
+.add-media-close:hover { color: var(--text); background: var(--surface2); }
+.add-media-section-label {
+  font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--muted); padding: 14px 22px 6px;
+}
+.add-media-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 0 22px 14px;
+}
+.add-media-btn {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 7px; padding: 14px 6px 12px; border-radius: 10px;
+  background: var(--surface2); border: 1px solid var(--border);
+  font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 500;
+  color: var(--text); cursor: pointer; transition: all 0.12s; text-align: center;
+  line-height: 1.3;
+}
+.add-media-btn:hover { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); }
+.add-media-row {
+  display: flex; flex-direction: column; gap: 2px; padding: 0 22px 18px;
+}
+.add-media-row-btn {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; padding: 10px 12px; border-radius: 8px;
+  background: none; border: 1px solid var(--border);
+  font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
+  color: var(--text); cursor: pointer; transition: all 0.12s; text-align: left;
+  margin-bottom: 4px;
+}
+.add-media-row-btn:hover { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); }
+
+/* Media source picker CSS no longer used — kept for safety */
+.media-source-group { display: flex; gap: 8px; align-items: stretch; }
+.btn-media-source {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 6px; width: 82px; padding: 14px 6px 10px;
+  border-radius: 10px; background: var(--surface2); color: var(--text);
+  border: 1px solid var(--border);
+  font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 500;
+  cursor: pointer; transition: all 0.15s; text-align: center; line-height: 1.3;
+}
+.btn-media-source:hover { border-color: var(--muted); background: var(--surface); }
 
 .btn {
   display: inline-flex; align-items: center; gap: 7px;
@@ -2961,82 +3054,67 @@ body.role-editor .admin-action {
   <section class="content">
     <div class="toolbar">
       <h2 id="showTitle">Main Display</h2>
-      <div class="media-source-group">
-        <button class="btn-media-source" onclick="document.getElementById('fileInput').click()">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-            <polyline points="17 8 12 3 7 8"/>
-            <line x1="12" y1="3" x2="12" y2="15"/>
-          </svg>
-          My Device
-        </button>
-        <button class="btn-media-source" onclick="addFromGoogleDrive()">
-          <svg width="48" height="48" viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg">
-            <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
-            <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0-1.2 4.5h27.5z" fill="#00ac47"/>
-            <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.5l5.85 11.5z" fill="#ea4335"/>
-            <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
-            <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
-            <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
-          </svg>
-          Google Drive
-        </button>
-        <button class="btn-media-source" onclick="addFromOneDrive()">
-          <svg width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-            <path d="M29 15c-5.52 0-10.26 3.25-12.6 8h-.4a9 9 0 0 0 0 18h21a7 7 0 0 0 0-14c-.16 0-.32 0-.48.01A10 10 0 0 0 29 15z" fill="#1f9de2"/>
-            <path d="M17 24c-4.97 0-9 4.03-9 9s4.03 9 9 9h20a6 6 0 0 0 0-12c-.12 0-.24 0-.36.01A8 8 0 0 0 17 24z" fill="#0078d4"/>
-          </svg>
-          OneDrive
-        </button>
-        <button class="btn-media-source" onclick="addFromDropbox()">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#0061ff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 2l-5 4 5 4 5-4-5-4z"/>
-            <path d="M2 10l5 4 5-4"/>
-            <path d="M12 10l5 4 5-4"/>
-            <path d="M7 18l5 4 5-4"/>
-            <line x1="12" y1="14" x2="12" y2="22"/>
-          </svg>
-          Dropbox
-        </button>
+      <div class="toolbar-actions">
+        <div class="toolbar-left">
+          <button class="btn btn-primary" onclick="openAddMediaModal()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Add Media
+          </button>
+          <div class="toolbar-divider toolbar-hide-mobile"></div>
+          <button class="btn btn-secondary toolbar-hide-mobile" onclick="openDesigner()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+            </svg>
+            Design a Slide
+          </button>
+          <button class="btn btn-secondary toolbar-hide-mobile" onclick="addSlideGroup()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <rect x="2" y="7" width="20" height="14" rx="2"/>
+              <path d="M6 7V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2"/>
+              <line x1="12" y1="12" x2="12" y2="17"/><line x1="9.5" y1="14.5" x2="14.5" y2="14.5"/>
+            </svg>
+            Create Group
+          </button>
+        </div>
+        <div class="toolbar-right">
+          <button class="btn btn-danger toolbar-hide-mobile" onclick="clearAll()" id="btnClear" style="display:none">
+            Clear All
+          </button>
+          <div class="toolbar-overflow-wrap">
+            <button class="btn btn-secondary toolbar-overflow-btn" onclick="toggleToolbarOverflow(this)" title="More actions">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
+              </svg>
+            </button>
+            <div class="toolbar-overflow-menu" id="toolbarOverflowMenu">
+              <button class="toolbar-overflow-item" onclick="closeToolbarOverflow();openDesigner()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                </svg>
+                Design a Slide
+              </button>
+              <button class="toolbar-overflow-item" onclick="closeToolbarOverflow();addSlideGroup()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <rect x="2" y="7" width="20" height="14" rx="2"/>
+                  <path d="M6 7V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2"/>
+                  <line x1="12" y1="12" x2="12" y2="17"/><line x1="9.5" y1="14.5" x2="14.5" y2="14.5"/>
+                </svg>
+                Create Group
+              </button>
+              <div class="toolbar-overflow-sep" id="btnClearSep" style="display:none"></div>
+              <button class="toolbar-overflow-item danger" id="btnClearMobile" onclick="closeToolbarOverflow();clearAll()" style="display:none">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                  <path d="M10 11v6"/><path d="M14 11v6"/>
+                </svg>
+                Clear All
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
-      <button class="btn btn-secondary" onclick="openYoutubeModal()">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M23 7s-.3-2-1.2-2.8c-1.1-1.2-2.4-1.2-3-1.3C16.6 2.8 12 2.8 12 2.8s-4.6 0-6.8.1c-.6.1-1.9.1-3 1.3C1.3 5 1 7 1 7S.7 9.1.7 11.3v2c0 2.1.3 4.3.3 4.3s.3 2 1.2 2.8c1.1 1.2 2.6 1.1 3.3 1.2C7.3 21.8 12 21.8 12 21.8s4.6 0 6.8-.2c.6-.1 1.9-.1 3-1.3.9-.8 1.2-2.8 1.2-2.8s.3-2.1.3-4.3v-2C23.3 9.1 23 7 23 7zM9.7 15.5V8.4l8.1 3.6-8.1 3.5z"/>
-        </svg>
-        YouTube
-      </button>
-      <button class="btn btn-secondary" onclick="openWebpageModal()">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-          <circle cx="12" cy="12" r="10"/>
-          <line x1="2" y1="12" x2="22" y2="12"/>
-          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-        </svg>
-        Web Page
-      </button>
-      <button class="btn btn-secondary" onclick="addByUrl()">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
-        </svg>
-        Add by URL
-      </button>
-      <button class="btn btn-secondary" onclick="openDesigner()">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
-        </svg>
-        Design a Slide
-      </button>
-      <button class="btn btn-secondary" onclick="addSlideGroup()">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-          <rect x="2" y="7" width="20" height="14" rx="2"/>
-          <path d="M6 7V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2"/>
-          <line x1="12" y1="12" x2="12" y2="17"/><line x1="9.5" y1="14.5" x2="14.5" y2="14.5"/>
-        </svg>
-        Create Group
-      </button>
-      <button class="btn btn-danger" onclick="clearAll()" id="btnClear" style="display:none">
-        Clear All
-      </button>
     </div>
 
     <!-- Drop zone -->
@@ -3665,6 +3743,79 @@ body.role-editor .admin-action {
         <div class="invite-modal-footer">
           <button class="btn btn-primary" onclick="closeInviteModal()">Done</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Media modal -->
+  <div id="addMediaModal">
+    <div class="add-media-box">
+      <div class="add-media-head">
+        <h3>Add Media</h3>
+        <button class="add-media-close" onclick="closeAddMediaModal()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="add-media-section-label">Upload from</div>
+      <div class="add-media-grid">
+        <button class="add-media-btn" onclick="closeAddMediaModal();document.getElementById('fileInput').click()">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+          My Device
+        </button>
+        <button class="add-media-btn" onclick="closeAddMediaModal();addFromGoogleDrive()">
+          <svg width="26" height="26" viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg">
+            <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
+            <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0-1.2 4.5h27.5z" fill="#00ac47"/>
+            <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.5l5.85 11.5z" fill="#ea4335"/>
+            <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
+            <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
+            <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
+          </svg>
+          Google Drive
+        </button>
+        <button class="add-media-btn" onclick="closeAddMediaModal();addFromOneDrive()">
+          <svg width="26" height="26" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+            <path d="M29 15c-5.52 0-10.26 3.25-12.6 8h-.4a9 9 0 0 0 0 18h21a7 7 0 0 0 0-14c-.16 0-.32 0-.48.01A10 10 0 0 0 29 15z" fill="#1f9de2"/>
+            <path d="M17 24c-4.97 0-9 4.03-9 9s4.03 9 9 9h20a6 6 0 0 0 0-12c-.12 0-.24 0-.36.01A8 8 0 0 0 17 24z" fill="#0078d4"/>
+          </svg>
+          OneDrive
+        </button>
+        <button class="add-media-btn" onclick="closeAddMediaModal();addFromDropbox()">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#0061ff" stroke-width="1.6" stroke-linecap="round">
+            <path d="M12 2l-5 4 5 4 5-4-5-4z"/>
+            <path d="M2 10l5 4 5-4"/><path d="M12 10l5 4 5-4"/>
+            <path d="M7 18l5 4 5-4"/><line x1="12" y1="14" x2="12" y2="22"/>
+          </svg>
+          Dropbox
+        </button>
+      </div>
+      <div class="add-media-section-label">Other sources</div>
+      <div class="add-media-row">
+        <button class="add-media-row-btn" onclick="closeAddMediaModal();openYoutubeModal()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="color:#ff0000;flex-shrink:0">
+            <path d="M23 7s-.3-2-1.2-2.8c-1.1-1.2-2.4-1.2-3-1.3C16.6 2.8 12 2.8 12 2.8s-4.6 0-6.8.1c-.6.1-1.9.1-3 1.3C1.3 5 1 7 1 7S.7 9.1.7 11.3v2c0 2.1.3 4.3.3 4.3s.3 2 1.2 2.8c1.1 1.2 2.6 1.1 3.3 1.2C7.3 21.8 12 21.8 12 21.8s4.6 0 6.8-.2c.6-.1 1.9-.1 3-1.3.9-.8 1.2-2.8 1.2-2.8s.3-2.1.3-4.3v-2C23.3 9.1 23 7 23 7zM9.7 15.5V8.4l8.1 3.6-8.1 3.5z"/>
+          </svg>
+          YouTube video
+        </button>
+        <button class="add-media-row-btn" onclick="closeAddMediaModal();openWebpageModal()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="flex-shrink:0">
+            <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+          </svg>
+          Web Page
+        </button>
+        <button class="add-media-row-btn" onclick="closeAddMediaModal();addByUrl()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0">
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+          </svg>
+          Add by URL
+        </button>
       </div>
     </div>
   </div>
@@ -6400,6 +6551,32 @@ window.saveWebpageSlide = async function() {
   toast('Web page slide added ✓');
 };
 
+// ── Add Media modal ───────────────────────────────────────────────────────
+window.openAddMediaModal = function() {
+  document.getElementById('addMediaModal').classList.add('open');
+};
+window.closeAddMediaModal = function() {
+  document.getElementById('addMediaModal').classList.remove('open');
+};
+document.getElementById('addMediaModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('addMediaModal')) closeAddMediaModal();
+});
+
+// ── Toolbar overflow menu ─────────────────────────────────────────────────
+window.toggleToolbarOverflow = function(btn) {
+  const menu = document.getElementById('toolbarOverflowMenu');
+  menu.classList.toggle('open');
+  if (menu.classList.contains('open')) {
+    setTimeout(() => document.addEventListener('click', _closeOverflowOutside, { once: true }), 0);
+  }
+};
+window.closeToolbarOverflow = function() {
+  document.getElementById('toolbarOverflowMenu')?.classList.remove('open');
+};
+function _closeOverflowOutside(e) {
+  if (!document.getElementById('toolbarOverflowMenu')?.contains(e.target)) closeToolbarOverflow();
+}
+
 // ── Add from Dropbox ──────────────────────────────────────────────────────
 window.addFromDropbox = function() {
   if (typeof Dropbox === 'undefined') {
@@ -6938,7 +7115,12 @@ window.clearAll = async () => {
 function renderGrid() {
   const grid   = document.getElementById("slideGrid");
   const btnClr = document.getElementById("btnClear");
-  btnClr.style.display = slides.length ? "" : "none";
+  const btnClrMobile = document.getElementById("btnClearMobile");
+  const btnClrSep    = document.getElementById("btnClearSep");
+  const show = slides.length ? "" : "none";
+  btnClr.style.display = show;
+  if (btnClrMobile) btnClrMobile.style.display = show;
+  if (btnClrSep)    btnClrSep.style.display    = show;
 
   if (!slides.length) {
     grid.innerHTML = `<div class="empty" style="grid-column:1/-1">
