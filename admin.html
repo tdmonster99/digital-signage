@@ -6398,31 +6398,34 @@ function _openOneDrivePicker(accessToken, mode) {
     if (!msg?.type) return;
 
     switch (msg.type) {
-      case 'initialize':
+      case 'initialize': {
         initReceived = true;
+        // Reply to event.source (the iframe inside the popup that sent initialize),
+        // NOT pickerWindow — posting to the wrong frame is why auth was silently ignored.
+        const src = event.source;
+        const org = event.origin;
         setTimeout(() => {
-          // Always use '*' — targeting event.origin can mismatch if the picker
-          // has navigated or is in an iframe with a different origin.
-          pickerWindow.postMessage(
+          src.postMessage(
             { type: 'authenticate', token: accessToken, channelId: msg.channelId || channelId },
-            '*'
+            org
           );
           setTimeout(() => {
-            pickerWindow.postMessage(
+            src.postMessage(
               { type: 'activate', channelId: msg.channelId || channelId },
-              '*'
+              org
             );
           }, 100);
         }, 50);
         break;
+      }
 
       case 'notification':
         // v8 also sends notification-style messages; handle requiresToken
         if (msg.data?.notification === 'requiresToken') {
           initReceived = true;
-          pickerWindow.postMessage(
+          event.source.postMessage(
             { type: 'command', data: { command: 'authenticate', type: 'OneDrive', token: accessToken } },
-            '*'
+            event.origin
           );
         } else if (msg.data?.notification === 'picked') {
           cleanup();
