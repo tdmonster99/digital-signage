@@ -830,80 +830,62 @@
   }
 
   async function initScreen() {
-    // Preview mode (?slideshow=xxx): skip screen registration entirely
-    if (previewId) {
-      subscribeToSlideshow(previewId);
-      return;
-    }
-
-    // Pairing mode (?code=XXXXXX): show pairing UI and wait for admin
-    const pairingCode = urlParams.get("code");
-    if (pairingCode) {
-      showPairingUI(pairingCode);
-      return;
-    }
-
-    // Normal mode: use existing screenId or start fresh
-    await startNormalMode(screenId || crypto.randomUUID());
+    // Priority 1: Preview mode (?slideshow=xxx)
+    if (previewId) { subscribeToSlideshow(previewId); return; }
+    // Priority 2: Already registered screen (screenId in localStorage)
+    if (screenId) { loader.style.display = "none"; await startNormalMode(screenId); return; }
+    // Priority 3: No identity — show Ready to Connect pairing screen
+    showReadyToConnect();
   }
 
   // ── Pairing UI ────────────────────────────────────────────────────────────
-  function showPairingUI(code) {
+  function generatePairingCode() {
+    const chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+    let code = "";
+    for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+    return code;
+  }
+
+  async function showReadyToConnect() {
     loader.style.display = "none";
-    const pairEl = document.getElementById("pairingScreen");
+    const code = generatePairingCode();
+
+    try {
+      await setDoc(doc(db, "pairingCodes", code), {
+        status:    "pending",
+        createdAt: new Date().toISOString(),
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+      });
+    } catch(e) { console.warn("Could not create pairing code:", e.message); }
+
     document.getElementById("pairingCodeEl").textContent = code;
+    const pairEl = document.getElementById("pairingScreen");
     pairEl.style.display = "flex";
 
-    // Poll Firestore until admin confirms pairing
     const pollInterval = setInterval(async () => {
       try {
         const snap = await getDoc(doc(db, "pairingCodes", code));
         if (!snap.exists()) return;
         const data = snap.data();
 
-        // Check expiry
+        // Expired — generate a fresh code
         if (data.expiresAt && new Date() > new Date(data.expiresAt)) {
           clearInterval(pollInterval);
-          document.getElementById("pairingStatusEl").textContent = "Code expired — please generate a new code in the admin panel.";
+          pairEl.style.display = "none";
+          showReadyToConnect();
           return;
         }
 
-        if (data.status === "pending") {
-          // Generate screenId and claim the pairing code
-          const newScreenId = crypto.randomUUID();
-          const shortId     = newScreenId.slice(0, 6).toUpperCase();
-          const screenName  = "Screen " + shortId;
-
-          // Create the screen doc (include orgId from pairing code if present)
-          await setDoc(doc(db, "screens", newScreenId), {
-            name:         screenName,
-            slideshowId:  "main",
-            registeredAt: new Date().toISOString(),
-            lastSeen:     new Date().toISOString(),
-            ...(data.orgId && { orgId: data.orgId }),
-          });
-
-          // Mark pairing code as paired
-          await updateDoc(doc(db, "pairingCodes", code), {
-            status:     "paired",
-            screenId:   newScreenId,
-            screenName: screenName,
-            pairedAt:   new Date().toISOString(),
-          });
-
+        // Admin claimed the code and assigned a screenId
+        if (data.status === "paired" && data.screenId) {
           clearInterval(pollInterval);
-          document.getElementById("pairingStatusEl").textContent = "Paired! Starting display…";
-
-          setTimeout(() => {
-            pairEl.style.display = "none";
-            // Remove ?code= from URL and start normal mode
-            window.history.replaceState({}, "", window.location.pathname);
-            startNormalMode(newScreenId);
-          }, 1500);
+          localStorage.setItem("signage-screen-id", data.screenId);
+          screenId = data.screenId;
+          pairEl.style.transition = "opacity 0.8s";
+          pairEl.style.opacity = "0";
+          setTimeout(() => { pairEl.style.display = "none"; startNormalMode(data.screenId); }, 800);
         }
-      } catch(e) {
-        console.warn("Pairing poll error:", e.message);
-      }
+      } catch(e) { console.warn("Pairing poll error:", e.message); }
     }, 3000);
   }
 
@@ -1027,23 +1009,47 @@
   @keyframes spin { to { transform: rotate(360deg); } }
   #loader p { font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; }
 
-  /* ── Pairing screen ────────────────────────────────────────────────── */
+  /* ── Ready to Connect screen ───────────────────────────────────────── */
   #pairingScreen {
     display: none; position: absolute; inset: 0; z-index: 40;
-    background: #0a0a0a; flex-direction: column;
+    background: #050a14; flex-direction: column;
     align-items: center; justify-content: center;
-    gap: 20px; padding: 40px; text-align: center;
-    color: #fff;
+    gap: 28px; padding: 40px; text-align: center; color: #fff;
   }
-  #pairingScreen h2 { font-size: 22px; font-weight: 600; margin: 0; }
-  #pairingScreen p  { font-size: 14px; color: #777; margin: 0; max-width: 420px; line-height: 1.6; }
+  .pairing-logo {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .pairing-zmark {
+    width: 42px; height: 42px; border: 3px solid #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 22px; color: #fff;
+  }
+  .pairing-wordmark {
+    font-size: 26px; font-weight: 700; letter-spacing: 4px; color: #fff;
+  }
+  #pairingScreen h2 {
+    font-size: 30px; font-weight: 600; margin: 0; color: #fff;
+  }
   #pairingCodeEl {
-    font-family: 'Courier New', monospace; font-size: 64px; font-weight: 700;
-    letter-spacing: 16px; color: #fff; line-height: 1;
-    background: #1a1a1a; border: 2px dashed #333;
-    padding: 24px 40px; border-radius: 16px;
+    font-family: 'Courier New', monospace; font-size: 76px; font-weight: 700;
+    letter-spacing: 20px; color: #fff; line-height: 1;
+    background: rgba(255,255,255,0.04); border: 2px solid rgba(255,255,255,0.12);
+    padding: 28px 52px 28px 72px; border-radius: 20px;
+    animation: codePulse 2.8s ease-in-out infinite;
   }
-  #pairingStatusEl { font-size: 13px; color: #555; }
+  @keyframes codePulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0.10); }
+    50%       { box-shadow: 0 0 0 22px rgba(255,255,255,0); }
+  }
+  .pairing-instruction {
+    font-size: 16px; color: rgba(255,255,255,0.5);
+    line-height: 1.8; max-width: 440px; margin: 0;
+  }
+  .pairing-instruction strong { color: rgba(255,255,255,0.85); font-weight: 600; }
+  .pairing-url {
+    font-size: 13px; color: rgba(255,255,255,0.22);
+    font-family: 'Courier New', monospace; letter-spacing: 0.04em; margin: 0;
+  }
 
   /* ── Error overlay ─────────────────────────────────────────────────── */
   #errBox {
@@ -1169,15 +1175,16 @@
 
 <!-- Pairing screen -->
 <div id="pairingScreen">
-  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="1.5">
-    <rect x="2" y="3" width="20" height="14" rx="2"/>
-    <line x1="8" y1="21" x2="16" y2="21"/>
-    <line x1="12" y1="17" x2="12" y2="21"/>
-  </svg>
-  <h2>Pairing Display</h2>
+  <div class="pairing-logo">
+    <div class="pairing-zmark">Z</div>
+    <div class="pairing-wordmark">IGNS</div>
+  </div>
+  <h2>Ready to Connect</h2>
   <div id="pairingCodeEl">------</div>
-  <p>This device is waiting to be paired.<br>Enter this code in the admin panel under Screens → Add Screen.</p>
-  <p id="pairingStatusEl">Waiting for admin to confirm…</p>
+  <p class="pairing-instruction">
+    Go to your admin panel → <strong>Screens → Add Screen</strong><br>and enter this code
+  </p>
+  <p class="pairing-url">digital-signage-pi.vercel.app/admin.html</p>
 </div>
 
 <!-- Initial loader -->

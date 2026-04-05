@@ -3494,19 +3494,22 @@ body.role-editor .admin-action {
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
       <div id="pairingPendingSection">
-        <div class="pairing-modal-title">Pair a New Screen</div>
-        <div class="pairing-modal-sub">Enter this code on your display device to pair it</div>
-        <div class="pairing-code-box">
-          <div class="pairing-code" id="pairingCodeDisplay">------</div>
-          <div class="pairing-expires" id="pairingExpiresText">Expires in 10:00</div>
+        <div class="pairing-modal-title">Add a Screen</div>
+        <div class="pairing-modal-sub">Open Zigns on your display device — it will show a 6-character code. Enter it below.</div>
+        <div class="pairing-code-box" style="padding:20px 24px">
+          <input id="pairingCodeInput" type="text" maxlength="6"
+            placeholder="A B C 1 2 3"
+            autocomplete="off" autocorrect="off" spellcheck="false"
+            oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')"
+            style="width:100%;background:none;border:none;outline:none;
+              font-family:'DM Mono',monospace;font-size:40px;font-weight:700;
+              letter-spacing:12px;color:var(--text);text-align:center;line-height:1.2">
+          <div class="pairing-expires" id="pairingCodeError" style="color:#f87171;min-height:18px;margin-top:6px"></div>
         </div>
-        <div class="pairing-url-box">
-          <div class="pairing-url-text" id="pairingUrlText"></div>
-          <button class="pairing-copy-btn" onclick="copyPairingUrl()">Copy</button>
-        </div>
-        <div class="pairing-waiting">
+        <button class="btn btn-primary" style="width:100%;margin-bottom:12px" onclick="confirmPairingCode()">Connect Screen</button>
+        <div class="pairing-waiting" id="pairingWaiting" style="display:none">
           <div class="pairing-spinner"></div>
-          <span>Waiting for display device to connect…</span>
+          <span>Connecting…</span>
         </div>
       </div>
       <div class="pairing-success" id="pairingSuccessSection">
@@ -11679,14 +11682,7 @@ window.deleteMediaRecord = async function(id) {
 };
 
 // ── Add Screen / Pairing ──────────────────────────────────────────────────
-function genPairingCode() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let code = '';
-  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
-  return code;
-}
-
-window.openAddScreenModal = async function() {
+window.openAddScreenModal = function() {
   if (!canAddScreen()) {
     showUpgradePrompt(
       'Screen limit reached',
@@ -11694,72 +11690,79 @@ window.openAddScreenModal = async function() {
     );
     return;
   }
-  const code    = genPairingCode();
-  const now     = new Date();
-  const expires = new Date(now.getTime() + 10 * 60 * 1000);
-  pairingExpiry = expires;
-
-  try {
-    await setDoc(doc(db, 'pairingCodes', code), {
-      status:    'pending',
-      createdAt: now.toISOString(),
-      expiresAt: expires.toISOString(),
-      ...(currentOrgId && { orgId: currentOrgId }),
-    });
-  } catch(e) {
-    toast('Could not create pairing code: ' + e.message, true);
-    return;
-  }
-
-  const url = window.location.origin + '/display.html?code=' + code;
-  document.getElementById('pairingCodeDisplay').textContent = code;
-  document.getElementById('pairingUrlText').textContent     = url;
+  document.getElementById('pairingCodeInput').value = '';
+  document.getElementById('pairingCodeError').textContent = '';
+  document.getElementById('pairingWaiting').style.display = 'none';
   document.getElementById('pairingPendingSection').style.display = 'block';
   document.getElementById('pairingSuccessSection').style.display = 'none';
   document.getElementById('pairingModal').style.display = 'flex';
+  setTimeout(() => document.getElementById('pairingCodeInput').focus(), 100);
+};
 
-  // Countdown timer
-  if (pairingTimerInterval) clearInterval(pairingTimerInterval);
-  pairingTimerInterval = setInterval(() => {
-    const remaining = Math.max(0, Math.floor((pairingExpiry - Date.now()) / 1000));
-    const m = String(Math.floor(remaining / 60)).padStart(2, '0');
-    const s = String(remaining % 60).padStart(2, '0');
-    document.getElementById('pairingExpiresText').textContent = remaining > 0 ? `Expires in ${m}:${s}` : 'Code expired';
-    if (remaining === 0) {
-      clearInterval(pairingTimerInterval);
-      clearInterval(pairingInterval);
+window.confirmPairingCode = async function() {
+  const code = document.getElementById('pairingCodeInput').value.trim().toUpperCase();
+  const errEl = document.getElementById('pairingCodeError');
+  errEl.textContent = '';
+
+  if (code.length !== 6) { errEl.textContent = 'Please enter the full 6-character code.'; return; }
+
+  document.getElementById('pairingWaiting').style.display = 'flex';
+
+  try {
+    const snap = await getDoc(doc(db, 'pairingCodes', code));
+    if (!snap.exists()) {
+      errEl.textContent = 'Code not found. Make sure the display is showing a pairing screen.';
+      document.getElementById('pairingWaiting').style.display = 'none';
+      return;
     }
-  }, 1000);
+    const data = snap.data();
+    if (data.status !== 'pending') {
+      errEl.textContent = data.status === 'paired' ? 'This code has already been used.' : 'This code is no longer valid.';
+      document.getElementById('pairingWaiting').style.display = 'none';
+      return;
+    }
+    if (data.expiresAt && new Date() > new Date(data.expiresAt)) {
+      errEl.textContent = 'This code has expired. The display will generate a new one shortly.';
+      document.getElementById('pairingWaiting').style.display = 'none';
+      return;
+    }
 
-  // Poll Firestore for pairing confirmation
-  if (pairingInterval) clearInterval(pairingInterval);
-  pairingInterval = setInterval(async () => {
-    try {
-      const snap = await getDoc(doc(db, 'pairingCodes', code));
-      if (!snap.exists()) return;
-      const data = snap.data();
-      if (data.status === 'paired') {
-        clearInterval(pairingInterval);
-        clearInterval(pairingTimerInterval);
-        const screenName = data.screenName || 'New Screen';
-        document.getElementById('pairingPendingSection').style.display = 'none';
-        document.getElementById('pairingSuccessSection').style.display = 'flex';
-        document.getElementById('pairingSuccessName').textContent = `"${screenName}" is now connected.`;
-        logActivity('Screen "' + screenName + '" paired successfully');
-      }
-    } catch(e) {}
-  }, 3000);
+    // Create screen doc
+    const newScreenId = crypto.randomUUID();
+    const shortId     = newScreenId.slice(0, 6).toUpperCase();
+    const screenName  = 'Screen ' + shortId;
+    await setDoc(doc(db, 'screens', newScreenId), {
+      name:         screenName,
+      slideshowId:  'main',
+      registeredAt: new Date().toISOString(),
+      lastSeen:     new Date().toISOString(),
+      ...(currentOrgId && { orgId: currentOrgId }),
+      ...(data.orgId   && { orgId: data.orgId }),
+    });
+
+    // Signal the display
+    await updateDoc(doc(db, 'pairingCodes', code), {
+      status:     'paired',
+      screenId:   newScreenId,
+      screenName: screenName,
+      pairedAt:   new Date().toISOString(),
+    });
+
+    document.getElementById('pairingWaiting').style.display = 'none';
+    document.getElementById('pairingPendingSection').style.display = 'none';
+    document.getElementById('pairingSuccessSection').style.display = 'flex';
+    document.getElementById('pairingSuccessName').textContent = `"${screenName}" is now connected.`;
+    logActivity('Screen "' + screenName + '" paired successfully');
+  } catch(e) {
+    errEl.textContent = 'Connection failed: ' + e.message;
+    document.getElementById('pairingWaiting').style.display = 'none';
+  }
 };
 
 window.closePairingModal = function() {
   document.getElementById('pairingModal').style.display = 'none';
   if (pairingInterval)      { clearInterval(pairingInterval);      pairingInterval = null; }
   if (pairingTimerInterval) { clearInterval(pairingTimerInterval); pairingTimerInterval = null; }
-};
-
-window.copyPairingUrl = function() {
-  const url = document.getElementById('pairingUrlText').textContent;
-  navigator.clipboard.writeText(url).then(() => toast('URL copied ✓'));
 };
 
 // ── Screen edit panel ────────────────────────────────────────────────────
