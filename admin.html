@@ -6346,6 +6346,14 @@ async function _getOneDriveToken(msalInst) {
 }
 
 // ── OneDrive native picker (v8 postMessage) ───────────────────────────────
+const _MS_ORIGINS = ['microsoft.com','live.com','office.com','sharepoint.com','onedrive.com','1drv.com','officeapps.live.com'];
+function _isMsOrigin(origin) {
+  try {
+    const host = new URL(origin).hostname;
+    return _MS_ORIGINS.some(d => host === d || host.endsWith('.' + d));
+  } catch { return false; }
+}
+
 function _openOneDrivePicker(accessToken, mode) {
   const msalInst  = _getMsalInstance();
   const account   = msalInst?.getAllAccounts()[0];
@@ -6374,13 +6382,11 @@ function _openOneDrivePicker(accessToken, mode) {
 
   // Set up listener BEFORE opening the popup so we never miss initialize
   const messageHandler = async (event) => {
-    // Allow messages from onedrive, 1drv, or sharepoint origins
-    if (!event.origin.includes('onedrive.live.com') &&
-        !event.origin.includes('1drv.com') &&
-        !event.origin.includes('sharepoint.com')) return;
+    // Accept any Microsoft-owned origin (picker may message from subdomains or CDNs)
+    if (!_isMsOrigin(event.origin)) return;
 
-    // Once window is open, also gate on source identity
-    if (pickerWindow && event.source !== pickerWindow) return;
+    // Do NOT gate on event.source — the picker renders its file list in an
+    // iframe inside the popup, so event.source will be that iframe, not pickerWindow.
 
     const msg = event.data;
     if (!msg?.type) return;
@@ -6389,24 +6395,35 @@ function _openOneDrivePicker(accessToken, mode) {
       case 'initialize':
         initReceived = true;
         setTimeout(() => {
-          try {
-            pickerWindow.postMessage(
-              { type: 'authenticate', token: accessToken, channelId: msg.channelId || channelId },
-              event.origin
-            );
-          } catch(e) {
-            pickerWindow.postMessage(
-              { type: 'authenticate', token: accessToken, channelId: msg.channelId || channelId },
-              '*'
-            );
-          }
+          // Always use '*' — targeting event.origin can mismatch if the picker
+          // has navigated or is in an iframe with a different origin.
+          pickerWindow.postMessage(
+            { type: 'authenticate', token: accessToken, channelId: msg.channelId || channelId },
+            '*'
+          );
           setTimeout(() => {
             pickerWindow.postMessage(
               { type: 'activate', channelId: msg.channelId || channelId },
-              event.origin
+              '*'
             );
           }, 100);
         }, 50);
+        break;
+
+      case 'notification':
+        // v8 also sends notification-style messages; handle requiresToken
+        if (msg.data?.notification === 'requiresToken') {
+          initReceived = true;
+          pickerWindow.postMessage(
+            { type: 'command', data: { command: 'authenticate', type: 'OneDrive', token: accessToken } },
+            '*'
+          );
+        } else if (msg.data?.notification === 'picked') {
+          cleanup();
+          if (msg.data?.items?.length) await _handleOneDriveItems(msg.data.items, accessToken, mode);
+        } else if (msg.data?.notification === 'closed') {
+          cleanup();
+        }
         break;
 
       case 'result':
@@ -6437,13 +6454,13 @@ function _openOneDrivePicker(accessToken, mode) {
     return;
   }
 
-  // 10-second timeout if initialize never arrives
+  // 30-second timeout — user may need to sign in to Microsoft in the popup
   const timeoutId = setTimeout(() => {
     if (!initReceived) {
       cleanup();
       toast('OneDrive connection timed out — please try again', true);
     }
-  }, 10000);
+  }, 30000);
 }
 
 async function _handleOneDriveItems(items, accessToken, mode) {
