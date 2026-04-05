@@ -6382,8 +6382,14 @@ function _openOneDrivePicker(accessToken, mode) {
 
   // Set up listener BEFORE opening the popup so we never miss initialize
   const messageHandler = async (event) => {
+    // Log every inbound message for diagnostics (remove after debugging)
+    console.log('[OneDrive] raw message', { origin: event.origin, type: event.data?.type, data: event.data });
+
     // Accept any Microsoft-owned origin (picker may message from subdomains or CDNs)
-    if (!_isMsOrigin(event.origin)) return;
+    if (!_isMsOrigin(event.origin)) {
+      console.log('[OneDrive] rejected origin:', event.origin);
+      return;
+    }
 
     // Do NOT gate on event.source — the picker renders its file list in an
     // iframe inside the popup, so event.source will be that iframe, not pickerWindow.
