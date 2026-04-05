@@ -6400,12 +6400,10 @@ function _openOneDrivePicker(accessToken, mode) {
     switch (msg.type) {
       case 'initialize': {
         initReceived = true;
-        // The picker passes a MessagePort as msg.replyTo — all auth and result
-        // messages must go through this port, not via window.postMessage.
         const port = msg.replyTo;
-        if (!port) break;
+        console.log('[OneDrive] initialize — port:', port, 'channelId:', msg.channelId, 'token prefix:', accessToken?.slice(0,20));
+        if (!port) { console.warn('[OneDrive] no replyTo port!'); break; }
 
-        // Listen on the port for result/cancel coming back from the picker
         port.addEventListener('message', async (pe) => {
           const pm = pe.data;
           console.log('[OneDrive] port message', pm);
@@ -6417,11 +6415,18 @@ function _openOneDrivePicker(accessToken, mode) {
           }
         });
         port.start();
+        console.log('[OneDrive] port started, sending authenticate…');
 
         setTimeout(() => {
-          port.postMessage({ type: 'authenticate', token: accessToken });
+          try {
+            port.postMessage({ type: 'authenticate', token: accessToken });
+            console.log('[OneDrive] sent authenticate');
+          } catch(e) { console.error('[OneDrive] authenticate error', e); }
           setTimeout(() => {
-            port.postMessage({ type: 'activate' });
+            try {
+              port.postMessage({ type: 'activate' });
+              console.log('[OneDrive] sent activate');
+            } catch(e) { console.error('[OneDrive] activate error', e); }
           }, 100);
         }, 50);
         break;
