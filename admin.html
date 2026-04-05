@@ -6253,63 +6253,102 @@ window.addFromDropbox = function() {
 };
 
 // ── Add from Google Drive ─────────────────────────────────────────────────
-// CONFIG — replace with values from Google Cloud Console:
-//   https://console.cloud.google.com → APIs & Services → Credentials
 const GDRIVE_API_KEY   = 'AIzaSyCG2D73JImsXwWvsOjARcWoNxyDYjxbh7s';
 const GDRIVE_CLIENT_ID = '952679135642-tlp5r8lptelklvt95q22rb1q51rm609r.apps.googleusercontent.com';
-const GDRIVE_SCOPE     = 'https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/drive.file';
+const GDRIVE_SCOPE     = 'https://www.googleapis.com/auth/drive.readonly';
 
-// ── Google Drive — toolbar (adds slides to slideshow) ─────────────────────
-window.addFromGoogleDrive = function() {
+const GDRIVE_IMAGE_MIME = 'image/png,image/jpeg,image/gif,image/webp,image/svg+xml';
+const GDRIVE_SLIDE_MIME = GDRIVE_IMAGE_MIME + ',video/mp4,video/webm';
+
+function _gdriveAuth(callback) {
   if (typeof google === 'undefined' || !google.accounts?.oauth2) {
     toast('Google Identity Services not loaded. Please refresh the page.', true);
     return;
   }
-
-  const tokenClient = google.accounts.oauth2.initTokenClient({
+  google.accounts.oauth2.initTokenClient({
     client_id: GDRIVE_CLIENT_ID,
     scope:     GDRIVE_SCOPE,
-    callback:  tokenResponse => {
-      if (tokenResponse.error) {
-        toast('Google sign-in failed: ' + tokenResponse.error, true);
-        return;
+    callback,
+  }).requestAccessToken();
+}
+
+function _openGoogleDrivePicker(token, mode) {
+  const mimes  = mode === 'canvas' ? GDRIVE_IMAGE_MIME : GDRIVE_SLIDE_MIME;
+  const view   = new google.picker.DocsView()
+    .setIncludeFolders(true)
+    .setMimeTypes(mimes);
+
+  const builder = new google.picker.PickerBuilder()
+    .addView(view)
+    .setOAuthToken(token)
+    .setDeveloperKey(GDRIVE_API_KEY)
+    .setCallback(async data => {
+      if (data.action !== google.picker.Action.PICKED) return;
+      const picked = data[google.picker.Response.DOCUMENTS] || [];
+      if (!picked.length) return;
+      await _handleGdriveItems(picked, token, mode);
+    });
+
+  if (mode !== 'canvas') builder.enableFeature(google.picker.Feature.MULTISELECT_ENABLED);
+
+  builder.build().setVisible(true);
+}
+
+async function _handleGdriveItems(files, token, mode) {
+  if (mode !== 'canvas') toast(`Importing ${files.length} file${files.length !== 1 ? 's' : ''} from Google Drive…`);
+  let added = 0;
+
+  for (const file of files) {
+    const fileId  = file[google.picker.Document.ID];
+    const name    = (file[google.picker.Document.NAME] || 'Drive file').replace(/\.[^.]+$/, '');
+    const fname   = file[google.picker.Document.NAME] || 'file';
+    try {
+      const fileRes = await fetch(
+        `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (!fileRes.ok) throw new Error(`Drive API ${fileRes.status}`);
+      const blob = await fileRes.blob();
+
+      if (mode === 'canvas') {
+        await addImageToCanvas(URL.createObjectURL(blob));
+        added++;
+      } else {
+        const fd = new FormData();
+        fd.append('file', blob, fname);
+        fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+        fd.append('folder', 'signage/slides');
+        const cloudRes = await fetch(
+          `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+          { method: 'POST', body: fd }
+        );
+        if (!cloudRes.ok) throw new Error('Cloudinary upload failed');
+        const cloudData = await cloudRes.json();
+        slides.push({ id: crypto.randomUUID(), url: cloudData.secure_url, name, active: true });
+        saveMediaRecord(cloudData.secure_url, name, 'image', cloudData.public_id);
+        added++;
       }
+    } catch(err) {
+      toast(`Could not import "${name}": ${err.message}`, true);
+    }
+  }
 
-      // Load picker only after we have a valid token
-      gapi.load('picker', () => {
-        const picker = new google.picker.PickerBuilder()
-          .addView(google.picker.ViewId.DOCS_IMAGES)
-          .setOAuthToken(tokenResponse.access_token)
-          .setDeveloperKey(GDRIVE_API_KEY)
-          .enableFeature(google.picker.Feature.MULTISELECT_ENABLED)
-          .setCallback(async data => {
-            if (data.action !== google.picker.Action.PICKED) return;
-            const picked = data[google.picker.Response.DOCUMENTS] || [];
-            if (!picked.length) return;
+  if (added) {
+    if (mode === 'canvas') {
+      toast('Image added from Google Drive ✓');
+    } else {
+      renderGrid(); updateCount();
+      await pushToFirestore();
+      toast(`Added ${added} slide${added !== 1 ? 's' : ''} from Google Drive ✓`);
+    }
+  }
+}
 
-            let added = 0;
-            for (const file of picked) {
-              const fileId = file[google.picker.Document.ID];
-              const name   = (file[google.picker.Document.NAME] || 'Drive slide').replace(/\.[^.]+$/, '');
-              const url    = `https://drive.google.com/uc?export=download&id=${fileId}`;
-              slides.push({ id: crypto.randomUUID(), url, name, active: true });
-              added++;
-            }
-
-            if (added) {
-              renderGrid();
-              updateCount();
-              await pushToFirestore();
-              toast(`Added ${added} slide${added !== 1 ? 's' : ''} from Google Drive ✓`);
-            }
-          })
-          .build();
-        picker.setVisible(true);
-      });
-    },
+window.addFromGoogleDrive = function() {
+  _gdriveAuth(resp => {
+    if (resp.error) { toast('Google sign-in failed: ' + resp.error, true); return; }
+    gapi.load('picker', () => _openGoogleDrivePicker(resp.access_token, 'slides'));
   });
-
-  tokenClient.requestAccessToken();
 };
 
 // ── OneDrive import ───────────────────────────────────────────────────────
@@ -8114,42 +8153,10 @@ window.designerImageFromDropbox = function() {
 
 window.designerImageFromGoogleDrive = function() {
   document.getElementById('imagePopover').classList.remove('open');
-
-  if (typeof google === 'undefined' || !google.accounts?.oauth2) {
-    toast('Google Identity Services not loaded. Please refresh the page.', true);
-    return;
-  }
-
-  const tokenClient = google.accounts.oauth2.initTokenClient({
-    client_id: GDRIVE_CLIENT_ID,
-    scope:     GDRIVE_SCOPE,
-    callback:  tokenResponse => {
-      if (tokenResponse.error) {
-        toast('Google sign-in failed: ' + tokenResponse.error, true);
-        return;
-      }
-
-      // Load picker only after we have a valid token
-      gapi.load('picker', () => {
-        const picker = new google.picker.PickerBuilder()
-          .addView(google.picker.ViewId.DOCS_IMAGES)
-          .setOAuthToken(tokenResponse.access_token)
-          .setDeveloperKey(GDRIVE_API_KEY)
-          .setCallback(async data => {
-            if (data.action !== google.picker.Action.PICKED) return;
-            const file = (data[google.picker.Response.DOCUMENTS] || [])[0];
-            if (!file) return;
-            const fileId = file[google.picker.Document.ID];
-            const url    = `https://drive.google.com/uc?export=download&id=${fileId}`;
-            await addImageToCanvas(url);
-          })
-          .build();
-        picker.setVisible(true);
-      });
-    },
+  _gdriveAuth(resp => {
+    if (resp.error) { toast('Google sign-in failed: ' + resp.error, true); return; }
+    gapi.load('picker', () => _openGoogleDrivePicker(resp.access_token, 'canvas'));
   });
-
-  tokenClient.requestAccessToken();
 };
 
 window.designerImageFromOneDrive = function() {
