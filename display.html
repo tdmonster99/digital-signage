@@ -830,6 +830,13 @@
   }
 
   async function initScreen() {
+    // ?reset — clear local identity and show pairing screen
+    if (urlParams.has("reset")) {
+      localStorage.removeItem("signage-screen-id");
+      window.history.replaceState({}, "", window.location.pathname);
+      showReadyToConnect();
+      return;
+    }
     // Priority 1: Preview mode (?slideshow=xxx)
     if (previewId) { subscribeToSlideshow(previewId); return; }
     // Priority 2: Already registered screen (screenId in localStorage)
