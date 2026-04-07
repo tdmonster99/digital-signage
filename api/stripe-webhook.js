@@ -8,7 +8,7 @@
 //                                    Service Accounts → Generate New Private Key
 //
 // Register this webhook in Stripe Dashboard → Developers → Webhooks:
-//   Endpoint URL: https://digital-signage-pi.vercel.app/api/stripe-webhook
+//   Endpoint URL: https://app.zigns.io/api/stripe-webhook
 //   Events: checkout.session.completed, customer.subscription.updated,
 //            customer.subscription.deleted
 

@@ -14,7 +14,7 @@ module.exports = async function handler(req, res) {
   const { email, inviteId, inviterEmail, orgName, role } = req.body || {};
   if (!email || !inviteId) return res.status(400).json({ error: 'email and inviteId are required' });
 
-  const inviteUrl  = `https://digital-signage-pi.vercel.app/admin.html?invite=${inviteId}`;
+  const inviteUrl  = `https://app.zigns.io/admin.html?invite=${inviteId}`;
   const roleLabels = { admin: 'Admin', editor: 'Editor', viewer: 'Viewer' };
   const roleLabel  = roleLabels[role] || 'Editor';
 

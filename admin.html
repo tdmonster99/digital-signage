@@ -2732,7 +2732,7 @@ body.role-editor .admin-action {
         <div class="ob-emoji">📺</div>
         <div class="ob-title">Connect your display</div>
         <div class="ob-sub">Open this URL on any TV or monitor connected to a computer:</div>
-        <div class="ob-screen-url">digital-signage-pi.vercel.app/display.html</div>
+        <div class="ob-screen-url">app.zigns.io/display.html</div>
         <div class="ob-qr">
           <img id="obQrCode" src="" width="160" height="160" alt="QR Code">
           <div style="font-size:12px;color:var(--muted);margin-top:8px">Scan with your phone to open on a TV</div>
@@ -6032,7 +6032,7 @@ function showOnboarding() {
   document.getElementById('onboardingOverlay').classList.add('active');
   renderObStep();
   // Set QR code image
-  const displayUrl = 'https://digital-signage-pi.vercel.app/display.html';
+  const displayUrl = 'https://app.zigns.io/display.html';
   document.getElementById('obQrCode').src =
     'https://api.qrserver.com/v1/create-qr-code/?size=160x160&color=000000&bgcolor=ffffff&data=' +
     encodeURIComponent(displayUrl);

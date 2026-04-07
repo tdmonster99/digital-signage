@@ -31,7 +31,7 @@ module.exports = async function handler(req, res) {
 
   const baseUrl = process.env.VERCEL_URL
     ? 'https://' + process.env.VERCEL_URL
-    : 'https://digital-signage-pi.vercel.app';
+    : 'https://app.zigns.io';
 
   try {
     const sessionParams = {
