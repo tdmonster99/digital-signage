@@ -11,6 +11,10 @@ const s3 = new S3Client({
     accessKeyId:     process.env.AWS_ACCESS_KEY_ID,
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
   },
+  // Disable automatic CRC32 checksums — they add extra headers that fail
+  // CORS preflight checks when the browser PUTs directly to S3.
+  requestChecksumCalculation: 'WHEN_REQUIRED',
+  responseChecksumValidation: 'WHEN_REQUIRED',
 });
 
 module.exports = async function handler(req, res) {
