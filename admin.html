@@ -7038,15 +7038,36 @@ function _openOneDrivePicker(mode) {
   }, 30000);
 }
 
+async function _resolveOneDriveItem(item) {
+  // v8 result flow: item already has a pre-signed download URL and name
+  if (item['@microsoft.graph.downloadUrl']) {
+    return { downloadUrl: item['@microsoft.graph.downloadUrl'], name: item.name || 'OneDrive file' };
+  }
+  // v8 command flow: item has only @sharePoint.endpoint + id — fetch metadata via Graph API
+  const itemId = item.id;
+  if (!itemId) throw new Error('No item ID in picker response');
+  const msalInst = await _initMsal();
+  const token    = await _getOneDriveToken(msalInst);
+  const metaRes  = await fetch(
+    `https://graph.microsoft.com/v1.0/me/drive/items/${itemId}?$select=id,name,@microsoft.graph.downloadUrl`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  if (!metaRes.ok) throw new Error(`Graph API ${metaRes.status}`);
+  const meta = await metaRes.json();
+  if (!meta['@microsoft.graph.downloadUrl']) throw new Error('Graph API did not return a download URL');
+  return { downloadUrl: meta['@microsoft.graph.downloadUrl'], name: meta.name || 'OneDrive file' };
+}
+
 async function _handleOneDriveItems(items, mode) {
   if (mode !== 'canvas') toast(`Importing ${items.length} file${items.length !== 1 ? 's' : ''} from OneDrive…`);
   let added = 0;
 
   for (const item of items) {
-    const name = (item.name || 'OneDrive file').replace(/\.[^.]+$/, '');
+    let name = 'OneDrive file';
     try {
-      const downloadUrl = item['@microsoft.graph.downloadUrl'];
-      if (!downloadUrl) throw new Error('No download URL in picker response');
+      const resolved    = await _resolveOneDriveItem(item);
+      name              = resolved.name.replace(/\.[^.]+$/, '');
+      const downloadUrl = resolved.downloadUrl;
 
       const fileRes = await fetch(downloadUrl);
       if (!fileRes.ok) throw new Error('File download failed');
@@ -7056,7 +7077,7 @@ async function _handleOneDriveItems(items, mode) {
         await addImageToCanvas(URL.createObjectURL(blob));
         added++;
       } else {
-        const { url, key } = await s3UploadBlob(blob, item.name, 'signage/slides');
+        const { url, key } = await s3UploadBlob(blob, resolved.name, 'signage/slides');
         slides.push({ id: crypto.randomUUID(), url, name, active: true });
         saveMediaRecord(url, name, 'image', key);
         added++;
