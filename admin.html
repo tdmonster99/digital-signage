@@ -18,6 +18,8 @@
 <script src="https://www.dropbox.com/static/api/2/dropins.js" id="dropboxjs" data-app-key="363zjxwv9mk4zij"></script>
 <!-- Google Identity Services (for Drive OAuth) -->
 <script src="https://accounts.google.com/gsi/client" async defer></script>
+<!-- S3 upload utilities -->
+<script src="/lib/s3-upload.js"></script>
 <!-- Microsoft MSAL (for OneDrive Picker) -->
 <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
 
@@ -5625,9 +5627,7 @@ const firebaseConfig = {
   appId: "1:1004548485661:web:b3ab204d94943716674cf4"
 };
 
-// ── CLOUDINARY CONFIG ─────────────────────────────────────────────────────
-const CLOUDINARY_CLOUD_NAME    = "ded98r0f8";
-const CLOUDINARY_UPLOAD_PRESET = "signage_uploads";
+// ── MEDIA STORAGE — AWS S3 + CloudFront (uploads via /api/upload-url) ────
 
 // ── AI GENERATE — key lives in Vercel env vars, proxied via /api/ai-generate ──
 
@@ -6447,29 +6447,19 @@ async function handleFiles(files) {
     bar.style.width = "0%";
     pct.textContent = "0%";
 
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
-    formData.append("folder", `signage/${currentShowId}`);
-
-    const endpoint = isVideo ? "video" : "image";
     try {
-      const res  = await fetch(
-        `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/${endpoint}/upload`,
-        { method: "POST", body: formData }
+      const { url, key } = await s3UploadWithProgress(
+        file,
+        `signage/${currentShowId}`,
+        p => { bar.style.width = p + "%"; pct.textContent = p + "%"; }
       );
-      const data = await res.json();
-      if (data.secure_url) {
-        bar.style.width = "100%";
-        pct.textContent = "100%";
-        const slide = { id: crypto.randomUUID(), url: data.secure_url, name: file.name, active: true };
-        if (isVideo) slide.type = "video";
-        slides.push(slide);
-        renderGrid(); updateCount();
-        saveMediaRecord(data.secure_url, file.name, isVideo ? 'video' : 'image', data.public_id);
-      } else {
-        toast(`Upload failed for ${file.name}: ${data.error?.message || "Unknown error"}`, true);
-      }
+      bar.style.width = "100%";
+      pct.textContent = "100%";
+      const slide = { id: crypto.randomUUID(), url, name: file.name, active: true };
+      if (isVideo) slide.type = "video";
+      slides.push(slide);
+      renderGrid(); updateCount();
+      saveMediaRecord(url, file.name, isVideo ? 'video' : 'image', key);
     } catch(e) {
       toast(`Upload error: ${e.message}`, true);
     }
@@ -6867,18 +6857,9 @@ async function _gdImportItems(items) {
         await addImageToCanvas(URL.createObjectURL(blob));
         added++;
       } else {
-        const fd = new FormData();
-        fd.append('file', blob, item.name);
-        fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-        fd.append('folder', 'signage/slides');
-        const cloudRes = await fetch(
-          `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
-          { method: 'POST', body: fd }
-        );
-        if (!cloudRes.ok) throw new Error('Cloudinary upload failed');
-        const cloudData = await cloudRes.json();
-        slides.push({ id: crypto.randomUUID(), url: cloudData.secure_url, name, active: true });
-        saveMediaRecord(cloudData.secure_url, name, 'image', cloudData.public_id);
+        const { url, key } = await s3UploadBlob(blob, item.name, 'signage/slides');
+        slides.push({ id: crypto.randomUUID(), url, name, active: true });
+        saveMediaRecord(url, name, 'image', key);
         added++;
       }
     } catch(err) {
@@ -7070,19 +7051,9 @@ async function _handleOneDriveItems(items, mode) {
         await addImageToCanvas(URL.createObjectURL(blob));
         added++;
       } else {
-        const fd = new FormData();
-        fd.append('file', blob, item.name);
-        fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-        fd.append('folder', 'signage/slides');
-        const cloudRes = await fetch(
-          `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
-          { method: 'POST', body: fd }
-        );
-        if (!cloudRes.ok) throw new Error('Cloudinary upload failed');
-        const cloudData = await cloudRes.json();
-        const { secure_url } = cloudData;
-        slides.push({ id: crypto.randomUUID(), url: secure_url, name, active: true });
-        saveMediaRecord(secure_url, name, 'image', cloudData.public_id);
+        const { url, key } = await s3UploadBlob(blob, item.name, 'signage/slides');
+        slides.push({ id: crypto.randomUUID(), url, name, active: true });
+        saveMediaRecord(url, name, 'image', key);
         added++;
       }
     } catch(err) {
@@ -8729,29 +8700,16 @@ document.getElementById('designerFileInput').addEventListener('change', async fu
   const fabricImg = await addImageToCanvas(blobUrl);
   if (!fabricImg) return;
 
-  // Upload to Cloudinary in background so the real URL gets stored on save
+  // Upload to S3 in background so the real URL gets stored on save
   toast('Saving to cloud…');
-  const formData = new FormData();
-  formData.append('file', file);
-  formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-  formData.append('folder', 'signage/designer');
-
   try {
-    const res  = await fetch(
-      `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
-      { method: 'POST', body: formData }
-    );
-    const data = await res.json();
-    if (data.secure_url) {
-      // Swap blob URL → Cloudinary URL so canvas JSON serialises correctly
-      fabricImg._element.src = data.secure_url;
-      if (fabricImg._originalElement) fabricImg._originalElement.src = data.secure_url;
-      URL.revokeObjectURL(blobUrl);
-      saveMediaRecord(data.secure_url, file.name, 'image', data.public_id);
-      toast('Saved to cloud ✓');
-    } else {
-      toast('Cloud upload failed: ' + (data.error?.message || 'Unknown error'), true);
-    }
+    const { url, key } = await s3Upload(file, 'signage/designer');
+    // Swap blob URL → CloudFront URL so canvas JSON serialises correctly
+    fabricImg._element.src = url;
+    if (fabricImg._originalElement) fabricImg._originalElement.src = url;
+    URL.revokeObjectURL(blobUrl);
+    saveMediaRecord(url, file.name, 'image', key);
+    toast('Saved to cloud ✓');
   } catch(e) {
     toast('Cloud upload error: ' + e.message, true);
   }
@@ -8763,7 +8721,7 @@ function addImageToCanvas(url) {
     if (!fabricCanvas) { resolve(null); return; }
     const imgEl = new Image();
     imgEl.onload = () => {
-      imgEl.onload = null; // prevent re-fire when src is swapped to Cloudinary URL
+      imgEl.onload = null; // prevent re-fire when src is swapped to CloudFront URL
       const img   = new fabric.Image(imgEl);
       const maxW  = CANVAS_W * 0.75;
       const maxH  = CANVAS_H * 0.75;
@@ -9778,13 +9736,10 @@ window.setBgImage = async function() {
   inp.onchange = async () => {
     const file = inp.files[0]; if (!file) return;
     toast('Uploading background…');
-    const fd = new FormData();
-    fd.append('file', file);
-    fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-    const res  = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, { method: 'POST', body: fd });
-    const data = await res.json();
-    if (data.secure_url) { currentBgImgUrl = data.secure_url; applyBgImage(); }
-    else toast('Upload failed', true);
+    try {
+      const { url } = await s3Upload(file, 'signage/designer');
+      currentBgImgUrl = url; applyBgImage();
+    } catch(e) { toast('Upload failed: ' + e.message, true); }
   };
   inp.click();
 };
@@ -10211,13 +10166,8 @@ async function executeRestore(versionId) {
     try {
       const dataUrl = fabricCanvas.toDataURL({ format: 'jpeg', quality: 0.6 });
       const blob    = dataURLtoBlob(dataUrl);
-      const fd = new FormData();
-      fd.append('file', blob, 'thumb.jpg');
-      fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-      fd.append('folder', 'signage/versions');
-      const res  = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, { method: 'POST', body: fd });
-      const data = await res.json();
-      curThumb = data.secure_url || null;
+      const { url } = await s3UploadBlob(blob, 'thumb.jpg', 'signage/versions');
+      curThumb = url;
     } catch(_) {}
     await saveSlideVersion(slideId, curJson, curThumb);
 
@@ -10655,13 +10605,8 @@ window.handleBkLogoUpload = async function(event) {
   const btn = document.querySelector('.bk-logo-area .btn');
   if (btn) btn.textContent = 'Uploading…';
   try {
-    const fd = new FormData();
-    fd.append('file', file);
-    fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-    fd.append('folder', 'signage/logos');
-    const res  = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, { method:'POST', body:fd });
-    const data = await res.json();
-    window.brandKit.logo = { url: data.secure_url, publicId: data.public_id };
+    const { url, key } = await s3Upload(file, 'signage/logos');
+    window.brandKit.logo = { url, publicId: key };
     renderBkPage();
     toast('Logo uploaded!');
   } catch(e) { toast('Upload failed: ' + e.message, true); }
@@ -11289,16 +11234,8 @@ window.saveDesignedSlide = async function() {
     try {
       const dataUrl = fabricCanvas.toDataURL({ format: 'jpeg', quality: 0.7, multiplier: 0.25 });
       const blob    = dataURLtoBlob(dataUrl);
-      const fd = new FormData();
-      fd.append('file',           blob, 'thumbnail.jpg');
-      fd.append('upload_preset',  CLOUDINARY_UPLOAD_PRESET);
-      fd.append('folder',         'signage/thumbnails');
-      const res  = await fetch(
-        `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
-        { method: 'POST', body: fd }
-      );
-      const data = await res.json();
-      thumbnailUrl = data.secure_url || null;
+      const { url } = await s3UploadBlob(blob, 'thumbnail.jpg', 'signage/thumbnails');
+      thumbnailUrl = url;
     } catch(e) {
       console.warn('Thumbnail generation skipped:', e.message);
     }
@@ -11667,7 +11604,7 @@ window.insertOrCopyMedia = function(url, type) {
 
 window.deleteMediaRecord = async function(id) {
   if (!currentOrgId) return;
-  if (!confirm('Remove this item from your media library? (The file stays on Cloudinary.)')) return;
+  if (!confirm('Remove this item from your media library?')) return;
   try {
     await deleteDoc(doc(db, 'organizations', currentOrgId, 'media', id));
     toast('Removed from library ✓');
@@ -13043,7 +12980,7 @@ async function _handleQuickUploadFile(input) {
   input.value = '';
   toast('Uploading…');
   try {
-    await handleFiles([file]); // reuse the existing Cloudinary + Firestore pipeline
+    await handleFiles([file]); // reuse the existing S3 + Firestore pipeline
   } catch(e) {
     toast('Upload failed: ' + e.message, true);
   }

@@ -2,6 +2,8 @@
   "name": "digital-signage",
   "version": "1.0.0",
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.0.0",
+    "@aws-sdk/s3-request-presigner": "^3.0.0",
     "stripe": "^16.0.0",
     "firebase-admin": "^12.0.0"
   }
