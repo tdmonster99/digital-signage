@@ -6903,18 +6903,28 @@ function _getMsalInstance() {
 
 async function _getOneDriveToken(msalInst) {
   const scopes = ['Files.Read', 'Files.Read.All', 'User.Read', 'offline_access'];
+
+  // 1. Silent — use cached account if available
   const accounts = msalInst.getAllAccounts();
   if (accounts.length > 0) {
     try {
-      const response = await msalInst.acquireTokenSilent({ scopes, account: accounts[0] });
-      return response.accessToken;
-    } catch(e) { /* silent failed — fall through to popup */ }
+      const r = await msalInst.acquireTokenSilent({ scopes, account: accounts[0] });
+      return r.accessToken;
+    } catch(e) { /* fall through */ }
   }
+
+  // 2. SSO silent — hidden iframe using the Microsoft session from the picker popup
   try {
-    const response = await msalInst.loginPopup({ scopes });
-    return response.accessToken;
+    const r = await msalInst.ssoSilent({ scopes });
+    return r.accessToken;
+  } catch(e) { /* fall through to popup */ }
+
+  // 3. Interactive popup — last resort
+  try {
+    const r = await msalInst.loginPopup({ scopes });
+    return r.accessToken;
   } catch(e) {
-    throw new Error('Microsoft sign-in cancelled or failed');
+    throw new Error('Microsoft sign-in failed: ' + (e.errorMessage || e.message || e));
   }
 }
 
