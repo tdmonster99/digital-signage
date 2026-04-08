@@ -11,6 +11,9 @@ const s3 = new S3Client({
     accessKeyId:     process.env.AWS_ACCESS_KEY_ID,
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
   },
+  // Force path-style URLs (s3.region.amazonaws.com/bucket/key) to avoid
+  // virtual-hosted redirects that strip CORS headers from preflight responses.
+  forcePathStyle: true,
   // Disable automatic CRC32 checksums — they add extra headers that fail
   // CORS preflight checks when the browser PUTs directly to S3.
   requestChecksumCalculation: 'WHEN_REQUIRED',
