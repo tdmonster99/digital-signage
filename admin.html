@@ -6977,7 +6977,12 @@ function _openOneDrivePicker(mode) {
         port.addEventListener('message', async (pe) => {
           const pm = pe.data;
           console.log('[OneDrive] port message', pm);
-          if (pm?.type === 'result') {
+          if (pm?.type === 'command') {
+            // Acknowledge immediately so the picker doesn't time out
+            port.postMessage({ type: 'acknowledge', id: pm.id });
+            const items = pm.data?.items ?? pm.items;
+            if (items?.length) { cleanup(); await _handleOneDriveItems(items, mode); }
+          } else if (pm?.type === 'result') {
             cleanup();
             if (pm.items?.length) await _handleOneDriveItems(pm.items, mode);
           } else if (pm?.type === 'cancel' || pm?.type === 'close') {
