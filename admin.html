@@ -7046,7 +7046,7 @@ async function _resolveOneDriveItem(item) {
   // v8 command flow: item has only @sharePoint.endpoint + id — fetch metadata via Graph API
   const itemId = item.id;
   if (!itemId) throw new Error('No item ID in picker response');
-  const msalInst = await _initMsal();
+  const msalInst = _getMsalInstance();
   const token    = await _getOneDriveToken(msalInst);
   const metaRes  = await fetch(
     `https://graph.microsoft.com/v1.0/me/drive/items/${itemId}?$select=id,name,@microsoft.graph.downloadUrl`,
