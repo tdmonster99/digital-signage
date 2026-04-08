@@ -7049,23 +7049,35 @@ function _openOneDrivePicker(mode) {
 }
 
 async function _resolveOneDriveItem(item) {
-  // v8 result flow: item already has a pre-signed download URL and name
+  // v8 result flow: pre-signed download URL already present
   if (item['@microsoft.graph.downloadUrl']) {
-    return { downloadUrl: item['@microsoft.graph.downloadUrl'], name: item.name || 'OneDrive file' };
+    const res = await fetch(item['@microsoft.graph.downloadUrl']);
+    if (!res.ok) throw new Error('File download failed');
+    return { blob: await res.blob(), name: item.name || 'OneDrive file' };
   }
-  // v8 command flow: item has only @sharePoint.endpoint + id — fetch metadata via Graph API
+
+  // v8 command flow: only id present — use Graph API with token
   const itemId = item.id;
   if (!itemId) throw new Error('No item ID in picker response');
-  const msalInst = _getMsalInstance();
-  const token    = await _getOneDriveToken(msalInst);
-  const metaRes  = await fetch(
-    `https://graph.microsoft.com/v1.0/me/drive/items/${itemId}?$select=id,name,@microsoft.graph.downloadUrl`,
+
+  const token = await _getOneDriveToken(_getMsalInstance());
+
+  // Get filename (no $select so annotations are not suppressed)
+  const metaRes = await fetch(
+    `https://graph.microsoft.com/v1.0/me/drive/items/${itemId}?$select=id,name`,
     { headers: { Authorization: `Bearer ${token}` } }
   );
-  if (!metaRes.ok) throw new Error(`Graph API ${metaRes.status}`);
+  if (!metaRes.ok) throw new Error(`Graph API metadata ${metaRes.status}`);
   const meta = await metaRes.json();
-  if (!meta['@microsoft.graph.downloadUrl']) throw new Error('Graph API did not return a download URL');
-  return { downloadUrl: meta['@microsoft.graph.downloadUrl'], name: meta.name || 'OneDrive file' };
+
+  // Download file content directly via Graph API
+  const contentRes = await fetch(
+    `https://graph.microsoft.com/v1.0/me/drive/items/${itemId}/content`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  if (!contentRes.ok) throw new Error(`Graph API download ${contentRes.status}`);
+
+  return { blob: await contentRes.blob(), name: meta.name || 'OneDrive file' };
 }
 
 async function _handleOneDriveItems(items, mode) {
@@ -7075,13 +7087,9 @@ async function _handleOneDriveItems(items, mode) {
   for (const item of items) {
     let name = 'OneDrive file';
     try {
-      const resolved    = await _resolveOneDriveItem(item);
-      name              = resolved.name.replace(/\.[^.]+$/, '');
-      const downloadUrl = resolved.downloadUrl;
-
-      const fileRes = await fetch(downloadUrl);
-      if (!fileRes.ok) throw new Error('File download failed');
-      const blob = await fileRes.blob();
+      const resolved = await _resolveOneDriveItem(item);
+      name           = resolved.name.replace(/\.[^.]+$/, '');
+      const blob     = resolved.blob;
 
       if (mode === 'canvas') {
         await addImageToCanvas(URL.createObjectURL(blob));
