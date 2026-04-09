@@ -2492,7 +2492,7 @@ body.role-editor .admin-action {
 .plan-badge.starter { background: rgba(59,130,246,.12);     color: #3b82f6; }
 .plan-badge.pro     { background: rgba(59,130,246,.12);     color: #3b82f6; }
 .plan-badge.ea      { background: rgba(15,27,41,.12);      color: #0f1b29; }
-.plan-badge.pro::before { content: 'âœ¦ '; }
+.plan-badge.pro::before { content: '✦ '; }
 .usage-bar-wrap { background: var(--border); border-radius: 99px; height: 6px; flex: 1; overflow: hidden; }
 .usage-bar-fill { height: 100%; border-radius: 99px; background: var(--accent); transition: width 0.4s; }
 .usage-bar-fill.warn  { background: #f59e0b; }
@@ -2674,7 +2674,7 @@ body.role-editor .admin-action {
 
       <!-- Step 1: Welcome -->
       <div class="ob-step active" id="obStep0">
-        <div class="ob-emoji">ðŸ‘‹</div>
+        <div class="ob-emoji">👋</div>
         <div class="ob-title">Welcome! Let's get your first screen live.</div>
         <div class="ob-sub">We'll have you up and running in under 5 minutes. First, tell us a little about yourself.</div>
         <div class="ob-field">
@@ -2684,8 +2684,8 @@ body.role-editor .admin-action {
         <div class="ob-field">
           <label>Industry</label>
           <select id="obIndustry" onchange="toggleOtherIndustry()">
-            <option value="">Select your industryâ€¦</option>
-            <option value="restaurant">Restaurant / CafÃ© / Bar</option>
+            <option value="">Select your industry…</option>
+            <option value="restaurant">Restaurant / Café / Bar</option>
             <option value="retail">Retail / Shop</option>
             <option value="healthcare">Healthcare / Clinic</option>
             <option value="education">Education / School</option>
@@ -2697,23 +2697,23 @@ body.role-editor .admin-action {
         </div>
         <div class="ob-field" id="obOtherIndustryField" style="display:none">
           <label>Your Industry <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
-          <input type="text" id="obOtherIndustry" placeholder="e.g. Real Estate, Hospitalityâ€¦">
+          <input type="text" id="obOtherIndustry" placeholder="e.g. Real Estate, Hospitality…">
         </div>
       </div>
 
       <!-- Step 2: First slide -->
       <div class="ob-step" id="obStep1">
-        <div class="ob-emoji">ðŸŽ¨</div>
+        <div class="ob-emoji">🎨</div>
         <div class="ob-title">Create your first slide</div>
         <div class="ob-sub">Choose how you want to start:</div>
         <div class="ob-choice-grid" style="margin-bottom:20px">
           <div class="ob-choice-card" id="obChoiceTemplate" onclick="selectObChoice('template')">
-            <div class="ob-choice-icon">ðŸ–¼ï¸</div>
+            <div class="ob-choice-icon">🖼ï¸</div>
             <div class="ob-choice-label">Pick a Template</div>
             <div class="ob-choice-desc">Professionally designed</div>
           </div>
           <div class="ob-choice-card" id="obChoiceUpload" onclick="selectObChoice('upload')">
-            <div class="ob-choice-icon">ðŸ“¤</div>
+            <div class="ob-choice-icon">📤</div>
             <div class="ob-choice-label">Upload an Image</div>
             <div class="ob-choice-desc">Use your own image</div>
           </div>
@@ -2732,7 +2732,7 @@ body.role-editor .admin-action {
 
       <!-- Step 3: Screen setup -->
       <div class="ob-step" id="obStep2">
-        <div class="ob-emoji">ðŸ“º</div>
+        <div class="ob-emoji">📺</div>
         <div class="ob-title">Connect your display</div>
         <div class="ob-sub">Open this URL on any TV or monitor connected to a computer:</div>
         <div class="ob-screen-url">app.zigns.io/display.html</div>
@@ -2751,20 +2751,20 @@ body.role-editor .admin-action {
       <div class="ob-step" id="obStep3">
         <div style="text-align:center;padding:8px 0 20px">
           <canvas id="confettiCanvas" style="position:fixed;inset:0;pointer-events:none;z-index:2100;width:100%;height:100%"></canvas>
-          <div style="font-size:56px;margin-bottom:16px">ðŸŽ‰</div>
+          <div style="font-size:56px;margin-bottom:16px">🎉</div>
           <div class="ob-title" style="text-align:center">You're live!</div>
           <div class="ob-sub" style="text-align:center">Your content is now showing on your screen. Here's what you can do next:</div>
           <div class="ob-done-cards">
             <div class="ob-done-card" onclick="completeOnboarding('slides')">
-              <div class="ob-done-icon">âž•</div>
+              <div class="ob-done-icon">➕</div>
               <div class="ob-done-label">Add more slides</div>
             </div>
             <div class="ob-done-card" onclick="completeOnboarding('templates')">
-              <div class="ob-done-icon">ðŸ–¼ï¸</div>
+              <div class="ob-done-icon">🖼ï¸</div>
               <div class="ob-done-label">Explore templates</div>
             </div>
             <div class="ob-done-card" onclick="completeOnboarding('team')">
-              <div class="ob-done-icon">ðŸ‘¥</div>
+              <div class="ob-done-icon">👥</div>
               <div class="ob-done-label">Invite your team</div>
             </div>
           </div>
@@ -2777,7 +2777,7 @@ body.role-editor .admin-action {
       <div class="ob-footer-left">
         <button class="btn btn-secondary" id="obBackBtn" onclick="obNavigate(-1)" style="display:none">â† Back</button>
       </div>
-      <button class="btn btn-primary" id="obNextBtn" onclick="obNavigate(1)">Next â†’</button>
+      <button class="btn btn-primary" id="obNextBtn" onclick="obNavigate(1)">Next →</button>
     </div>
   </div>
 </div>
@@ -3126,14 +3126,14 @@ body.role-editor .admin-action {
         <polyline points="21 15 16 10 5 21"/>
       </svg>
       <p><strong>Drop images or videos here</strong> or click to browse<br>
-      PNG, JPG, GIF, WebP Â· MP4, WebM — any resolution</p>
+      PNG, JPG, GIF, WebP · MP4, WebM — any resolution</p>
       <input type="file" id="fileInput" multiple accept="image/*,video/mp4,video/webm">
     </div>
 
     <!-- Upload progress (hidden by default) -->
     <div id="uploadProgress" style="display:none">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-        <span style="font-size:12px;color:var(--muted)" id="uploadLabel">Uploadingâ€¦</span>
+        <span style="font-size:12px;color:var(--muted)" id="uploadLabel">Uploading…</span>
         <span style="font-size:12px;font-family:'DM Mono',monospace;color:var(--muted)" id="uploadPct">0%</span>
       </div>
       <div class="upload-bar-wrap">
@@ -3162,7 +3162,7 @@ body.role-editor .admin-action {
       <p>Add live data widgets and integrations to your slideshows</p>
     </div>
     <div class="apps-toolbar">
-      <input class="apps-search" type="search" placeholder="Search appsâ€¦" oninput="filterApps(this.value)">
+      <input class="apps-search" type="search" placeholder="Search apps…" oninput="filterApps(this.value)">
       <div class="apps-filter-tabs">
         <button class="apps-filter-tab active" onclick="setAppsCategory(this,'all')">All</button>
         <button class="apps-filter-tab" onclick="setAppsCategory(this,'widgets')">Widgets</button>
@@ -3182,7 +3182,7 @@ body.role-editor .admin-action {
         </div>
         <div class="app-card-name">Clock &amp; Date</div>
         <div class="app-card-desc">Live clock with date, timezone, and custom font styles</div>
-        <button class="app-card-add" onclick="event.stopPropagation();openClockModal(null)">Add â†’</button>
+        <button class="app-card-add" onclick="event.stopPropagation();openClockModal(null)">Add →</button>
       </div>
 
       <!-- Weather — coming soon -->
@@ -3351,7 +3351,7 @@ body.role-editor .admin-action {
         <button class="media-filter-tab" onclick="setMediaFilter(this,'image')">Images</button>
         <button class="media-filter-tab" onclick="setMediaFilter(this,'video')">Videos</button>
       </div>
-      <input class="media-search" type="search" placeholder="Searchâ€¦" oninput="filterMediaSearch(this.value)">
+      <input class="media-search" type="search" placeholder="Search…" oninput="filterMediaSearch(this.value)">
       <span class="media-count" id="mediaCount"></span>
     </div>
     <div class="media-grid" id="mediaGrid">
@@ -3511,7 +3511,7 @@ body.role-editor .admin-action {
         <button class="btn btn-primary" style="width:100%;margin-bottom:12px" onclick="confirmPairingCode()">Connect Screen</button>
         <div class="pairing-waiting" id="pairingWaiting" style="display:none">
           <div class="pairing-spinner"></div>
-          <span>Connectingâ€¦</span>
+          <span>Connecting…</span>
         </div>
       </div>
       <div class="pairing-success" id="pairingSuccessSection">
@@ -3585,7 +3585,7 @@ body.role-editor .admin-action {
   <!-- Upgrade prompt -->
   <div class="upgrade-prompt" id="upgradePrompt">
     <div class="upgrade-prompt-inner">
-      <div class="upgrade-prompt-icon">ðŸš€</div>
+      <div class="upgrade-prompt-icon">🚀</div>
       <div class="upgrade-prompt-title" id="upgradePromptTitle">Upgrade your plan</div>
       <div class="upgrade-prompt-sub"   id="upgradePromptSub"></div>
       <div class="upgrade-prompt-btns">
@@ -3639,13 +3639,13 @@ body.role-editor .admin-action {
                 <tr><td>Storage</td>
                   <td class="plan-col">1 GB</td><td class="plan-col">10 GB</td><td class="plan-col">50 GB</td></tr>
                 <tr><td>All Templates</td>
-                  <td class="plan-col"><span class="plan-x">âœ—</span></td>
-                  <td class="plan-col"><span class="plan-check">âœ“</span></td>
-                  <td class="plan-col"><span class="plan-check">âœ“</span></td></tr>
+                  <td class="plan-col"><span class="plan-x">✗</span></td>
+                  <td class="plan-col"><span class="plan-check">✓</span></td>
+                  <td class="plan-col"><span class="plan-check">✓</span></td></tr>
                 <tr><td>Scheduling</td>
-                  <td class="plan-col"><span class="plan-x">âœ—</span></td>
-                  <td class="plan-col"><span class="plan-check">âœ“</span></td>
-                  <td class="plan-col"><span class="plan-check">âœ“</span></td></tr>
+                  <td class="plan-col"><span class="plan-x">✗</span></td>
+                  <td class="plan-col"><span class="plan-check">✓</span></td>
+                  <td class="plan-col"><span class="plan-check">✓</span></td></tr>
                 <tr><td>Support</td>
                   <td class="plan-col">—</td>
                   <td class="plan-col">Email</td>
@@ -3687,7 +3687,7 @@ body.role-editor .admin-action {
           </button>
         </div>
         <div class="settings-section-body">
-          <div id="teamMembersList"><p style="font-size:13px;color:var(--muted)">Loadingâ€¦</p></div>
+          <div id="teamMembersList"><p style="font-size:13px;color:var(--muted)">Loading…</p></div>
         </div>
       </div>
 
@@ -3842,7 +3842,7 @@ body.role-editor .admin-action {
         <button class="gdrive-tab"        data-tab="sharedDrives" onclick="gdriveTab('sharedDrives')">Shared drives</button>
       </div>
       <div class="gdrive-toolbar">
-        <input class="gdrive-search" id="gdriveSearch" type="search" placeholder="Searchâ€¦" oninput="gdriveSearchFilter()">
+        <input class="gdrive-search" id="gdriveSearch" type="search" placeholder="Search…" oninput="gdriveSearchFilter()">
       </div>
       <div class="gdrive-crumbs" id="gdriveCrumbs"></div>
       <div class="gdrive-body" id="gdriveBody">
@@ -3893,24 +3893,24 @@ body.role-editor .admin-action {
           <div class="bk-font-slots">
             <div class="bk-font-slot" onclick="openBkFontPicker('heading')">
               <span class="bk-font-role">Heading</span>
-              <span class="bk-font-name" id="bkFontHeadingName" style="color:var(--muted)">Click to setâ€¦</span>
-              <button class="bk-font-clear" onclick="event.stopPropagation();clearBkFont('heading')" title="Remove">Ã—</button>
+              <span class="bk-font-name" id="bkFontHeadingName" style="color:var(--muted)">Click to set…</span>
+              <button class="bk-font-clear" onclick="event.stopPropagation();clearBkFont('heading')" title="Remove">×</button>
             </div>
             <div class="bk-font-slot" onclick="openBkFontPicker('body')">
               <span class="bk-font-role">Body</span>
-              <span class="bk-font-name" id="bkFontBodyName" style="color:var(--muted)">Click to setâ€¦</span>
-              <button class="bk-font-clear" onclick="event.stopPropagation();clearBkFont('body')" title="Remove">Ã—</button>
+              <span class="bk-font-name" id="bkFontBodyName" style="color:var(--muted)">Click to set…</span>
+              <button class="bk-font-clear" onclick="event.stopPropagation();clearBkFont('body')" title="Remove">×</button>
             </div>
             <div class="bk-font-slot" onclick="openBkFontPicker('accent')">
               <span class="bk-font-role">Accent</span>
-              <span class="bk-font-name" id="bkFontAccentName" style="color:var(--muted)">Click to setâ€¦</span>
-              <button class="bk-font-clear" onclick="event.stopPropagation();clearBkFont('accent')" title="Remove">Ã—</button>
+              <span class="bk-font-name" id="bkFontAccentName" style="color:var(--muted)">Click to set…</span>
+              <button class="bk-font-clear" onclick="event.stopPropagation();clearBkFont('accent')" title="Remove">×</button>
             </div>
           </div>
           <!-- Inline font search for brand kit -->
           <div id="bkFontPickerWrap" style="display:none;flex-direction:column;gap:6px">
-            <div style="font-size:11px;color:var(--muted)" id="bkFontPickerSlotLabel">Setting heading fontâ€¦</div>
-            <input type="text" class="prop-input" placeholder="Search fontsâ€¦" id="bkFontSearch"
+            <div style="font-size:11px;color:var(--muted)" id="bkFontPickerSlotLabel">Setting heading font…</div>
+            <input type="text" class="prop-input" placeholder="Search fonts…" id="bkFontSearch"
                    oninput="renderBkFontList(this.value)">
             <div id="bkFontList" style="max-height:180px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;background:var(--surface2)"></div>
             <button class="btn btn-secondary" style="font-size:12px;padding:5px 10px" onclick="closeBkFontPicker()">Cancel</button>
@@ -3970,10 +3970,10 @@ body.role-editor .admin-action {
         <h2>Choose a template or start blank</h2>
         <p>Select a starting point for your slide design</p>
       </div>
-      <button class="gallery-close" onclick="closeTemplateGallery()">âœ•</button>
+      <button class="gallery-close" onclick="closeTemplateGallery()">✕</button>
     </div>
     <div class="gallery-search-wrap">
-      <input id="gallerySearch" type="text" placeholder="Search templatesâ€¦" oninput="filterGallery()">
+      <input id="gallerySearch" type="text" placeholder="Search templates…" oninput="filterGallery()">
     </div>
     <div class="gallery-cats">
       <button class="gallery-cat active" onclick="setGalleryCat(this,'all')">All</button>
@@ -3992,9 +3992,9 @@ body.role-editor .admin-action {
       <button class="tmpl-card tmpl-card-ai" data-category="all" data-name="ai create generate intelligence claude" onclick="closeTemplateGallery();openAiModal()">
         <div class="tmpl-preview tmpl-preview-ai">
           <div style="display:flex;gap:10px">
-            <span style="font-size:28px;color:#c084fc;animation:aiSparkle 1.4s ease-in-out infinite">âœ¦</span>
-            <span style="font-size:28px;color:#f472b6;animation:aiSparkle 1.4s 0.35s ease-in-out infinite">âœ¦</span>
-            <span style="font-size:28px;color:#a78bfa;animation:aiSparkle 1.4s 0.7s ease-in-out infinite">âœ¦</span>
+            <span style="font-size:28px;color:#c084fc;animation:aiSparkle 1.4s ease-in-out infinite">✦</span>
+            <span style="font-size:28px;color:#f472b6;animation:aiSparkle 1.4s 0.35s ease-in-out infinite">✦</span>
+            <span style="font-size:28px;color:#a78bfa;animation:aiSparkle 1.4s 0.7s ease-in-out infinite">✦</span>
           </div>
           <div style="font-size:11px;color:rgba(255,255,255,0.55);font-weight:600;letter-spacing:0.08em;text-transform:uppercase;margin-top:4px">Powered by Claude</div>
         </div>
@@ -4283,7 +4283,7 @@ body.role-editor .admin-action {
           <div style="position:absolute;top:57%;right:4%;width:29%;height:35%;background:#ffe4e6;border-radius:4px;border:1px solid #fca5a5"></div>
           <div style="position:absolute;bottom:2%;left:20%;right:20%;height:9%;background:rgba(225,48,108,0.6);border-radius:2px"></div>
         </div>
-        <div class="tmpl-info"><span class="tmpl-name">Instagram Wall</span><span class="tmpl-desc">White, 3Ã—2 photo grid layout</span><span class="tmpl-cat-tag">Social Media</span></div>
+        <div class="tmpl-info"><span class="tmpl-name">Instagram Wall</span><span class="tmpl-desc">White, 3×2 photo grid layout</span><span class="tmpl-cat-tag">Social Media</span></div>
       </button>
 
       <div class="gallery-empty" id="galleryEmpty">No templates match your search.</div>
@@ -4307,7 +4307,7 @@ body.role-editor .admin-action {
         </h2>
         <p style="font-size:13px;color:var(--muted);margin-top:4px">Describe your slide and Claude AI will design it for you</p>
       </div>
-      <button class="gallery-close" onclick="closeAiModal()" style="margin-top:2px">âœ•</button>
+      <button class="gallery-close" onclick="closeAiModal()" style="margin-top:2px">✕</button>
     </div>
 
     <!-- Input section -->
@@ -4315,7 +4315,7 @@ body.role-editor .admin-action {
       <div class="ai-field">
         <label class="ai-label">Describe the slide you want to create</label>
         <textarea id="aiPrompt" class="ai-textarea"
-          placeholder="Examples:&#10;â€¢ A happy hour promotion for Friday 5-8pm with a dark moody bar vibe&#10;â€¢ Employee of the month for Sarah Johnson, 5 years of service&#10;â€¢ Weekly safety reminder about wearing PPE in the warehouse"></textarea>
+          placeholder="Examples:&#10;• A happy hour promotion for Friday 5-8pm with a dark moody bar vibe&#10;• Employee of the month for Sarah Johnson, 5 years of service&#10;• Weekly safety reminder about wearing PPE in the warehouse"></textarea>
       </div>
 
       <div class="ai-field">
@@ -4353,18 +4353,18 @@ body.role-editor .admin-action {
     <!-- Loading section -->
     <div id="aiLoadingSection" style="display:none;flex-direction:column;align-items:center;padding:48px 0 40px">
       <div class="ai-loader-sparkles">
-        <span>âœ¦</span><span>âœ¦</span><span>âœ¦</span><span>âœ¦</span>
+        <span>✦</span><span>✦</span><span>✦</span><span>✦</span>
       </div>
-      <div id="aiLoadingMsg" style="font-size:16px;color:var(--muted);margin-top:22px;font-weight:500;transition:opacity 0.3s">Designing your slideâ€¦</div>
+      <div id="aiLoadingMsg" style="font-size:16px;color:var(--muted);margin-top:22px;font-weight:500;transition:opacity 0.3s">Designing your slide…</div>
     </div>
 
     <!-- Preview section -->
     <div id="aiPreviewSection" style="display:none">
       <div id="aiPreviewCanvasWrap" style="margin-bottom:18px;border-radius:10px;overflow:hidden;border:2px solid var(--border);background:var(--surface2);min-height:80px;display:flex;align-items:center;justify-content:center">
-        <span style="color:var(--muted);font-size:13px">Rendering previewâ€¦</span>
+        <span style="color:var(--muted);font-size:13px">Rendering preview…</span>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn btn-primary" onclick="useAiSlide()" style="flex:1;min-width:120px">âœ“ Use This Slide</button>
+        <button class="btn btn-primary" onclick="useAiSlide()" style="flex:1;min-width:120px">✓ Use This Slide</button>
         <button class="btn btn-secondary" onclick="regenerateAiSlide()" style="flex:1;min-width:120px;display:flex;align-items:center;justify-content:center;gap:6px">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
@@ -4390,11 +4390,11 @@ body.role-editor .admin-action {
   <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;width:min(460px,92vw);box-shadow:0 8px 48px rgba(0,0,0,0.16)">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
       <h2 style="font-size:18px;font-weight:600;color:var(--text)">Add YouTube Slide</h2>
-      <button class="gallery-close" onclick="closeYoutubeModal()">âœ•</button>
+      <button class="gallery-close" onclick="closeYoutubeModal()">✕</button>
     </div>
     <div class="field" style="margin-bottom:14px">
       <label>YouTube URL or Video ID</label>
-      <input type="text" id="youtubeInput" placeholder="https://youtube.com/watch?v=â€¦ or video ID" autocomplete="off">
+      <input type="text" id="youtubeInput" placeholder="https://youtube.com/watch?v=… or video ID" autocomplete="off">
     </div>
     <div class="field" style="margin-bottom:22px">
       <label>Slide Name</label>
@@ -4412,7 +4412,7 @@ body.role-editor .admin-action {
   <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;width:min(460px,92vw);box-shadow:0 8px 48px rgba(0,0,0,0.16)">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
       <h2 style="font-size:18px;font-weight:600;color:var(--text)">Add Web Page Slide</h2>
-      <button class="gallery-close" onclick="closeWebpageModal()">âœ•</button>
+      <button class="gallery-close" onclick="closeWebpageModal()">✕</button>
     </div>
     <div class="field" style="margin-bottom:14px">
       <label>Page URL</label>
@@ -4458,7 +4458,7 @@ body.role-editor .admin-action {
 <div id="groupEditorModal">
   <div class="ge-topbar">
     <span class="ge-topbar-label">Slide Group</span>
-    <input type="text" id="groupEditorName" placeholder="Group nameâ€¦"
+    <input type="text" id="groupEditorName" placeholder="Group name…"
            oninput="if(editingGroupIdx!==null){slides[editingGroupIdx].name=this.value.trim()||'Slide Group';renderGrid();}">
     <div class="ge-topbar-actions">
       <button class="btn btn-secondary" onclick="closeGroupEditor()">Close</button>
@@ -4489,7 +4489,7 @@ body.role-editor .admin-action {
 <div id="designerModal">
   <div class="designer-topbar">
     <span class="designer-topbar-label">Designer</span>
-    <input type="text" id="designerSlideName" placeholder="Slide nameâ€¦" value="New Slide">
+    <input type="text" id="designerSlideName" placeholder="Slide name…" value="New Slide">
     <div style="display:flex;gap:4px;margin-left:12px">
       <button class="btn btn-secondary" id="btnUndo" title="Undo (Ctrl+Z)" onclick="designerUndo()" disabled
               style="padding:7px 12px">
@@ -4764,7 +4764,7 @@ body.role-editor .admin-action {
 
         <!-- Search -->
         <div style="display:flex;gap:6px;margin-bottom:8px">
-          <input type="text" id="iconSearchInput" class="prop-input" placeholder="Search iconsâ€¦"
+          <input type="text" id="iconSearchInput" class="prop-input" placeholder="Search icons…"
                  style="flex:1" onkeydown="if(event.key==='Enter') doIconSearch()">
           <button class="prop-btn" onclick="doIconSearch()" title="Search">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -4819,7 +4819,7 @@ body.role-editor .admin-action {
         <!-- Search pane -->
         <div id="stockPaneSearch" class="stock-tab-pane active">
           <div class="stock-search-row">
-            <input type="text" id="stockSearchInput" class="prop-input" placeholder="Search photosâ€¦"
+            <input type="text" id="stockSearchInput" class="prop-input" placeholder="Search photos…"
                    oninput="debouncedStockSearch()" onkeydown="if(event.key==='Enter') searchStockPhotos()">
             <button class="prop-btn" onclick="searchStockPhotos()" title="Search">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -4881,7 +4881,7 @@ body.role-editor .admin-action {
             </svg>
           </button>
         </div>
-        <div id="historyList"><div class="history-loading">Loadingâ€¦</div></div>
+        <div id="historyList"><div class="history-loading">Loading…</div></div>
       </div>
 
       <!-- No selection: canvas background -->
@@ -4910,11 +4910,11 @@ body.role-editor .admin-action {
             <div class="prop-row">
               <div class="prop-label">Direction</div>
               <div class="grad-dir-btns">
-                <button class="grad-dir-btn active" data-dir="horizontal" onclick="setGradDir(this,'horizontal')" title="Horizontal">â†’</button>
-                <button class="grad-dir-btn" data-dir="vertical" onclick="setGradDir(this,'vertical')" title="Vertical">â†“</button>
-                <button class="grad-dir-btn" data-dir="diagonal-se" onclick="setGradDir(this,'diagonal-se')" title="Diagonal â†˜">â†˜</button>
-                <button class="grad-dir-btn" data-dir="diagonal-sw" onclick="setGradDir(this,'diagonal-sw')" title="Diagonal â†™">â†™</button>
-                <button class="grad-dir-btn" data-dir="radial" onclick="setGradDir(this,'radial')" title="Radial">â—Ž</button>
+                <button class="grad-dir-btn active" data-dir="horizontal" onclick="setGradDir(this,'horizontal')" title="Horizontal">→</button>
+                <button class="grad-dir-btn" data-dir="vertical" onclick="setGradDir(this,'vertical')" title="Vertical">↓</button>
+                <button class="grad-dir-btn" data-dir="diagonal-se" onclick="setGradDir(this,'diagonal-se')" title="Diagonal ↘">↘</button>
+                <button class="grad-dir-btn" data-dir="diagonal-sw" onclick="setGradDir(this,'diagonal-sw')" title="Diagonal ↙">↙</button>
+                <button class="grad-dir-btn" data-dir="radial" onclick="setGradDir(this,'radial')" title="Radial">◎</button>
               </div>
             </div>
             <div class="grad-presets">
@@ -5108,15 +5108,15 @@ body.role-editor .admin-action {
           <div class="prop-row">
             <div class="prop-label">Flip</div>
             <div class="prop-btn-row">
-              <button class="prop-btn" onclick="flipObj('X')">â†” Flip H</button>
-              <button class="prop-btn" onclick="flipObj('Y')">â†• Flip V</button>
+              <button class="prop-btn" onclick="flipObj('X')">↔ Flip H</button>
+              <button class="prop-btn" onclick="flipObj('Y')">↕ Flip V</button>
             </div>
           </div>
           <div class="prop-row">
             <div class="prop-label">Order</div>
             <div class="prop-btn-row">
-              <button class="prop-btn" onclick="bringFwd()">â†‘ Forward</button>
-              <button class="prop-btn" onclick="sendBwd()">â†“ Backward</button>
+              <button class="prop-btn" onclick="bringFwd()">↑ Forward</button>
+              <button class="prop-btn" onclick="sendBwd()">↓ Backward</button>
             </div>
           </div>
         </div>
@@ -5151,8 +5151,8 @@ body.role-editor .admin-action {
           <div class="prop-row">
             <div class="prop-label">Order</div>
             <div class="prop-btn-row">
-              <button class="prop-btn" onclick="bringFwd()">â†‘ Forward</button>
-              <button class="prop-btn" onclick="sendBwd()">â†“ Backward</button>
+              <button class="prop-btn" onclick="bringFwd()">↑ Forward</button>
+              <button class="prop-btn" onclick="sendBwd()">↓ Backward</button>
             </div>
           </div>
         </div>
@@ -5181,17 +5181,17 @@ body.role-editor .admin-action {
           <button class="anim-btn" data-anim="slideInRight" onclick="setAnimationType('slideInRight')">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="19 12 13 6 13 18"/><line x1="19" y1="12" x2="5" y2="12"/>
-            </svg>â†’ Slide
+            </svg>→ Slide
           </button>
           <button class="anim-btn" data-anim="slideInUp" onclick="setAnimationType('slideInUp')">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="12 5 6 11 18 11"/><line x1="12" y1="5" x2="12" y2="19"/>
-            </svg>â†‘ Slide
+            </svg>↑ Slide
           </button>
           <button class="anim-btn" data-anim="slideInDown" onclick="setAnimationType('slideInDown')">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="12 19 6 13 18 13"/><line x1="12" y1="19" x2="12" y2="5"/>
-            </svg>â†“ Slide
+            </svg>↓ Slide
           </button>
           <button class="anim-btn" data-anim="zoomIn" onclick="setAnimationType('zoomIn')">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -5236,7 +5236,7 @@ body.role-editor .admin-action {
           </div>
         </div>
         <button class="prop-btn" style="width:100%;margin-top:6px" onclick="previewAnimation()">
-          â–¶ Preview Animation
+          ▶ Preview Animation
         </button>
       </div>
 
@@ -5257,8 +5257,8 @@ body.role-editor .admin-action {
           <div class="prop-row">
             <div class="prop-label">Order</div>
             <div class="prop-btn-row">
-              <button class="prop-btn" onclick="bringFwd()">â†‘ Forward</button>
-              <button class="prop-btn" onclick="sendBwd()">â†“ Backward</button>
+              <button class="prop-btn" onclick="bringFwd()">↑ Forward</button>
+              <button class="prop-btn" onclick="sendBwd()">↓ Backward</button>
             </div>
           </div>
         </div>
@@ -5270,7 +5270,7 @@ body.role-editor .admin-action {
         <div class="prop-group">
           <div class="prop-row">
             <div class="prop-label">Text</div>
-            <input type="text" id="propTickerText" class="prop-input" placeholder="Breaking newsâ€¦"
+            <input type="text" id="propTickerText" class="prop-input" placeholder="Breaking news…"
                    oninput="updateTickerProp('tickerText', this.value)">
           </div>
           <div class="prop-row">
@@ -5312,7 +5312,7 @@ body.role-editor .admin-action {
           </div>
           <div class="prop-row">
             <div class="prop-label">Separator</div>
-            <input type="text" id="propTickerSep" class="prop-input" value="  â€¢  "
+            <input type="text" id="propTickerSep" class="prop-input" value="  •  "
                    oninput="updateTickerProp('tickerSep', this.value)">
           </div>
         </div>
@@ -5332,7 +5332,7 @@ body.role-editor .admin-action {
 <div id="scheduleEditor">
   <div class="sched-topbar">
     <span class="sched-topbar-label">Schedule</span>
-    <input type="text" id="schedEditorName" placeholder="Schedule nameâ€¦" value="Schedule 1">
+    <input type="text" id="schedEditorName" placeholder="Schedule name…" value="Schedule 1">
     <div class="sched-topbar-actions">
       <button class="btn btn-secondary" onclick="openAddEventModal(null)" style="padding:7px 12px">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -5384,7 +5384,7 @@ body.role-editor .admin-action {
   <div class="aem-box">
     <div style="display:flex;align-items:center;justify-content:space-between">
       <div class="aem-title" id="aemTitle">New Event</div>
-      <button class="gallery-close" onclick="closeAddEventModal()">âœ•</button>
+      <button class="gallery-close" onclick="closeAddEventModal()">✕</button>
     </div>
     <div class="field">
       <label>Event name</label>
@@ -5448,7 +5448,7 @@ body.role-editor .admin-action {
 <!-- Google Font Picker Panel -->
 <div class="font-picker-panel" id="fontPickerPanel">
   <div class="font-search-wrap">
-    <input class="font-search" id="fontSearch" placeholder="Search fontsâ€¦"
+    <input class="font-search" id="fontSearch" placeholder="Search fonts…"
            oninput="searchFonts(this.value)" autocomplete="off" spellcheck="false">
   </div>
   <div class="font-list" id="fontList"></div>
@@ -5478,8 +5478,8 @@ body.role-editor .admin-action {
 
   <div class="sc-group">
     <div class="sc-group-title">Move</div>
-    <div class="sc-row"><span class="sc-label">Nudge 1 px</span><span class="sc-keys"><span class="sc-key">â†‘ â†“ â† â†’</span></span></div>
-    <div class="sc-row"><span class="sc-label">Nudge 10 px</span><span class="sc-keys"><span class="sc-key">Shift</span><span class="sc-key">â†‘ â†“ â† â†’</span></span></div>
+    <div class="sc-row"><span class="sc-label">Nudge 1 px</span><span class="sc-keys"><span class="sc-key">↑ ↓ â† →</span></span></div>
+    <div class="sc-row"><span class="sc-label">Nudge 10 px</span><span class="sc-keys"><span class="sc-key">Shift</span><span class="sc-key">↑ ↓ â† →</span></span></div>
   </div>
 </div>
 
@@ -5695,6 +5695,22 @@ async function initUserAndOrg(user) {
       currentRole    = userData.role || 'admin';
       const orgSnap  = await getDoc(doc(db, 'organizations', currentOrgId));
       currentOrg     = orgSnap.exists() ? { id: currentOrgId, ...orgSnap.data() } : null;
+
+      // Claim any pending subscription from the marketing site
+      try {
+        const pendingSnap = await getDoc(doc(db, 'pending_subscriptions', user.email.toLowerCase()));
+        if (pendingSnap.exists()) {
+          const pending = pendingSnap.data();
+          const { email: _email, updatedAt: _updatedAt, ...subscriptionData } = pending;
+          await updateDoc(doc(db, 'organizations', currentOrgId), { subscription: { ...subscriptionData, updatedAt: new Date().toISOString() } });
+          await deleteDoc(doc(db, 'pending_subscriptions', user.email.toLowerCase()));
+          if (currentOrg) currentOrg.subscription = subscriptionData;
+          window._pendingBillingSuccess = subscriptionData.plan;
+        }
+      } catch(e) {
+        console.warn('Could not claim pending subscription:', e.message);
+      }
+
       // Resume onboarding if not completed
       if (!userData.onboardingComplete) setTimeout(showOnboarding, 200);
     } else if (inviteId) {
@@ -5722,7 +5738,7 @@ async function initUserAndOrg(user) {
   if (window._pendingBillingSuccess) {
     const planName = window._pendingBillingSuccess;
     window._pendingBillingSuccess = null;
-    setTimeout(() => toast(`You're now on the ${planName.charAt(0).toUpperCase() + planName.slice(1)} plan! ðŸŽ‰`), 800);
+    setTimeout(() => toast(`You're now on the ${planName.charAt(0).toUpperCase() + planName.slice(1)} plan! 🎉`), 800);
   }
 }
 
@@ -6064,7 +6080,7 @@ function renderObStep() {
     nextBtn.style.display = 'none'; // step 4 has its own cards
   } else {
     nextBtn.style.display = '';
-    nextBtn.textContent = obStep === obTotalSteps - 2 ? 'My screen is ready â†’' : 'Next â†’';
+    nextBtn.textContent = obStep === obTotalSteps - 2 ? 'My screen is ready →' : 'Next →';
   }
   // Step 4: fire confetti
   if (obStep === 3) fireObConfetti();
@@ -6246,7 +6262,7 @@ window.saveOrgName = async function() {
   try {
     await updateDoc(doc(db, 'organizations', currentOrgId), { name });
     currentOrg.name = name;
-    toast('Organization name saved âœ“');
+    toast('Organization name saved ✓');
   } catch(e) { toast('Save failed: ' + e.message, true); }
 };
 
@@ -6344,14 +6360,14 @@ window.sendInvite = async function() {
 
 window.copyInviteLink = function() {
   const link = document.getElementById('inviteLinkText').textContent;
-  navigator.clipboard.writeText(link).then(() => toast('Link copied âœ“'));
+  navigator.clipboard.writeText(link).then(() => toast('Link copied ✓'));
 };
 
 window.resendInvite = async function(inviteId) {
   const snap = await getDoc(doc(db, 'invitations', inviteId));
   if (!snap.exists()) return;
   const link = window.location.origin + '/admin.html?invite=' + inviteId;
-  navigator.clipboard.writeText(link).then(() => toast('Invite link copied — share it with the invitee âœ“'));
+  navigator.clipboard.writeText(link).then(() => toast('Invite link copied — share it with the invitee ✓'));
 };
 
 window.cancelInvite = async function(inviteId) {
@@ -6423,7 +6439,7 @@ async function pushToFirestore() {
     ...(currentUser  && { updatedBy: { uid: currentUser.uid, email: currentUser.email } }),
   });
   logActivity(`Slideshow "${currentShowId}" saved (${slides.length} slide${slides.length !== 1 ? 's' : ''})`);
-  toast("Saved — displays updating live âœ“");
+  toast("Saved — displays updating live ✓");
 }
 
 window.saveSettings = () => pushToFirestore();
@@ -6523,7 +6539,7 @@ window.saveYoutubeSlide = async function() {
   updateCount();
   await pushToFirestore();
   closeYoutubeModal();
-  toast('YouTube slide added âœ“');
+  toast('YouTube slide added ✓');
 };
 
 // ── Web Page slides ───────────────────────────────────────────────────────
@@ -6548,7 +6564,7 @@ window.saveWebpageSlide = async function() {
   updateCount();
   await pushToFirestore();
   closeWebpageModal();
-  toast('Web page slide added âœ“');
+  toast('Web page slide added ✓');
 };
 
 // ── Add Media modal ───────────────────────────────────────────────────────
@@ -6596,7 +6612,7 @@ window.addFromDropbox = function() {
       renderGrid();
       updateCount();
       await pushToFirestore();
-      toast(`Added ${files.length} slide${files.length !== 1 ? 's' : ''} from Dropbox âœ“`);
+      toast(`Added ${files.length} slide${files.length !== 1 ? 's' : ''} from Dropbox ✓`);
     },
     cancel: function() {}
   });
@@ -6613,7 +6629,7 @@ let _gdTab       = 'myDrive';
 let _gdPath      = [];     // [{id, name}] breadcrumb stack
 let _gdAllItems  = [];     // raw Drive items for current view
 let _gdSelected  = new Set();   // selected file IDs
-let _gdItemMap   = new Map();   // id â†’ item
+let _gdItemMap   = new Map();   // id → item
 
 function _gdAuth(callback) {
   if (typeof google === 'undefined' || !google.accounts?.oauth2) {
@@ -6752,7 +6768,7 @@ function _gdCrumbs() {
     const last = i === segs.length - 1;
     return last
       ? `<span class="gdrive-crumb-cur">${s.label}</span>`
-      : `<button class="gdrive-crumb-btn" onclick="gdriveNav(${s.idx})">${s.label}</button><span class="gdrive-crumb-sep">â€º</span>`;
+      : `<button class="gdrive-crumb-btn" onclick="gdriveNav(${s.idx})">${s.label}</button><span class="gdrive-crumb-sep">›</span>`;
   }).join('');
 }
 
@@ -6848,7 +6864,7 @@ window.gdriveImport = async function() {
 
 async function _gdImportItems(items) {
   const mode = _gdMode;
-  if (mode !== 'canvas') toast(`Importing ${items.length} file${items.length !== 1 ? 's' : ''} from Google Driveâ€¦`);
+  if (mode !== 'canvas') toast(`Importing ${items.length} file${items.length !== 1 ? 's' : ''} from Google Drive…`);
   let added = 0;
 
   for (const item of items) {
@@ -6877,11 +6893,11 @@ async function _gdImportItems(items) {
 
   if (added) {
     if (mode === 'canvas') {
-      toast('Image added from Google Drive âœ“');
+      toast('Image added from Google Drive ✓');
     } else {
       renderGrid(); updateCount();
       await pushToFirestore();
-      toast(`Added ${added} slide${added !== 1 ? 's' : ''} from Google Drive âœ“`);
+      toast(`Added ${added} slide${added !== 1 ? 's' : ''} from Google Drive ✓`);
     }
   }
 }
@@ -7089,7 +7105,7 @@ async function _resolveOneDriveItem(item) {
 }
 
 async function _handleOneDriveItems(items, mode) {
-  if (mode !== 'canvas') toast(`Importing ${items.length} file${items.length !== 1 ? 's' : ''} from OneDriveâ€¦`);
+  if (mode !== 'canvas') toast(`Importing ${items.length} file${items.length !== 1 ? 's' : ''} from OneDrive…`);
   let added = 0;
 
   for (const item of items) {
@@ -7115,11 +7131,11 @@ async function _handleOneDriveItems(items, mode) {
 
   if (added) {
     if (mode === 'canvas') {
-      toast('Image added from OneDrive âœ“');
+      toast('Image added from OneDrive ✓');
     } else {
       renderGrid(); updateCount();
       await pushToFirestore();
-      toast(`Added ${added} slide${added !== 1 ? 's' : ''} from OneDrive âœ“`);
+      toast(`Added ${added} slide${added !== 1 ? 's' : ''} from OneDrive ✓`);
     }
   }
 }
@@ -7450,7 +7466,7 @@ window.toggleSlide = async (idx) => {
 window.duplicateSlide = function(idx) {
   const src = slides[idx];
   if (src.type === 'designed') {
-    // Open editor pre-populated with existing canvasJson; editingSlideIdx = null â†’ saves as new slide
+    // Open editor pre-populated with existing canvasJson; editingSlideIdx = null → saves as new slide
     const copy = { ...src, name: 'Copy of ' + src.name };
     openDesigner(copy, null);
   } else {
@@ -7645,7 +7661,7 @@ window.generateAiSlide = async function() {
 
     // Strip any accidental markdown fences
     let jsonStr = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
-    // Find outermost { â€¦ }
+    // Find outermost { … }
     const fi = jsonStr.indexOf('{'), li = jsonStr.lastIndexOf('}');
     if (fi === -1 || li === -1) throw new Error('AI returned no valid JSON object.');
     jsonStr = jsonStr.slice(fi, li + 1);
@@ -7972,7 +7988,7 @@ function updateDesignerStatus(state) {
   if (!el) return;
   el.className = 'designer-status ' + state;
   if (text) text.textContent = state === 'saved'   ? 'Saved'
-                             : state === 'saving'  ? 'Savingâ€¦'
+                             : state === 'saving'  ? 'Saving…'
                              :                       'Unsaved changes';
 }
 
@@ -8174,9 +8190,9 @@ function onObjectMoving(e) {
 
     // Check three x-probes: left edge, center, right edge
     const xProbes = [
-      { val: b.l,  apply: snap => snap          },  // snap left  â†’ set bbox left
-      { val: b.cx, apply: snap => snap - b.w / 2 }, // snap centerâ†’ offset
-      { val: b.r,  apply: snap => snap - b.w     }, // snap right â†’ offset
+      { val: b.l,  apply: snap => snap          },  // snap left  → set bbox left
+      { val: b.cx, apply: snap => snap - b.w / 2 }, // snap center→ offset
+      { val: b.r,  apply: snap => snap - b.w     }, // snap right → offset
     ];
     for (const probe of xProbes) {
       const hit = nearestSnap(probe.val, xs);
@@ -8234,7 +8250,7 @@ function initFabricCanvas() {
       backgroundColor: '#ffffff',
     });
 
-    // Keep logical coordinates in 1920Ã—1080 space
+    // Keep logical coordinates in 1920×1080 space
     fabricCanvas.setZoom(scale);
 
     // Rubber-band selection styling
@@ -8257,7 +8273,7 @@ function initFabricCanvas() {
     syncBgSwatch();
     renderDesignerBrandStrip();
 
-    // Selection events â†’ update properties panel
+    // Selection events → update properties panel
     fabricCanvas.on('selection:created', updatePropsPanel);
     fabricCanvas.on('selection:updated', updatePropsPanel);
     fabricCanvas.on('selection:cleared', updatePropsPanel);
@@ -8525,7 +8541,7 @@ function renderLayersPanel() {
 
   const activeObj = fabricCanvas.getActiveObject();
 
-  // Display bottomâ†’top (index 0 at right = bottom layer; last index at left = top layer)
+  // Display bottom→top (index 0 at right = bottom layer; last index at left = top layer)
   const chips = [...objs].reverse().map((obj, revIdx) => {
     const realIdx  = objs.length - 1 - revIdx;
     const isSelected = obj === activeObj;
@@ -8753,15 +8769,15 @@ document.getElementById('designerFileInput').addEventListener('change', async fu
   if (!fabricImg) return;
 
   // Upload to S3 in background so the real URL gets stored on save
-  toast('Saving to cloudâ€¦');
+  toast('Saving to cloud…');
   try {
     const { url, key } = await s3Upload(file, 'signage/designer');
-    // Swap blob URL â†’ CloudFront URL so canvas JSON serialises correctly
+    // Swap blob URL → CloudFront URL so canvas JSON serialises correctly
     fabricImg._element.src = url;
     if (fabricImg._originalElement) fabricImg._originalElement.src = url;
     URL.revokeObjectURL(blobUrl);
     saveMediaRecord(url, file.name, 'image', key);
-    toast('Saved to cloud âœ“');
+    toast('Saved to cloud ✓');
   } catch(e) {
     toast('Cloud upload error: ' + e.message, true);
   }
@@ -8789,7 +8805,7 @@ function addImageToCanvas(url) {
       fabricCanvas.add(img);
       fabricCanvas.setActiveObject(img);
       fabricCanvas.renderAll();
-      toast('Image added âœ“');
+      toast('Image added ✓');
       resolve(img);
     };
     imgEl.onerror = () => {
@@ -8857,14 +8873,14 @@ fabric.TickerBar = fabric.util.createClass(fabric.Rect, {
 
   initialize: function(options) {
     options = options || {};
-    options.tickerText     = options.tickerText     || 'Breaking News  â€¢  Your message here';
+    options.tickerText     = options.tickerText     || 'Breaking News  •  Your message here';
     options.tickerSpeed    = options.tickerSpeed    || 'medium';
     options.tickerPos      = options.tickerPos      || 'bottom';
     options.tickerBg       = options.tickerBg       || '#000000';
     options.tickerColor    = options.tickerColor    || '#ffffff';
     options.tickerOpacity  = options.tickerOpacity  !== undefined ? options.tickerOpacity : 0.75;
     options.tickerFontSize = options.tickerFontSize || 36;
-    options.tickerSep      = options.tickerSep      || '  â€¢  ';
+    options.tickerSep      = options.tickerSep      || '  •  ';
     this.callSuper('initialize', options);
     this.on('scaling', function() { this.set({ scaleX: 1, scaleY: 1 }); });
   },
@@ -8906,7 +8922,7 @@ fabric.TickerBar = fabric.util.createClass(fabric.Rect, {
     ctx.font         = `${this.tickerFontSize || 36}px DM Sans, sans-serif`;
     ctx.textBaseline = 'middle';
     ctx.fillText(
-      (this.tickerText || '') + (this.tickerSep || '  â€¢  ') + (this.tickerText || ''),
+      (this.tickerText || '') + (this.tickerSep || '  •  ') + (this.tickerText || ''),
       -w / 2 + 120, 0
     );
     ctx.restore();
@@ -9125,7 +9141,7 @@ function updatePropsPanel() {
     document.getElementById('propTickerColor').value    = toHex(obj.tickerColor    || '#ffffff');
     document.getElementById('propTickerOpacity').value  = obj.tickerOpacity  !== undefined ? obj.tickerOpacity : 0.75;
     document.getElementById('propTickerFontSize').value = obj.tickerFontSize  || 36;
-    document.getElementById('propTickerSep').value      = obj.tickerSep       !== undefined ? obj.tickerSep : '  â€¢  ';
+    document.getElementById('propTickerSep').value      = obj.tickerSep       !== undefined ? obj.tickerSep : '  •  ';
     document.querySelectorAll('#propsTicker .ticker-speed-btn').forEach(b =>
       b.classList.toggle('active', b.dataset.speed === (obj.tickerSpeed || 'medium'))
     );
@@ -9449,7 +9465,7 @@ async function loadStockPhotos(append = false) {
   if (stockLoading || !stockHasMore) return;
   stockLoading = true;
   const status = document.getElementById('stockStatus');
-  if (!append) status.textContent = 'Loadingâ€¦';
+  if (!append) status.textContent = 'Loading…';
   try {
     const url = stockQuery
       ? `${UNSPLASH_BASE}/search/photos?query=${encodeURIComponent(stockQuery)}&per_page=12&page=${stockPage}&client_id=${UNSPLASH_ACCESS_KEY}`
@@ -9482,7 +9498,7 @@ async function loadStockCurated(append = false) {
   stockCuratedLoading = true;
   stockCuratedLoaded = true;
   const status = document.getElementById('stockCuratedStatus');
-  if (!append) status.textContent = 'Loadingâ€¦';
+  if (!append) status.textContent = 'Loading…';
   try {
     const url = `${UNSPLASH_BASE}/photos?order_by=editorial&per_page=12&page=${stockCuratedPage}&client_id=${UNSPLASH_ACCESS_KEY}`;
     const res = await fetch(url);
@@ -9546,7 +9562,7 @@ async function loadStockCollPhotos(append = false) {
   if (stockCollLoading || !stockCollHasMore) return;
   stockCollLoading = true;
   const status = document.getElementById('stockCollStatus');
-  if (!append) status.textContent = 'Loadingâ€¦';
+  if (!append) status.textContent = 'Loading…';
   try {
     const url = `${UNSPLASH_BASE}/search/photos?query=${encodeURIComponent(stockCollPhotosQuery)}&per_page=12&page=${stockCollPage}&client_id=${UNSPLASH_ACCESS_KEY}`;
     const res = await fetch(url);
@@ -9651,7 +9667,7 @@ function addUnsplashAttribution(photo) {
 window.addStockToCanvas = function(photoId) {
   const photo = stockPhotoMap[photoId];
   if (!photo || !fabricCanvas) return;
-  toast('Adding photoâ€¦');
+  toast('Adding photo…');
   trackUnsplashDownload(photoId);
   fabric.Image.fromURL(photo.urls.regular, function(img) {
     if (!img) { toast('Failed to load image', true); return; }
@@ -9673,7 +9689,7 @@ window.addStockToCanvas = function(photoId) {
 window.setStockAsBg = function(photoId) {
   const photo = stockPhotoMap[photoId];
   if (!photo || !fabricCanvas) return;
-  toast('Setting backgroundâ€¦');
+  toast('Setting background…');
   trackUnsplashDownload(photoId);
   currentBgImgUrl = photo.urls.regular;
   setBgType('image');
@@ -9787,7 +9803,7 @@ window.setBgImage = async function() {
   inp.type = 'file'; inp.accept = 'image/*';
   inp.onchange = async () => {
     const file = inp.files[0]; if (!file) return;
-    toast('Uploading backgroundâ€¦');
+    toast('Uploading background…');
     try {
       const { url } = await s3Upload(file, 'signage/designer');
       currentBgImgUrl = url; applyBgImage();
@@ -9855,7 +9871,7 @@ window.applyBgImage = function() {
   const imgEl = new Image();
   imgEl.onload = () => {
     const fImg = new fabric.Image(imgEl);
-    // Use logical canvas dimensions (1920Ã—1080), not display dimensions,
+    // Use logical canvas dimensions (1920×1080), not display dimensions,
     // because setZoom() already handles the display scaling.
     const scaleX = CANVAS_W / imgEl.naturalWidth;
     const scaleY = CANVAS_H / imgEl.naturalHeight;
@@ -9959,7 +9975,7 @@ window.doIconSearch = function() {
 async function fetchIconifySearch(query) {
   const grid   = document.getElementById('iconGrid');
   const status = document.getElementById('iconStatus');
-  grid.innerHTML = '<div class="icon-loading">Searchingâ€¦</div>';
+  grid.innerHTML = '<div class="icon-loading">Searching…</div>';
   status.textContent = '';
   try {
     const url = `https://api.iconify.design/search?query=${encodeURIComponent(query)}&limit=60&prefixes=mdi,tabler,heroicons,ph,carbon`;
@@ -9991,7 +10007,7 @@ function renderIconGrid(icons) {
     const name = rest.join(':');
     const safeName = name.replace(/'/g, "\\'");
     const safePrefix = prefix.replace(/'/g, "\\'");
-    const shortName = name.length > 10 ? name.slice(0, 10) + 'â€¦' : name;
+    const shortName = name.length > 10 ? name.slice(0, 10) + '…' : name;
     return `<div class="icon-item" title="${name}" onclick="insertIcon('${safePrefix}','${safeName}')"
              draggable="true" ondragstart="iconDragStart(event,'${safePrefix}','${safeName}')">
               <img class="icon-item-img" src="${iconImgSrc(prefix, name)}" alt="${name}" loading="lazy" draggable="false">
@@ -10127,7 +10143,7 @@ async function loadHistoryList() {
     return;
   }
 
-  listEl.innerHTML = '<div class="history-loading">Loadingâ€¦</div>';
+  listEl.innerHTML = '<div class="history-loading">Loading…</div>';
 
   try {
     const snap = await getDocs(query(_versionsCol(slideId), orderBy('savedAt', 'desc')));
@@ -10209,7 +10225,7 @@ async function executeRestore(versionId) {
   if (!slideId) return;
 
   const btn = document.getElementById('btnDesignerSave');
-  btn.disabled = true; btn.textContent = 'Restoringâ€¦';
+  btn.disabled = true; btn.textContent = 'Restoring…';
 
   try {
     // 1. Save current state as a new version before restoring
@@ -10334,7 +10350,7 @@ function runReadabilityCheck() {
   const safeB   = CANVAS_H * 0.95;
   const textObjs = objects.filter(o => o.type === 'i-text' || o.type === 'text');
 
-  // 4 Â· Overcrowding
+  // 4 · Overcrowding
   if (textObjs.length > 8) {
     issues.push({ type: 'warning', label: 'Too much text',
       desc: `${textObjs.length} text elements — simplify for TV viewing`, obj: null });
@@ -10344,7 +10360,7 @@ function runReadabilityCheck() {
     const size  = obj.fontSize || 24;
     const label = `"${(obj.text || '').slice(0, 20) || 'Text element'}"`;
 
-    // 1 Â· Text size
+    // 1 · Text size
     if (size < 32) {
       issues.push({ type: 'critical', label: 'Text too small',
         desc: `${label} is ${size}px — unreadable from 10 feet`, obj });
@@ -10353,7 +10369,7 @@ function runReadabilityCheck() {
         desc: `${label} is ${size}px — consider increasing for distant viewing`, obj });
     }
 
-    // 2 Â· Contrast
+    // 2 · Contrast
     const textHex = toHex(typeof obj.fill === 'string' ? obj.fill : null);
     if (textHex && textHex !== '#000000' || textHex) {
       try {
@@ -10370,7 +10386,7 @@ function runReadabilityCheck() {
     }
   });
 
-  // 3 Â· Safe zone (all objects)
+  // 3 · Safe zone (all objects)
   objects.forEach(obj => {
     if (obj.type === 'tickerBar') return;
     const b = obj.getBoundingRect();
@@ -10402,10 +10418,10 @@ function _renderCheckResults(issues) {
   else                                              { scoreLabel = 'Poor';       scoreClass = 'poor';       }
 
   const sub = issues.length === 0 ? 'No issues found'
-    : `${criticals} critical Â· ${warnings} warning${warnings !== 1 ? 's' : ''}`;
+    : `${criticals} critical · ${warnings} warning${warnings !== 1 ? 's' : ''}`;
 
   const issueRows = issues.length === 0
-    ? `<div class="check-empty">âœ“ This slide looks great!</div>`
+    ? `<div class="check-empty">✓ This slide looks great!</div>`
     : `<div class="check-issues">${issues.map((iss, i) => `
         <div class="check-issue" onclick="checkHighlight(${i})">
           <div class="check-dot ${iss.type}"></div>
@@ -10420,8 +10436,8 @@ function _renderCheckResults(issues) {
 
   const fixBtns = (hasSmall || hasSafeZone) ? `
     <div class="check-fix-btns">
-      ${hasSmall    ? `<button class="prop-btn" style="width:100%" onclick="checkFixTextSizes()">â†‘ Fix All Text Sizes â†’ 48px</button>` : ''}
-      ${hasSafeZone ? `<button class="prop-btn" style="width:100%" onclick="checkFixSafeZone()">âŠž Apply Safe Zone</button>` : ''}
+      ${hasSmall    ? `<button class="prop-btn" style="width:100%" onclick="checkFixTextSizes()">↑ Fix All Text Sizes → 48px</button>` : ''}
+      ${hasSafeZone ? `<button class="prop-btn" style="width:100%" onclick="checkFixSafeZone()">⊞ Apply Safe Zone</button>` : ''}
     </div>` : '';
 
   content.innerHTML = `
@@ -10431,7 +10447,7 @@ function _renderCheckResults(issues) {
     </div>
     ${issueRows}
     ${fixBtns}
-    <button class="prop-btn" style="width:100%;margin-top:6px" onclick="runReadabilityCheck()">â†» Re-check</button>`;
+    <button class="prop-btn" style="width:100%;margin-top:6px" onclick="runReadabilityCheck()">↻ Re-check</button>`;
 }
 
 window.checkHighlight = function(idx) {
@@ -10526,7 +10542,7 @@ function renderBkPage() {
     const el = document.getElementById(id);
     if (!el) continue;
     const f = bk.fonts?.[role];
-    el.textContent = f || 'Click to setâ€¦';
+    el.textContent = f || 'Click to set…';
     el.style.cssText = f ? `font-family:'${f}',sans-serif;color:var(--text)` : 'color:var(--muted)';
     if (f) loadGoogleFont(f);
   }
@@ -10552,7 +10568,7 @@ function renderBkSwatches() {
               onclick="editBkColor(${i})"
               data-idx="${i}">
               <span class="bk-swatch-tip">${label}</span>
-              <button class="bk-swatch-del" onclick="event.stopPropagation();removeBkColor(${i})" title="Remove">Ã—</button>
+              <button class="bk-swatch-del" onclick="event.stopPropagation();removeBkColor(${i})" title="Remove">×</button>
             </div>`;
   });
   if ((bk.colors || []).length < 8) {
@@ -10599,7 +10615,7 @@ window.openBkFontPicker = function(slot) {
   const label = document.getElementById('bkFontPickerSlotLabel');
   const search = document.getElementById('bkFontSearch');
   if (!wrap) return;
-  label.textContent = `Setting ${slot} fontâ€¦`;
+  label.textContent = `Setting ${slot} font…`;
   search.value = '';
   wrap.style.display = 'flex';
   renderBkFontList('');
@@ -10655,7 +10671,7 @@ window.handleBkLogoUpload = async function(event) {
   const file = event.target.files?.[0];
   if (!file) return;
   const btn = document.querySelector('.bk-logo-area .btn');
-  if (btn) btn.textContent = 'Uploadingâ€¦';
+  if (btn) btn.textContent = 'Uploading…';
   try {
     const { url, key } = await s3Upload(file, 'signage/logos');
     window.brandKit.logo = { url, publicId: key };
@@ -11275,13 +11291,13 @@ window.saveDesignedSlide = async function() {
   const btn  = document.getElementById('btnDesignerSave');
   const name = document.getElementById('designerSlideName').value.trim() || 'Designed Slide';
   btn.disabled    = true;
-  btn.textContent = 'Savingâ€¦';
+  btn.textContent = 'Saving…';
 
   try {
     const canvasJson = sanitizeCanvasJson(JSON.stringify(fabricCanvas.toJSON(CANVAS_EXTRA_PROPS)));
 
     // Generate thumbnail — may fail if canvas has tainted images (CORS)
-    // multiplier:0.25 â†’ 480Ã—270 JPEG instead of full 1920Ã—1080
+    // multiplier:0.25 → 480×270 JPEG instead of full 1920×1080
     let thumbnailUrl = null;
     try {
       const dataUrl = fabricCanvas.toDataURL({ format: 'jpeg', quality: 0.7, multiplier: 0.25 });
@@ -11315,7 +11331,7 @@ window.saveDesignedSlide = async function() {
       try { await setDoc(doc(db, 'slideshows', currentShowId), { draftCanvasJson: null, draftSlideId: null }, { merge: true }); } catch(_) {}
       designerDirty = false;
       updateDesignerStatus('saved');
-      toast('Slide saved âœ“');
+      toast('Slide saved ✓');
       const returnGroupIdx = editingGroupIdx;
       editingGroupIdx      = null;
       editingGroupSlideIdx = null;
@@ -11352,7 +11368,7 @@ window.saveDesignedSlide = async function() {
     saveSlideVersion(slide.id, canvasJson, thumbnailUrl).catch(() => {});
     designerDirty = false;
     updateDesignerStatus('saved');
-    toast('Slide saved âœ“');
+    toast('Slide saved ✓');
     doCloseDesigner();
 
   } catch(e) {
@@ -11642,16 +11658,16 @@ window.filterMediaSearch = function(val) {
 
 window.insertOrCopyMedia = function(url, type) {
   if (type === 'video') {
-    navigator.clipboard.writeText(url).then(() => toast('Video URL copied âœ“'));
+    navigator.clipboard.writeText(url).then(() => toast('Video URL copied ✓'));
     return;
   }
   // If designer slide is open, insert into canvas
   if (fabricCanvas && document.getElementById('page-slideshows')?.classList.contains('active')) {
     addImageToCanvas(url);
-    toast('Image added to canvas âœ“');
+    toast('Image added to canvas ✓');
     return;
   }
-  navigator.clipboard.writeText(url).then(() => toast('Image URL copied âœ“'));
+  navigator.clipboard.writeText(url).then(() => toast('Image URL copied ✓'));
 };
 
 window.deleteMediaRecord = async function(id) {
@@ -11659,7 +11675,7 @@ window.deleteMediaRecord = async function(id) {
   if (!confirm('Remove this item from your media library?')) return;
   try {
     await deleteDoc(doc(db, 'organizations', currentOrgId, 'media', id));
-    toast('Removed from library âœ“');
+    toast('Removed from library ✓');
   } catch(e) {
     toast('Could not remove: ' + e.message, true);
   }
@@ -11794,7 +11810,7 @@ window.saveScreenEdit = async function() {
       ...(name        && { name }),
       location, slideshowId, scheduleId, orientation, tags,
     }, { merge: true });
-    toast('Screen saved âœ“');
+    toast('Screen saved ✓');
     closeScreenEdit();
     logActivity('Screen "' + (name || editingScreenId) + '" updated');
   } catch(e) {
@@ -11823,7 +11839,7 @@ window.sendTestSignal = async function() {
     await setDoc(doc(db, 'screens', editingScreenId),
       { testSignal: true, testSignalAt: new Date().toISOString() },
       { merge: true });
-    toast('Test signal sent âœ“');
+    toast('Test signal sent ✓');
   } catch(e) {
     toast('Could not send test signal: ' + e.message, true);
   }
@@ -11902,8 +11918,8 @@ function fmtTime(h, m) {
 
 function repeatLabel(ev) {
   if (ev.repeat === 'daily')    return 'Every day';
-  if (ev.repeat === 'weekdays') return 'Monâ€“Fri';
-  if (ev.repeat === 'weekends') return 'Satâ€“Sun';
+  if (ev.repeat === 'weekdays') return 'Mon–Fri';
+  if (ev.repeat === 'weekends') return 'Sat–Sun';
   if (ev.repeat === 'custom')   return ev.days.map(d => DAY_LABELS[d]).join(', ');
   return DAY_LABELS[ev.days[0]] ?? '';
 }
@@ -11985,7 +12001,7 @@ window.saveScheduleEditor = function() {
 
   renderScheduleGrid();
   closeScheduleEditor();
-  toast('Schedule saved âœ“');
+  toast('Schedule saved ✓');
   logActivity(`Schedule "${editingSchedule.name}" saved`);
 };
 
@@ -12061,8 +12077,8 @@ function buildEventBlock(ev, idx, day) {
 
   block.innerHTML = `
     <div class="cal-ev-name">${ev.name}</div>
-    <div class="cal-ev-time">${fmtTime(ev.startHour, ev.startMin)} â€“ ${fmtTime(ev.endHour, ev.endMin)}</div>
-    <button class="cal-ev-del" title="Delete" onclick="deleteEventFromCal(event,${idx})">âœ•</button>
+    <div class="cal-ev-time">${fmtTime(ev.startHour, ev.startMin)} – ${fmtTime(ev.endHour, ev.endMin)}</div>
+    <button class="cal-ev-del" title="Delete" onclick="deleteEventFromCal(event,${idx})">✕</button>
     <div class="cal-resize-handle"></div>`;
 
   // Drag to move (vertical only) — don't preventDefault so click still fires
@@ -12136,7 +12152,7 @@ function onDragMove(e) {
     document.querySelectorAll(`.cal-event[data-idx="${dragState.idx}"]`).forEach(b => {
       b.style.top = (newStart / 60 * CAL_ROW_H) + 'px';
       const tEl = b.querySelector('.cal-ev-time');
-      if (tEl) tEl.textContent = fmtTime(Math.floor(newStart/60), newStart%60) + ' â€“ ' + fmtTime(Math.floor((newStart+dur)/60), (newStart+dur)%60);
+      if (tEl) tEl.textContent = fmtTime(Math.floor(newStart/60), newStart%60) + ' – ' + fmtTime(Math.floor((newStart+dur)/60), (newStart+dur)%60);
     });
 
   } else { // resize
@@ -12148,7 +12164,7 @@ function onDragMove(e) {
       const h = Math.max(18, (newEnd - dragState.origStart) / 60 * CAL_ROW_H);
       b.style.height = h + 'px';
       const tEl = b.querySelector('.cal-ev-time');
-      if (tEl) tEl.textContent = fmtTime(ev.startHour, ev.startMin) + ' â€“ ' + fmtTime(Math.floor(newEnd/60), newEnd%60);
+      if (tEl) tEl.textContent = fmtTime(ev.startHour, ev.startMin) + ' – ' + fmtTime(Math.floor(newEnd/60), newEnd%60);
     });
   }
 }
@@ -12192,9 +12208,9 @@ function renderEventPanel() {
           <div class="sched-ev-dot" style="background:${ev.color}"></div>
           <div class="sched-ev-text">
             <div class="sched-ev-name">${ev.name}</div>
-            <div class="sched-ev-sub">${fmtTime(ev.startHour,ev.startMin)} â€“ ${fmtTime(ev.endHour,ev.endMin)} Â· ${repeatLabel(ev)}</div>
+            <div class="sched-ev-sub">${fmtTime(ev.startHour,ev.startMin)} – ${fmtTime(ev.endHour,ev.endMin)} · ${repeatLabel(ev)}</div>
           </div>
-          <button class="sched-ev-del" onclick="deleteSchedEvent(event,${i})">âœ•</button>
+          <button class="sched-ev-del" onclick="deleteSchedEvent(event,${i})">✕</button>
         </div>`).join('')
     : `<div style="font-size:13px;color:var(--muted);text-align:center;padding:20px 0">No events yet.<br>Click <strong style="color:var(--text)">+ Add</strong> or tap the calendar.</div>`;
 
@@ -12435,7 +12451,7 @@ window.saveClockSlide = async function() {
   closeClockModal();
   await saveSlides();
   renderGrid();
-  toast(clockEditIdx !== null ? 'Clock slide updated âœ“' : 'Clock slide added âœ“');
+  toast(clockEditIdx !== null ? 'Clock slide updated ✓' : 'Clock slide added ✓');
   logActivity(clockEditIdx !== null ? 'Edited clock slide' : 'Added clock slide');
   updateDashboard();
 };
@@ -12910,8 +12926,8 @@ if ('serviceWorker' in navigator) {
 })();
 
 // ── FCM push notifications ────────────────────────────────────────────────
-// VAPID key: Firebase Console â†’ Project Settings â†’ Cloud Messaging â†’
-//            Web Push certificates â†’ Key pair
+// VAPID key: Firebase Console → Project Settings → Cloud Messaging →
+//            Web Push certificates → Key pair
 const FCM_VAPID_KEY = 'YOUR_VAPID_KEY_FROM_FIREBASE_CONSOLE';
 
 let fcmMessaging = null;
@@ -12971,7 +12987,7 @@ function checkScreenOnline(screenData) {
           tag:   'offline-' + id,
         });
       } else {
-        toast(`âš  Screen "${screenData.name}" is offline`, true);
+        toast(`⚠ Screen "${screenData.name}" is offline`, true);
       }
     }
   } else {
@@ -13001,7 +13017,7 @@ window.installPWA = async function() {
   const { outcome } = await _deferredInstallPrompt.userChoice;
   _deferredInstallPrompt = null;
   document.getElementById('installBanner').style.display = 'none';
-  if (outcome === 'accepted') toast('App installed âœ“');
+  if (outcome === 'accepted') toast('App installed ✓');
 };
 
 window.dismissInstallBanner = function() {
@@ -13030,7 +13046,7 @@ async function _handleQuickUploadFile(input) {
   if (!auth.currentUser) { toast('Sign in to upload.', true); return; }
   if (!currentShowId)     { toast('Select a slideshow first.', true); return; }
   input.value = '';
-  toast('Uploadingâ€¦');
+  toast('Uploading…');
   try {
     await handleFiles([file]); // reuse the existing S3 + Firestore pipeline
   } catch(e) {
@@ -13078,7 +13094,7 @@ document.getElementById('quickUploadInputCamera').addEventListener('change', fun
     if (!pulling) return;
     pulling = false;
     if (triggered) {
-      indicator.innerHTML = '<div class="ptr-spinner"></div><span>Refreshingâ€¦</span>';
+      indicator.innerHTML = '<div class="ptr-spinner"></div><span>Refreshing…</span>';
       // Force re-subscribe to current slideshow
       if (typeof currentShowId !== 'undefined' && currentShowId) {
         subscribeToShow(currentShowId);
@@ -13121,7 +13137,7 @@ document.getElementById('quickUploadInputCamera').addEventListener('change', fun
   <img src="/icons/icon.svg" width="40" height="40" alt="">
   <p>Install the app for quick access from your phone</p>
   <button class="btn btn-primary" onclick="installPWA()" style="white-space:nowrap;min-height:36px;padding:8px 14px;font-size:13px">Install</button>
-  <button class="btn btn-secondary" onclick="dismissInstallBanner()" style="min-height:36px;padding:8px 10px;font-size:13px">âœ•</button>
+  <button class="btn btn-secondary" onclick="dismissInstallBanner()" style="min-height:36px;padding:8px 10px;font-size:13px">✕</button>
 </div>
 
 <!-- ── Pull-to-refresh indicator ─────────────────────────────────────────── -->
