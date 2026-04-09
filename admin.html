@@ -2708,7 +2708,7 @@ body.role-editor .admin-action {
         <div class="ob-sub">Choose how you want to start:</div>
         <div class="ob-choice-grid" style="margin-bottom:20px">
           <div class="ob-choice-card" id="obChoiceTemplate" onclick="selectObChoice('template')">
-            <div class="ob-choice-icon">🖼ï¸</div>
+            <div class="ob-choice-icon">🖼️</div>
             <div class="ob-choice-label">Pick a Template</div>
             <div class="ob-choice-desc">Professionally designed</div>
           </div>
@@ -2718,7 +2718,7 @@ body.role-editor .admin-action {
             <div class="ob-choice-desc">Use your own image</div>
           </div>
           <div class="ob-choice-card" id="obChoiceLater" onclick="selectObChoice('later')">
-            <div class="ob-choice-icon">â­ï¸</div>
+            <div class="ob-choice-icon">⏭️</div>
             <div class="ob-choice-label">I'll do this later</div>
             <div class="ob-choice-desc">Skip for now</div>
           </div>
@@ -2760,7 +2760,7 @@ body.role-editor .admin-action {
               <div class="ob-done-label">Add more slides</div>
             </div>
             <div class="ob-done-card" onclick="completeOnboarding('templates')">
-              <div class="ob-done-icon">🖼ï¸</div>
+              <div class="ob-done-icon">🖼️</div>
               <div class="ob-done-label">Explore templates</div>
             </div>
             <div class="ob-done-card" onclick="completeOnboarding('team')">
@@ -2775,7 +2775,7 @@ body.role-editor .admin-action {
 
     <div class="ob-footer">
       <div class="ob-footer-left">
-        <button class="btn btn-secondary" id="obBackBtn" onclick="obNavigate(-1)" style="display:none">â† Back</button>
+        <button class="btn btn-secondary" id="obBackBtn" onclick="obNavigate(-1)" style="display:none">← Back</button>
       </div>
       <button class="btn btn-primary" id="obNextBtn" onclick="obNavigate(1)">Next →</button>
     </div>
@@ -5176,7 +5176,7 @@ body.role-editor .admin-action {
           <button class="anim-btn" data-anim="slideInLeft" onclick="setAnimationType('slideInLeft')">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="5 12 11 6 11 18"/><line x1="5" y1="12" x2="19" y2="12"/>
-            </svg>â† Slide
+            </svg>← Slide
           </button>
           <button class="anim-btn" data-anim="slideInRight" onclick="setAnimationType('slideInRight')">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -5478,8 +5478,8 @@ body.role-editor .admin-action {
 
   <div class="sc-group">
     <div class="sc-group-title">Move</div>
-    <div class="sc-row"><span class="sc-label">Nudge 1 px</span><span class="sc-keys"><span class="sc-key">↑ ↓ â† →</span></span></div>
-    <div class="sc-row"><span class="sc-label">Nudge 10 px</span><span class="sc-keys"><span class="sc-key">Shift</span><span class="sc-key">↑ ↓ â† →</span></span></div>
+    <div class="sc-row"><span class="sc-label">Nudge 1 px</span><span class="sc-keys"><span class="sc-key">↑ ↓ ← →</span></span></div>
+    <div class="sc-row"><span class="sc-label">Nudge 10 px</span><span class="sc-keys"><span class="sc-key">Shift</span><span class="sc-key">↑ ↓ ← →</span></span></div>
   </div>
 </div>
 
@@ -12891,9 +12891,9 @@ function exportAnalyticsCSV() {
   URL.revokeObjectURL(url);
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════════════════════════════════════════
 //  PWA — service worker, FCM, install prompt, FAB, pull-to-refresh
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════════════════════════════════════════
 
 // ── Service worker registration ───────────────────────────────────────────
 if ('serviceWorker' in navigator) {
