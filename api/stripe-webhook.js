@@ -1,5 +1,11 @@
 ﻿// Stripe webhook handler â€” updated for Zigns.io integration
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const Stripe = require('stripe');
+function getStripe(livemode) {
+  const key = livemode
+    ? process.env.STRIPE_SECRET_KEY
+    : (process.env.STRIPE_SECRET_KEY_TEST || process.env.STRIPE_SECRET_KEY);
+  return Stripe(key);
+}
 let   admin;
 
 function getFirestore() {
@@ -76,6 +82,7 @@ module.exports = async function handler(req, res) {
   }
 
   const db = getFirestore();
+  const stripe = getStripe(event.livemode);
 
   try {
     switch (event.type) {
