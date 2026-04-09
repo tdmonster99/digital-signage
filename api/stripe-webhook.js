@@ -38,6 +38,50 @@ const PLAN_LIMITS = {
   free:    { screensAllowed: 1, usersAllowed: 1, storageGb: 1  },
 };
 
+const PLAN_LABELS = {
+  'starter':       'Starter',
+  'pro':           'Pro',
+  'early-adopter': 'Early Adopter',
+};
+
+async function sendWelcomeEmail(email, plan) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) { console.warn('RESEND_API_KEY not set — skipping welcome email'); return; }
+
+  const planLabel = PLAN_LABELS[plan] || plan;
+  const html = `
+    <div style="font-family:sans-serif;max-width:560px;margin:0 auto;color:#1a2e44">
+      <div style="margin-bottom:32px">
+        <a href="https://www.zigns.io" style="text-decoration:none;display:inline-block">
+          <span style="border:4px solid #0f1b29;width:40px;height:40px;line-height:40px;display:inline-block;text-align:center;font-weight:700;font-size:28px;color:#0f1b29;vertical-align:middle">Z</span>
+          <span style="font-size:34px;font-weight:700;color:#0f1b29;letter-spacing:0.05em;vertical-align:middle;margin-left:4px">IGNS</span>
+        </a>
+      </div>
+      <h1 style="font-size:24px;margin:0 0 12px">You're all set.</h1>
+      <p style="font-size:16px;color:#4b5563;line-height:1.6;margin:0 0 8px">
+        Thanks for subscribing to the <strong>${planLabel}</strong> plan.
+      </p>
+      <p style="font-size:16px;color:#4b5563;line-height:1.6;margin:0 0 32px">
+        Sign in with this email address to activate your account and get your first screen live.
+      </p>
+      <a href="https://app.zigns.io" style="display:inline-block;background:#0043ce;color:#fff;text-decoration:none;font-weight:600;font-size:15px;padding:12px 24px;border-radius:8px">
+        Get Started →
+      </a>
+      <p style="font-size:14px;color:#9ca3af;margin-top:40px">
+        The Zigns Team<br>
+        <a href="mailto:hello@zigns.io" style="color:#9ca3af">hello@zigns.io</a>
+      </p>
+    </div>
+  `;
+
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ from: 'Zigns <hello@zigns.io>', to: email, subject: `Welcome to Zigns ${planLabel}`, html }),
+  });
+  if (!res.ok) console.error('Welcome email failed:', await res.text());
+}
+
 async function updateOrgSubscription(db, orgId, data) {
   await db.collection('organizations').doc(orgId).update({
     subscription: { ...data, updatedAt: new Date().toISOString() },
@@ -120,6 +164,7 @@ module.exports = async function handler(req, res) {
               email: email.toLowerCase(),
               updatedAt: new Date().toISOString()
             });
+            await sendWelcomeEmail(email, plan);
           }
         }
         break;
