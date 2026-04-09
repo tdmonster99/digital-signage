@@ -1,19 +1,6 @@
-// Stripe webhook handler — listens for subscription events and updates Firestore.
-//
-// Required env vars (Vercel Dashboard → Settings → Environment Variables):
-//   STRIPE_SECRET_KEY              — Stripe secret key
-//   STRIPE_WEBHOOK_SECRET          — from Stripe Dashboard → Developers → Webhooks → signing secret
-//   FIREBASE_SERVICE_ACCOUNT_JSON  — Firebase service account JSON (as a string)
-//                                    Get from: Firebase Console → Project Settings →
-//                                    Service Accounts → Generate New Private Key
-//
-// Register this webhook in Stripe Dashboard → Developers → Webhooks:
-//   Endpoint URL: https://app.zigns.io/api/stripe-webhook
-//   Events: checkout.session.completed, customer.subscription.updated,
-//            customer.subscription.deleted
-
+﻿// Stripe webhook handler â€” updated for Zigns.io integration
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-let   admin;  // lazily initialized
+let   admin;
 
 function getFirestore() {
   if (!admin) {
@@ -37,9 +24,10 @@ async function getRawBody(req) {
 }
 
 const PLAN_LIMITS = {
-  starter: { screensAllowed: 3,   usersAllowed: 3,   storageGb: 5  },
-  pro:     { screensAllowed: 9999, usersAllowed: 9999, storageGb: 50 },
-  free:    { screensAllowed: 1,   usersAllowed: 1,   storageGb: 1  },
+  starter: { screensAllowed: 1, usersAllowed: 1, storageGb: 1  },
+  pro:     { screensAllowed: 1, usersAllowed: 5, storageGb: 10 },
+  'early-adopter': { screensAllowed: 9999, usersAllowed: 9999, storageGb: 50 },
+  free:    { screensAllowed: 1, usersAllowed: 1, storageGb: 1  },
 };
 
 async function updateOrgSubscription(db, orgId, data) {
@@ -55,11 +43,29 @@ module.exports = async function handler(req, res) {
   const rawBody = await getRawBody(req);
   let   event;
 
-  try {
-    event = stripe.webhooks.constructEvent(rawBody, sig, process.env.STRIPE_WEBHOOK_SECRET);
-  } catch (err) {
-    console.error('Webhook signature verification failed:', err.message);
-    return res.status(400).send(`Webhook Error: ${err.message}`);
+  // Try primary secret, then fall back to test secret if set separately
+  const secrets = [
+    process.env.STRIPE_WEBHOOK_SECRET,
+    process.env.STRIPE_WEBHOOK_SECRET_TEST,
+  ].filter(Boolean);
+
+  let lastErr;
+  for (const secret of secrets) {
+    try {
+      event = stripe.webhooks.constructEvent(rawBody, sig, secret);
+      lastErr = null;
+      break;
+    } catch (err) {
+      lastErr = err;
+    }
+  }
+
+  if (lastErr) {
+    console.error('Webhook signature verification failed:', lastErr.message);
+    console.error('  raw body length:', rawBody.length);
+    console.error('  stripe-signature present:', !!sig);
+    console.error('  secrets tried:', secrets.length);
+    return res.status(400).send(`Webhook Error: ${lastErr.message}`);
   }
 
   const db = getFirestore();
@@ -70,16 +76,36 @@ module.exports = async function handler(req, res) {
         const session = event.data.object;
         const orgId   = session.metadata?.orgId;
         const plan    = session.metadata?.plan || 'starter';
-        if (!orgId) break;
+        const source  = session.metadata?.source;
 
-        const limits = PLAN_LIMITS[plan] || PLAN_LIMITS.starter;
-        await updateOrgSubscription(db, orgId, {
+        // Fetch subscription to get quantity (number of screens)
+        let screensCount = 1;
+        if (plan === 'pro') {
+          const subscription = await stripe.subscriptions.retrieve(session.subscription);
+          screensCount = subscription.items.data[0].quantity || 1;
+        }
+
+        const subscriptionData = {
           plan,
-          status:               'active',
-          stripeCustomerId:     session.customer,
+          status: 'active',
+          stripeCustomerId: session.customer,
           stripeSubscriptionId: session.subscription,
-          ...limits,
-        });
+          ...(PLAN_LIMITS[plan] || PLAN_LIMITS.starter),
+          screensAllowed: plan === 'pro' ? screensCount : (PLAN_LIMITS[plan]?.screensAllowed || 1),
+        };
+
+        if (orgId) {
+          await updateOrgSubscription(db, orgId, subscriptionData);
+        } else if (source === 'marketing_site') {
+          const email = session.customer_details?.email;
+          if (email) {
+            await db.collection('pending_subscriptions').doc(email.toLowerCase()).set({
+              ...subscriptionData,
+              email: email.toLowerCase(),
+              updatedAt: new Date().toISOString()
+            });
+          }
+        }
         break;
       }
 
@@ -88,20 +114,21 @@ module.exports = async function handler(req, res) {
         const orgId = sub.metadata?.orgId;
         if (!orgId) break;
 
-        // Determine plan from price ID
         const priceId = sub.items?.data?.[0]?.price?.id;
         let plan = 'starter';
-        if (priceId === process.env.STRIPE_PRO_PRICE_ID)     plan = 'pro';
-        if (priceId === process.env.STRIPE_STARTER_PRICE_ID) plan = 'starter';
+        if (priceId === 'price_1TK02WRuAPPHV19GvMremOT1' || priceId === 'price_1TK03GRuAPPHV19GG2FZJFsi') plan = 'pro';
+        if (priceId === 'price_1TK09LRuAPPHV19GsVkAieXE' || priceId === 'price_1TK09LRuAPPHV19GZIGFuNIG') plan = 'early-adopter';
 
-        const limits = PLAN_LIMITS[plan] || PLAN_LIMITS.starter;
+        const screensCount = sub.items?.data?.[0]?.quantity || 1;
+
         await updateOrgSubscription(db, orgId, {
           plan,
           status:               sub.status,
           stripeCustomerId:     sub.customer,
           stripeSubscriptionId: sub.id,
+          screensAllowed:       plan === 'pro' ? screensCount : (PLAN_LIMITS[plan]?.screensAllowed || 1),
           currentPeriodEnd:     new Date(sub.current_period_end * 1000).toISOString(),
-          ...limits,
+          ...(PLAN_LIMITS[plan] || PLAN_LIMITS.starter),
         });
         break;
       }
