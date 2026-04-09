@@ -1,5 +1,7 @@
 ﻿// Stripe webhook handler â€” updated for Zigns.io integration
 const Stripe = require('stripe');
+// Used only for signature verification — no API calls, key doesn't matter
+const stripeVerifier = Stripe('dummy');
 function getStripe(livemode) {
   const key = livemode
     ? process.env.STRIPE_SECRET_KEY
@@ -65,7 +67,7 @@ module.exports = async function handler(req, res) {
   let lastErr;
   for (const secret of secrets) {
     try {
-      event = stripe.webhooks.constructEvent(rawBody, sig, secret);
+      event = stripeVerifier.webhooks.constructEvent(rawBody, sig, secret);
       lastErr = null;
       break;
     } catch (err) {
