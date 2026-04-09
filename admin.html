@@ -24,10 +24,10 @@
 <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
 
 <style>
-/* â”€â”€ Reset & tokens â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Reset & tokens ─────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* â”€â”€ Light theme (default) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Light theme (default) ──────────────────────────────────────────────── */
 :root {
   --bg:              #f0f2f5;
   --surface:         #ffffff;
@@ -52,7 +52,7 @@
   --checker-tile:    #d0d5de;
 }
 
-/* â”€â”€ Dark theme â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Dark theme ─────────────────────────────────────────────────────────── */
 [data-theme="dark"] {
   --bg:              #0d0f12;
   --surface:         #151820;
@@ -85,7 +85,7 @@ body {
   display: flex;
 }
 
-/* â”€â”€ Left Sidebar Nav â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Left Sidebar Nav ───────────────────────────────────────────────────── */
 .sidebar {
   width: 220px;
   flex-shrink: 0;
@@ -158,7 +158,7 @@ body {
 }
 .live-badge.offline { color: var(--danger); background: var(--danger-bg); border-color: var(--danger-border); }
 
-/* â”€â”€ App main area â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── App main area ──────────────────────────────────────────────────────── */
 .app-main {
   margin-left: 220px;
   flex: 1;
@@ -168,7 +168,7 @@ body {
   flex-direction: column;
 }
 
-/* â”€â”€ Pages â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Pages ──────────────────────────────────────────────────────────────── */
 .page { display: none; flex: 1; }
 .page.active { display: flex; }
 
@@ -186,7 +186,7 @@ body {
 .coming-soon h2 { font-size: 18px; font-weight: 600; color: var(--text); }
 .coming-soon p { font-size: 14px; line-height: 1.7; text-align: center; max-width: 380px; }
 
-/* â”€â”€ Dashboard cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Dashboard cards ────────────────────────────────────────────────────── */
 .dash-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -239,7 +239,7 @@ body {
 .quick-action-btn svg { color: var(--muted); flex-shrink: 0; transition: color 0.15s; }
 .quick-action-btn:hover svg { color: var(--accent); }
 
-/* â”€â”€ Preview iframe â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Preview iframe ─────────────────────────────────────────────────────── */
 .preview-wrap {
   position: relative; width: 100%; aspect-ratio: 16/9;
   overflow: hidden; border-radius: 10px;
@@ -250,10 +250,10 @@ body {
   display: block;
 }
 
-/* â”€â”€ Screens page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Screens page ───────────────────────────────────────────────────────── */
 #page-screens.active { flex-direction: column; padding: 32px; gap: 24px; }
 
-/* â”€â”€ Media library page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Media library page ─────────────────────────────────────────────────── */
 #page-media.active { flex-direction: column; padding: 32px; gap: 24px; }
 .media-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 .media-header-left h1 { font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
@@ -327,7 +327,7 @@ body {
   overflow: hidden; text-overflow: ellipsis; max-width: 140px;
 }
 
-/* â”€â”€ Pairing modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Pairing modal ───────────────────────────────────────────────────── */
 #pairingModal {
   display: none; position: fixed; inset: 0; z-index: 1100;
   background: rgba(0,0,0,.55); backdrop-filter: blur(4px);
@@ -384,7 +384,7 @@ body {
 .pairing-success-title { font-size: 16px; font-weight: 700; color: var(--text); }
 .pairing-success-sub   { font-size: 13px; color: var(--muted); }
 
-/* â”€â”€ Screen edit panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Screen edit panel ───────────────────────────────────────────────── */
 #screenEditPanel {
   display: none; position: fixed; top: 0; right: 0; bottom: 0; z-index: 1050;
   width: 380px; background: var(--surface); border-left: 1px solid var(--border);
@@ -423,7 +423,7 @@ body {
 }
 .btn-danger:hover { background: rgba(239,68,68,.2); }
 
-/* â”€â”€ Schedules list page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Schedules list page ────────────────────────────────────────────────── */
 #page-schedules.active { flex-direction: column; padding: 32px; gap: 24px; }
 .schedule-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
 .schedule-card {
@@ -442,7 +442,7 @@ body {
   padding: 3px 8px; border-radius: 6px; align-self: flex-start;
 }
 
-/* â”€â”€ Schedule editor overlay â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Schedule editor overlay ────────────────────────────────────────────── */
 #scheduleEditor { position: fixed; inset: 0; z-index: 200; display: none; flex-direction: column; background: var(--bg); }
 .sched-topbar {
   display: flex; align-items: center; gap: 12px;
@@ -460,7 +460,7 @@ body {
 .sched-topbar-actions { display: flex; gap: 8px; margin-left: auto; }
 .sched-body { flex: 1; display: flex; overflow: hidden; }
 
-/* â”€â”€ Calendar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Calendar ───────────────────────────────────────────────────────────── */
 .sched-cal-wrap { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 .cal-header { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0; }
 .cal-time-gutter { width: 54px; flex-shrink: 0; }
@@ -497,7 +497,7 @@ body {
 }
 .cal-resize-handle::after { content: ''; width: 18px; height: 2px; background: rgba(255,255,255,0.55); border-radius: 1px; }
 
-/* â”€â”€ Schedule right panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Schedule right panel ───────────────────────────────────────────────── */
 .sched-panel { width: 250px; flex-shrink: 0; background: var(--surface); border-left: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
 .sched-panel-hdr { padding: 14px 14px 10px; border-bottom: 1px solid var(--border); flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; }
 .sched-panel-ttl { font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
@@ -515,7 +515,7 @@ body {
 .sched-filler-sel { font-family: 'DM Sans', sans-serif; font-size: 13px; background: var(--surface); border: 1px solid var(--border); border-radius: 7px; padding: 6px 8px; color: var(--text); width: 100%; transition: border-color 0.15s; }
 .sched-filler-sel:focus { outline: none; border-color: var(--accent); }
 
-/* â”€â”€ Add Event Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Add Event Modal ────────────────────────────────────────────────────── */
 #addEventModal { position: fixed; inset: 0; z-index: 310; display: none; align-items: center; justify-content: center; background: #00000088; backdrop-filter: blur(6px); }
 .aem-box { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 28px; width: min(480px, 94vw); box-shadow: 0 8px 48px rgba(0,0,0,0.2); display: flex; flex-direction: column; gap: 16px; }
 .aem-title { font-size: 18px; font-weight: 600; color: var(--text); }
@@ -528,7 +528,7 @@ body {
 .day-btn { width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface2); color: var(--muted); font-size: 11px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; font-family: 'DM Sans', sans-serif; transition: all 0.12s; }
 .day-btn.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent); }
 
-/* â”€â”€ Slideshows aside panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Slideshows aside panel ─────────────────────────────────────────────── */
 aside {
   border-right: 1px solid var(--border);
   padding: 24px;
@@ -597,7 +597,7 @@ aside {
 .btn-save:hover { opacity: 0.85; }
 .btn-save:disabled { opacity: 0.4; cursor: not-allowed; }
 
-/* â”€â”€ Content area â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Content area ───────────────────────────────────────────────────────── */
 section.content {
   padding: 28px 32px;
   display: flex; flex-direction: column; gap: 24px;
@@ -691,7 +691,7 @@ section.content {
 }
 .add-media-row-btn:hover { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); }
 
-/* Media source picker CSS no longer used â€” kept for safety */
+/* Media source picker CSS no longer used — kept for safety */
 .media-source-group { display: flex; gap: 8px; align-items: stretch; }
 .btn-media-source {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -732,7 +732,7 @@ section.content {
 .btn-media-source:hover { border-color: var(--muted); background: var(--surface); }
 
 
-/* â”€â”€ Google Drive Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Google Drive Modal ──────────────────────────────────────────────────── */
 #gdriveModal {
   display: none; position: fixed; inset: 0; z-index: 600;
   background: rgba(0,0,0,0.55); backdrop-filter: blur(4px);
@@ -943,7 +943,7 @@ section.content {
   opacity: 0.9;
 }
 
-/* â”€â”€ Slide Groups â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Slide Groups ────────────────────────────────────────────────────────── */
 .slide-card.group-card { overflow: visible; }
 .group-stack { position:absolute; border-radius:var(--radius); background:var(--surface2); border:1px solid var(--border); }
 .group-stack-1 { top:-5px; left:4px; right:4px; bottom:2px; z-index:-1; }
@@ -1050,7 +1050,7 @@ section.content {
 .empty svg { margin-bottom: 16px; opacity: 0.2; }
 .empty p { font-size: 14px; line-height: 1.7; }
 
-/* â”€â”€ Mobile layout â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Mobile layout ───────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
   /* Hide desktop sidebar, show bottom tab bar */
   .sidebar       { display: none; }
@@ -1079,7 +1079,7 @@ section.content {
   .mobile-fab { display: flex !important; }
 }
 
-/* â”€â”€ Bottom tab bar (mobile only) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Bottom tab bar (mobile only) ────────────────────────────────────────── */
 .mobile-tabs {
   display: none;
   position: fixed;
@@ -1112,7 +1112,7 @@ section.content {
 .mob-tab svg    { transition: transform 0.15s; }
 .mob-tab.active svg { transform: scale(1.15); }
 
-/* â”€â”€ Quick-upload FAB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Quick-upload FAB ─────────────────────────────────────────────────────── */
 .mobile-fab {
   display: none;
   position: fixed;
@@ -1132,7 +1132,7 @@ section.content {
 }
 .mobile-fab:active { transform: scale(0.93); }
 
-/* â”€â”€ Quick-upload bottom sheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Quick-upload bottom sheet ───────────────────────────────────────────── */
 #quickUploadSheet {
   display: none;
   position: fixed; inset: 0; z-index: 1300;
@@ -1161,7 +1161,7 @@ section.content {
 }
 .quick-upload-btn:active { opacity: 0.85; }
 
-/* â”€â”€ PWA install banner â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── PWA install banner ───────────────────────────────────────────────────── */
 #installBanner {
   display: none;
   position: fixed;
@@ -1179,7 +1179,7 @@ section.content {
 #installBanner img { border-radius: 10px; flex-shrink: 0; }
 #installBanner p   { flex: 1; font-size: 13px; color: var(--text); margin: 0; line-height: 1.4; }
 
-/* â”€â”€ Pull-to-refresh indicator â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Pull-to-refresh indicator ────────────────────────────────────────────── */
 #pullRefreshIndicator {
   display: none;
   position: fixed; top: 0; left: 0; right: 0;
@@ -1197,7 +1197,7 @@ section.content {
   border-radius: 50%; animation: spin 0.8s linear infinite;
 }
 
-/* â”€â”€ Auto-save status indicator â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Auto-save status indicator ─────────────────────────────────────────── */
 @keyframes spin { to { transform: rotate(360deg); } }
 .designer-status {
   display: flex; align-items: center; gap: 5px;
@@ -1219,7 +1219,7 @@ section.content {
 .designer-status.unsaved .status-text { color: #f59e0b; }
 .designer-status.saved   .status-text { color: #22c55e; }
 
-/* â”€â”€ Slide Designer Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Slide Designer Modal ────────────────────────────────────────────────── */
 #designerModal {
   position: fixed; inset: 0; z-index: 200;
   display: none; flex-direction: column;
@@ -1336,7 +1336,7 @@ section.content {
   flex: 1;
   display: flex; align-items: center; justify-content: center;
   overflow: hidden;
-  /* Checkerboard â€” like Figma/Canva outside the canvas bounds */
+  /* Checkerboard — like Figma/Canva outside the canvas bounds */
   background-color: var(--checker-bg);
   background-image:
     linear-gradient(45deg, var(--checker-tile) 25%, transparent 25%),
@@ -1352,7 +1352,7 @@ section.content {
   position: relative;
 }
 
-/* â”€â”€ Safe Zone Overlay â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Safe Zone Overlay ───────────────────────────────────────────────────── */
 #safeZoneOverlay {
   display: none; position: absolute; inset: 0; pointer-events: none; z-index: 6;
 }
@@ -1365,7 +1365,7 @@ section.content {
   position: absolute; top: 5%; left: 5%; right: 5%; bottom: 5%;
   border: 2px dashed rgba(255,255,255,0.55); pointer-events: none;
 }
-/* â”€â”€ TV Preview Overlay â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── TV Preview Overlay ──────────────────────────────────────────────────── */
 #tvPreviewOverlay {
   display: none; position: fixed; inset: 0; z-index: 500;
   background: rgba(5,5,8,0.97); flex-direction: column;
@@ -1401,7 +1401,7 @@ section.content {
   padding: 2px 5px; border-radius: 3px; white-space: nowrap;
   font-family: 'DM Sans', sans-serif;
 }
-/* â”€â”€ Entrance Animations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Entrance Animations ────────────────────────────────────────────────── */
 #propsAnimation {
   border-top: 1px solid var(--border);
   margin-top: 4px;
@@ -1427,7 +1427,7 @@ section.content {
 .anim-timing-row { display: flex; gap: 6px; }
 .anim-timing-row .prop-row { flex: 1; min-width: 0; }
 
-/* â”€â”€ Brand Kit â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Brand Kit ────────────────────────────────────────────────────────────── */
 #page-brandkit.active { flex-direction: column; padding: 32px; gap: 22px; overflow-y: auto; }
 .bk-header { display: flex; align-items: center; justify-content: space-between; }
 .bk-header h2 { font-size: 20px; font-weight: 700; }
@@ -1524,7 +1524,7 @@ section.content {
 [data-theme="dark"] .bk-ds-swatch { border-color: rgba(255,255,255,0.15); }
 .bk-ds-swatch:hover { transform: scale(1.25); box-shadow: 0 1px 4px rgba(0,0,0,0.2); }
 
-/* â”€â”€ Icon Panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Icon Panel ─────────────────────────────────────────────────────────── */
 .icon-controls { display:flex; flex-direction:column; gap:7px; padding-bottom:8px; border-bottom:1px solid var(--border); margin-bottom:8px; }
 .icon-ctrl-row  { display:flex; align-items:center; gap:7px; }
 .icon-ctrl-label{ font-size:11px; color:var(--muted); min-width:36px; flex-shrink:0; }
@@ -1559,7 +1559,7 @@ section.content {
 }
 .icon-size-btn.active, .icon-size-btn:hover { background:var(--accent); color:#fff; border-color:var(--accent); }
 
-/* â”€â”€ Readability Checker â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Readability Checker ─────────────────────────────────────────────────── */
 #btnCheck.active { background:var(--accent); color:#fff; border-color:var(--accent); }
 .check-score { text-align:center; padding:14px 8px 12px; border-bottom:1px solid var(--border); margin-bottom:12px; }
 .check-score-badge { display:inline-block; padding:4px 16px; border-radius:20px; font-size:15px; font-weight:700; margin-bottom:3px; }
@@ -1583,7 +1583,7 @@ section.content {
 
 #canvasFrame.drag-over { outline: 3px dashed var(--accent); outline-offset: -3px; }
 
-/* â”€â”€ Ticker bar (canvas preview) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Ticker bar (canvas preview) ─────────────────────────────────────────── */
 #propsTicker .ticker-speed-btns { display: flex; gap: 6px; flex-wrap: wrap; }
 #propsTicker .ticker-speed-btn {
   flex: 1; padding: 5px 4px; border: 1px solid var(--border);
@@ -1601,7 +1601,7 @@ section.content {
 #propsTicker .ticker-pos-btn.active,
 #propsTicker .ticker-pos-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
 
-/* â”€â”€ Template Gallery â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Template Gallery ────────────────────────────────────────────────────── */
 #templateGallery {
   position: fixed; inset: 0; z-index: 300;
   display: none; align-items: flex-start; justify-content: center;
@@ -1677,7 +1677,7 @@ section.content {
   background: var(--accent-bg); color: var(--accent); margin-top: 4px;
 }
 
-/* â”€â”€ AI Generate â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── AI Generate ─────────────────────────────────────────────────────────── */
 .btn-ai {
   background: linear-gradient(135deg, #7c3aed 0%, #db2777 100%);
   color: #fff !important; border: none; font-weight: 600;
@@ -1754,7 +1754,7 @@ section.content {
   background: linear-gradient(135deg, #7c3aed, #db2777); color: #fff; margin-top: 4px;
 }
 
-/* â”€â”€ Properties Panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Properties Panel ────────────────────────────────────────────────────── */
 .designer-props {
   width: 240px; flex-shrink: 0;
   background: var(--surface);
@@ -1764,7 +1764,7 @@ section.content {
   display: flex; flex-direction: column; gap: 14px;
 }
 
-/* â”€â”€ Version History panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Version History panel ─────────────────────────────────────────── */
 #historyPanel { display: none; }
 .history-item {
   display: flex; align-items: center; gap: 10px;
@@ -1873,7 +1873,7 @@ section.content {
 }
 .bg-tab:last-child { border-right: none; }
 .bg-tab.active { background: var(--accent-bg); color: var(--accent); }
-/* â”€â”€ Gradient direction buttons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Gradient direction buttons ─────────────────────────────────────────── */
 .grad-dir-btns { display:flex; gap:4px; }
 .grad-dir-btn {
   flex:1; padding:5px 2px;
@@ -1885,7 +1885,7 @@ section.content {
 }
 .grad-dir-btn:hover { border-color: var(--muted); color: var(--text); }
 .grad-dir-btn.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent); }
-/* â”€â”€ Gradient preset swatches â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Gradient preset swatches ────────────────────────────────────────────── */
 .grad-presets { display:grid; grid-template-columns:repeat(6,1fr); gap:4px; margin-top:8px; }
 .grad-preset {
   height:20px; border-radius:5px; cursor:pointer;
@@ -1893,7 +1893,7 @@ section.content {
 }
 .grad-preset:hover { border-color: var(--accent); transform: scale(1.1); }
 
-/* â”€â”€ Stock Photos Panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Stock Photos Panel ─────────────────────────────────────────────────── */
 .stock-tabs { display:flex; margin-bottom:10px; border-bottom:1px solid var(--border); }
 .stock-tab { flex:1; padding:6px 4px; border:none; background:none; color:var(--muted); font-size:11px; font-family:'DM Sans',sans-serif; font-weight:600; cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; transition:color .15s,border-color .15s; }
 .stock-tab.active { color:var(--accent); border-bottom-color:var(--accent); }
@@ -1942,7 +1942,7 @@ section.content {
   cursor:pointer; border-radius:5px; transition:background 0.12s;
 }
 .ctx-item:hover { background:var(--surface2); }
-/* â”€â”€ Text preset style buttons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Text preset style buttons ─────────────────────────────────────────── */
 .text-preset-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:4px; margin-bottom:4px; }
 .text-preset-btn {
   padding:6px 4px; border:1px solid var(--border); border-radius:6px;
@@ -1952,7 +1952,7 @@ section.content {
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
 .text-preset-btn:hover { border-color:var(--accent); color:var(--accent); background:var(--accent-bg); }
-/* â”€â”€ Shadow preset buttons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Shadow preset buttons ─────────────────────────────────────────────── */
 .shadow-presets { display:flex; gap:4px; margin-top:4px; }
 .shadow-preset-btn {
   flex:1; padding:5px 2px;
@@ -1962,13 +1962,13 @@ section.content {
   cursor:pointer; text-align:center; transition:all 0.12s;
 }
 .shadow-preset-btn:hover { border-color:var(--muted); color:var(--text); }
-/* â”€â”€ Props section title â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Props section title ─────────────────────────────────────────────────── */
 .prop-section-title {
   font-size:10px; font-weight:600; letter-spacing:0.05em;
   color:var(--muted); text-transform:uppercase; margin:10px 0 2px;
 }
 .shadow-toggle-row { display:flex; align-items:center; justify-content:space-between; padding:2px 0; }
-/* â”€â”€ Google Font picker â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Google Font picker ─────────────────────────────────────────────────── */
 .font-picker { position: relative; }
 .font-picker-trigger {
   width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 6px;
@@ -2012,7 +2012,7 @@ section.content {
 .font-option:hover   { background: var(--surface2); }
 .font-option.selected { background: var(--accent-bg); color: var(--accent); }
 
-/* â”€â”€ Layers Panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Layers Panel ─────────────────────────────────────────────────────────── */
 .designer-layers {
   height: 58px; flex-shrink: 0;
   background: var(--surface);
@@ -2083,7 +2083,7 @@ section.content {
 .layer-chip.is-locked { opacity: 0.75; }
 .layer-chip.is-locked .layer-name { font-style: italic; }
 
-/* â”€â”€ Alignment guides & grid â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Alignment guides & grid ────────────────────────────────────────── */
 #guideOverlay {
   position: absolute; inset: 0;
   pointer-events: none;
@@ -2110,7 +2110,7 @@ section.content {
   border-color: var(--accent);
 }
 
-/* â”€â”€ Shortcuts panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Shortcuts panel ────────────────────────────────────────────────── */
 #shortcutsPanel {
   display: none;
   position: fixed;
@@ -2154,7 +2154,7 @@ section.content {
   white-space: nowrap;
 }
 
-/* â”€â”€ Apps page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Apps page ─────────────────────────────────────────────────────── */
 #page-apps.active { flex-direction: column; padding: 32px; gap: 20px; }
 .apps-page-header h1 { font-size: 22px; font-weight: 700; color: var(--text); margin: 0 0 4px; }
 .apps-page-header p  { font-size: 13px; color: var(--muted); margin: 0; }
@@ -2226,7 +2226,7 @@ section.content {
 }
 .app-card:not(.app-coming-soon):hover .app-card-add { opacity: 1; pointer-events: auto; }
 
-/* â”€â”€ Clock modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Clock modal ───────────────────────────────────────────────────── */
 #clockModal {
   display: none;
   position: fixed; inset: 0; z-index: 400;
@@ -2329,7 +2329,7 @@ section.content {
   border-top: 1px solid var(--border);
 }
 
-/* â”€â”€ Role badge â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Role badge ────────────────────────────────────────────────────── */
 .role-badge {
   display: inline-block; font-size: 10px; font-weight: 700;
   text-transform: uppercase; letter-spacing: .06em;
@@ -2339,14 +2339,14 @@ section.content {
 .role-badge.editor { background: rgba(59,130,246,.13); color: #3b82f6; }
 .role-badge.viewer { background: var(--surface2);      color: var(--muted); }
 
-/* â”€â”€ Role-based disabling â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Role-based disabling ──────────────────────────────────────────── */
 body.role-viewer .editor-action,
 body.role-viewer .admin-action,
 body.role-editor .admin-action {
   opacity: .4; pointer-events: none; cursor: not-allowed;
 }
 
-/* â”€â”€ Analytics page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Analytics page ────────────────────────────────────────────────── */
 #page-analytics.active { flex-direction: column; padding: 32px; gap: 24px; overflow-y: auto; }
 .analytics-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
 .analytics-header h1 { font-size: 24px; font-weight: 700; }
@@ -2431,7 +2431,7 @@ body.role-editor .admin-action {
   text-align: center; padding: 60px 24px; color: var(--muted); font-size: 13px;
 }
 
-/* â”€â”€ Settings / Team page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Settings / Team page ──────────────────────────────────────────── */
 #page-settings.active { flex-direction: column; padding: 32px; gap: 0; }
 .settings-layout { display: flex; flex-direction: column; gap: 32px; max-width: 720px; }
 .settings-section {
@@ -2482,7 +2482,7 @@ body.role-editor .admin-action {
 }
 .invite-link-text { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; flex: 1; word-break: break-all; }
 
-/* â”€â”€ Billing section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Billing section ───────────────────────────────────────────────── */
 .plan-badge {
   display: inline-flex; align-items: center; gap: 6px;
   font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
@@ -2533,7 +2533,7 @@ body.role-editor .admin-action {
 .upgrade-prompt-sub   { font-size: 13px; color: var(--muted); margin-bottom: 24px; line-height: 1.6; }
 .upgrade-prompt-btns  { display: flex; gap: 10px; justify-content: center; }
 
-/* â”€â”€ Onboarding wizard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Onboarding wizard ─────────────────────────────────────────────── */
 #onboardingOverlay {
   display: none; position: fixed; inset: 0; z-index: 2000;
   background: var(--bg); align-items: center; justify-content: center;
@@ -2625,7 +2625,7 @@ body.role-editor .admin-action {
 }
 .ob-footer-left { display: flex; gap: 8px; }
 
-/* â”€â”€ Invite modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Invite modal ──────────────────────────────────────────────────── */
 #inviteModal {
   display: none; position: fixed; inset: 0; z-index: 1100;
   background: rgba(0,0,0,.55); backdrop-filter: blur(4px);
@@ -2659,7 +2659,7 @@ body.role-editor .admin-action {
 </head>
 <body>
 
-<!-- â”€â”€ Onboarding Wizard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+<!-- ── Onboarding Wizard ──────────────────────────────────────────────── -->
 <div id="onboardingOverlay">
   <button class="ob-skip" onclick="skipOnboarding()">Skip setup</button>
   <div class="ob-card">
@@ -2783,7 +2783,7 @@ body.role-editor .admin-action {
 </div>
 
 
-<!-- â”€â”€ Sidebar Navigation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+<!-- ── Sidebar Navigation ─────────────────────────────────────────────── -->
 <nav class="sidebar">
   <div class="sidebar-logo">
     <div class="zigns-mark">Z</div>
@@ -2873,7 +2873,7 @@ body.role-editor .admin-action {
   </div>
 </nav>
 
-<!-- â”€â”€ Mobile bottom tab bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+<!-- ── Mobile bottom tab bar ─────────────────────────────────────────────── -->
 <nav class="mobile-tabs" id="mobileTabs">
   <button class="mob-tab active" data-page="dashboard" onclick="showPage('dashboard')">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
@@ -2907,7 +2907,7 @@ body.role-editor .admin-action {
   </button>
 </nav>
 
-<!-- â”€â”€ App Main â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+<!-- ── App Main ────────────────────────────────────────────────────────── -->
 <div class="app-main">
 
   <!-- Dashboard -->
@@ -2922,7 +2922,7 @@ body.role-editor .admin-action {
       <div class="dash-card">
         <div class="dash-card-title">Welcome back</div>
         <div>
-          <div class="dash-welcome-name" id="dashWelcomeName">â€”</div>
+          <div class="dash-welcome-name" id="dashWelcomeName">—</div>
           <div class="dash-welcome-sub" style="margin-top:6px">Your signage is ready to manage.</div>
         </div>
         <button class="quick-action-btn" onclick="showPage('slideshows')">
@@ -2944,7 +2944,7 @@ body.role-editor .admin-action {
             </svg>
           </div>
           <div>
-            <div class="dash-stat-val" id="dashSlideCount">â€”</div>
+            <div class="dash-stat-val" id="dashSlideCount">—</div>
             <div class="dash-stat-label">slides in current show</div>
           </div>
         </div>
@@ -3126,7 +3126,7 @@ body.role-editor .admin-action {
         <polyline points="21 15 16 10 5 21"/>
       </svg>
       <p><strong>Drop images or videos here</strong> or click to browse<br>
-      PNG, JPG, GIF, WebP Â· MP4, WebM â€” any resolution</p>
+      PNG, JPG, GIF, WebP Â· MP4, WebM — any resolution</p>
       <input type="file" id="fileInput" multiple accept="image/*,video/mp4,video/webm">
     </div>
 
@@ -3173,7 +3173,7 @@ body.role-editor .admin-action {
     </div>
     <div class="apps-grid" id="appsGrid">
 
-      <!-- Clock & Date â€” available -->
+      <!-- Clock & Date — available -->
       <div class="app-card" data-category="widgets" data-name="clock date" onclick="openClockModal(null)">
         <div class="app-card-icon" style="background:rgba(240,124,0,.15)">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#f07c00" stroke-width="1.8" stroke-linecap="round">
@@ -3185,7 +3185,7 @@ body.role-editor .admin-action {
         <button class="app-card-add" onclick="event.stopPropagation();openClockModal(null)">Add â†’</button>
       </div>
 
-      <!-- Weather â€” coming soon -->
+      <!-- Weather — coming soon -->
       <div class="app-card app-coming-soon" data-category="widgets" data-name="weather" onclick="appsComingSoon()">
         <div class="app-card-icon" style="background:rgba(59,130,246,.15)">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="1.8" stroke-linecap="round">
@@ -3197,7 +3197,7 @@ body.role-editor .admin-action {
         <span class="app-card-soon-badge">Coming Soon</span>
       </div>
 
-      <!-- QR Code â€” coming soon -->
+      <!-- QR Code — coming soon -->
       <div class="app-card app-coming-soon" data-category="widgets" data-name="qr code" onclick="appsComingSoon()">
         <div class="app-card-icon" style="background:rgba(139,92,246,.15)">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="1.8" stroke-linecap="round">
@@ -3210,7 +3210,7 @@ body.role-editor .admin-action {
         <span class="app-card-soon-badge">Coming Soon</span>
       </div>
 
-      <!-- RSS Ticker â€” coming soon -->
+      <!-- RSS Ticker — coming soon -->
       <div class="app-card app-coming-soon" data-category="news" data-name="rss ticker" onclick="appsComingSoon()">
         <div class="app-card-icon" style="background:rgba(34,197,94,.15)">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round">
@@ -3223,7 +3223,7 @@ body.role-editor .admin-action {
         <span class="app-card-soon-badge">Coming Soon</span>
       </div>
 
-      <!-- YouTube â€” coming soon -->
+      <!-- YouTube — coming soon -->
       <div class="app-card app-coming-soon" data-category="social" data-name="youtube" onclick="appsComingSoon()">
         <div class="app-card-icon" style="background:rgba(239,68,68,.15)">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="1.8" stroke-linecap="round">
@@ -3236,7 +3236,7 @@ body.role-editor .admin-action {
         <span class="app-card-soon-badge">Coming Soon</span>
       </div>
 
-      <!-- Google Slides â€” coming soon -->
+      <!-- Google Slides — coming soon -->
       <div class="app-card app-coming-soon" data-category="data" data-name="google slides" onclick="appsComingSoon()">
         <div class="app-card-icon" style="background:rgba(22,163,74,.15)">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="1.8" stroke-linecap="round">
@@ -3249,7 +3249,7 @@ body.role-editor .admin-action {
         <span class="app-card-soon-badge">Coming Soon</span>
       </div>
 
-      <!-- Web Page â€” coming soon -->
+      <!-- Web Page — coming soon -->
       <div class="app-card app-coming-soon" data-category="widgets" data-name="web page" onclick="appsComingSoon()">
         <div class="app-card-icon" style="background:rgba(107,114,128,.15)">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="1.8" stroke-linecap="round">
@@ -3263,7 +3263,7 @@ body.role-editor .admin-action {
         <span class="app-card-soon-badge">Coming Soon</span>
       </div>
 
-      <!-- Instagram â€” coming soon -->
+      <!-- Instagram — coming soon -->
       <div class="app-card app-coming-soon" data-category="social" data-name="instagram" onclick="appsComingSoon()">
         <div class="app-card-icon" style="background:rgba(236,72,153,.15)">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ec4899" stroke-width="1.8" stroke-linecap="round">
@@ -3277,7 +3277,7 @@ body.role-editor .admin-action {
         <span class="app-card-soon-badge">Coming Soon</span>
       </div>
 
-      <!-- Google Sheets â€” coming soon -->
+      <!-- Google Sheets — coming soon -->
       <div class="app-card app-coming-soon" data-category="data" data-name="google sheets" onclick="appsComingSoon()">
         <div class="app-card-icon" style="background:rgba(22,163,74,.15)">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="1.8" stroke-linecap="round">
@@ -3291,7 +3291,7 @@ body.role-editor .admin-action {
         <span class="app-card-soon-badge">Coming Soon</span>
       </div>
 
-      <!-- Countdown Timer â€” coming soon -->
+      <!-- Countdown Timer — coming soon -->
       <div class="app-card app-coming-soon" data-category="widgets" data-name="countdown timer" onclick="appsComingSoon()">
         <div class="app-card-icon" style="background:rgba(240,124,0,.15)">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#f07c00" stroke-width="1.8" stroke-linecap="round">
@@ -3304,7 +3304,7 @@ body.role-editor .admin-action {
         <span class="app-card-soon-badge">Coming Soon</span>
       </div>
 
-      <!-- WiFi Password â€” coming soon -->
+      <!-- WiFi Password — coming soon -->
       <div class="app-card app-coming-soon" data-category="widgets" data-name="wifi password" onclick="appsComingSoon()">
         <div class="app-card-icon" style="background:rgba(59,130,246,.15)">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="1.8" stroke-linecap="round">
@@ -3317,7 +3317,7 @@ body.role-editor .admin-action {
         <span class="app-card-soon-badge">Coming Soon</span>
       </div>
 
-      <!-- Stock Ticker â€” coming soon -->
+      <!-- Stock Ticker — coming soon -->
       <div class="app-card app-coming-soon" data-category="data" data-name="stock ticker" onclick="appsComingSoon()">
         <div class="app-card-icon" style="background:rgba(21,128,61,.15)">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#15803d" stroke-width="1.8" stroke-linecap="round">
@@ -3381,7 +3381,7 @@ body.role-editor .admin-action {
   </div>
 
   <!-- Screens -->
-  <!-- â”€â”€ Analytics page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+  <!-- ── Analytics page ─────────────────────────────────────────────────── -->
   <div id="page-analytics" class="page">
     <div class="analytics-header">
       <div>
@@ -3400,22 +3400,22 @@ body.role-editor .admin-action {
     <div class="analytics-overview">
       <div class="analytics-card">
         <div class="analytics-card-label">Total Screen Hours</div>
-        <div class="analytics-card-value" id="statScreenHours">â€”</div>
+        <div class="analytics-card-value" id="statScreenHours">—</div>
         <div class="analytics-card-sub" id="statScreenHoursSub">across all screens</div>
       </div>
       <div class="analytics-card">
         <div class="analytics-card-label">Slide Views</div>
-        <div class="analytics-card-value" id="statSlideViews">â€”</div>
+        <div class="analytics-card-value" id="statSlideViews">—</div>
         <div class="analytics-card-sub">total impressions</div>
       </div>
       <div class="analytics-card">
         <div class="analytics-card-label">Most Viewed Slide</div>
-        <div class="analytics-card-value" id="statTopSlide" style="font-size:18px;word-break:break-word">â€”</div>
+        <div class="analytics-card-value" id="statTopSlide" style="font-size:18px;word-break:break-word">—</div>
         <div class="analytics-card-sub" id="statTopSlideSub"></div>
       </div>
       <div class="analytics-card">
         <div class="analytics-card-label">Avg Uptime</div>
-        <div class="analytics-card-value" id="statUptime">â€”</div>
+        <div class="analytics-card-value" id="statUptime">—</div>
         <div class="analytics-card-sub">across all screens</div>
       </div>
     </div>
@@ -3435,7 +3435,7 @@ body.role-editor .admin-action {
         </div>
       </div>
       <div class="analytics-chart-card full-width">
-        <div class="analytics-chart-title">Activity Heatmap â€” Slide Views by Hour</div>
+        <div class="analytics-chart-title">Activity Heatmap — Slide Views by Hour</div>
         <div id="heatmapHourLabels" class="heatmap-hour-labels"></div>
         <div id="heatmapGrid" class="heatmap-grid">
           <div class="analytics-empty" style="grid-column:1/-1">No data yet</div>
@@ -3497,7 +3497,7 @@ body.role-editor .admin-action {
       </button>
       <div id="pairingPendingSection">
         <div class="pairing-modal-title">Add a Screen</div>
-        <div class="pairing-modal-sub">Open Zigns on your display device â€” it will show a 6-character code. Enter it below.</div>
+        <div class="pairing-modal-sub">Open Zigns on your display device — it will show a 6-character code. Enter it below.</div>
         <div class="pairing-code-box" style="padding:20px 24px">
           <input id="pairingCodeInput" type="text" maxlength="6"
             placeholder="A B C 1 2 3"
@@ -3544,11 +3544,11 @@ body.role-editor .admin-action {
       </div>
       <div class="sep-field">
         <label>Assigned Slideshow</label>
-        <select id="sepSlideshow"><option value="">â€” None â€”</option></select>
+        <select id="sepSlideshow"><option value="">— None —</option></select>
       </div>
       <div class="sep-field">
         <label>Assigned Schedule</label>
-        <select id="sepSchedule"><option value="">â€” None â€”</option></select>
+        <select id="sepSchedule"><option value="">— None —</option></select>
       </div>
       <div class="sep-field">
         <label>Orientation</label>
@@ -3647,7 +3647,7 @@ body.role-editor .admin-action {
                   <td class="plan-col"><span class="plan-check">âœ“</span></td>
                   <td class="plan-col"><span class="plan-check">âœ“</span></td></tr>
                 <tr><td>Support</td>
-                  <td class="plan-col">â€”</td>
+                  <td class="plan-col">—</td>
                   <td class="plan-col">Email</td>
                   <td class="plan-col">Priority</td></tr>
                 <tr id="planActionRow">
@@ -3856,7 +3856,7 @@ body.role-editor .admin-action {
     </div>
   </div>
 
-  <!-- â”€â”€ Brand Kit Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+  <!-- ── Brand Kit Page ──────────────────────────────────────────────────── -->
   <div id="page-brandkit" class="page">
     <div class="bk-header">
       <h2>Brand Kit</h2>
@@ -3962,7 +3962,7 @@ body.role-editor .admin-action {
 
 <div id="toast"></div>
 
-<!-- â”€â”€ Template Gallery â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+<!-- ── Template Gallery ──────────────────────────────────────────────────── -->
 <div id="templateGallery">
   <div class="gallery-modal">
     <div class="gallery-header">
@@ -4291,7 +4291,7 @@ body.role-editor .admin-action {
   </div>
 </div>
 
-<!-- â”€â”€ AI Generate Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+<!-- ── AI Generate Modal ──────────────────────────────────────────────────── -->
 <div id="aiModal">
   <div class="ai-modal-inner">
 
@@ -4385,7 +4385,7 @@ body.role-editor .admin-action {
   </div>
 </div>
 
-<!-- â”€â”€ YouTube Slide Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+<!-- ── YouTube Slide Modal ────────────────────────────────────────────────── -->
 <div id="youtubeModal" style="display:none;position:fixed;inset:0;z-index:300;align-items:center;justify-content:center;background:#00000088;backdrop-filter:blur(6px)">
   <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;width:min(460px,92vw);box-shadow:0 8px 48px rgba(0,0,0,0.16)">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
@@ -4407,7 +4407,7 @@ body.role-editor .admin-action {
   </div>
 </div>
 
-<!-- â”€â”€ Web Page Slide Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+<!-- ── Web Page Slide Modal ───────────────────────────────────────────────── -->
 <div id="webpageModal" style="display:none;position:fixed;inset:0;z-index:300;align-items:center;justify-content:center;background:#00000088;backdrop-filter:blur(6px)">
   <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;width:min(460px,92vw);box-shadow:0 8px 48px rgba(0,0,0,0.16)">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
@@ -4429,8 +4429,8 @@ body.role-editor .admin-action {
   </div>
 </div>
 
-<!-- â”€â”€ Slide Designer Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
-<!-- â”€â”€ TV Preview Overlay â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+<!-- ── Slide Designer Modal ──────────────────────────────────────────────── -->
+<!-- ── TV Preview Overlay ──────────────────────────────────────────────────── -->
 <div id="tvPreviewOverlay">
   <div class="tv-bezel" id="tvBezelFrame">
     <img id="tvPreviewImg" alt="Slide preview">
@@ -4454,7 +4454,7 @@ body.role-editor .admin-action {
   <div id="tvReadabilityMsg" style="color:#aaa"></div>
 </div>
 
-<!-- â”€â”€ Slide Group Editor â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+<!-- ── Slide Group Editor ──────────────────────────────────────────────────── -->
 <div id="groupEditorModal">
   <div class="ge-topbar">
     <span class="ge-topbar-label">Slide Group</span>
@@ -4481,7 +4481,7 @@ body.role-editor .admin-action {
     </div>
   </div>
   <div class="ge-filmstrip-wrap">
-    <div class="ge-filmstrip-label">Slides â€” drag to reorder</div>
+    <div class="ge-filmstrip-label">Slides — drag to reorder</div>
     <div class="ge-filmstrip" id="groupFilmstrip"></div>
   </div>
 </div>
@@ -4649,7 +4649,7 @@ body.role-editor .admin-action {
 
       <div class="tool-divider"></div>
 
-      <!-- Background color â€” hidden color input triggered by button -->
+      <!-- Background color — hidden color input triggered by button -->
       <button class="tool-btn" title="Background Color" onclick="document.getElementById('bgColorInput').click()">
         <div class="bg-swatch" id="bgSwatch"></div>
       </button>
@@ -4679,7 +4679,7 @@ body.role-editor .admin-action {
       <div class="tool-divider"></div>
 
       <!-- Safe zone -->
-      <button class="tool-btn" id="btnSafeZone" title="Safe Zone â€” Content outside this area may be cropped on some TVs" onclick="toggleSafeZone()">
+      <button class="tool-btn" id="btnSafeZone" title="Safe Zone — Content outside this area may be cropped on some TVs" onclick="toggleSafeZone()">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
           <rect x="2" y="4" width="20" height="16" rx="2"/>
           <rect x="5" y="7" width="14" height="10" rx="1" stroke-dasharray="3 2"/>
@@ -5328,7 +5328,7 @@ body.role-editor .admin-action {
   </div>
 </div>
 
-<!-- â”€â”€ Schedule Editor Overlay â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+<!-- ── Schedule Editor Overlay ────────────────────────────────────────────── -->
 <div id="scheduleEditor">
   <div class="sched-topbar">
     <span class="sched-topbar-label">Schedule</span>
@@ -5379,7 +5379,7 @@ body.role-editor .admin-action {
   </div>
 </div>
 
-<!-- â”€â”€ Add Event Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+<!-- ── Add Event Modal ────────────────────────────────────────────────────── -->
 <div id="addEventModal">
   <div class="aem-box">
     <div style="display:flex;align-items:center;justify-content:space-between">
@@ -5593,7 +5593,7 @@ body.role-editor .admin-action {
           <div class="clock-preview-date" id="clockPreviewDate">Monday, January 1</div>
         </div>
       </div>
-      <div style="font-size:11px;color:var(--muted);text-align:center">Live preview â€” updates every second</div>
+      <div style="font-size:11px;color:var(--muted);text-align:center">Live preview — updates every second</div>
     </div>
   </div>
 </div>
@@ -5610,7 +5610,7 @@ import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signO
 import { getMessaging, getToken, onMessage }
                                        from "https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js";
 
-// â”€â”€ FIREBASE CONFIG â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── FIREBASE CONFIG ───────────────────────────────────────────────────────
 const firebaseConfig = {
   apiKey: "AIzaSyDYsip5Xx2N-gewNDqTj7EAnvabfbrBQTY",
   authDomain: "digital-signage-2.firebaseapp.com",
@@ -5620,9 +5620,9 @@ const firebaseConfig = {
   appId: "1:1004548485661:web:b3ab204d94943716674cf4"
 };
 
-// â”€â”€ MEDIA STORAGE â€” AWS S3 + CloudFront (uploads via /api/upload-url) â”€â”€â”€â”€
+// ── MEDIA STORAGE — AWS S3 + CloudFront (uploads via /api/upload-url) ────
 
-// â”€â”€ AI GENERATE â€” key lives in Vercel env vars, proxied via /api/ai-generate â”€â”€
+// ── AI GENERATE — key lives in Vercel env vars, proxied via /api/ai-generate ──
 
 const app  = initializeApp(firebaseConfig);
 const db   = getFirestore(app);
@@ -5633,13 +5633,13 @@ let slides        = [];
 let dragSrcIdx    = null;
 let unsaved       = false;
 
-// â”€â”€ Org / role state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Org / role state ──────────────────────────────────────────────────────
 let currentOrgId  = null;
 let currentRole   = 'admin';
 let currentUser   = null;
 let currentOrg    = null;
 
-// â”€â”€ Auth â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Auth ──────────────────────────────────────────────────────────────────
 onAuthStateChanged(auth, async user => {
   const badge = document.getElementById("liveBadge");
   const email = document.getElementById("userEmail");
@@ -5674,7 +5674,7 @@ window.handleAuth = async () => {
   }
 };
 
-// â”€â”€ Organization / multi-user â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Organization / multi-user ─────────────────────────────────────────────
 
 const ROLE_DESCS = {
   admin:  'Full access including team management and all screens.',
@@ -5832,7 +5832,7 @@ async function loadShowsFromOrg() {
   });
 }
 
-// â”€â”€ Billing â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Billing ────────────────────────────────────────────────────────────────
 
 const PLAN_LIMITS = {
   free:    { screensAllowed: 1,    usersAllowed: 1,    storageGb: 1  },
@@ -5995,7 +5995,7 @@ window.closeUpgradePrompt = function() {
   }
 })();
 
-// â”€â”€ Onboarding wizard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Onboarding wizard ─────────────────────────────────────────────────────
 
 const INDUSTRY_TEMPLATES = {
   restaurant: ['dailyspecial',   'menuboard',            'happyhour'],
@@ -6180,7 +6180,7 @@ async function finishOnboarding() {
   }
 }
 
-// â”€â”€ Team management â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Team management ───────────────────────────────────────────────────────
 
 function renderTeamPage() {
   if (!currentOrg) return;
@@ -6351,7 +6351,7 @@ window.resendInvite = async function(inviteId) {
   const snap = await getDoc(doc(db, 'invitations', inviteId));
   if (!snap.exists()) return;
   const link = window.location.origin + '/admin.html?invite=' + inviteId;
-  navigator.clipboard.writeText(link).then(() => toast('Invite link copied â€” share it with the invitee âœ“'));
+  navigator.clipboard.writeText(link).then(() => toast('Invite link copied — share it with the invitee âœ“'));
 };
 
 window.cancelInvite = async function(inviteId) {
@@ -6382,7 +6382,7 @@ window.removeMember = async function(uid, email) {
   } catch(e) { toast('Error: ' + e.message, true); }
 };
 
-// â”€â”€ Firestore listener â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Firestore listener ────────────────────────────────────────────────────
 let unsubscribe = null;
 
 function listenToShow(id) {
@@ -6406,7 +6406,7 @@ function listenToShow(id) {
   });
 }
 
-// â”€â”€ Persist â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Persist ───────────────────────────────────────────────────────────────
 async function pushToFirestore() {
   if (!auth.currentUser) { toast("Sign in first to save changes.", true); return; }
   const dwell      = parseInt(document.getElementById("defaultDwell").value) || 6;
@@ -6423,12 +6423,12 @@ async function pushToFirestore() {
     ...(currentUser  && { updatedBy: { uid: currentUser.uid, email: currentUser.email } }),
   });
   logActivity(`Slideshow "${currentShowId}" saved (${slides.length} slide${slides.length !== 1 ? 's' : ''})`);
-  toast("Saved â€” displays updating live âœ“");
+  toast("Saved — displays updating live âœ“");
 }
 
 window.saveSettings = () => pushToFirestore();
 
-// â”€â”€ Upload â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Upload ────────────────────────────────────────────────────────────────
 const dropzone  = document.getElementById("dropzone");
 const fileInput = document.getElementById("fileInput");
 
@@ -6478,7 +6478,7 @@ async function handleFiles(files) {
   await pushToFirestore();
 }
 
-// â”€â”€ Add by URL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Add by URL ────────────────────────────────────────────────────────────
 window.addByUrl = async () => {
   const url = prompt("Paste an image URL (Google Drive direct link, CDN, etc.):");
   if (!url) return;
@@ -6488,7 +6488,7 @@ window.addByUrl = async () => {
   await pushToFirestore();
 };
 
-// â”€â”€ YouTube slides â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── YouTube slides ────────────────────────────────────────────────────────
 function parseYoutubeId(input) {
   input = input.trim();
   if (/^[A-Za-z0-9_-]{11}$/.test(input)) return input; // bare video ID
@@ -6517,7 +6517,7 @@ window.saveYoutubeSlide = async function() {
   const raw     = document.getElementById('youtubeInput').value.trim();
   const name    = document.getElementById('youtubeName').value.trim() || 'YouTube Video';
   const videoId = parseYoutubeId(raw);
-  if (!videoId) { toast('Could not find a YouTube video ID â€” paste the full URL or just the ID.', true); return; }
+  if (!videoId) { toast('Could not find a YouTube video ID — paste the full URL or just the ID.', true); return; }
   slides.push({ id: crypto.randomUUID(), type: 'youtube', videoId, name, active: true });
   renderGrid();
   updateCount();
@@ -6526,7 +6526,7 @@ window.saveYoutubeSlide = async function() {
   toast('YouTube slide added âœ“');
 };
 
-// â”€â”€ Web Page slides â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Web Page slides ───────────────────────────────────────────────────────
 window.openWebpageModal = function() {
   document.getElementById('webpageUrl').value  = '';
   document.getElementById('webpageName').value = '';
@@ -6551,7 +6551,7 @@ window.saveWebpageSlide = async function() {
   toast('Web page slide added âœ“');
 };
 
-// â”€â”€ Add Media modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Add Media modal ───────────────────────────────────────────────────────
 window.openAddMediaModal = function() {
   document.getElementById('addMediaModal').classList.add('open');
 };
@@ -6562,7 +6562,7 @@ document.getElementById('addMediaModal').addEventListener('click', e => {
   if (e.target === document.getElementById('addMediaModal')) closeAddMediaModal();
 });
 
-// â”€â”€ Toolbar overflow menu â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Toolbar overflow menu ─────────────────────────────────────────────────
 window.toggleToolbarOverflow = function(btn) {
   const menu = document.getElementById('toolbarOverflowMenu');
   menu.classList.toggle('open');
@@ -6577,10 +6577,10 @@ function _closeOverflowOutside(e) {
   if (!document.getElementById('toolbarOverflowMenu')?.contains(e.target)) closeToolbarOverflow();
 }
 
-// â”€â”€ Add from Dropbox â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Add from Dropbox ──────────────────────────────────────────────────────
 window.addFromDropbox = function() {
   if (typeof Dropbox === 'undefined') {
-    toast('Dropbox picker failed to load â€” please refresh and try again.', true);
+    toast('Dropbox picker failed to load — please refresh and try again.', true);
     return;
   }
   Dropbox.choose({
@@ -6602,7 +6602,7 @@ window.addFromDropbox = function() {
   });
 };
 
-// â”€â”€ Google Drive modal browser â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Google Drive modal browser ────────────────────────────────────────────
 const GDRIVE_CLIENT_ID = '952679135642-tlp5r8lptelklvt95q22rb1q51rm609r.apps.googleusercontent.com';
 const GDRIVE_SCOPE     = 'https://www.googleapis.com/auth/drive.readonly';
 const GDRIVE_FOLDER    = 'application/vnd.google-apps.folder';
@@ -6893,7 +6893,7 @@ window.addFromGoogleDrive = function() {
   });
 };
 
-// â”€â”€ OneDrive import â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── OneDrive import ───────────────────────────────────────────────────────
 const AZURE_CLIENT_ID = '0eb0c0a8-0308-483b-b87e-580b1234575b';
 let _msalInstance = null;
 
@@ -6912,7 +6912,7 @@ function _getMsalInstance() {
 async function _getOneDriveToken(msalInst) {
   const scopes = ['Files.Read', 'Files.Read.All', 'User.Read', 'offline_access'];
 
-  // 1. Silent â€” use cached account if available
+  // 1. Silent — use cached account if available
   const accounts = msalInst.getAllAccounts();
   if (accounts.length > 0) {
     try {
@@ -6921,13 +6921,13 @@ async function _getOneDriveToken(msalInst) {
     } catch(e) { /* fall through */ }
   }
 
-  // 2. SSO silent â€” hidden iframe using the Microsoft session from the picker popup
+  // 2. SSO silent — hidden iframe using the Microsoft session from the picker popup
   try {
     const r = await msalInst.ssoSilent({ scopes });
     return r.accessToken;
   } catch(e) { /* fall through to popup */ }
 
-  // 3. Interactive popup â€” last resort
+  // 3. Interactive popup — last resort
   try {
     const r = await msalInst.loginPopup({ scopes });
     return r.accessToken;
@@ -6936,7 +6936,7 @@ async function _getOneDriveToken(msalInst) {
   }
 }
 
-// â”€â”€ OneDrive native picker (v8 postMessage) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── OneDrive native picker (v8 postMessage) ───────────────────────────────
 const _MS_ORIGINS = ['microsoft.com','live.com','office.com','sharepoint.com','onedrive.com','1drv.com','officeapps.live.com'];
 function _isMsOrigin(origin) {
   try {
@@ -6948,7 +6948,7 @@ function _isMsOrigin(origin) {
 function _openOneDrivePicker(mode) {
   const channelId = '27';
 
-  // No authentication: {} â€” personal OneDrive authenticates via browser session.
+  // No authentication: {} — personal OneDrive authenticates via browser session.
   // Providing a token causes the picker to stall waiting for a token type it can't use.
   const pickerOptions = {
     sdk: '8.0',
@@ -6979,7 +6979,7 @@ function _openOneDrivePicker(mode) {
       return;
     }
 
-    // Do NOT gate on event.source â€” the picker renders its file list in an
+    // Do NOT gate on event.source — the picker renders its file list in an
     // iframe inside the popup, so event.source will be that iframe, not pickerWindow.
 
     const msg = event.data;
@@ -6989,7 +6989,7 @@ function _openOneDrivePicker(mode) {
       case 'initialize': {
         initReceived = true;
         const port = msg.replyTo;
-        console.log('[OneDrive] initialize â€” port:', port, 'channelId:', msg.channelId);
+        console.log('[OneDrive] initialize — port:', port, 'channelId:', msg.channelId);
         if (!port) { console.warn('[OneDrive] no replyTo port!'); break; }
 
         port.addEventListener('message', async (pe) => {
@@ -7009,7 +7009,7 @@ function _openOneDrivePicker(mode) {
         });
         port.start();
 
-        // Personal OneDrive uses browser session for auth â€” just activate, no token needed.
+        // Personal OneDrive uses browser session for auth — just activate, no token needed.
         setTimeout(() => {
           try {
             port.postMessage({ type: 'activate' });
@@ -7047,11 +7047,11 @@ function _openOneDrivePicker(mode) {
     return;
   }
 
-  // 30-second timeout â€” user may need to sign in to Microsoft in the popup
+  // 30-second timeout — user may need to sign in to Microsoft in the popup
   const timeoutId = setTimeout(() => {
     if (!initReceived) {
       cleanup();
-      toast('OneDrive connection timed out â€” please try again', true);
+      toast('OneDrive connection timed out — please try again', true);
     }
   }, 30000);
 }
@@ -7064,7 +7064,7 @@ async function _resolveOneDriveItem(item) {
     return { blob: await res.blob(), name: item.name || 'OneDrive file' };
   }
 
-  // v8 command flow: only id present â€” use Graph API with token
+  // v8 command flow: only id present — use Graph API with token
   const itemId = item.id;
   if (!itemId) throw new Error('No item ID in picker response');
 
@@ -7128,7 +7128,7 @@ window.addFromOneDrive = function() {
   _openOneDrivePicker('slides');
 };
 
-// â”€â”€ Clear all â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Clear all ─────────────────────────────────────────────────────────────
 window.clearAll = async () => {
   if (!confirm("Remove all slides?")) return;
   slides = [];
@@ -7136,7 +7136,7 @@ window.clearAll = async () => {
   await pushToFirestore();
 };
 
-// â”€â”€ Render grid â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Render grid ───────────────────────────────────────────────────────────
 function renderGrid() {
   const grid   = document.getElementById("slideGrid");
   const btnClr = document.getElementById("btnClear");
@@ -7194,7 +7194,7 @@ function renderGrid() {
         <div class="slide-footer">
           <span class="slide-index">${String(i+1).padStart(2,'0')}</span>
           <span class="slide-name" title="${s.name}">${s.name}</span>
-          <span class="slide-dwell">â€”</span>
+          <span class="slide-dwell">—</span>
         </div>
       </div>`;
     }
@@ -7280,7 +7280,7 @@ function renderGrid() {
       <div class="slide-footer">
         <span class="slide-index">${String(i+1).padStart(2,'0')}</span>
         <span class="slide-name" title="${s.name}">${s.name}</span>
-        <span class="slide-dwell">${s.dwell ?? 'â€”'}s</span>
+        <span class="slide-dwell">${s.dwell ?? '—'}s</span>
       </div>
     </div>`;
   }).join("");
@@ -7307,12 +7307,12 @@ function renderGrid() {
   });
 }
 
-// â”€â”€ Slide actions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Slide actions ─────────────────────────────────────────────────────────
 window.editDesignedSlide = (idx) => {
   openDesigner(slides[idx], idx);
 };
 
-// â”€â”€ Slide Groups â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Slide Groups ───────────────────────────────────────────────────────────
 window.addSlideGroup = function() {
   const group = { id: crypto.randomUUID(), type: 'group', name: 'Slide Group', active: true, slides: [] };
   slides.push(group);
@@ -7454,7 +7454,7 @@ window.duplicateSlide = function(idx) {
     const copy = { ...src, name: 'Copy of ' + src.name };
     openDesigner(copy, null);
   } else {
-    // Image slide â€” insert clone immediately after the original
+    // Image slide — insert clone immediately after the original
     const copy = { ...src, id: crypto.randomUUID(), name: 'Copy of ' + src.name };
     slides.splice(idx + 1, 0, copy);
     renderGrid(); updateCount();
@@ -7468,7 +7468,7 @@ function updateCount() {
   if (el) el.textContent = n + " slide" + (n !== 1 ? "s" : "");
 }
 
-// â”€â”€ New slideshow â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── New slideshow ─────────────────────────────────────────────────────────
 window.newShowPrompt = async () => {
   const name = prompt("Slideshow name (used as ID, no spaces):");
   if (!name) return;
@@ -7497,7 +7497,7 @@ window.newShowPrompt = async () => {
   }
 };
 
-// â”€â”€ Toast â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Toast ─────────────────────────────────────────────────────────────────
 window.toast = (msg, err=false) => {
   const t = document.getElementById("toast");
   if (!t) { console.warn('toast element missing, msg:', msg); return; }
@@ -7507,7 +7507,7 @@ window.toast = (msg, err=false) => {
   setTimeout(() => t.classList.remove("show"), 3000);
 };
 
-// â”€â”€ Fabric.js rotate handle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Fabric.js rotate handle ────────────────────────────────────────────────
 (function() {
   const mtr = fabric.Object.prototype.controls.mtr;
 
@@ -7540,7 +7540,7 @@ window.toast = (msg, err=false) => {
   mtr.sizeY = 22;
 })();
 
-// â”€â”€ Slide Designer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Slide Designer ────────────────────────────────────────────────────────
 const CANVAS_W = 1920;
 const CANVAS_EXTRA_PROPS = ['isLocked', 'animation', 'iconGroup', 'iconColor', 'isUnsplashAttrib'];
 const CANVAS_H = 1080;
@@ -7551,7 +7551,7 @@ let editingGroupSlideIdx = null; // index within group.slides[] while in designe
 
 let pendingTemplate = 'blank';
 
-// â”€â”€ AI Slide Generator â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── AI Slide Generator ────────────────────────────────────────────────────
 
 const AI_LOADING_MSGS = [
   'Designing your slide\u2026',
@@ -7743,19 +7743,19 @@ window.regenerateAiSlide = function() {
   generateAiSlide();
 };
 
-// â”€â”€ End AI Slide Generator â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── End AI Slide Generator ────────────────────────────────────────────────
 
 window.openDesigner = function(existingSlide = null, slideIdx = null) {
   if (typeof fabric === 'undefined') {
-    toast('Fabric.js failed to load â€” check your internet connection and refresh.', true);
+    toast('Fabric.js failed to load — check your internet connection and refresh.', true);
     return;
   }
   editingSlideIdx = slideIdx;
   if (existingSlide) {
-    // Editing an existing slide â€” skip template gallery
+    // Editing an existing slide — skip template gallery
     launchDesigner(existingSlide);
   } else {
-    // New slide â€” show template picker first
+    // New slide — show template picker first
     document.getElementById('templateGallery').style.display = 'flex';
   }
 };
@@ -7829,7 +7829,7 @@ window.closeDesigner = function() {
   if (returnGroupIdx !== null) openGroupEditor(returnGroupIdx);
 };
 
-// â”€â”€ Safe Zone â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Safe Zone ─────────────────────────────────────────────────────────────
 let safeZoneEnabled = localStorage.getItem('designerSafeZone') === '1';
 
 function applySafeZoneState() {
@@ -7843,7 +7843,7 @@ window.toggleSafeZone = function() {
   applySafeZoneState();
 };
 
-// â”€â”€ TV Preview â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── TV Preview ─────────────────────────────────────────────────────────────
 window.openTvPreview = function() {
   if (!fabricCanvas) return;
   let dataUrl;
@@ -7851,7 +7851,7 @@ window.openTvPreview = function() {
     dataUrl = fabricCanvas.toDataURL({ format: 'jpeg', quality: 0.92 });
   } catch(e) {
     try { dataUrl = fabricCanvas.toDataURL({ format: 'png' }); }
-    catch(e2) { toast('Preview failed â€” canvas has cross-origin images.', true); return; }
+    catch(e2) { toast('Preview failed — canvas has cross-origin images.', true); return; }
   }
   document.getElementById('tvPreviewImg').src = dataUrl;
   document.getElementById('tvReadabilityOverlay').innerHTML = '';
@@ -7887,7 +7887,7 @@ window.runReadabilityCheck = function() {
     box.style.cssText = `left:${br.left*sx}px;top:${br.top*sy}px;width:${br.width*sx}px;height:${br.height*sy}px`;
     const lbl = document.createElement('div');
     lbl.className = 'readability-lbl';
-    lbl.textContent = `${Math.round(effective)}px â€” too small`;
+    lbl.textContent = `${Math.round(effective)}px — too small`;
     box.appendChild(lbl);
     overlay.appendChild(box);
   });
@@ -7960,7 +7960,7 @@ window.unsavedSaveAndClose = async function() {
   // saveDesignedSlide calls doCloseDesigner internally on success
 };
 
-// â”€â”€ Auto-save â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Auto-save ─────────────────────────────────────────────────────────────
 let designerDirty      = false;
 let autoSaveTimer      = null;
 let autoSaveNewSlideId = null;   // stable ID for new (unsaved) slides while editing
@@ -8014,7 +8014,7 @@ function stopAutoSaveTimer() {
   if (autoSaveTimer) { clearInterval(autoSaveTimer); autoSaveTimer = null; }
 }
 
-// â”€â”€ Element locking â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Element locking ────────────────────────────────────────────────────────
 // Apply lock/unlock visual+interaction state from obj.isLocked flag
 function applyLockState(obj) {
   const locked = !!obj.isLocked;
@@ -8065,9 +8065,9 @@ function installPadlockRenderer() {
   });
 }
 
-// â”€â”€ Smart alignment guides & snapping â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-const SNAP_THRESHOLD = 8;   // logical px â€” snap when within this distance
-const GRID_SIZE      = 40;  // logical px â€” grid cell size
+// ── Smart alignment guides & snapping ────────────────────────────────────
+const SNAP_THRESHOLD = 8;   // logical px — snap when within this distance
+const GRID_SIZE      = 40;  // logical px — grid cell size
 let   gridVisible    = false;
 
 // Return logical-space bounding box for an object
@@ -8149,7 +8149,7 @@ window.toggleDesignerGrid = function() {
   updateGridOverlay();
 };
 
-// â”€â”€ object:moving handler â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── object:moving handler ────────────────────────────────────────────────
 function onObjectMoving(e) {
   const obj  = e.target;
   const zoom = fabricCanvas.getZoom();
@@ -8287,7 +8287,7 @@ function initFabricCanvas() {
     // Padlock overlay for locked elements
     installPadlockRenderer();
 
-    // Dirty-flag tracking â€” set whenever canvas content changes
+    // Dirty-flag tracking — set whenever canvas content changes
     // historyPaused is true during loadFromJSON so the initial load won't mark dirty
     const onCanvasChange = () => { if (!historyPaused) markDesignerDirty(); };
     fabricCanvas.on('object:added',    onCanvasChange);
@@ -8300,7 +8300,7 @@ function initFabricCanvas() {
     // Delete key removes selected object
     document.addEventListener('keydown', onDesignerKey);
 
-    // Icon drag-and-drop â€” attach once only
+    // Icon drag-and-drop — attach once only
     if (!initFabricCanvas._dragSetup) {
       initFabricCanvas._dragSetup = true;
       const frame = document.getElementById('canvasFrame');
@@ -8327,7 +8327,7 @@ function initFabricCanvas() {
   }
 }
 
-// â”€â”€ Clipboard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Clipboard ────────────────────────────────────────────────────────────
 let designerClipboard = null;
 
 // Delete the active object(s), supporting both single and multi-select
@@ -8337,18 +8337,18 @@ function designerDeleteActive() {
   if (obj.type === 'activeSelection') {
     let hasAttrib = false;
     obj.forEachObject(o => { if (o.isUnsplashAttrib) hasAttrib = true; });
-    if (hasAttrib && !confirm('Unsplash requires attribution â€” are you sure you want to remove this?')) return;
+    if (hasAttrib && !confirm('Unsplash requires attribution — are you sure you want to remove this?')) return;
     obj.forEachObject(o => fabricCanvas.remove(o));
     fabricCanvas.discardActiveObject();
   } else {
-    if (obj.isUnsplashAttrib && !confirm('Unsplash requires attribution â€” are you sure you want to remove this?')) return;
+    if (obj.isUnsplashAttrib && !confirm('Unsplash requires attribution — are you sure you want to remove this?')) return;
     fabricCanvas.remove(obj);
     fabricCanvas.discardActiveObject();
   }
   fabricCanvas.renderAll();
 }
 
-// Duplicate the active object(s) â€” 10px offset
+// Duplicate the active object(s) — 10px offset
 function designerDuplicate() {
   const obj = fabricCanvas.getActiveObject();
   if (!obj) return;
@@ -8383,7 +8383,7 @@ function designerCopy() {
   }
 }
 
-// Paste from JSON clipboard â€” safe across slides; cascades 10px each paste
+// Paste from JSON clipboard — safe across slides; cascades 10px each paste
 function designerPaste() {
   if (!designerClipboard || !fabricCanvas) return;
   const toEnliven = designerClipboard.map(o => ({ ...o, left: (o.left||0) + 10, top: (o.top||0) + 10 }));
@@ -8408,16 +8408,16 @@ function onDesignerKey(e) {
 
   const ctrl = e.ctrlKey || e.metaKey;
 
-  // â”€â”€ Undo / Redo â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Undo / Redo ────────────────────────────────────────────────────────
   if (ctrl && e.key === 'z' && !e.shiftKey) { e.preventDefault(); designerUndo(); return; }
   if (ctrl && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) { e.preventDefault(); designerRedo(); return; }
 
-  // â”€â”€ Copy / Paste / Duplicate â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Copy / Paste / Duplicate ───────────────────────────────────────────
   if (ctrl && e.key === 'c') { e.preventDefault(); designerCopy();      return; }
   if (ctrl && e.key === 'v') { e.preventDefault(); designerPaste();     return; }
   if (ctrl && e.key === 'd') { e.preventDefault(); designerDuplicate(); return; }
 
-  // â”€â”€ Select all â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Select all ────────────────────────────────────────────────────────
   if (ctrl && e.key === 'a') {
     e.preventDefault();
     const objs = fabricCanvas.getObjects();
@@ -8429,13 +8429,13 @@ function onDesignerKey(e) {
     return;
   }
 
-  // â”€â”€ Delete selected â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Delete selected ───────────────────────────────────────────────────
   if (e.key === 'Delete' || e.key === 'Backspace') {
     designerDeleteActive();
     return;
   }
 
-  // â”€â”€ Escape: deselect â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Escape: deselect ──────────────────────────────────────────────────
   if (e.key === 'Escape') {
     if (document.getElementById('tvPreviewOverlay').style.display === 'flex') {
       closeTvPreview(); return;
@@ -8445,7 +8445,7 @@ function onDesignerKey(e) {
     return;
   }
 
-  // â”€â”€ Arrow nudge â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Arrow nudge ───────────────────────────────────────────────────────
   if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)) {
     const obj = fabricCanvas.getActiveObject();
     if (!obj) return;
@@ -8463,7 +8463,7 @@ function onDesignerKey(e) {
   }
 }
 
-// â”€â”€ Shortcuts panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Shortcuts panel ───────────────────────────────────────────────────────
 window.toggleShortcutsPanel = function(e) {
   e.stopPropagation();
   const panel = document.getElementById('shortcutsPanel');
@@ -8487,7 +8487,7 @@ document.addEventListener('click', e => {
   }
 });
 
-// â”€â”€ Layers Panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Layers Panel ──────────────────────────────────────────────────────────
 let layerDragIdx = null;
 
 function getLayerIcon(obj) {
@@ -8622,7 +8622,7 @@ window.deleteLayerObj = function(idx) {
   if (!fabricCanvas) return;
   const obj = fabricCanvas.item(idx);
   if (!obj) return;
-  if (obj.isUnsplashAttrib && !confirm('Unsplash requires attribution â€” are you sure you want to remove this?')) return;
+  if (obj.isUnsplashAttrib && !confirm('Unsplash requires attribution — are you sure you want to remove this?')) return;
   fabricCanvas.remove(obj);
   fabricCanvas.discardActiveObject();
   fabricCanvas.renderAll();
@@ -8652,7 +8652,7 @@ window.layerDrop = function(event, targetIdx) {
   historySave();
 };
 
-// â”€â”€ Text tool â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Text tool ─────────────────────────────────────────────────────────────
 window.designerAddText = function() {
   if (!fabricCanvas) return;
   const zoom = fabricCanvas.getZoom();
@@ -8673,7 +8673,7 @@ window.designerAddText = function() {
   fabricCanvas.renderAll();
 };
 
-// â”€â”€ Background color tool â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Background color tool ─────────────────────────────────────────────────
 const bgColorInput = document.getElementById('bgColorInput');
 const bgSwatch     = document.getElementById('bgSwatch');
 
@@ -8688,7 +8688,7 @@ function syncBgSwatch() {
   document.getElementById('propsBgColor').value = color;
 }
 
-// â”€â”€ Image tool â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Image tool ────────────────────────────────────────────────────────────
 window.toggleImagePopover = function(e) {
   e.stopPropagation();
   document.getElementById('imagePopover').classList.toggle('open');
@@ -8713,7 +8713,7 @@ window.designerImageFromUrl = async function() {
 window.designerImageFromDropbox = function() {
   document.getElementById('imagePopover').classList.remove('open');
   if (typeof Dropbox === 'undefined') {
-    toast('Dropbox picker failed to load â€” please refresh and try again.', true);
+    toast('Dropbox picker failed to load — please refresh and try again.', true);
     return;
   }
   Dropbox.choose({
@@ -8745,7 +8745,7 @@ document.getElementById('designerFileInput').addEventListener('change', async fu
   const file = this.files[0];
   if (!file) return;
   this.value = '';
-  if (!fabricCanvas) { toast('Canvas not ready â€” try reopening the designer.', true); return; }
+  if (!fabricCanvas) { toast('Canvas not ready — try reopening the designer.', true); return; }
 
   // Show on canvas immediately via local blob URL (no CORS needed)
   const blobUrl = URL.createObjectURL(file);
@@ -8800,7 +8800,7 @@ function addImageToCanvas(url) {
   });
 }
 
-// â”€â”€ Shape tools â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Shape tools ───────────────────────────────────────────────────────────
 window.designerAddRect = function() {
   if (!fabricCanvas) return;
   const rect = new fabric.Rect({
@@ -8851,7 +8851,7 @@ window.designerAddLine = function() {
   fabricCanvas.renderAll();
 };
 
-// â”€â”€ Ticker Bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Ticker Bar ────────────────────────────────────────────────────────────
 fabric.TickerBar = fabric.util.createClass(fabric.Rect, {
   type: 'tickerBar',
 
@@ -8973,7 +8973,7 @@ window.setTickerPos = function(pos) {
   );
 };
 
-// â”€â”€ Entrance Animations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Entrance Animations ────────────────────────────────────────────────────
 const ANIM_EASING = {
   easeOut:   t => 1 - Math.pow(1 - t, 3),
   easeInOut: t => t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2, 3)/2,
@@ -9077,7 +9077,7 @@ window.previewAnimation = function() {
   runObjectAnimation(fabricCanvas, obj, type, dur, orig);
 };
 
-// â”€â”€ Properties Panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Properties Panel ──────────────────────────────────────────────────────
 
 // Parse any CSS color to a #rrggbb hex string for <input type="color">
 function toHex(color) {
@@ -9216,7 +9216,7 @@ window.toggleTextStyle = function(style) {
   fabricCanvas.renderAll();
 };
 
-// â”€â”€ Text shadow â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Text shadow ────────────────────────────────────────────────────────────
 window.toggleShadowEnabled = function() {
   const obj = fabricCanvas?.getActiveObject();
   if (!obj) return;
@@ -9266,7 +9266,7 @@ window.applyShadow = function() {
   fabricCanvas.renderAll();
 };
 
-// â”€â”€ Text stroke â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Text stroke ────────────────────────────────────────────────────────────
 window.applyTextStroke = function() {
   const obj = fabricCanvas?.getActiveObject();
   if (!obj) return;
@@ -9277,7 +9277,7 @@ window.applyTextStroke = function() {
   fabricCanvas.renderAll();
 };
 
-// â”€â”€ Text style presets â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Text style presets ─────────────────────────────────────────────────────
 const TEXT_PRESETS = {
   headline:   { fontFamily:'Montserrat', fontWeight:'bold',   fontSize:72, fill:'#ffffff', shadow: new fabric.Shadow({ color:'rgba(0,0,0,0.3)', blur:6, offsetX:2, offsetY:2 }), strokeWidth:0, charSpacing:0,   lineHeight:1.16, backgroundColor:'' },
   subheading: { fontFamily:'Open Sans',  fontWeight:'normal', fontSize:48, fill:'#ffffff', shadow: null, strokeWidth:0, charSpacing:0,   lineHeight:1.16, backgroundColor:'' },
@@ -9337,7 +9337,7 @@ window.sendBwd = function() {
   fabricCanvas.renderAll();
 };
 
-// â”€â”€ Stock Photos (Upgraded Unsplash Integration) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Stock Photos (Upgraded Unsplash Integration) ───────────────────────────
 const UNSPLASH_ACCESS_KEY = 'Ni1OZDAzJg2uQ-mRRoqMGDfxrC4dbG6jSYuSI-Gmils';
 const UNSPLASH_BASE = 'https://api.unsplash.com';
 
@@ -9429,7 +9429,7 @@ window.switchStockTab = function(tab) {
   setupStockObservers();
 };
 
-// â”€â”€ Debounced search â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Debounced search ────────────────────────────────────────────────────────
 window.debouncedStockSearch = function() {
   clearTimeout(stockSearchTimer);
   stockSearchTimer = setTimeout(() => searchStockPhotos(), 500);
@@ -9444,7 +9444,7 @@ window.searchStockPhotos = function() {
   loadStockPhotos();
 };
 
-// â”€â”€ Search tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Search tab ──────────────────────────────────────────────────────────────
 async function loadStockPhotos(append = false) {
   if (stockLoading || !stockHasMore) return;
   stockLoading = true;
@@ -9469,14 +9469,14 @@ async function loadStockPhotos(append = false) {
     stockPage++;
   } catch (err) {
     status.textContent = err.message === '401'
-      ? 'Invalid API key â€” replace UNSPLASH_ACCESS_KEY in the code.'
+      ? 'Invalid API key — replace UNSPLASH_ACCESS_KEY in the code.'
       : 'Could not load photos. Check your API key.';
     stockHasMore = false;
   }
   stockLoading = false;
 }
 
-// â”€â”€ Curated tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Curated tab ─────────────────────────────────────────────────────────────
 async function loadStockCurated(append = false) {
   if (stockCuratedLoading || !stockCuratedHasMore) return;
   stockCuratedLoading = true;
@@ -9499,7 +9499,7 @@ async function loadStockCurated(append = false) {
   stockCuratedLoading = false;
 }
 
-// â”€â”€ Collections tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Collections tab ─────────────────────────────────────────────────────────
 async function loadStockCollections() {
   stockCollectionsLoaded = true;
   const grid = document.getElementById('stockCollGrid');
@@ -9569,7 +9569,7 @@ async function loadStockCollPhotos(append = false) {
   stockCollLoading = false;
 }
 
-// â”€â”€ Infinite scroll observers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Infinite scroll observers ───────────────────────────────────────────────
 function setupStockObservers() {
   if (stockSearchObserver)  { stockSearchObserver.disconnect();  stockSearchObserver  = null; }
   if (stockCuratedObserver) { stockCuratedObserver.disconnect(); stockCuratedObserver = null; }
@@ -9599,7 +9599,7 @@ function setupStockObservers() {
   }
 }
 
-// â”€â”€ Shared photo grid renderer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Shared photo grid renderer ──────────────────────────────────────────────
 function renderStockPhotos(photos, gridId, append) {
   const grid = document.getElementById(gridId);
   if (!append) grid.innerHTML = '';
@@ -9623,13 +9623,13 @@ function renderStockPhotos(photos, gridId, append) {
   });
 }
 
-// â”€â”€ Download tracking (required by Unsplash API guidelines) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Download tracking (required by Unsplash API guidelines) ────────────────
 function trackUnsplashDownload(photoId) {
   fetch(`${UNSPLASH_BASE}/photos/${photoId}/download?client_id=${UNSPLASH_ACCESS_KEY}`)
     .catch(() => {}); // fire-and-forget
 }
 
-// â”€â”€ Attribution text element â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Attribution text element ────────────────────────────────────────────────
 function addUnsplashAttribution(photo) {
   if (!fabricCanvas) return;
   const text = new fabric.Text(`Photo by ${photo.user.name} on Unsplash`, {
@@ -9647,7 +9647,7 @@ function addUnsplashAttribution(photo) {
   fabricCanvas.add(text);
 }
 
-// â”€â”€ Add / Set as BG â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Add / Set as BG ─────────────────────────────────────────────────────────
 window.addStockToCanvas = function(photoId) {
   const photo = stockPhotoMap[photoId];
   if (!photo || !fabricCanvas) return;
@@ -9680,7 +9680,7 @@ window.setStockAsBg = function(photoId) {
   addUnsplashAttribution(photo);
 };
 
-// â”€â”€ Right-click context menu â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Right-click context menu ────────────────────────────────────────────────
 window.stockRightClick = function(event, photoId) {
   event.preventDefault();
   stockCtxPhotoId = photoId;
@@ -9698,7 +9698,7 @@ function hideStockCtxMenu() {
 window.stockCtxAddCanvas = function() { addStockToCanvas(stockCtxPhotoId); hideStockCtxMenu(); };
 window.stockCtxSetBg     = function() { setStockAsBg(stockCtxPhotoId);     hideStockCtxMenu(); };
 
-// â”€â”€ Background controls â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Background controls ────────────────────────────────────────────────────
 let currentBgType  = 'solid';
 let currentBgImgUrl = null;
 
@@ -9796,7 +9796,7 @@ window.setBgImage = async function() {
   inp.click();
 };
 
-// â”€â”€ Undo / Redo â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Undo / Redo ───────────────────────────────────────────────────────────
 const HISTORY_MAX = 50;
 let historyStack  = [];
 let histIdx       = -1;
@@ -9866,7 +9866,7 @@ window.applyBgImage = function() {
   imgEl.src = currentBgImgUrl;
 };
 
-// â”€â”€ Template System â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Template System ───────────────────────────────────────────────────────
 function tmplText(text, left, top, opts = {}) {
   const obj = new fabric.IText(text, {
     left, top, originX: 'center', originY: 'center',
@@ -9883,7 +9883,7 @@ function tmplRect(left, top, width, height, opts = {}) {
   return obj;
 }
 
-// â”€â”€ Icon Search (Iconify) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Icon Search (Iconify) ──────────────────────────────────────────────────
 const ICON_CATS = [
   { id:'all',        label:'All',        query:'star check arrow home' },
   { id:'business',   label:'Business',   query:'business briefcase office chart' },
@@ -10082,7 +10082,7 @@ window.applyIconColor = function(color) {
   historySave();
 };
 
-// â”€â”€ Version History â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Version History ───────────────────────────────────────────────────────
 const MAX_VERSIONS     = 20;
 let historyPanelOpen   = false;
 let _pendingRestoreVer = null;  // version object waiting for confirm
@@ -10120,7 +10120,7 @@ async function loadHistoryList() {
   const listEl = document.getElementById('historyList');
   if (!listEl) return;
 
-  // Need a slideId â€” only meaningful when editing an existing designed slide
+  // Need a slideId — only meaningful when editing an existing designed slide
   const slideId = editingSlideIdx !== null ? slides[editingSlideIdx]?.id : null;
   if (!slideId) {
     listEl.innerHTML = '<div class="history-empty">Save the slide first to track versions.</div>';
@@ -10238,7 +10238,7 @@ async function executeRestore(versionId) {
 
     designerDirty = true;
     updateDesignerStatus('unsaved');
-    toast('Version restored â€” your previous version has been saved');
+    toast('Version restored — your previous version has been saved');
     // Refresh the history list to reflect new order
     loadHistoryList();
 
@@ -10249,7 +10249,7 @@ async function executeRestore(versionId) {
   }
 }
 
-// â”€â”€ Readability Checker â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Readability Checker ────────────────────────────────────────────────────
 let checkPanelOpen = false;
 let _checkIssues   = [];
 
@@ -10337,7 +10337,7 @@ function runReadabilityCheck() {
   // 4 Â· Overcrowding
   if (textObjs.length > 8) {
     issues.push({ type: 'warning', label: 'Too much text',
-      desc: `${textObjs.length} text elements â€” simplify for TV viewing`, obj: null });
+      desc: `${textObjs.length} text elements — simplify for TV viewing`, obj: null });
   }
 
   textObjs.forEach(obj => {
@@ -10347,10 +10347,10 @@ function runReadabilityCheck() {
     // 1 Â· Text size
     if (size < 32) {
       issues.push({ type: 'critical', label: 'Text too small',
-        desc: `${label} is ${size}px â€” unreadable from 10 feet`, obj });
+        desc: `${label} is ${size}px — unreadable from 10 feet`, obj });
     } else if (size < 48) {
       issues.push({ type: 'warning', label: 'Small text',
-        desc: `${label} is ${size}px â€” consider increasing for distant viewing`, obj });
+        desc: `${label} is ${size}px — consider increasing for distant viewing`, obj });
     }
 
     // 2 Â· Contrast
@@ -10361,12 +10361,12 @@ function runReadabilityCheck() {
         const ratio = _contrastRatio(textHex, bgHex);
         if (ratio < 3) {
           issues.push({ type: 'critical', label: 'Poor contrast',
-            desc: `${label} â€” ${ratio}:1 contrast, hard to read`, obj });
+            desc: `${label} — ${ratio}:1 contrast, hard to read`, obj });
         } else if (ratio < 4.5) {
           issues.push({ type: 'warning', label: 'Moderate contrast',
-            desc: `${label} â€” ${ratio}:1 contrast, acceptable for large text`, obj });
+            desc: `${label} — ${ratio}:1 contrast, acceptable for large text`, obj });
         }
-      } catch (_) { /* unparseable color â€” skip */ }
+      } catch (_) { /* unparseable color — skip */ }
     }
   });
 
@@ -10480,7 +10480,7 @@ window.checkFixSafeZone = function() {
   runReadabilityCheck();
 };
 
-// â”€â”€ Brand Kit â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Brand Kit ──────────────────────────────────────────────────────────────
 window.brandKit = {
   companyName: '',
   colors: [],   // [{hex, label}]  max 8
@@ -10512,7 +10512,7 @@ window.saveBrandKit = async function() {
   } catch(e) { toast('Save failed: ' + e.message, true); }
 };
 
-// â”€â”€ Brand Kit Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Brand Kit Page ──────────────────────────────────────────────────────────
 function renderBkPage() {
   const bk = window.brandKit;
   // Company name
@@ -10696,7 +10696,7 @@ window.renderBkPreview = function() {
   }
 };
 
-// â”€â”€ Designer Brand Swatches Strip â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Designer Brand Swatches Strip ──────────────────────────────────────────
 function renderDesignerBrandStrip() {
   const strip = document.getElementById('bkDesignerStrip');
   const swatchWrap = document.getElementById('bkDesignerSwatches');
@@ -10738,7 +10738,7 @@ window.applyBrandColor = function(hex) {
   historySave();
 };
 
-// â”€â”€ Insert Brand Logo â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Insert Brand Logo ──────────────────────────────────────────────────────
 window.insertBrandLogo = function() {
   const url = window.brandKit?.logo?.url;
   if (!url || !fabricCanvas) return;
@@ -10753,7 +10753,7 @@ window.insertBrandLogo = function() {
   }, { crossOrigin: 'anonymous' });
 };
 
-// â”€â”€ Brand Kit Template Substitution â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Brand Kit Template Substitution ───────────────────────────────────────
 function applyBrandKitToTemplate() {
   const bk = window.brandKit;
   if (!bk) return;
@@ -10786,7 +10786,7 @@ function applyTemplate(name) {
   if (!fabricCanvas) return;
   const W = 1920, H = 1080;
 
-  // â”€â”€ 1. Corporate Announcement â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── 1. Corporate Announcement ────────────────────────────────────────────
   if (name === 'corporateannouncement') {
     fabricCanvas.backgroundColor = '#1a2744';
     loadGoogleFont('Montserrat');
@@ -10806,7 +10806,7 @@ function applyTemplate(name) {
     tmplRect(W*0.08, H*0.925, W*0.84, 5, { fill:'#C9A84C', rx:3 });
   }
 
-  // â”€â”€ 2. Employee of the Month â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── 2. Employee of the Month ──────────────────────────────────────────────
   else if (name === 'employeeofmonth') {
     fabricCanvas.backgroundColor = '#ffffff';
     loadGoogleFont('Playfair Display');
@@ -10838,7 +10838,7 @@ function applyTemplate(name) {
     tmplText('\u2605  8 Years of Service  \u2605', W*0.70, H*0.80, { fontSize:38, fill:'#C9A84C', textAlign:'center' });
   }
 
-  // â”€â”€ 3. Now Hiring â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── 3. Now Hiring ────────────────────────────────────────────────────────
   else if (name === 'nowhiring') {
     fabricCanvas.backgroundColor = '#FF6B35';
     loadGoogleFont('Anton');
@@ -10859,7 +10859,7 @@ function applyTemplate(name) {
     });
   }
 
-  // â”€â”€ 4. KPI Dashboard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── 4. KPI Dashboard ──────────────────────────────────────────────────────
   else if (name === 'kpidashboard') {
     fabricCanvas.backgroundColor = '#1e2433';
     tmplRect(0, 0, W, H*0.14, { fill:'#2563eb', rx:0 });
@@ -10884,7 +10884,7 @@ function applyTemplate(name) {
     });
   }
 
-  // â”€â”€ 5. Daily Special â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── 5. Daily Special ──────────────────────────────────────────────────────
   else if (name === 'dailyspecial') {
     fabricCanvas.backgroundColor = '#FDF6E3';
     loadGoogleFont('Playfair Display');
@@ -10903,7 +10903,7 @@ function applyTemplate(name) {
     });
   }
 
-  // â”€â”€ 6. Menu Board â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── 6. Menu Board ────────────────────────────────────────────────────────
   else if (name === 'menuboard') {
     fabricCanvas.backgroundColor = '#2C2C2C';
     loadGoogleFont('Playfair Display');
@@ -10936,7 +10936,7 @@ function applyTemplate(name) {
     });
   }
 
-  // â”€â”€ 7. Happy Hour â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── 7. Happy Hour ─────────────────────────────────────────────────────────
   else if (name === 'happyhour') {
     tmplRect(0, 0, W, H, { fill: new fabric.Gradient({ type:'linear',
       coords:{x1:0,y1:0,x2:W,y2:H},
@@ -10959,7 +10959,7 @@ function applyTemplate(name) {
     });
   }
 
-  // â”€â”€ 8. Sale Event â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── 8. Sale Event ────────────────────────────────────────────────────────
   else if (name === 'saleevent') {
     fabricCanvas.backgroundColor = '#e0000a';
     loadGoogleFont('Anton');
@@ -10978,7 +10978,7 @@ function applyTemplate(name) {
     tmplText('TODAY ONLY', W/2, H*0.913, { fontSize:46, fontWeight:'bold', fill:'#e0000a', textAlign:'center' });
   }
 
-  // â”€â”€ 9. New Arrival â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── 9. New Arrival ────────────────────────────────────────────────────────
   else if (name === 'newarrival') {
     fabricCanvas.backgroundColor = '#ffffff';
     loadGoogleFont('Raleway');
@@ -10996,7 +10996,7 @@ function applyTemplate(name) {
     tmplText('Available now in stores and online', W/2, H*0.926, { fontSize:36, fill:'#888888', textAlign:'center' });
   }
 
-  // â”€â”€ 10. Event Promo â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── 10. Event Promo ───────────────────────────────────────────────────────
   else if (name === 'eventpromo') {
     fabricCanvas.backgroundColor = '#050818';
     tmplRect(0, 0, W, H, { fill: new fabric.Gradient({ type:'radial',
@@ -11022,7 +11022,7 @@ function applyTemplate(name) {
     tmplText('GET TICKETS', W/2, H*0.836, { fontSize:40, fontWeight:'bold', fill:'#ffffff', textAlign:'center' });
   }
 
-  // â”€â”€ 11. Countdown â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── 11. Countdown ─────────────────────────────────────────────────────────
   else if (name === 'countdown') {
     fabricCanvas.backgroundColor = '#ffffff';
     loadGoogleFont('Montserrat');
@@ -11043,7 +11043,7 @@ function applyTemplate(name) {
     tmplText('COMPANY', W/2, H*0.957, { fontSize:26, fill:'#9ca3af', textAlign:'center' });
   }
 
-  // â”€â”€ 12. Waiting Room Welcome â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── 12. Waiting Room Welcome ───────────────────────────────────────────────
   else if (name === 'waitingroomwelcome') {
     fabricCanvas.backgroundColor = '#e6f7f5';
     loadGoogleFont('Nunito');
@@ -11072,7 +11072,7 @@ function applyTemplate(name) {
     });
   }
 
-  // â”€â”€ 13. Health Tip â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── 13. Health Tip ────────────────────────────────────────────────────────
   else if (name === 'healthtip') {
     fabricCanvas.backgroundColor = '#ffffff';
     loadGoogleFont('Open Sans');
@@ -11100,7 +11100,7 @@ function applyTemplate(name) {
     tmplRect(W*0.06, H*0.912, W*0.88, 3, { fill:'#e5e7eb', rx:2 });
   }
 
-  // â”€â”€ 14. Season's Greetings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── 14. Season's Greetings ───────────────────────────────────────────────
   else if (name === 'seasonsgreetings') {
     fabricCanvas.backgroundColor = '#1b4332';
     loadGoogleFont('Playfair Display');
@@ -11127,7 +11127,7 @@ function applyTemplate(name) {
     tmplText('2026', W/2, H*0.905, { fontSize:60, fill:'rgba(255,255,255,0.15)', textAlign:'center' });
   }
 
-  // â”€â”€ 15. New Year â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── 15. New Year ─────────────────────────────────────────────────────────
   else if (name === 'newyear') {
     fabricCanvas.backgroundColor = '#000000';
     loadGoogleFont('Anton');
@@ -11156,7 +11156,7 @@ function applyTemplate(name) {
     });
   }
 
-  // â”€â”€ 16. Instagram Wall â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── 16. Instagram Wall ───────────────────────────────────────────────────
   else if (name === 'instagramwall') {
     fabricCanvas.backgroundColor = '#ffffff';
     loadGoogleFont('Montserrat');
@@ -11179,7 +11179,7 @@ function applyTemplate(name) {
     });
   }
 
-  // â”€â”€ Legacy templates (kept for backward compat) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Legacy templates (kept for backward compat) ──────────────────────────
   // Old gallery keys redirect to nearest new template
   else if (name === 'boldannouncement' || name === 'announcement') {
     applyTemplate('corporateannouncement');
@@ -11280,7 +11280,7 @@ window.saveDesignedSlide = async function() {
   try {
     const canvasJson = sanitizeCanvasJson(JSON.stringify(fabricCanvas.toJSON(CANVAS_EXTRA_PROPS)));
 
-    // Generate thumbnail â€” may fail if canvas has tainted images (CORS)
+    // Generate thumbnail — may fail if canvas has tainted images (CORS)
     // multiplier:0.25 â†’ 480Ã—270 JPEG instead of full 1920Ã—1080
     let thumbnailUrl = null;
     try {
@@ -11292,7 +11292,7 @@ window.saveDesignedSlide = async function() {
       console.warn('Thumbnail generation skipped:', e.message);
     }
 
-    // â”€â”€ Save into a group (if designer was opened from the group editor) â”€â”€
+    // ── Save into a group (if designer was opened from the group editor) ──
     if (editingGroupIdx !== null) {
       const group = slides[editingGroupIdx];
       if (!group.slides) group.slides = [];
@@ -11324,7 +11324,7 @@ window.saveDesignedSlide = async function() {
       return;
     }
 
-    // â”€â”€ Normal (standalone) slide save â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Normal (standalone) slide save ────────────────────────────────────
     const slide = {
       id:           editingSlideIdx !== null ? slides[editingSlideIdx].id : crypto.randomUUID(),
       type:         'designed',
@@ -11348,7 +11348,7 @@ window.saveDesignedSlide = async function() {
       await setDoc(doc(db, 'slideshows', currentShowId),
         { draftCanvasJson: null, draftSlideId: null }, { merge: true });
     } catch(_) {}
-    // Fire-and-forget version snapshot â€” uses already-captured data, never blocks save
+    // Fire-and-forget version snapshot — uses already-captured data, never blocks save
     saveSlideVersion(slide.id, canvasJson, thumbnailUrl).catch(() => {});
     designerDirty = false;
     updateDesignerStatus('saved');
@@ -11383,7 +11383,7 @@ window.addEventListener('resize', () => {
 
 // (showPage is defined in the Brand Kit module above)
 
-// â”€â”€ Preview frame â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Preview frame ──────────────────────────────────────────────────────────
 window.updatePreviewFrame = function() {
   const sel = document.getElementById('previewShowSelect');
   const frame = document.getElementById('previewFrame');
@@ -11407,7 +11407,7 @@ function syncPreviewSelect() {
   });
 }
 
-// â”€â”€ Screens page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Screens page ───────────────────────────────────────────────────────────
 let screensUnsub    = null;
 let editingScreenId = null;
 let pairingInterval = null;
@@ -11519,7 +11519,7 @@ function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// â”€â”€ Apps page filter / search â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Apps page filter / search ─────────────────────────────────────────────
 let _appsCategory = 'all';
 let _appsSearch   = '';
 
@@ -11546,10 +11546,10 @@ window.filterApps = function(val) {
 };
 
 window.appsComingSoon = function() {
-  toast('Coming soon â€” we\'re building this now!');
+  toast('Coming soon — we\'re building this now!');
 };
 
-// â”€â”€ Media Library â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Media Library ─────────────────────────────────────────────────────────
 let _cachedMedia  = [];
 let _mediaUnsub   = null;
 let _mediaFilter  = 'all';
@@ -11565,7 +11565,7 @@ async function saveMediaRecord(url, name, type, publicId) {
       publicId:  publicId || '',
       uploadedAt: new Date().toISOString(),
     });
-  } catch(_) { /* non-critical â€” media library will just miss this item */ }
+  } catch(_) { /* non-critical — media library will just miss this item */ }
 }
 
 function initMediaPage() {
@@ -11665,7 +11665,7 @@ window.deleteMediaRecord = async function(id) {
   }
 };
 
-// â”€â”€ Add Screen / Pairing â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Add Screen / Pairing ──────────────────────────────────────────────────
 window.openAddScreenModal = function() {
   if (!canAddScreen()) {
     showUpgradePrompt(
@@ -11749,7 +11749,7 @@ window.closePairingModal = function() {
   if (pairingTimerInterval) { clearInterval(pairingTimerInterval); pairingTimerInterval = null; }
 };
 
-// â”€â”€ Screen edit panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Screen edit panel ────────────────────────────────────────────────────
 window.openScreenEdit = function(screenId) {
   const screen = _cachedScreens.find(s => s.id === screenId);
   if (!screen) return;
@@ -11763,12 +11763,12 @@ window.openScreenEdit = function(screenId) {
   // Populate slideshow dropdown
   const shows = getAllShows();
   const sepShow = document.getElementById('sepSlideshow');
-  sepShow.innerHTML = '<option value="">â€” None â€”</option>'
+  sepShow.innerHTML = '<option value="">— None —</option>'
     + shows.map(s => `<option value="${s.id}" ${s.id === screen.slideshowId ? 'selected' : ''}>${escHtml(s.name)}</option>`).join('');
 
   // Populate schedule dropdown
   const sepSched = document.getElementById('sepSchedule');
-  sepSched.innerHTML = '<option value="">â€” None â€”</option>'
+  sepSched.innerHTML = '<option value="">— None —</option>'
     + allSchedules.map(s => `<option value="${s.id}" ${s.id === screen.scheduleId ? 'selected' : ''}>${escHtml(s.name)}</option>`).join('');
 
   document.getElementById('screenEditPanel').classList.add('open');
@@ -11829,7 +11829,7 @@ window.sendTestSignal = async function() {
   }
 };
 
-// â”€â”€ Activity log â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Activity log ──────────────────────────────────────────────────────────
 const activityLog = [];
 
 function logActivity(msg) {
@@ -11846,7 +11846,7 @@ function formatActivityTime(date) {
   return date.toLocaleDateString();
 }
 
-// â”€â”€ Dashboard update â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Dashboard update ──────────────────────────────────────────────────────
 function updateDashboard() {
   const user = auth.currentUser;
   const name = user ? (user.displayName || user.email || 'You') : 'Guest';
@@ -11868,13 +11868,13 @@ function updateDashboard() {
   ).join('');
 }
 
-// â”€â”€ Schedules â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Schedules ─────────────────────────────────────────────────────────────
 const CAL_ROW_H  = 60;   // px per hour
 const CAL_HOURS  = 24;
 const DAY_LABELS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 const EV_COLORS  = ['#4f8ef7','#f07c00','#16a34a','#9333ea','#e05252','#0891b2','#d97706','#be185d'];
 
-// Dummy data â€” will be replaced with Firestore in next phase
+// Dummy data — will be replaced with Firestore in next phase
 let allSchedules = [
   {
     id: 'sched-demo',
@@ -11920,7 +11920,7 @@ function getAllShows() {
   }));
 }
 
-// â”€â”€ Schedule list page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Schedule list page ────────────────────────────────────────────────────
 function renderScheduleGrid() {
   const grid = document.getElementById('scheduleGrid');
   if (!allSchedules.length) {
@@ -11946,7 +11946,7 @@ function renderScheduleGrid() {
     </button>`).join('');
 }
 
-// â”€â”€ Open / close schedule editor â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Open / close schedule editor ─────────────────────────────────────────
 window.openScheduleEditor = function(schedId) {
   if (schedId) {
     const found = allSchedules.find(s => s.id === schedId);
@@ -11989,7 +11989,7 @@ window.saveScheduleEditor = function() {
   logActivity(`Schedule "${editingSchedule.name}" saved`);
 };
 
-// â”€â”€ Calendar rendering â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Calendar rendering ────────────────────────────────────────────────────
 function renderCalendar() {
   // Time column
   const timeCol = document.getElementById('calTimeCol');
@@ -12065,7 +12065,7 @@ function buildEventBlock(ev, idx, day) {
     <button class="cal-ev-del" title="Delete" onclick="deleteEventFromCal(event,${idx})">âœ•</button>
     <div class="cal-resize-handle"></div>`;
 
-  // Drag to move (vertical only) â€” don't preventDefault so click still fires
+  // Drag to move (vertical only) — don't preventDefault so click still fires
   block.addEventListener('mousedown', e => {
     if (e.target.closest('.cal-resize-handle') || e.target.closest('.cal-ev-del')) return;
     const ev2 = editingSchedule.events[idx];
@@ -12095,7 +12095,7 @@ function buildEventBlock(ev, idx, day) {
     document.addEventListener('mouseup',   onDragEnd);
   });
 
-  // Click to edit â€” suppressed if the mousedown turned into an actual drag
+  // Click to edit — suppressed if the mousedown turned into an actual drag
   block.addEventListener('click', e => {
     if (e.target.closest('.cal-resize-handle') || e.target.closest('.cal-ev-del')) return;
     if (didDrag) { didDrag = false; return; }
@@ -12112,7 +12112,7 @@ window.deleteEventFromCal = function(e, idx) {
   renderEventPanel();
 };
 
-// â”€â”€ Drag / resize â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Drag / resize ─────────────────────────────────────────────────────────
 function onDragMove(e) {
   if (!dragState) return;
   const dy   = e.clientY - dragState.startY;
@@ -12173,7 +12173,7 @@ function onDragEnd() {
   document.removeEventListener('mousemove', onDragMove);
   document.removeEventListener('mouseup',   onDragEnd);
 
-  // Only re-render if a drag actually changed data â€” a pure click must NOT
+  // Only re-render if a drag actually changed data — a pure click must NOT
   // destroy the block before the 'click' event fires on it
   if (moved) {
     renderCalendar();
@@ -12181,7 +12181,7 @@ function onDragEnd() {
   }
 }
 
-// â”€â”€ Right panel rendering â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Right panel rendering ─────────────────────────────────────────────────
 function renderEventPanel() {
   const list = document.getElementById('schedEventList');
   const evs  = editingSchedule.events;
@@ -12218,7 +12218,7 @@ window.deleteSchedEvent = function(e, idx) {
   renderEventPanel();
 };
 
-// â”€â”€ Add / Edit Event Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Add / Edit Event Modal ────────────────────────────────────────────────
 window.openAddEventModal = function(evIdx = null, prefDay = 0, prefSH = 9, prefSM = 0, prefEH = 10, prefEM = 0) {
   editingEvIdx = evIdx;
   const modal  = document.getElementById('addEventModal');
@@ -12309,7 +12309,7 @@ window.saveAddEvent = function() {
   renderEventPanel();
 };
 
-// â”€â”€ Init schedules page when navigating there â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Init schedules page when navigating there ─────────────────────────────
 const _origShowPage = window.showPage;
 window.showPage = function(name) {
   _origShowPage(name);
@@ -12318,7 +12318,7 @@ window.showPage = function(name) {
   if (name === 'analytics') loadAnalytics();
 };
 
-// â”€â”€ Clock App â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Clock App ─────────────────────────────────────────────────────────────
 const CLOCK_FONTS = {
   minimal: { ff: "'Courier New', monospace",           fw: '200', ls: '0.05em'  },
   bold:    { ff: "'Arial Black', 'DM Sans', sans-serif", fw: '900', ls: '-0.02em' },
@@ -12440,7 +12440,7 @@ window.saveClockSlide = async function() {
   updateDashboard();
 };
 
-// â”€â”€ Theme toggle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Theme toggle ──────────────────────────────────────────────────────────
 // Icons are swapped purely via CSS ([data-theme="dark"] .theme-sun / .theme-moon)
 window.toggleTheme = function() {
   const current = document.documentElement.getAttribute('data-theme') || 'light';
@@ -12449,7 +12449,7 @@ window.toggleTheme = function() {
   localStorage.setItem('signage-theme', next);
 };
 
-// â”€â”€ Google Fonts picker â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Google Fonts picker ────────────────────────────────────────────────────
 const FAVORITE_FONTS = [
   'Anton', 'Bebas Neue', 'Lato', 'Montserrat', 'Open Sans',
   'Oswald', 'Playfair Display', 'Poppins', 'Raleway', 'Roboto',
@@ -12604,10 +12604,10 @@ function renderFontList(query) {
       });
     }
     html += '<div class="font-section-lbl">Favorites</div>';
-    // Favorites are pre-loaded â€” render them with their fonts already available
+    // Favorites are pre-loaded — render them with their fonts already available
     FAVORITE_FONTS.forEach(f => { html += fontOptionHTML(f); });
     html += '<div class="font-section-lbl">All Fonts</div>';
-    // All other fonts â€” no slice cap; IntersectionObserver loads them lazily below
+    // All other fonts — no slice cap; IntersectionObserver loads them lazily below
     GOOGLE_FONTS_LIST.filter(f => !FAVORITE_FONTS.includes(f))
                      .forEach(f => { html += fontOptionHTML(f); });
   } else {
@@ -12637,7 +12637,7 @@ function renderFontList(query) {
 window.searchFonts = function(query) { renderFontList(query); };
 
 window.selectFont = function(family) {
-  previewOriginalFont = null;   // mark as committed â€” closeFontPicker must NOT revert
+  previewOriginalFont = null;   // mark as committed — closeFontPicker must NOT revert
   loadGoogleFont(family);
   updateFontPickerTrigger(family);
   closeFontPicker(true);
@@ -12665,7 +12665,7 @@ preloadFavoriteFonts();
 // Init
 listenToShow("main");
 
-// â”€â”€ Analytics â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Analytics ────────────────────────────────────────────────────────────────
 let analyticsDays = 7;
 let analyticsData = { events: [], screens: [] };
 
@@ -12706,7 +12706,7 @@ function renderAnalytics() {
   const onlineEvts  = events.filter(e => e.type === 'screen_online');
   const offlineEvts = events.filter(e => e.type === 'screen_offline');
 
-  // â”€â”€ Overview cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Overview cards ──────────────────────────────────────────────────────
   // Screen hours: sum durations of online periods
   const uptimeByScreen = calcUptimeByScreen(onlineEvts, offlineEvts, screens);
   const totalMs        = Object.values(uptimeByScreen).reduce((s, v) => s + v.onlineMs, 0);
@@ -12723,17 +12723,17 @@ function renderAnalytics() {
     viewCounts[k] = (viewCounts[k] || 0) + 1;
   });
   const topSlide = Object.entries(viewCounts).sort((a,b) => b[1]-a[1])[0];
-  document.getElementById('statTopSlide').textContent   = topSlide ? topSlide[0] : 'â€”';
+  document.getElementById('statTopSlide').textContent   = topSlide ? topSlide[0] : '—';
   document.getElementById('statTopSlideSub').textContent = topSlide ? topSlide[1] + ' views' : '';
 
   // Avg uptime %
   const uptimePcts = Object.values(uptimeByScreen).map(v => v.pct);
   const avgUptime  = uptimePcts.length
     ? Math.round(uptimePcts.reduce((s,v) => s+v, 0) / uptimePcts.length) + '%'
-    : 'â€”';
+    : '—';
   document.getElementById('statUptime').textContent = avgUptime;
 
-  // â”€â”€ Uptime bars â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Uptime bars ──────────────────────────────────────────────────────────
   const uptimeBarsEl = document.getElementById('uptimeBars');
   if (!screens.length) {
     uptimeBarsEl.innerHTML = '<div class="analytics-empty">No screens found</div>';
@@ -12749,7 +12749,7 @@ function renderAnalytics() {
     }).join('');
   }
 
-  // â”€â”€ Top slides bars â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Top slides bars ──────────────────────────────────────────────────────
   const slideBarsEl = document.getElementById('topSlideBars');
   const topSlides   = Object.entries(viewCounts).sort((a,b) => b[1]-a[1]).slice(0, 8);
   if (!topSlides.length) {
@@ -12766,7 +12766,7 @@ function renderAnalytics() {
       </div>`).join('');
   }
 
-  // â”€â”€ Heatmap â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Heatmap ──────────────────────────────────────────────────────────────
   const DAYS  = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   const grid  = Array.from({length:7}, () => new Array(24).fill(0));
   slideViews.forEach(e => {
@@ -12795,7 +12795,7 @@ function renderAnalytics() {
     ).join('');
   }
 
-  // â”€â”€ Per-screen table â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Per-screen table ─────────────────────────────────────────────────────
   const tbodyEl = document.getElementById('analyticsScreenTable');
   if (!screens.length) {
     tbodyEl.innerHTML = '<tr><td colspan="5" class="analytics-empty">No screens yet</td></tr>';
@@ -12876,17 +12876,17 @@ function exportAnalyticsCSV() {
 }
 
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-//  PWA â€” service worker, FCM, install prompt, FAB, pull-to-refresh
+//  PWA — service worker, FCM, install prompt, FAB, pull-to-refresh
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
-// â”€â”€ Service worker registration â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Service worker registration ───────────────────────────────────────────
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/service-worker.js')
     .then(reg => console.log('[SW] Registered, scope:', reg.scope))
     .catch(err => console.warn('[SW] Registration failed:', err));
 }
 
-// â”€â”€ Sync mobile tab bar active state with showPage â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Sync mobile tab bar active state with showPage ────────────────────────
 (function patchShowPageForMobileTabs() {
   const orig = window.showPage;
   window.showPage = function(name) {
@@ -12897,7 +12897,7 @@ if ('serviceWorker' in navigator) {
   };
 })();
 
-// â”€â”€ Mobile: block designer, show message instead â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Mobile: block designer, show message instead ──────────────────────────
 (function patchOpenDesignerForMobile() {
   const orig = window.openDesigner;
   window.openDesigner = function(existingSlide, slideIdx) {
@@ -12909,7 +12909,7 @@ if ('serviceWorker' in navigator) {
   };
 })();
 
-// â”€â”€ FCM push notifications â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── FCM push notifications ────────────────────────────────────────────────
 // VAPID key: Firebase Console â†’ Project Settings â†’ Cloud Messaging â†’
 //            Web Push certificates â†’ Key pair
 const FCM_VAPID_KEY = 'YOUR_VAPID_KEY_FROM_FIREBASE_CONSOLE';
@@ -12953,7 +12953,7 @@ async function initFCM() {
 // Call initFCM once the user is signed in
 onAuthStateChanged(auth, user => { if (user) initFCM(); });
 
-// â”€â”€ Screen offline notifications (local, while admin is open) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Screen offline notifications (local, while admin is open) ─────────────
 const _notifiedOffline = new Set();
 
 function checkScreenOnline(screenData) {
@@ -12975,12 +12975,12 @@ function checkScreenOnline(screenData) {
       }
     }
   } else {
-    _notifiedOffline.delete(id); // back online â€” allow re-notification later
+    _notifiedOffline.delete(id); // back online — allow re-notification later
   }
 }
 window._checkScreenOnline = checkScreenOnline; // called by initScreensPage listener
 
-// â”€â”€ PWA install prompt â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── PWA install prompt ────────────────────────────────────────────────────
 let _deferredInstallPrompt = null;
 
 window.addEventListener('beforeinstallprompt', e => {
@@ -13015,7 +13015,7 @@ window.dismissInstallBanner = function() {
   localStorage.setItem('pwa-visits', v);
 })();
 
-// â”€â”€ Quick-upload FAB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Quick-upload FAB ──────────────────────────────────────────────────────
 window.openQuickUpload = function() {
   document.getElementById('quickUploadSheet').style.display = 'flex';
 };
@@ -13045,7 +13045,7 @@ document.getElementById('quickUploadInputCamera').addEventListener('change', fun
   _handleQuickUploadFile(this);
 });
 
-// â”€â”€ Pull-to-refresh (on the app-main scroll area) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Pull-to-refresh (on the app-main scroll area) ─────────────────────────
 (function setupPullToRefresh() {
   const appMain = document.querySelector('.app-main');
   if (!appMain) return;
@@ -13097,7 +13097,7 @@ document.getElementById('quickUploadInputCamera').addEventListener('change', fun
 
 </script>
 
-<!-- â”€â”€ Quick-upload bottom sheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+<!-- ── Quick-upload bottom sheet ─────────────────────────────────────────── -->
 <div id="quickUploadSheet" onclick="if(event.target===this)closeQuickUpload()">
   <div class="quick-sheet-inner">
     <h3>Quick Upload</h3>
@@ -13116,7 +13116,7 @@ document.getElementById('quickUploadInputCamera').addEventListener('change', fun
   </div>
 </div>
 
-<!-- â”€â”€ PWA install banner â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+<!-- ── PWA install banner ─────────────────────────────────────────────────── -->
 <div id="installBanner">
   <img src="/icons/icon.svg" width="40" height="40" alt="">
   <p>Install the app for quick access from your phone</p>
@@ -13124,13 +13124,13 @@ document.getElementById('quickUploadInputCamera').addEventListener('change', fun
   <button class="btn btn-secondary" onclick="dismissInstallBanner()" style="min-height:36px;padding:8px 10px;font-size:13px">âœ•</button>
 </div>
 
-<!-- â”€â”€ Pull-to-refresh indicator â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+<!-- ── Pull-to-refresh indicator ─────────────────────────────────────────── -->
 <div id="pullRefreshIndicator">
   <div class="ptr-spinner"></div>
   <span>Pull to refresh</span>
 </div>
 
-<!-- â”€â”€ Quick-upload FAB (mobile only) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+<!-- ── Quick-upload FAB (mobile only) ────────────────────────────────────── -->
 <button class="mobile-fab" onclick="openQuickUpload()" title="Quick upload" aria-label="Quick upload photo">
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
     <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
