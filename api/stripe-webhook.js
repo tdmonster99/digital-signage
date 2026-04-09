@@ -49,6 +49,13 @@ module.exports = async function handler(req, res) {
     process.env.STRIPE_WEBHOOK_SECRET_TEST,
   ].filter(Boolean);
 
+  console.log('Webhook secrets available:', secrets.length);
+
+  if (secrets.length === 0) {
+    console.error('No webhook secrets configured (STRIPE_WEBHOOK_SECRET / STRIPE_WEBHOOK_SECRET_TEST)');
+    return res.status(500).send('Webhook Error: No secrets configured');
+  }
+
   let lastErr;
   for (const secret of secrets) {
     try {
