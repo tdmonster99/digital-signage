@@ -3914,6 +3914,15 @@ body.role-editor .admin-action {
           </svg>
           Web Page
         </button>
+        <button class="add-media-row-btn" onclick="closeAddMediaModal();openGslidesModal()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="flex-shrink:0">
+            <rect x="3" y="2" width="18" height="20" rx="2" fill="#fbbc04"/>
+            <rect x="7" y="7" width="10" height="1.5" rx=".75" fill="#fff"/>
+            <rect x="7" y="10.5" width="10" height="1.5" rx=".75" fill="#fff"/>
+            <rect x="7" y="14" width="6" height="1.5" rx=".75" fill="#fff"/>
+          </svg>
+          Google Slides
+        </button>
         <button class="add-media-row-btn" onclick="closeAddMediaModal();addByUrl()">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0">
             <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
@@ -4533,6 +4542,64 @@ body.role-editor .admin-action {
     <div style="display:flex;gap:10px;justify-content:flex-end">
       <button class="btn btn-secondary" onclick="closeWebpageModal()">Cancel</button>
       <button class="btn btn-primary" onclick="saveWebpageSlide()">Add Slide</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Google Slides Import Modal ────────────────────────────────────────── -->
+<div id="gslidesModal" style="display:none;position:fixed;inset:0;z-index:300;align-items:center;justify-content:center;background:#00000088;backdrop-filter:blur(6px)">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;width:min(600px,94vw);box-shadow:0 8px 48px rgba(0,0,0,0.16);max-height:90vh;display:flex;flex-direction:column">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-shrink:0">
+      <div style="display:flex;align-items:center;gap:10px">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <rect x="2" y="1" width="20" height="22" rx="2" fill="#fbbc04"/>
+          <rect x="6" y="6" width="12" height="2" rx="1" fill="#fff"/>
+          <rect x="6" y="10" width="12" height="2" rx="1" fill="#fff"/>
+          <rect x="6" y="14" width="8" height="2" rx="1" fill="#fff"/>
+        </svg>
+        <h2 style="font-size:18px;font-weight:600;color:var(--text)">Import from Google Slides</h2>
+      </div>
+      <button class="gallery-close" onclick="closeGslidesModal()">✕</button>
+    </div>
+
+    <!-- Step 1: URL input + connect -->
+    <div id="gslidesStep1" style="flex-shrink:0">
+      <div class="field" style="margin-bottom:16px">
+        <label>Google Slides URL</label>
+        <input type="url" id="gslidesUrl" placeholder="https://docs.google.com/presentation/d/…" autocomplete="off"
+               style="width:100%;box-sizing:border-box">
+      </div>
+      <div id="gslidesAuthNote" style="font-size:13px;color:var(--text-muted);margin-bottom:16px">
+        You'll be asked to sign in with Google to access your presentation.
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button class="btn btn-secondary" onclick="closeGslidesModal()">Cancel</button>
+        <button class="btn btn-primary" id="gslidesConnectBtn" onclick="gslidesConnect()">Connect &amp; Preview</button>
+      </div>
+    </div>
+
+    <!-- Step 2: thumbnail grid + import -->
+    <div id="gslidesStep2" style="display:none;flex-direction:column;flex:1;min-height:0">
+      <div id="gslidesPresentationTitle" style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:12px;flex-shrink:0"></div>
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:10px;flex-shrink:0">
+        Select the slides to import:
+        <button onclick="gslidesSelectAll()" style="background:none;border:none;color:var(--primary);font-size:13px;cursor:pointer;padding:0 4px;text-decoration:underline">All</button> /
+        <button onclick="gslidesSelectNone()" style="background:none;border:none;color:var(--primary);font-size:13px;cursor:pointer;padding:0 4px;text-decoration:underline">None</button>
+      </div>
+      <div id="gslidesGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;overflow-y:auto;flex:1;padding-right:4px;margin-bottom:16px"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-shrink:0;gap:10px;flex-wrap:wrap">
+        <span id="gslidesSelectedCount" style="font-size:13px;color:var(--text-muted)">0 slides selected</span>
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-secondary" onclick="closeGslidesModal()">Cancel</button>
+          <button class="btn btn-primary" id="gslidesImportBtn" onclick="gslidesImport()">Import Selected</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading state -->
+    <div id="gslidesLoading" style="display:none;text-align:center;padding:32px 0;color:var(--text-muted);font-size:14px">
+      <div style="margin-bottom:12px">Importing slides…</div>
+      <div id="gslidesProgress" style="font-size:13px"></div>
     </div>
   </div>
 </div>
@@ -6860,6 +6927,180 @@ window.saveWebpageSlide = async function() {
   await pushToFirestore();
   closeWebpageModal();
   toast('Web page slide added ✓');
+};
+
+// ── Google Slides importer ────────────────────────────────────────────────
+let _gslidesData = null; // { title, slides: [{ url, name }] } from backend
+
+window.openGslidesModal = function() {
+  _gslidesData = null;
+  document.getElementById('gslidesUrl').value = '';
+  document.getElementById('gslidesAuthNote').style.display = '';
+  document.getElementById('gslidesStep1').style.display = '';
+  document.getElementById('gslidesStep2').style.display = 'none';
+  document.getElementById('gslidesLoading').style.display = 'none';
+  document.getElementById('gslidesGrid').innerHTML = '';
+  document.getElementById('gslidesModal').style.display = 'flex';
+};
+
+window.closeGslidesModal = function() {
+  document.getElementById('gslidesModal').style.display = 'none';
+};
+
+document.getElementById('gslidesModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('gslidesModal')) closeGslidesModal();
+});
+
+function parsePresentationId(input) {
+  input = input.trim();
+  const m = input.match(/\/presentation\/d\/([a-zA-Z0-9_-]+)/);
+  if (m) return m[1];
+  // Bare ID?
+  if (/^[a-zA-Z0-9_-]{20,}$/.test(input)) return input;
+  return null;
+}
+
+window.gslidesConnect = async function() {
+  const url = document.getElementById('gslidesUrl').value.trim();
+  const presentationId = parsePresentationId(url);
+  if (!presentationId) {
+    toast('Paste a valid Google Slides URL.', true);
+    return;
+  }
+
+  const btn = document.getElementById('gslidesConnectBtn');
+  btn.disabled = true;
+  btn.textContent = 'Connecting…';
+
+  try {
+    // Sign in with Google — request presentations.readonly scope
+    const provider = new GoogleAuthProvider();
+    provider.addScope('https://www.googleapis.com/auth/presentations.readonly');
+    provider.setCustomParameters({ prompt: 'select_account' });
+
+    let accessToken;
+    try {
+      const result = await signInWithPopup(auth, provider);
+      accessToken = GoogleAuthProvider.credentialFromResult(result)?.accessToken;
+    } catch (authErr) {
+      // If already signed in, try getting token from current user
+      if (authErr.code === 'auth/popup-closed-by-user' || authErr.code === 'auth/cancelled-popup-request') {
+        toast('Sign-in cancelled.', true);
+        return;
+      }
+      throw authErr;
+    }
+
+    if (!accessToken) {
+      toast('Could not get Google access token. Please try again.', true);
+      return;
+    }
+
+    // Show loading
+    document.getElementById('gslidesStep1').style.display = 'none';
+    document.getElementById('gslidesLoading').style.display = 'block';
+    document.getElementById('gslidesProgress').textContent = 'Fetching slides from Google…';
+
+    const resp = await fetch('/api/import-slides', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ accessToken, presentationId }),
+    });
+    const data = await resp.json();
+    if (!resp.ok) {
+      toast(data.error || 'Import failed.', true);
+      document.getElementById('gslidesStep1').style.display = '';
+      document.getElementById('gslidesLoading').style.display = 'none';
+      return;
+    }
+
+    _gslidesData = data;
+    gslidesRenderGrid(data);
+
+    document.getElementById('gslidesLoading').style.display = 'none';
+    document.getElementById('gslidesStep2').style.display = 'flex';
+    document.getElementById('gslidesPresentationTitle').textContent = data.title;
+
+  } catch (err) {
+    console.error('Google Slides import error:', err);
+    toast(err.message || 'Import failed.', true);
+    document.getElementById('gslidesStep1').style.display = '';
+    document.getElementById('gslidesLoading').style.display = 'none';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Connect & Preview';
+  }
+};
+
+function gslidesRenderGrid(data) {
+  const grid = document.getElementById('gslidesGrid');
+  grid.innerHTML = '';
+  data.slides.forEach((slide, i) => {
+    const item = document.createElement('label');
+    item.style.cssText = 'cursor:pointer;border:2px solid var(--border);border-radius:8px;overflow:hidden;display:flex;flex-direction:column;transition:border-color .15s';
+    item.innerHTML = `
+      <div style="position:relative">
+        <img src="${slide.url}" alt="${slide.name}" loading="lazy"
+             style="width:100%;aspect-ratio:16/9;object-fit:cover;display:block">
+        <input type="checkbox" data-index="${i}" checked
+               style="position:absolute;top:6px;left:6px;width:16px;height:16px;cursor:pointer;accent-color:var(--primary)"
+               onchange="gslidesUpdateCount()">
+      </div>
+      <div style="padding:5px 7px;font-size:12px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${slide.name}</div>
+    `;
+    item.querySelector('input').addEventListener('change', () => {
+      item.style.borderColor = item.querySelector('input').checked ? 'var(--primary)' : 'var(--border)';
+    });
+    item.style.borderColor = 'var(--primary)'; // all checked by default
+    grid.appendChild(item);
+  });
+  gslidesUpdateCount();
+}
+
+window.gslidesUpdateCount = function() {
+  const checked = document.querySelectorAll('#gslidesGrid input[type=checkbox]:checked').length;
+  const total   = document.querySelectorAll('#gslidesGrid input[type=checkbox]').length;
+  document.getElementById('gslidesSelectedCount').textContent =
+    `${checked} of ${total} slide${total !== 1 ? 's' : ''} selected`;
+  document.getElementById('gslidesImportBtn').disabled = checked === 0;
+};
+
+window.gslidesSelectAll = function() {
+  document.querySelectorAll('#gslidesGrid input[type=checkbox]').forEach(cb => {
+    cb.checked = true;
+    cb.closest('label').style.borderColor = 'var(--primary)';
+  });
+  gslidesUpdateCount();
+};
+
+window.gslidesSelectNone = function() {
+  document.querySelectorAll('#gslidesGrid input[type=checkbox]').forEach(cb => {
+    cb.checked = false;
+    cb.closest('label').style.borderColor = 'var(--border)';
+  });
+  gslidesUpdateCount();
+};
+
+window.gslidesImport = async function() {
+  if (!_gslidesData) return;
+  const selected = [...document.querySelectorAll('#gslidesGrid input[type=checkbox]:checked')]
+    .map(cb => parseInt(cb.dataset.index));
+  if (selected.length === 0) return;
+
+  document.getElementById('gslidesStep2').style.display = 'none';
+  document.getElementById('gslidesLoading').style.display = 'block';
+  document.getElementById('gslidesProgress').textContent = `Adding ${selected.length} slide${selected.length !== 1 ? 's' : ''}…`;
+
+  for (const i of selected) {
+    const s = _gslidesData.slides[i];
+    slides.push({ id: crypto.randomUUID(), url: s.url, name: s.name, active: true });
+  }
+
+  renderGrid();
+  updateCount();
+  await pushToFirestore();
+  closeGslidesModal();
+  toast(`${selected.length} slide${selected.length !== 1 ? 's' : ''} imported ✓`);
 };
 
 // ── Add Media modal ───────────────────────────────────────────────────────
