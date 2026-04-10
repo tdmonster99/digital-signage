@@ -359,6 +359,9 @@ document.getElementById('googleBtn').onclick = async () => {
 // Microsoft
 document.getElementById('microsoftBtn').onclick = async () => {
   const provider = new OAuthProvider('microsoft.com');
+  provider.addScope('openid');
+  provider.addScope('profile');
+  provider.addScope('email');
   provider.setCustomParameters({ prompt: 'select_account' });
   try {
     await signInWithPopup(auth, provider);
