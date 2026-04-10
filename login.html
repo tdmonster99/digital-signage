@@ -314,7 +314,7 @@
 <script type="module">
 import { initializeApp }   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getAuth, GoogleAuthProvider, OAuthProvider,
-         signInWithPopup, onAuthStateChanged,
+         signInWithPopup, onAuthStateChanged, linkWithCredential,
          createUserWithEmailAndPassword, signInWithEmailAndPassword,
          sendPasswordResetEmail }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
@@ -356,8 +356,24 @@ document.getElementById('googleBtn').onclick = async () => {
 document.getElementById('microsoftBtn').onclick = async () => {
   const provider = new OAuthProvider('microsoft.com');
   provider.setCustomParameters({ prompt: 'select_account' });
-  try { await signInWithPopup(auth, provider); }
-  catch(e) { document.getElementById('authError').textContent = e.message; }
+  try {
+    await signInWithPopup(auth, provider);
+  } catch(e) {
+    if (e.code === 'auth/account-exists-with-different-credential') {
+      // Account exists with Google — sign in with Google then link Microsoft
+      const pendingCred = OAuthProvider.credentialFromError(e);
+      const googleProvider = new GoogleAuthProvider();
+      googleProvider.setCustomParameters({ login_hint: e.customData?.email, prompt: 'select_account' });
+      try {
+        const result = await signInWithPopup(auth, googleProvider);
+        if (pendingCred) await linkWithCredential(result.user, pendingCred);
+      } catch(e2) {
+        document.getElementById('authError').textContent = e2.message;
+      }
+    } else {
+      document.getElementById('authError').textContent = e.message;
+    }
+  }
 };
 
 // Email sign in

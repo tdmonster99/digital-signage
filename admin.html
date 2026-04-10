@@ -5700,7 +5700,7 @@ import { getFirestore, doc, collection, setDoc, onSnapshot, getDoc, deleteDoc,
          addDoc, writeBatch, orderBy, limit }
                                        from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, GoogleAuthProvider, OAuthProvider,
-         signInWithPopup, onAuthStateChanged, signOut,
+         signInWithPopup, onAuthStateChanged, signOut, linkWithCredential,
          createUserWithEmailAndPassword, signInWithEmailAndPassword,
          sendPasswordResetEmail }
                                        from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -5808,8 +5808,24 @@ window.signInWithGoogle = async () => {
 window.signInWithMicrosoft = async () => {
   const provider = new OAuthProvider('microsoft.com');
   provider.setCustomParameters({ prompt: 'select_account' });
-  try { await signInWithPopup(auth, provider); closeSignInModal(); }
-  catch(e) { document.getElementById('authError').textContent = e.message; }
+  try {
+    await signInWithPopup(auth, provider); closeSignInModal();
+  } catch(e) {
+    if (e.code === 'auth/account-exists-with-different-credential') {
+      const pendingCred = OAuthProvider.credentialFromError(e);
+      const googleProvider = new GoogleAuthProvider();
+      googleProvider.setCustomParameters({ login_hint: e.customData?.email, prompt: 'select_account' });
+      try {
+        const result = await signInWithPopup(auth, googleProvider);
+        if (pendingCred) await linkWithCredential(result.user, pendingCred);
+        closeSignInModal();
+      } catch(e2) {
+        document.getElementById('authError').textContent = e2.message;
+      }
+    } else {
+      document.getElementById('authError').textContent = e.message;
+    }
+  }
 };
 
 window.signInWithEmail = async () => {
