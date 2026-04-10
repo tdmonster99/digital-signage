@@ -3022,7 +3022,7 @@ body.role-editor .admin-action {
           </select>
         </div>
         <div class="preview-wrap">
-          <iframe id="previewFrame" src="display.html?slideshow=main"></iframe>
+          <iframe id="previewFrame" src="about:blank"></iframe>
         </div>
       </div>
 
@@ -5975,7 +5975,7 @@ async function createOrg(user) {
     name:       (user.displayName || user.email.split('@')[0]) + "'s Organization",
     ownerId:    user.uid,
     members:    [{ uid: user.uid, email: user.email, displayName: user.displayName || '', role: 'admin', addedAt: new Date().toISOString() }],
-    slideshows: [{ id: 'main', name: 'Main Slideshow' }],
+    slideshows: [{ id: orgId + '_main', name: 'Main Slideshow' }],
     createdAt:  new Date().toISOString(),
     subscription: { plan: 'free', status: 'active', ...PLAN_LIMITS.free },
   };
@@ -5998,13 +5998,6 @@ async function createOrg(user) {
     console.warn('Could not claim pending subscription:', e.message);
   }
 
-  // Migrate existing 'main' slideshow if it exists
-  try {
-    const mainSnap = await getDoc(doc(db, 'slideshows', 'main'));
-    if (mainSnap.exists() && !mainSnap.data().orgId) {
-      await updateDoc(doc(db, 'slideshows', 'main'), { orgId });
-    }
-  } catch(_) {}
 
   currentOrg = { id: orgId, ...orgData };
   // Will show onboarding after loadShowsFromOrg + loadBrandKit complete
@@ -11646,6 +11639,8 @@ function syncPreviewSelect() {
     if (id === current) opt.selected = true;
     sel.appendChild(opt);
   });
+  // Auto-load the first show in the preview if nothing is selected yet
+  if (!current && sel.options.length) updatePreviewFrame();
 }
 
 // ── Screens page ───────────────────────────────────────────────────────────
@@ -12903,8 +12898,7 @@ document.addEventListener('mousedown', e => {
 // Pre-load favorite fonts when the page loads
 preloadFavoriteFonts();
 
-// Init
-listenToShow("main");
+// Show list is initialised by loadShowsFromOrg() after auth resolves
 
 // ── Analytics ────────────────────────────────────────────────────────────────
 let analyticsDays = 7;
