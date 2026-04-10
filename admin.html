@@ -7223,18 +7223,15 @@ window.gslidesImport = async function() {
   document.getElementById('gslidesProgress').textContent = `Adding ${selected.length} slide${selected.length !== 1 ? 's' : ''}…`;
 
   const count = selected.length;
-  try {
-    for (const i of selected) {
-      const s = _gslidesData.slides[i];
-      slides.push({ id: crypto.randomUUID(), url: s.url, name: s.name, active: true });
-    }
-    renderGrid();
-    updateCount();
-    await pushToFirestore();
-  } finally {
-    closeGslidesModal();
-    toast(`${count} slide${count !== 1 ? 's' : ''} imported ✓`);
+  for (const i of selected) {
+    const s = _gslidesData.slides[i];
+    slides.push({ id: crypto.randomUUID(), url: s.url, name: s.name, active: true });
   }
+  renderGrid();
+  updateCount();
+  closeGslidesModal();
+  toast(`${count} slide${count !== 1 ? 's' : ''} imported ✓`);
+  pushToFirestore(); // fire-and-forget — slides already rendered
 };
 
 // ── Add Media modal ───────────────────────────────────────────────────────
