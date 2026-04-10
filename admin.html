@@ -6638,7 +6638,8 @@ function makeShowItem(s) {
     document.querySelectorAll('.show-item').forEach(el => el.classList.remove('active'));
     item.classList.add('active');
     slides = [];
-    listenToShow(s.id, s.name);
+    const currentName = item.querySelector('.show-item-name')?.textContent || s.id;
+    listenToShow(s.id, currentName);
   });
   return item;
 }
