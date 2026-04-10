@@ -5755,13 +5755,7 @@ onAuthStateChanged(auth, async user => {
     btn.textContent    = "Sign Out";
     await initUserAndOrg(user);
   } else {
-    currentUser = null; currentOrgId = null; currentOrg = null; currentRole = 'admin';
-    badge.textContent  = "Offline";
-    badge.className    = "live-badge offline";
-    email.textContent  = "";
-    btn.textContent    = "Sign In";
-    document.getElementById('roleBadge').style.display = 'none';
-    document.body.className = document.body.className.replace(/role-\w+/g, '').trim();
+    window.location.replace('/login');
   }
 });
 
