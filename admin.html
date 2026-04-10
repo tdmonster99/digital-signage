@@ -5700,8 +5700,8 @@ import { getFirestore, doc, collection, setDoc, onSnapshot, getDoc, deleteDoc,
          addDoc, writeBatch, orderBy, limit }
                                        from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, GoogleAuthProvider, OAuthProvider,
-         signInWithPopup, signInWithRedirect, getRedirectResult,
-         onAuthStateChanged, signOut, linkWithCredential,
+         signInWithPopup, signInWithRedirect,
+         onAuthStateChanged, signOut,
          createUserWithEmailAndPassword, signInWithEmailAndPassword,
          sendPasswordResetEmail }
                                        from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -5726,19 +5726,6 @@ const app  = initializeApp(firebaseConfig);
 const db   = getFirestore(app);
 const auth = getAuth(app);
 
-// Handle Google redirect after Microsoft account-linking flow
-getRedirectResult(auth).then(async result => {
-  if (!result) return;
-  const stored = sessionStorage.getItem('pendingMsCred');
-  if (stored) {
-    try {
-      const { idToken, accessToken } = JSON.parse(stored);
-      const cred = OAuthProvider.credential({ idToken, accessToken, providerId: 'microsoft.com' });
-      await linkWithCredential(result.user, cred);
-    } catch(_) { /* credential may have expired — sign-in still succeeded */ }
-    sessionStorage.removeItem('pendingMsCred');
-  }
-}).catch(e => console.warn('Redirect result error:', e.message));
 
 let currentShowId = "main";
 let slides        = [];
@@ -5827,13 +5814,7 @@ window.signInWithMicrosoft = async () => {
     await signInWithPopup(auth, provider); closeSignInModal();
   } catch(e) {
     if (e.code === 'auth/account-exists-with-different-credential') {
-      const pendingCred = OAuthProvider.credentialFromError(e);
-      if (pendingCred) {
-        sessionStorage.setItem('pendingMsCred', JSON.stringify({
-          idToken: pendingCred.idToken,
-          accessToken: pendingCred.accessToken,
-        }));
-      }
+      // Same email exists with Google — redirect to Google sign-in
       const googleProvider = new GoogleAuthProvider();
       googleProvider.setCustomParameters({ login_hint: e.customData?.email });
       await signInWithRedirect(auth, googleProvider);
