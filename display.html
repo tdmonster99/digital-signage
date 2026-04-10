@@ -33,7 +33,12 @@
   const urlParams = new URLSearchParams(window.location.search);
   const previewId = urlParams.get("slideshow");
 
-  let screenId = localStorage.getItem("signage-screen-id"); // may be null if unregistered
+  // ?slot=2 (or any value) uses a separate localStorage key so two windows on the
+  // same computer can each maintain an independent screen identity and pairing.
+  const screenSlot = urlParams.get("slot") || "";
+  const STORAGE_KEY = screenSlot ? `signage-screen-id-${screenSlot}` : "signage-screen-id";
+
+  let screenId = localStorage.getItem(STORAGE_KEY); // may be null if unregistered
 
   // ── Offline cache ─────────────────────────────────────────────────────────
   function saveCache(id, data) {
@@ -760,7 +765,7 @@
   // ── Screen registration & slideshow assignment ────────────────────────────
   async function startNormalMode(resolvedScreenId) {
     screenId = resolvedScreenId;
-    localStorage.setItem("signage-screen-id", screenId);
+    localStorage.setItem(STORAGE_KEY, screenId);
 
     let currentSlideshowId = null;
     const screenRef = doc(db, "screens", screenId);
@@ -832,7 +837,7 @@
   async function initScreen() {
     // ?reset — clear local identity and show pairing screen
     if (urlParams.has("reset")) {
-      localStorage.removeItem("signage-screen-id");
+      localStorage.removeItem(STORAGE_KEY);
       window.history.replaceState({}, "", window.location.pathname);
       showReadyToConnect();
       return;
@@ -886,7 +891,7 @@
         // Admin claimed the code and assigned a screenId
         if (data.status === "paired" && data.screenId) {
           clearInterval(pollInterval);
-          localStorage.setItem("signage-screen-id", data.screenId);
+          localStorage.setItem(STORAGE_KEY, data.screenId);
           screenId = data.screenId;
           pairEl.style.transition = "opacity 0.8s";
           pairEl.style.opacity = "0";
