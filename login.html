@@ -331,34 +331,8 @@ const app  = initializeApp({
 });
 const auth = getAuth(app);
 
-// After Google redirect, link any pending Microsoft credential
-getRedirectResult(auth).then(async result => {
-  if (!result?.user) return;
-  const stored = sessionStorage.getItem('pendingMsCred');
-  if (!stored) return;
-  try {
-    const d = JSON.parse(stored);
-    const msCred = new OAuthProvider(d.providerId).credential({
-      idToken: d.idToken, accessToken: d.accessToken,
-    });
-    await linkWithCredential(result.user, msCred);
-  } catch(e) {
-    if (e.code !== 'auth/provider-already-linked') console.warn('Linking failed:', e.message);
-  } finally {
-    sessionStorage.removeItem('pendingMsCred');
-    sessionStorage.removeItem('pendingMsRedirect');
-  }
-}).catch(e => console.warn('Redirect sign-in error:', e.message));
-
-// If redirected here with a pending MS credential, auto-trigger Google sign-in to link accounts
-const _pendingMs = sessionStorage.getItem('pendingMsCred');
-if (_pendingMs && !sessionStorage.getItem('pendingMsRedirect')) {
-  const _d = JSON.parse(_pendingMs);
-  const _gp = new GoogleAuthProvider();
-  if (_d.email) _gp.setCustomParameters({ login_hint: _d.email, prompt: 'select_account' });
-  sessionStorage.setItem('pendingMsRedirect', '1');
-  signInWithRedirect(auth, _gp);
-}
+// Complete any pending redirect sign-in
+getRedirectResult(auth).catch(e => console.warn('Redirect sign-in error:', e.message));
 
 // Redirect to app when signed in (handles both popup and redirect flows)
 onAuthStateChanged(auth, user => { if (user) window.location.replace('/'); });
@@ -394,18 +368,7 @@ document.getElementById('microsoftBtn').onclick = async () => {
     await signInWithPopup(auth, provider);
   } catch(e) {
     if (e.code === 'auth/account-exists-with-different-credential') {
-      // Store MS credential, then sign in with Google to link accounts
-      const msCred = OAuthProvider.credentialFromError(e);
-      sessionStorage.setItem('pendingMsCred', JSON.stringify({
-        providerId: msCred?.providerId || 'microsoft.com',
-        idToken: msCred?.idToken,
-        accessToken: msCred?.accessToken,
-        email: e.customData?.email,
-      }));
-      const googleProvider = new GoogleAuthProvider();
-      if (e.customData?.email) googleProvider.setCustomParameters({ login_hint: e.customData.email, prompt: 'select_account' });
-      sessionStorage.setItem('pendingMsRedirect', '1');
-      await signInWithRedirect(auth, googleProvider);
+      document.getElementById('authError').textContent = 'This email is already registered with Google. Please sign in with Google instead.';
     } else {
       document.getElementById('authError').textContent = e.message;
     }
