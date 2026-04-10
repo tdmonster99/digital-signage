@@ -5817,10 +5817,8 @@ window.signInWithMicrosoft = async () => {
     await signInWithPopup(auth, provider); closeSignInModal();
   } catch(e) {
     if (e.code === 'auth/account-exists-with-different-credential') {
-      // Same email exists with Google — redirect to Google sign-in
-      const googleProvider = new GoogleAuthProvider();
-      googleProvider.setCustomParameters({ login_hint: e.customData?.email });
-      await signInWithRedirect(auth, googleProvider);
+      // Redirect to login page to handle Google sign-in via redirect flow
+      window.location.href = '/login';
     } else {
       document.getElementById('authError').textContent = e.message;
     }
