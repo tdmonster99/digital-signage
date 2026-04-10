@@ -5793,6 +5793,10 @@ function showResetView() {
   document.getElementById('resetView').style.display = '';
   document.getElementById('resetError').textContent = '';
 }
+// Expose view-switching functions globally for inline onclick handlers
+window.showSignInView    = showSignInView;
+window.showRegisterView  = showRegisterView;
+window.showResetView     = showResetView;
 
 window.signInWithGoogle = async () => {
   const provider = new GoogleAuthProvider();
