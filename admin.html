@@ -5812,16 +5812,8 @@ window.signInWithMicrosoft = async () => {
     await signInWithPopup(auth, provider); closeSignInModal();
   } catch(e) {
     if (e.code === 'auth/account-exists-with-different-credential') {
-      const pendingCred = OAuthProvider.credentialFromError(e);
-      const googleProvider = new GoogleAuthProvider();
-      googleProvider.setCustomParameters({ login_hint: e.customData?.email, prompt: 'select_account' });
-      try {
-        const result = await signInWithPopup(auth, googleProvider);
-        if (pendingCred) await linkWithCredential(result.user, pendingCred);
-        closeSignInModal();
-      } catch(e2) {
-        document.getElementById('authError').textContent = e2.message;
-      }
+      document.getElementById('authError').textContent =
+        'An account already exists with this email. Please sign in with Google instead.';
     } else {
       document.getElementById('authError').textContent = e.message;
     }
