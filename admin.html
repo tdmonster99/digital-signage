@@ -5700,7 +5700,7 @@ import { getFirestore, doc, collection, setDoc, onSnapshot, getDoc, deleteDoc,
          addDoc, writeBatch, orderBy, limit }
                                        from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, GoogleAuthProvider, OAuthProvider,
-         signInWithPopup, signInWithRedirect,
+         signInWithPopup, signInWithRedirect, getRedirectResult,
          onAuthStateChanged, signOut,
          createUserWithEmailAndPassword, signInWithEmailAndPassword,
          sendPasswordResetEmail }
@@ -5725,6 +5725,9 @@ const firebaseConfig = {
 const app  = initializeApp(firebaseConfig);
 const db   = getFirestore(app);
 const auth = getAuth(app);
+
+// Complete any pending redirect sign-in (required for signInWithRedirect to work)
+getRedirectResult(auth).catch(e => console.warn('Redirect sign-in error:', e.message));
 
 
 let currentShowId = "main";

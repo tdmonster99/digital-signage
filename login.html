@@ -314,7 +314,7 @@
 <script type="module">
 import { initializeApp }   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getAuth, GoogleAuthProvider, OAuthProvider,
-         signInWithPopup, signInWithRedirect,
+         signInWithPopup, signInWithRedirect, getRedirectResult,
          onAuthStateChanged,
          createUserWithEmailAndPassword, signInWithEmailAndPassword,
          sendPasswordResetEmail }
@@ -329,6 +329,9 @@ const app  = initializeApp({
   appId:             "1:1004548485661:web:b3ab204d94943716674cf4"
 });
 const auth = getAuth(app);
+
+// Complete any pending redirect sign-in (required for signInWithRedirect to work)
+getRedirectResult(auth).catch(e => console.warn('Redirect sign-in error:', e.message));
 
 // Redirect to app when signed in (handles both popup and redirect flows)
 onAuthStateChanged(auth, user => { if (user) window.location.replace('/'); });
