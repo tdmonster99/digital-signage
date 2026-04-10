@@ -351,11 +351,9 @@ document.getElementById('toReset').onclick     = () => show('resetView');
 
 function showProviderConflict() {
   const errEl = document.getElementById('authError');
-  const canvas = document.createElement('canvas');
-  canvas.width = 16; canvas.height = 16;
-  canvas.style.cssText = 'width:72px;height:72px;image-rendering:pixelated;image-rendering:crisp-edges;display:block;margin:8px auto 12px';
-  const ctx = canvas.getContext('2d');
-  ctx.font = '14px serif'; ctx.fillText('😭', 0, 14);
+  const canvas = document.createElement('div');
+  canvas.style.cssText = 'font-family:monospace;font-size:18px;font-weight:700;text-align:center;margin:8px auto 12px;color:#1a2e44;letter-spacing:1px';
+  canvas.textContent = '¯\\_(ツ)_/¯';
 
   const msg = document.createElement('p');
   msg.style.cssText = 'font-size:13px;color:#6b7280;margin:0 0 12px;line-height:1.5;text-align:center';
