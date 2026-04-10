@@ -5820,7 +5820,14 @@ window.signInWithMicrosoft = async () => {
     await signInWithPopup(auth, provider); closeSignInModal();
   } catch(e) {
     if (e.code === 'auth/account-exists-with-different-credential') {
-      // Redirect to login page to handle Google sign-in via redirect flow
+      // Store MS credential for linking on /login, then redirect there
+      const msCred = OAuthProvider.credentialFromError(e);
+      sessionStorage.setItem('pendingMsCred', JSON.stringify({
+        providerId: msCred?.providerId || 'microsoft.com',
+        idToken: msCred?.idToken,
+        accessToken: msCred?.accessToken,
+        email: e.customData?.email,
+      }));
       window.location.href = '/login';
     } else {
       document.getElementById('authError').textContent = e.message;
