@@ -1014,6 +1014,33 @@ section.content {
 .icon-btn.toggle:hover { background: #2a2a2a; }
 .icon-btn.dup   { background: #111111dd; }
 .icon-btn.dup:hover   { background: #2a5298dd; }
+.icon-btn.preview { background: #111111dd; }
+.icon-btn.preview:hover { background: #0f7a55dd; }
+
+/* ── Slide preview lightbox ──────────────────────────────────────────────── */
+#slidePreviewModal {
+  display: none; position: fixed; inset: 0; z-index: 900;
+  background: rgba(0,0,0,0.88); backdrop-filter: blur(6px);
+  align-items: center; justify-content: center; flex-direction: column;
+  gap: 14px; padding: 24px;
+}
+#slidePreviewModal.open { display: flex; }
+#slidePreviewImg {
+  max-width: 92vw; max-height: 82vh;
+  border-radius: 10px; box-shadow: 0 8px 48px rgba(0,0,0,0.5);
+  object-fit: contain;
+}
+#slidePreviewName {
+  color: rgba(255,255,255,0.75); font-size: 14px; font-weight: 500;
+}
+#slidePreviewClose {
+  position: fixed; top: 20px; right: 24px;
+  background: rgba(255,255,255,0.12); border: none; border-radius: 50%;
+  width: 36px; height: 36px; cursor: pointer; color: #fff; font-size: 18px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .15s;
+}
+#slidePreviewClose:hover { background: rgba(255,255,255,0.22); }
 
 .slide-card.disabled { opacity: 0.4; }
 .slide-card.disabled::after {
@@ -4623,6 +4650,13 @@ body.role-editor .admin-action {
 </div>
 
 <!-- ── Slide Designer Modal ──────────────────────────────────────────────── -->
+<!-- ── Slide Preview Lightbox ─────────────────────────────────────────────── -->
+<div id="slidePreviewModal" onclick="if(event.target===this)closeSlidePreview()">
+  <button id="slidePreviewClose" onclick="closeSlidePreview()" aria-label="Close preview">✕</button>
+  <img id="slidePreviewImg" src="" alt="">
+  <div id="slidePreviewName"></div>
+</div>
+
 <!-- ── TV Preview Overlay ──────────────────────────────────────────────────── -->
 <div id="tvPreviewOverlay">
   <div class="tv-bezel" id="tvBezelFrame">
@@ -6947,6 +6981,29 @@ window.saveWebpageSlide = async function() {
   toast('Web page slide added ✓');
 };
 
+// ── Slide preview lightbox ───────────────────────────────────────────────
+window.openSlidePreview = function(idx) {
+  const s = slides[idx];
+  if (!s) return;
+  const url = s.type === 'designed' ? s.thumbnailUrl
+            : s.type === 'youtube'  ? `https://img.youtube.com/vi/${s.videoId}/maxresdefault.jpg`
+            : (s.type === 'webpage' || s.type === 'video' || s.type === 'clock') ? null
+            : s.url;
+  if (!url) return;
+  document.getElementById('slidePreviewImg').src = url;
+  document.getElementById('slidePreviewName').textContent = s.name || '';
+  document.getElementById('slidePreviewModal').classList.add('open');
+};
+
+window.closeSlidePreview = function() {
+  document.getElementById('slidePreviewModal').classList.remove('open');
+  document.getElementById('slidePreviewImg').src = '';
+};
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeSlidePreview();
+});
+
 // ── Google Slides importer ────────────────────────────────────────────────
 let _gslidesData  = null;  // { title, slides: [{ url, name }] } from backend
 let _gsToken      = null;  // OAuth access token (drive.readonly + presentations.readonly)
@@ -7948,6 +8005,11 @@ function renderGrid() {
       ${badge}
       <div class="slide-actions">
         ${editBtn}
+        ${thumbUrl ? `<button class="icon-btn preview" title="Preview" onclick="openSlidePreview(${i})">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round">
+            <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
+          </svg>
+        </button>` : ''}
         <button class="icon-btn dup" title="Duplicate" onclick="duplicateSlide(${i})">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2">
             <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
