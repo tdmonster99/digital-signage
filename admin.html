@@ -728,6 +728,18 @@ section.content {
 .btn-secondary:hover { border-color: var(--muted); }
 .btn-danger { background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger-border); }
 .btn-danger:hover { filter: brightness(0.96); }
+.btn-push { background: #e8590c; color: #fff; border: 1px solid #c44a08; }
+.btn-push:hover { background: #d44f0a; }
+.btn-push:disabled { opacity: 0.5; cursor: not-allowed; }
+.push-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: rgba(232,89,12,.15); color: #e8590c;
+  border: 1px solid rgba(232,89,12,.35);
+  border-radius: 20px; font-size: 11px; font-weight: 600;
+  padding: 3px 10px; white-space: nowrap;
+}
+.push-badge::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: #e8590c; animation: push-pulse 1.4s ease-in-out infinite; }
+@keyframes push-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
 
 /* Media source picker buttons (My Device / Google Drive / OneDrive / Dropbox) */
 .media-source-group { display: flex; gap: 8px; align-items: stretch; }
@@ -3164,6 +3176,13 @@ body.role-editor .admin-action {
           </button>
         </div>
         <div class="toolbar-right">
+          <span class="push-badge" id="unpublishedBadge" style="display:none">Unpublished changes</span>
+          <button class="btn btn-push" id="btnPush" onclick="publishToScreens()" style="display:none">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="22 2 11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            </svg>
+            Push to Screens
+          </button>
           <button class="btn btn-danger" onclick="clearAll()" id="btnClear" style="display:none">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
               <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
@@ -3186,6 +3205,13 @@ body.role-editor .admin-action {
                   <line x1="12" y1="12" x2="12" y2="17"/><line x1="9.5" y1="14.5" x2="14.5" y2="14.5"/>
                 </svg>
                 Create Group
+              </button>
+              <div class="toolbar-overflow-sep" id="btnPushSep" style="display:none"></div>
+              <button class="toolbar-overflow-item" id="btnPushMobile" onclick="closeToolbarOverflow();publishToScreens()" style="display:none; color:#e8590c">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="22 2 11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                </svg>
+                Push to Screens
               </button>
               <div class="toolbar-overflow-sep" id="btnClearSep" style="display:none"></div>
               <button class="toolbar-overflow-item danger" id="btnClearMobile" onclick="closeToolbarOverflow();clearAll()" style="display:none">
@@ -5990,7 +6016,7 @@ body.role-editor .admin-action {
 import { initializeApp }              from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, doc, collection, setDoc, onSnapshot, getDoc, deleteDoc,
          updateDoc, arrayUnion, arrayRemove, query, where, getDocs,
-         addDoc, writeBatch, orderBy, limit }
+         addDoc, writeBatch, orderBy, limit, deleteField }
                                        from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, GoogleAuthProvider, OAuthProvider,
          signInWithPopup, signInWithRedirect, getRedirectResult,
@@ -6974,6 +7000,16 @@ window.startTitleRename = function() {
   input.addEventListener('keydown', e => { if (e.key === 'Enter') input.blur(); if (e.key === 'Escape') { input.value = original; input.blur(); } });
 };
 
+function setPushVisible(visible) {
+  const v = visible ? '' : 'none';
+  document.getElementById("btnPush").style.display          = v;
+  document.getElementById("unpublishedBadge").style.display = v;
+  const mob = document.getElementById("btnPushMobile");
+  const sep = document.getElementById("btnPushSep");
+  if (mob) mob.style.display = v;
+  if (sep) sep.style.display = v;
+}
+
 function listenToShow(id, name) {
   if (unsubscribe) unsubscribe();
   currentShowId = id;
@@ -6983,12 +7019,17 @@ function listenToShow(id, name) {
   unsubscribe = onSnapshot(doc(db, "slideshows", id), snap => {
     if (snap.exists()) {
       const data = snap.data();
-      slides = data.slides || [];
-      document.getElementById("defaultDwell").value  = data.defaultDwell  ?? 6;
-      document.getElementById("fitMode").value       = data.fitMode       ?? "contain";
-      document.getElementById("transition").value    = data.transition    ?? "crossfade";
+      // Load draft if present, fall back to published slides (backward compat)
+      slides = data.draftSlides ?? data.slides ?? [];
+      document.getElementById("defaultDwell").value  = data.draftDwell      ?? data.defaultDwell  ?? 6;
+      document.getElementById("fitMode").value       = data.draftFitMode    ?? data.fitMode       ?? "contain";
+      document.getElementById("transition").value    = data.draftTransition ?? data.transition    ?? "crossfade";
+      // Show push button whenever there are unpublished changes
+      const hasUnpublished = data.draftSlides !== undefined;
+      setPushVisible(hasUnpublished);
     } else {
       slides = [];
+      setPushVisible(false);
     }
     renderGrid();
     updateCount();
@@ -7004,16 +7045,52 @@ async function pushToFirestore() {
   const transition = document.getElementById("transition").value;
 
   await setDoc(doc(db, "slideshows", currentShowId), {
-    slides,
-    defaultDwell: dwell,
-    fitMode:      fit,
-    transition,
-    updatedAt:    new Date().toISOString(),
+    draftSlides:     slides,
+    draftDwell:      dwell,
+    draftFitMode:    fit,
+    draftTransition: transition,
+    draftUpdatedAt:  new Date().toISOString(),
     ...(currentOrgId && { orgId: currentOrgId }),
-    ...(currentUser  && { updatedBy: { uid: currentUser.uid, email: currentUser.email } }),
-  });
-  logActivity(`Slideshow "${currentShowId}" saved (${slides.length} slide${slides.length !== 1 ? 's' : ''})`);
-  toast("Saved — displays updating live ✓");
+    ...(currentUser  && { draftBy: { uid: currentUser.uid, email: currentUser.email } }),
+  }, { merge: true });
+  logActivity(`Slideshow "${currentShowId}" draft saved (${slides.length} slide${slides.length !== 1 ? 's' : ''})`);
+  toast("Draft saved ✓");
+  setPushVisible(true);
+}
+
+window.publishToScreens = async function publishToScreens() {
+  if (!auth.currentUser) { toast("Sign in first.", true); return; }
+  const btn = document.getElementById("btnPush");
+  btn.disabled = true;
+  try {
+    const dwell      = parseInt(document.getElementById("defaultDwell").value) || 6;
+    const fit        = document.getElementById("fitMode").value;
+    const transition = document.getElementById("transition").value;
+
+    await setDoc(doc(db, "slideshows", currentShowId), {
+      slides,
+      defaultDwell: dwell,
+      fitMode:      fit,
+      transition,
+      publishedAt:  new Date().toISOString(),
+      // Clear draft fields
+      draftSlides:     deleteField(),
+      draftDwell:      deleteField(),
+      draftFitMode:    deleteField(),
+      draftTransition: deleteField(),
+      draftUpdatedAt:  deleteField(),
+      draftBy:         deleteField(),
+      ...(currentOrgId && { orgId: currentOrgId }),
+      ...(currentUser  && { publishedBy: { uid: currentUser.uid, email: currentUser.email } }),
+    }, { merge: true });
+    logActivity(`Slideshow "${currentShowId}" pushed to screens (${slides.length} slide${slides.length !== 1 ? 's' : ''})`);
+    toast("Pushed to screens ✓");
+    setPushVisible(false);
+  } catch(e) {
+    toast("Push failed: " + e.message, true);
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 window.saveSettings = () => pushToFirestore();
