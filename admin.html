@@ -8147,9 +8147,17 @@ window.duplicateSlide = function(idx) {
 };
 
 function updateCount() {
-  const n  = slides.filter(s => s.active !== false).length;
+  const n   = slides.filter(s => s.active !== false).length;
+  const txt = n + " slide" + (n !== 1 ? "s" : "");
+  // Update the static count element (initial show item)
   const el = document.getElementById("slideCount");
-  if (el) el.textContent = n + " slide" + (n !== 1 ? "s" : "");
+  if (el) el.textContent = txt;
+  // Update the active show item's count span (dynamically created items)
+  const activeItem = document.querySelector('.show-item.active');
+  if (activeItem) {
+    const countSpan = activeItem.querySelector('.show-item-count');
+    if (countSpan) countSpan.textContent = txt;
+  }
 }
 
 // ── New slideshow ─────────────────────────────────────────────────────────
