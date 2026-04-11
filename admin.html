@@ -2050,75 +2050,90 @@ section.content {
 .font-option.selected { background: var(--accent-bg); color: var(--accent); }
 
 /* ── Layers Panel ─────────────────────────────────────────────────────────── */
-.designer-layers {
-  height: 58px; flex-shrink: 0;
-  background: var(--surface);
-  border-top: 1px solid var(--border);
-  display: flex; align-items: center;
-  padding: 0 12px;
-  gap: 6px;
-  overflow-x: auto;
-  overflow-y: hidden;
+/* Bottom layers strip hidden — layers now live in the right panel */
+.designer-layers { display: none; }
+
+/* ── Designer panel tabs (Properties / Layers) ──────────────────────────── */
+.designer-panel-tabs {
+  display: flex; flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+  margin: -16px -16px 0; /* bleed to panel edges */
 }
-.designer-layers::-webkit-scrollbar { height: 4px; }
-.designer-layers::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-.layers-label {
-  font-size: 10px; font-weight: 600; letter-spacing: 0.1em;
-  text-transform: uppercase; color: var(--muted);
-  flex-shrink: 0; margin-right: 4px;
+.designer-panel-tab {
+  flex: 1; padding: 9px 4px; font-size: 12px; font-weight: 600;
+  background: none; border: none; cursor: pointer;
+  color: var(--muted); border-bottom: 2px solid transparent;
+  transition: color .15s, border-color .15s;
+  letter-spacing: .03em;
 }
-.layer-chip {
+.designer-panel-tab:hover { color: var(--text); }
+.designer-panel-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* ── Vertical layers list ───────────────────────────────────────────────── */
+#layersContent {
+  flex: 1; overflow-y: auto; display: none;
+  flex-direction: column; gap: 1px;
+  margin: 8px -16px 0; /* bleed to panel edges */
+}
+#layersContent.visible { display: flex; }
+.layer-row {
   display: flex; align-items: center; gap: 6px;
-  padding: 5px 8px; border-radius: 7px;
-  background: var(--surface2); border: 1px solid var(--border);
-  cursor: pointer; flex-shrink: 0;
-  transition: border-color 0.15s, background 0.15s;
-  user-select: none;
+  padding: 6px 12px; cursor: pointer;
+  border-left: 2px solid transparent;
+  transition: background .1s, border-color .1s;
+  user-select: none; position: relative;
 }
-.layer-chip:hover { border-color: var(--muted); }
-.layer-chip.selected { border-color: var(--accent); background: var(--accent-bg); }
-.layer-chip.dragging { opacity: 0.4; }
+.layer-row:hover { background: var(--surface2); }
+.layer-row.selected { background: var(--accent-bg); border-left-color: var(--accent); }
+.layer-row.is-locked .layer-name { font-style: italic; color: var(--muted); }
+.layer-row.dragging { opacity: 0.35; }
+.layer-row-drag {
+  color: var(--border); cursor: grab; flex-shrink: 0; line-height: 0;
+}
+.layer-row-drag:active { cursor: grabbing; }
 .layer-icon { color: var(--muted); flex-shrink: 0; }
 .layer-name {
-  font-size: 12px; color: var(--text);
-  max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 12px; color: var(--text); flex: 1;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.layer-vis {
-  width: 20px; height: 20px; border-radius: 4px;
-  border: none; background: none;
-  color: var(--muted); cursor: pointer; padding: 0;
+.layer-row-actions {
+  display: flex; align-items: center; gap: 2px; flex-shrink: 0;
+}
+.layer-vis, .layer-lock, .layer-del, .layer-dup {
+  width: 22px; height: 22px; border-radius: 4px; border: none;
+  background: none; color: var(--muted); cursor: pointer; padding: 0;
   display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0; transition: color 0.12s;
+  flex-shrink: 0; transition: color .12s;
 }
 .layer-vis:hover { color: var(--text); }
 .layer-vis.hidden { color: var(--border); }
-.layer-del {
-  width: 20px; height: 20px; border-radius: 4px;
-  border: none; background: none;
-  color: var(--muted); cursor: pointer; padding: 0;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0; transition: color 0.12s;
-}
 .layer-del:hover { color: var(--danger); }
-.layer-dup {
-  width: 20px; height: 20px; border-radius: 4px;
-  border: none; background: none;
-  color: var(--muted); cursor: pointer; padding: 0;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0; transition: color 0.12s;
-}
 .layer-dup:hover { color: var(--accent); }
-.layer-lock {
-  width: 20px; height: 20px; border-radius: 4px;
-  border: none; background: none;
-  color: var(--muted); cursor: pointer; padding: 0;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0; transition: color 0.12s;
-}
 .layer-lock:hover { color: var(--text); }
 .layer-lock.locked { color: #f59e0b; }
-.layer-chip.is-locked { opacity: 0.75; }
-.layer-chip.is-locked .layer-name { font-style: italic; }
+
+/* ── Canvas right-click context menu ────────────────────────────────────── */
+#canvasCtxMenu {
+  position: fixed; z-index: 950;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; box-shadow: 0 8px 32px rgba(0,0,0,0.22);
+  padding: 5px; min-width: 220px;
+  display: none;
+}
+#canvasCtxMenu.open { display: block; }
+.ctx-item {
+  display: flex; align-items: center; justify-content: space-between;
+  width: 100%; padding: 7px 10px; border: none; background: none;
+  color: var(--text); font-size: 13px; cursor: pointer; border-radius: 6px;
+  text-align: left; gap: 8px;
+  transition: background .1s;
+}
+.ctx-item:hover { background: var(--surface2); }
+.ctx-item:disabled { opacity: 0.38; cursor: default; }
+.ctx-item:disabled:hover { background: none; }
+.ctx-item.ctx-danger:hover { background: rgba(239,68,68,.12); color: var(--danger); }
+.ctx-shortcut { font-size: 11px; color: var(--muted); flex-shrink: 0; }
+.ctx-divider { height: 1px; background: var(--border); margin: 4px 2px; }
 
 /* ── Alignment guides & grid ────────────────────────────────────────── */
 #guideOverlay {
@@ -4903,6 +4918,31 @@ body.role-editor .admin-action {
         </svg>
       </button>
 
+      <!-- Snap toggle (on by default) -->
+      <button class="tool-btn grid-active" id="btnSnap" title="Snap to Grid / Objects (on)" onclick="toggleDesignerSnap()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+          <path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M6.34 6.34l2.83 2.83M14.83 14.83l2.83 2.83M14.83 9.17l2.83-2.83M6.34 17.66l2.83-2.83"/>
+        </svg>
+      </button>
+
+      <div class="tool-divider"></div>
+
+      <!-- Center Horizontally -->
+      <button class="tool-btn" title="Center Horizontally (selection)" onclick="designerCenterH()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+          <line x1="12" y1="2" x2="12" y2="22"/><rect x="4" y="7" width="16" height="10" rx="2"/>
+        </svg>
+      </button>
+
+      <!-- Center Vertically -->
+      <button class="tool-btn" title="Center Vertically (selection)" onclick="designerCenterV()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+          <line x1="2" y1="12" x2="22" y2="12"/><rect x="7" y="4" width="10" height="16" rx="2"/>
+        </svg>
+      </button>
+
       <div class="tool-divider"></div>
 
       <!-- Safe zone -->
@@ -4963,6 +5003,33 @@ body.role-editor .admin-action {
       </div>
     </div>
 
+    <!-- Canvas right-click context menu -->
+    <div id="canvasCtxMenu">
+      <!-- Object selected -->
+      <div id="ctxObjGroup">
+        <button class="ctx-item" id="ctxCut"       onclick="hideCanvasCtxMenu();designerCut()">Cut        <span class="ctx-shortcut">Ctrl+X</span></button>
+        <button class="ctx-item" id="ctxCopy"      onclick="hideCanvasCtxMenu();designerCopy()">Copy      <span class="ctx-shortcut">Ctrl+C</span></button>
+        <button class="ctx-item" id="ctxPasteObj"  onclick="hideCanvasCtxMenu();designerPaste()">Paste    <span class="ctx-shortcut">Ctrl+V</span></button>
+        <button class="ctx-item" id="ctxDup"       onclick="hideCanvasCtxMenu();designerDuplicate()">Duplicate <span class="ctx-shortcut">Ctrl+D</span></button>
+        <div class="ctx-divider"></div>
+        <button class="ctx-item ctx-danger"         onclick="hideCanvasCtxMenu();designerDeleteActive()">Delete <span class="ctx-shortcut">Del</span></button>
+        <div class="ctx-divider"></div>
+        <button class="ctx-item" onclick="hideCanvasCtxMenu();ctxBringToFront()">Bring to Front</button>
+        <button class="ctx-item" onclick="hideCanvasCtxMenu();ctxBringForward()">Bring Forward</button>
+        <button class="ctx-item" onclick="hideCanvasCtxMenu();ctxSendBackward()">Send Backward</button>
+        <button class="ctx-item" onclick="hideCanvasCtxMenu();ctxSendToBack()">Send to Back</button>
+        <div class="ctx-divider"></div>
+        <button class="ctx-item" onclick="hideCanvasCtxMenu();designerCenterH()">Center Horizontally</button>
+        <button class="ctx-item" onclick="hideCanvasCtxMenu();designerCenterV()">Center Vertically</button>
+      </div>
+      <!-- No selection -->
+      <div id="ctxCanvasGroup" style="display:none">
+        <button class="ctx-item" onclick="hideCanvasCtxMenu();designerPaste()">Paste <span class="ctx-shortcut">Ctrl+V</span></button>
+        <div class="ctx-divider"></div>
+        <button class="ctx-item" onclick="hideCanvasCtxMenu();fabricCanvas&&fabricCanvas.getObjects().forEach(o=>fabricCanvas.add(o));fabricCanvas.requestRenderAll()">Select All <span class="ctx-shortcut">Ctrl+A</span></button>
+      </div>
+    </div>
+
     <!-- Properties Panel -->
     <!-- Stock photos right-click context menu -->
     <div id="stockCtxMenu" style="display:none;position:fixed;z-index:900;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.2);padding:4px;min-width:160px">
@@ -4971,6 +5038,15 @@ body.role-editor .admin-action {
     </div>
 
     <div class="designer-props" id="designerProps">
+
+      <!-- Panel tab bar -->
+      <div class="designer-panel-tabs">
+        <button class="designer-panel-tab active" id="tabProps"   onclick="switchDesignerTab('props')">Properties</button>
+        <button class="designer-panel-tab"         id="tabLayers" onclick="switchDesignerTab('layers')">Layers</button>
+      </div>
+
+      <!-- Layers content (shown when Layers tab active) -->
+      <div id="layersContent"></div>
 
       <!-- Brand colors quick-access strip (hidden when no brand kit) -->
       <div class="bk-designer-strip" id="bkDesignerStrip">
@@ -8814,6 +8890,7 @@ function installPadlockRenderer() {
 const SNAP_THRESHOLD = 8;   // logical px — snap when within this distance
 const GRID_SIZE      = 40;  // logical px — grid cell size
 let   gridVisible    = false;
+let   snapEnabled    = true; // snap-to-grid/objects toggle
 
 // Return logical-space bounding box for an object
 function getLogBounds(obj) {
@@ -8894,8 +8971,117 @@ window.toggleDesignerGrid = function() {
   updateGridOverlay();
 };
 
+window.toggleDesignerSnap = function() {
+  snapEnabled = !snapEnabled;
+  const btn = document.getElementById('btnSnap');
+  btn.classList.toggle('grid-active', snapEnabled);
+  btn.title = snapEnabled ? 'Snap to Grid / Objects (on)' : 'Snap to Grid / Objects (off)';
+  if (!snapEnabled) clearGuides();
+};
+
+// ── Center H / V ──────────────────────────────────────────────────────────
+window.designerCenterH = function() {
+  const obj = fabricCanvas?.getActiveObject();
+  if (!obj) return;
+  obj.set({ originX: 'center', left: CANVAS_W / 2 });
+  obj.setCoords();
+  fabricCanvas.renderAll();
+  historySave();
+};
+
+window.designerCenterV = function() {
+  const obj = fabricCanvas?.getActiveObject();
+  if (!obj) return;
+  obj.set({ originY: 'center', top: CANVAS_H / 2 });
+  obj.setCoords();
+  fabricCanvas.renderAll();
+  historySave();
+};
+
+// ── Cut ───────────────────────────────────────────────────────────────────
+function designerCut() {
+  designerCopy();
+  designerDeleteActive();
+}
+
+// ── Bring / Send layer order ──────────────────────────────────────────────
+window.ctxBringToFront = function() {
+  const obj = fabricCanvas?.getActiveObject();
+  if (!obj) return;
+  fabricCanvas.bringToFront(obj);
+  fabricCanvas.renderAll();
+  historySave();
+  renderLayersPanel();
+};
+window.ctxBringForward = function() {
+  const obj = fabricCanvas?.getActiveObject();
+  if (!obj) return;
+  fabricCanvas.bringForward(obj);
+  fabricCanvas.renderAll();
+  historySave();
+  renderLayersPanel();
+};
+window.ctxSendBackward = function() {
+  const obj = fabricCanvas?.getActiveObject();
+  if (!obj) return;
+  fabricCanvas.sendBackwards(obj);
+  fabricCanvas.renderAll();
+  historySave();
+  renderLayersPanel();
+};
+window.ctxSendToBack = function() {
+  const obj = fabricCanvas?.getActiveObject();
+  if (!obj) return;
+  fabricCanvas.sendToBack(obj);
+  fabricCanvas.renderAll();
+  historySave();
+  renderLayersPanel();
+};
+
+// ── Canvas right-click context menu ──────────────────────────────────────
+function showCanvasCtxMenu(x, y) {
+  const menu = document.getElementById('canvasCtxMenu');
+  const hasObj = !!(fabricCanvas?.getActiveObject());
+  document.getElementById('ctxObjGroup').style.display    = hasObj ? '' : 'none';
+  document.getElementById('ctxCanvasGroup').style.display = hasObj ? 'none' : '';
+  // Disable cut/copy if nothing selected (redundant but explicit)
+  const hasPaste = !!designerClipboard;
+  document.getElementById('ctxPasteObj')?.toggleAttribute('disabled', !hasPaste);
+
+  menu.classList.add('open');
+  // Position: keep within viewport
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const mw = 224, mh = menu.offsetHeight || 320;
+  menu.style.left = Math.min(x, vw - mw - 8) + 'px';
+  menu.style.top  = Math.min(y, vh - mh - 8) + 'px';
+}
+
+window.hideCanvasCtxMenu = function() {
+  document.getElementById('canvasCtxMenu').classList.remove('open');
+};
+
+document.addEventListener('click',     () => hideCanvasCtxMenu());
+document.addEventListener('keydown',   e => { if (e.key === 'Escape') hideCanvasCtxMenu(); });
+
+// ── Properties / Layers tab switcher ─────────────────────────────────────
+window.switchDesignerTab = function(tab) {
+  const isLayers = tab === 'layers';
+  document.getElementById('tabProps').classList.toggle('active', !isLayers);
+  document.getElementById('tabLayers').classList.toggle('active', isLayers);
+  document.getElementById('layersContent').classList.toggle('visible', isLayers);
+  // Show/hide the rest of the props panel children
+  const props = document.getElementById('designerProps');
+  [...props.children].forEach(el => {
+    if (el.id === 'layersContent' || el.classList.contains('designer-panel-tabs')) return;
+    el.style.display = isLayers ? 'none' : '';
+  });
+  if (isLayers) renderLayersPanel();
+};
+
 // ── object:moving handler ────────────────────────────────────────────────
 function onObjectMoving(e) {
+  if (!snapEnabled) return;
+
   const obj  = e.target;
   const zoom = fabricCanvas.getZoom();
   const b    = getLogBounds(obj);
@@ -9028,6 +9214,12 @@ function initFabricCanvas() {
     fabricCanvas.on('object:moving', onObjectMoving);
     fabricCanvas.on('mouse:up',      clearGuides);
     updateGridOverlay();
+
+    // Right-click context menu on canvas
+    document.getElementById('designerCanvas').addEventListener('contextmenu', e => {
+      e.preventDefault();
+      showCanvasCtxMenu(e.clientX, e.clientY);
+    });
 
     // Padlock overlay for locked elements
     installPadlockRenderer();
@@ -9259,64 +9451,60 @@ function getLayerLabel(obj, idx) {
 }
 
 function renderLayersPanel() {
-  const panel = document.getElementById('layersPanel');
-  if (!fabricCanvas) return;
+  const panel = document.getElementById('layersContent');
+  if (!fabricCanvas || !panel) return;
 
   const objs = fabricCanvas.getObjects();
   if (!objs.length) {
-    panel.innerHTML = '<span class="layers-label">Layers</span><span style="font-size:12px;color:var(--muted)">No objects</span>';
+    panel.innerHTML = '<div style="padding:16px;font-size:12px;color:var(--muted);text-align:center">No objects on canvas</div>';
     return;
   }
 
   const activeObj = fabricCanvas.getActiveObject();
-
-  // Display bottom→top (index 0 at right = bottom layer; last index at left = top layer)
-  const chips = [...objs].reverse().map((obj, revIdx) => {
+  // Top layer first (highest index = top of stack)
+  const rows = [...objs].reverse().map((obj, revIdx) => {
     const realIdx  = objs.length - 1 - revIdx;
     const isSelected = obj === activeObj;
     const isHidden   = obj.visible === false;
     const isLocked   = !!obj.isLocked;
+    const eyeIcon    = isHidden
+      ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`
+      : `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+    const lockIcon   = isLocked
+      ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`
+      : `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>`;
     return `
-      <div class="layer-chip${isSelected ? ' selected' : ''}${isLocked ? ' is-locked' : ''}"
-           draggable="true"
-           data-idx="${realIdx}"
+      <div class="layer-row${isSelected ? ' selected' : ''}${isLocked ? ' is-locked' : ''}"
+           draggable="true" data-idx="${realIdx}"
            onclick="selectLayerObj(${realIdx})"
            ondragstart="layerDragStart(event,${realIdx})"
            ondragover="layerDragOver(event)"
            ondrop="layerDrop(event,${realIdx})">
+        <span class="layer-row-drag" title="Drag to reorder">
+          <svg width="10" height="14" viewBox="0 0 10 14" fill="currentColor" opacity=".4">
+            <circle cx="3" cy="2.5" r="1.2"/><circle cx="7" cy="2.5" r="1.2"/>
+            <circle cx="3" cy="7"   r="1.2"/><circle cx="7" cy="7"   r="1.2"/>
+            <circle cx="3" cy="11.5" r="1.2"/><circle cx="7" cy="11.5" r="1.2"/>
+          </svg>
+        </span>
         <span class="layer-icon">${getLayerIcon(obj)}</span>
-        <span class="layer-name">${getLayerLabel(obj, realIdx)}</span>
-        <button class="layer-lock${isLocked ? ' locked' : ''}"
-                title="${isLocked ? 'Unlock element' : 'Lock element'}"
-                onclick="event.stopPropagation();toggleLayerLock(${realIdx})">
-          ${isLocked
-            ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`
-            : `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>`
-          }
-        </button>
-        <button class="layer-dup" title="Duplicate" onclick="event.stopPropagation();duplicateLayerObj(${realIdx})">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-          </svg>
-        </button>
-        <button class="layer-vis${isHidden ? ' hidden' : ''}"
-                title="${isHidden ? 'Show' : 'Hide'}"
-                onclick="event.stopPropagation();toggleLayerVis(${realIdx})">
-          ${isHidden
-            ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`
-            : `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`
-          }
-        </button>
-        <button class="layer-del" title="Delete" onclick="event.stopPropagation();deleteLayerObj(${realIdx})">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-            <path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
-          </svg>
-        </button>
+        <span class="layer-name" title="${getLayerLabel(obj, realIdx)}">${getLayerLabel(obj, realIdx)}</span>
+        <div class="layer-row-actions">
+          <button class="layer-vis${isHidden ? ' hidden' : ''}" title="${isHidden ? 'Show' : 'Hide'}"
+                  onclick="event.stopPropagation();toggleLayerVis(${realIdx})">${eyeIcon}</button>
+          <button class="layer-lock${isLocked ? ' locked' : ''}" title="${isLocked ? 'Unlock' : 'Lock'}"
+                  onclick="event.stopPropagation();toggleLayerLock(${realIdx})">${lockIcon}</button>
+          <button class="layer-del" title="Delete"
+                  onclick="event.stopPropagation();deleteLayerObj(${realIdx})">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+            </svg>
+          </button>
+        </div>
       </div>`;
   }).join('');
 
-  panel.innerHTML = `<span class="layers-label">Layers</span>${chips}`;
+  panel.innerHTML = rows;
 }
 
 window.selectLayerObj = function(idx) {
