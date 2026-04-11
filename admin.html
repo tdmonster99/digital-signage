@@ -3042,7 +3042,7 @@ body.role-editor .admin-action {
       <div class="dash-card">
         <div class="dash-card-title">Quick Actions</div>
         <div class="quick-actions">
-          <button class="quick-action-btn" onclick="showPage('slideshows');setTimeout(()=>document.getElementById('fileInput').click(),50)">
+          <button class="quick-action-btn" onclick="openDashUpload()">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
               <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
@@ -3892,6 +3892,70 @@ body.role-editor .admin-action {
           <button class="btn btn-primary" onclick="closeInviteModal()">Done</button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Dashboard Upload Modal -->
+  <div id="dashUploadModal" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:20px">
+    <div class="add-media-box">
+      <div class="add-media-head">
+        <h3>Upload Media</h3>
+        <button class="gallery-close" onclick="closeDashUpload()">✕</button>
+      </div>
+
+      <!-- Slideshow picker -->
+      <div style="padding:0 20px 16px">
+        <label style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);display:block;margin-bottom:6px">Add to slideshow</label>
+        <select id="dashUploadShow" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--text);font-size:14px;font-family:inherit">
+          <option value="">— select a slideshow —</option>
+        </select>
+      </div>
+
+      <!-- Upload from device -->
+      <div class="add-media-section-label">Upload from</div>
+      <div class="add-media-grid">
+        <button class="add-media-btn" onclick="document.getElementById('dashFileInput').click()">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          My Device
+        </button>
+        <button class="add-media-btn" onclick="dashGoToShow();setTimeout(()=>gdriveOpen('slides'),80)">
+          <svg width="26" height="26" viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg" style="height:26px;width:auto">
+            <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
+            <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0-1.2 4.5h27.5z" fill="#00ac47"/>
+            <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/>
+            <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
+            <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
+            <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 27h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
+          </svg>
+          Google Drive
+        </button>
+        <button class="add-media-btn" onclick="dashGoToShow();setTimeout(()=>_openOneDrivePicker('slides'),80)">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#0078d4" stroke-width="1.6" stroke-linecap="round"><path d="M10 13.5a4.5 4.5 0 0 1 6.9-3.8A6 6 0 1 1 7.5 15H10"/><path d="M10 13.5V21"/></svg>
+          OneDrive
+        </button>
+        <button class="add-media-btn" onclick="dashGoToShow();setTimeout(()=>openGslidesModal(),80)">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><rect x="3" y="2" width="18" height="20" rx="2" fill="#fbbc04"/><rect x="6" y="6" width="12" height="2" rx="1" fill="#fff"/><rect x="6" y="10" width="12" height="2" rx="1" fill="#fff"/><rect x="6" y="14" width="8" height="2" rx="1" fill="#fff"/></svg>
+          Google Slides
+        </button>
+      </div>
+
+      <div class="add-media-section-label">Other sources</div>
+      <div class="add-media-row">
+        <button class="add-media-row-btn" onclick="dashAddByUrl()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          Add by URL
+        </button>
+      </div>
+
+      <!-- Progress -->
+      <div id="dashUploadProgress" style="display:none;padding:0 20px 16px">
+        <div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden">
+          <div id="dashUploadBar" style="height:100%;background:var(--accent);width:0%;transition:width .2s"></div>
+        </div>
+        <div id="dashUploadLabel" style="font-size:12px;color:var(--muted);margin-top:6px"></div>
+      </div>
+
+      <input type="file" id="dashFileInput" multiple accept="image/*,video/*" style="display:none">
     </div>
   </div>
 
@@ -7386,6 +7450,118 @@ window.gslidesImport = async function() {
   closeGslidesModal();
   toast(`${count} slide${count !== 1 ? 's' : ''} imported ✓`);
   pushToFirestore(); // fire-and-forget — slides already rendered
+};
+
+// ── Dashboard Upload Modal ────────────────────────────────────────────────
+window.openDashUpload = function() {
+  // Populate slideshow dropdown from org
+  const sel = document.getElementById('dashUploadShow');
+  sel.innerHTML = '<option value="">— select a slideshow —</option>';
+  const shows = currentOrg?.slideshows || [];
+  shows.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s.id;
+    opt.textContent = s.name || s.id;
+    sel.appendChild(opt);
+  });
+  // Auto-select if only one or if current show matches
+  if (shows.length === 1) sel.value = shows[0].id;
+  else if (currentShowId && shows.find(s => s.id === currentShowId)) sel.value = currentShowId;
+
+  document.getElementById('dashUploadProgress').style.display = 'none';
+  document.getElementById('dashUploadModal').style.display = 'flex';
+};
+
+window.closeDashUpload = function() {
+  document.getElementById('dashUploadModal').style.display = 'none';
+};
+
+document.getElementById('dashUploadModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('dashUploadModal')) closeDashUpload();
+});
+
+// Navigate to the selected show, then the caller opens a picker
+window.dashGoToShow = function() {
+  const showId = document.getElementById('dashUploadShow').value;
+  if (!showId) { toast('Select a slideshow first.', true); return false; }
+  closeDashUpload();
+  showPage('slideshows');
+  setTimeout(() => {
+    const item = document.querySelector(`.show-item[data-id="${showId}"]`);
+    if (item) item.click();
+  }, 80);
+  return true;
+};
+
+// My Device upload — no navigation needed
+document.getElementById('dashFileInput').addEventListener('change', async function() {
+  const files = Array.from(this.files);
+  if (!files.length) return;
+  const showId = document.getElementById('dashUploadShow').value;
+  if (!showId) { toast('Select a slideshow first.', true); return; }
+  this.value = '';
+
+  const progress = document.getElementById('dashUploadProgress');
+  const bar      = document.getElementById('dashUploadBar');
+  const label    = document.getElementById('dashUploadLabel');
+  progress.style.display = 'block';
+
+  const newSlides = [];
+  for (let i = 0; i < files.length; i++) {
+    const file    = files[i];
+    const isVideo = file.type.startsWith('video/');
+    label.textContent = `Uploading ${i + 1}/${files.length}: ${file.name}`;
+    bar.style.width = '0%';
+    try {
+      const { url, key } = await s3UploadWithProgress(
+        file, `signage/${showId}`,
+        p => { bar.style.width = p + '%'; }
+      );
+      const slide = { id: crypto.randomUUID(), url, name: file.name, active: true };
+      if (isVideo) slide.type = 'video';
+      newSlides.push(slide);
+      saveMediaRecord(url, file.name, isVideo ? 'video' : 'image', key);
+    } catch(e) {
+      toast(`Upload error: ${e.message}`, true);
+    }
+  }
+
+  if (newSlides.length) {
+    // Append to the target show's Firestore doc
+    const showRef  = doc(db, 'slideshows', showId);
+    const snap     = await getDoc(showRef);
+    const existing = snap.exists() ? (snap.data().slides || []) : [];
+    await setDoc(showRef, { slides: [...existing, ...newSlides] }, { merge: true });
+
+    // If this show is currently loaded, update in-memory state too
+    if (showId === currentShowId) {
+      slides.push(...newSlides);
+      renderGrid();
+      updateCount();
+    }
+    closeDashUpload();
+    toast(`${newSlides.length} file${newSlides.length !== 1 ? 's' : ''} added to slideshow ✓`);
+  }
+  progress.style.display = 'none';
+});
+
+// Add by URL from dashboard
+window.dashAddByUrl = function() {
+  const showId = document.getElementById('dashUploadShow').value;
+  if (!showId) { toast('Select a slideshow first.', true); return; }
+  const url = prompt('Paste an image URL:');
+  if (!url) return;
+  const name = url.split('/').pop().split('?')[0] || 'slide';
+  (async () => {
+    const showRef  = doc(db, 'slideshows', showId);
+    const snap     = await getDoc(showRef);
+    const existing = snap.exists() ? (snap.data().slides || []) : [];
+    existing.push({ id: crypto.randomUUID(), url, name, active: true });
+    await setDoc(showRef, { slides: existing }, { merge: true });
+    if (showId === currentShowId) { slides.push({ id: crypto.randomUUID(), url, name, active: true }); renderGrid(); updateCount(); }
+    closeDashUpload();
+    toast('Slide added ✓');
+  })();
 };
 
 // ── Add Media modal ───────────────────────────────────────────────────────
