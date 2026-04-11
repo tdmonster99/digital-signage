@@ -5024,9 +5024,29 @@ body.role-editor .admin-action {
       </div>
       <!-- No selection -->
       <div id="ctxCanvasGroup" style="display:none">
-        <button class="ctx-item" onclick="hideCanvasCtxMenu();designerPaste()">Paste <span class="ctx-shortcut">Ctrl+V</span></button>
+        <button class="ctx-item" id="ctxPasteCanvas" onclick="hideCanvasCtxMenu();designerPaste()">Paste <span class="ctx-shortcut">Ctrl+V</span></button>
         <div class="ctx-divider"></div>
-        <button class="ctx-item" onclick="hideCanvasCtxMenu();fabricCanvas&&fabricCanvas.getObjects().forEach(o=>fabricCanvas.add(o));fabricCanvas.requestRenderAll()">Select All <span class="ctx-shortcut">Ctrl+A</span></button>
+        <button class="ctx-item" onclick="hideCanvasCtxMenu();if(fabricCanvas){fabricCanvas.discardActiveObject();const sel=new fabric.ActiveSelection(fabricCanvas.getObjects(),{canvas:fabricCanvas});fabricCanvas.setActiveObject(sel);fabricCanvas.requestRenderAll();}">Select All <span class="ctx-shortcut">Ctrl+A</span></button>
+        <div class="ctx-divider"></div>
+        <button class="ctx-item" onclick="hideCanvasCtxMenu();document.getElementById('bgColorInput').click()">
+          <span style="display:flex;align-items:center;gap:8px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
+            Change Background
+          </span>
+        </button>
+        <div class="ctx-divider"></div>
+        <button class="ctx-item" id="ctxGridToggle" onclick="hideCanvasCtxMenu();toggleDesignerGrid()">
+          <span style="display:flex;align-items:center;gap:8px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3h18v18H3z"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
+            <span id="ctxGridLabel">Show Grid</span>
+          </span>
+        </button>
+        <button class="ctx-item" id="ctxSnapToggle" onclick="hideCanvasCtxMenu();toggleDesignerSnap()">
+          <span style="display:flex;align-items:center;gap:8px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/><circle cx="12" cy="12" r="3"/></svg>
+            <span id="ctxSnapLabel">Snap: On</span>
+          </span>
+        </button>
       </div>
     </div>
 
@@ -9044,9 +9064,14 @@ function showCanvasCtxMenu(x, y) {
   const hasObj = !!(fabricCanvas?.getActiveObject());
   document.getElementById('ctxObjGroup').style.display    = hasObj ? '' : 'none';
   document.getElementById('ctxCanvasGroup').style.display = hasObj ? 'none' : '';
-  // Disable cut/copy if nothing selected (redundant but explicit)
   const hasPaste = !!designerClipboard;
   document.getElementById('ctxPasteObj')?.toggleAttribute('disabled', !hasPaste);
+  document.getElementById('ctxPasteCanvas')?.toggleAttribute('disabled', !hasPaste);
+  // Sync grid/snap labels
+  const gridLbl = document.getElementById('ctxGridLabel');
+  if (gridLbl) gridLbl.textContent = gridVisible ? 'Hide Grid' : 'Show Grid';
+  const snapLbl = document.getElementById('ctxSnapLabel');
+  if (snapLbl) snapLbl.textContent = snapEnabled ? 'Snap: On' : 'Snap: Off';
 
   menu.classList.add('open');
   // Position: keep within viewport
