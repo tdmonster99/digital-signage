@@ -731,6 +731,43 @@ section.content {
 .btn-push { background: var(--accent); color: #fff; border: 1px solid var(--accent2); }
 .btn-push:hover { background: var(--accent2); }
 .btn-push:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Publish-to-screens modal */
+#publishModal {
+  display: none; position: fixed; inset: 0; z-index: 700;
+  background: rgba(0,0,0,.5); backdrop-filter: blur(4px);
+  align-items: center; justify-content: center; padding: 20px;
+}
+#publishModal.open { display: flex; }
+.publish-box {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+  width: min(480px, 96vw); box-shadow: 0 8px 48px rgba(0,0,0,.18); display: flex; flex-direction: column; overflow: hidden;
+}
+.publish-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 22px 14px; border-bottom: 1px solid var(--border);
+}
+.publish-head h3 { font-size: 15px; font-weight: 700; margin: 0; }
+.publish-head-close { background: none; border: none; cursor: pointer; color: var(--muted); padding: 4px; border-radius: 6px; display: flex; }
+.publish-head-close:hover { color: var(--text); background: var(--surface2); }
+.publish-screen-list { padding: 10px 14px; max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
+.publish-screen-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 12px; border-radius: 10px; cursor: pointer;
+  border: 1px solid transparent; transition: all 0.12s;
+}
+.publish-screen-row:hover { background: var(--surface2); }
+.publish-screen-row.selected { background: var(--accent-bg); border-color: var(--accent); }
+.publish-screen-row input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--accent); flex-shrink: 0; cursor: pointer; }
+.publish-screen-info { flex: 1; min-width: 0; }
+.publish-screen-name { font-size: 13px; font-weight: 600; color: var(--text); }
+.publish-screen-sub  { font-size: 11px; color: var(--muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.publish-foot {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 22px; border-top: 1px solid var(--border); gap: 10px;
+}
+.publish-foot-count { font-size: 12px; color: var(--muted); }
+.publish-empty { padding: 32px; text-align: center; color: var(--muted); font-size: 13px; }
 .push-badge {
   display: inline-flex; align-items: center; gap: 5px;
   color: var(--accent); font-size: 11px; font-weight: 500;
@@ -3629,6 +3666,29 @@ body.role-editor .admin-action {
         <div class="pairing-success-title">Screen Paired!</div>
         <div class="pairing-success-sub" id="pairingSuccessName">Your display is now connected.</div>
         <button class="btn btn-primary" onclick="closePairingModal()" style="margin-top:8px">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Publish-to-screens modal -->
+  <div id="publishModal" onclick="if(event.target===this)closePublishModal()">
+    <div class="publish-box">
+      <div class="publish-head">
+        <h3>Publish to Screens</h3>
+        <button class="publish-head-close" onclick="closePublishModal()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="publish-screen-list" id="publishScreenList"></div>
+      <div class="publish-foot">
+        <span class="publish-foot-count" id="publishFootCount">0 screens selected</span>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-secondary" onclick="closePublishModal()">Cancel</button>
+          <button class="btn btn-push" id="publishConfirmBtn" onclick="confirmPublish()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 2 11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            Publish
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -7071,22 +7131,107 @@ async function pushToFirestore() {
   setPushVisible(true);
 }
 
-window.publishToScreens = async function publishToScreens() {
+// ── Publish modal ─────────────────────────────────────────────────────────
+let _publishSelectedIds = new Set();
+
+window.publishToScreens = function() {
   if (!auth.currentUser) { toast("Sign in first.", true); return; }
-  const btn = document.getElementById("btnPush");
+  _openPublishModal();
+};
+
+function _openPublishModal() {
+  // Ensure screens are loaded even if the Screens page was never visited
+  if (!screensUnsub) initScreensPage();
+  const screens  = _cachedScreens || [];
+  const listEl   = document.getElementById('publishScreenList');
+  const shows    = getAllShows();
+
+  if (!screens.length) {
+    listEl.innerHTML = '<div class="publish-empty">No screens registered yet.<br>Add a screen from the Screens page first.</div>';
+    _publishSelectedIds = new Set();
+  } else {
+    // Pre-select screens already assigned to this slideshow
+    _publishSelectedIds = new Set(
+      screens.filter(s => s.slideshowId === currentShowId).map(s => s.id)
+    );
+    _renderPublishList(screens, shows);
+  }
+
+  _updatePublishFooter();
+  document.getElementById('publishModal').classList.add('open');
+}
+
+function _renderPublishList(screens, shows) {
+  const listEl = document.getElementById('publishScreenList');
+  listEl.innerHTML = screens
+    .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+    .map(screen => {
+      const selected   = _publishSelectedIds.has(screen.id);
+      const online     = isOnline(screen.lastSeen);
+      const curShow    = shows.find(s => s.id === screen.slideshowId)?.name || screen.slideshowId || '—';
+      const isCurrent  = screen.slideshowId === currentShowId;
+      const subText    = isCurrent
+        ? 'Currently showing this slideshow'
+        : `Currently: ${curShow}`;
+      const locText    = screen.location ? ` · ${screen.location}` : '';
+      return `<label class="publish-screen-row${selected ? ' selected' : ''}" onclick="togglePublishScreen('${screen.id}', event)">
+        <input type="checkbox" ${selected ? 'checked' : ''} onclick="event.stopPropagation();togglePublishScreen('${screen.id}', event)">
+        <div class="screen-status-badge ${online ? 'online' : 'offline'}" style="flex-shrink:0">
+          <div class="screen-status-dot"></div>
+        </div>
+        <div class="publish-screen-info">
+          <div class="publish-screen-name">${escHtml(screen.name || screen.id)}${locText ? `<span style="font-weight:400;color:var(--muted)">${escHtml(locText)}</span>` : ''}</div>
+          <div class="publish-screen-sub">${escHtml(subText)}</div>
+        </div>
+      </label>`;
+    }).join('');
+}
+
+window.togglePublishScreen = function(screenId, e) {
+  if (e) e.preventDefault();
+  if (_publishSelectedIds.has(screenId)) {
+    _publishSelectedIds.delete(screenId);
+  } else {
+    _publishSelectedIds.add(screenId);
+  }
+  // Update row appearance
+  const screens = _cachedScreens || [];
+  const shows   = getAllShows();
+  _renderPublishList(screens, shows);
+  _updatePublishFooter();
+};
+
+function _updatePublishFooter() {
+  const n   = _publishSelectedIds.size;
+  const btn = document.getElementById('publishConfirmBtn');
+  document.getElementById('publishFootCount').textContent =
+    n === 0 ? 'No screens selected' : `${n} screen${n !== 1 ? 's' : ''} selected`;
+  if (btn) btn.disabled = n === 0;
+}
+
+window.closePublishModal = function() {
+  document.getElementById('publishModal').classList.remove('open');
+};
+
+window.confirmPublish = async function() {
+  if (!auth.currentUser || !_publishSelectedIds.size) return;
+  const btn = document.getElementById('publishConfirmBtn');
   btn.disabled = true;
+  btn.textContent = 'Publishing…';
+
   try {
     const dwell      = parseInt(document.getElementById("defaultDwell").value) || 6;
     const fit        = document.getElementById("fitMode").value;
     const transition = document.getElementById("transition").value;
+    const now        = new Date().toISOString();
 
+    // 1. Publish slideshow content (draft → live)
     await setDoc(doc(db, "slideshows", currentShowId), {
       slides,
       defaultDwell: dwell,
       fitMode:      fit,
       transition,
-      publishedAt:  new Date().toISOString(),
-      // Clear draft fields
+      publishedAt:  now,
       draftSlides:     deleteField(),
       draftDwell:      deleteField(),
       draftFitMode:    deleteField(),
@@ -7096,15 +7241,24 @@ window.publishToScreens = async function publishToScreens() {
       ...(currentOrgId && { orgId: currentOrgId }),
       ...(currentUser  && { publishedBy: { uid: currentUser.uid, email: currentUser.email } }),
     }, { merge: true });
-    logActivity(`Slideshow "${currentShowId}" published (${slides.length} slide${slides.length !== 1 ? 's' : ''})`);
-    toast("Published ✓");
+
+    // 2. Assign selected screens to this slideshow
+    const screenUpdates = [..._publishSelectedIds].map(screenId =>
+      setDoc(doc(db, 'screens', screenId), { slideshowId: currentShowId }, { merge: true })
+    );
+    await Promise.all(screenUpdates);
+
+    const n = _publishSelectedIds.size;
+    logActivity(`Slideshow "${currentShowId}" published to ${n} screen${n !== 1 ? 's' : ''} (${slides.length} slide${slides.length !== 1 ? 's' : ''})`);
+    toast(`Published to ${n} screen${n !== 1 ? 's' : ''} ✓`);
     setPushVisible(false);
+    closePublishModal();
   } catch(e) {
-    toast("Push failed: " + e.message, true);
-  } finally {
+    toast("Publish failed: " + e.message, true);
     btn.disabled = false;
+    btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 2 11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Publish`;
   }
-}
+};
 
 window.saveSettings = () => pushToFirestore();
 
