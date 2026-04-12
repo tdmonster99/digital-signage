@@ -100,10 +100,11 @@ body {
   z-index: 50;
 }
 .sidebar-logo {
-  display: flex; align-items: center; gap: 8px;
+  display: flex; align-items: center; gap: 10px;
   padding: 16px 16px 14px;
   border-bottom: 1px solid var(--border);
   flex-shrink: 0; text-decoration: none;
+  cursor: pointer;
 }
 .zigns-mark {
   width: 30px; height: 30px; flex-shrink: 0;
@@ -3019,16 +3020,17 @@ body.role-editor .admin-action {
 
 <!-- ── Sidebar Navigation ─────────────────────────────────────────────── -->
 <nav class="sidebar">
-  <div class="sidebar-logo">
+  <div class="sidebar-logo" onclick="showPage('dashboard')" title="Go to Dashboard">
     <div class="zigns-mark">Z</div>
     <div class="zigns-wordmark">IGNS</div>
   </div>
   <div class="sidebar-nav">
     <button class="nav-item active" data-page="dashboard" onclick="showPage('dashboard')">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="3" y="3" width="7" height="13" rx="1"/>
-        <rect x="14" y="3" width="7" height="5" rx="1"/>
-        <rect x="14" y="12" width="7" height="9" rx="1"/>
+        <path d="M12 2a10 10 0 0 1 7.38 16.75"/>
+        <path d="M12 2a10 10 0 0 0-7.38 16.75"/>
+        <line x1="12" y1="12" x2="16" y2="8"/>
+        <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/>
       </svg>
       Dashboard
     </button>
