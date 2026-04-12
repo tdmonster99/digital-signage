@@ -6644,6 +6644,19 @@ async function loadShowsFromOrg() {
     showList.appendChild(item);
     if (i === 0) item.click();
   });
+
+  // Fetch slide counts for all non-active shows so they don't show "0 slides"
+  shows.slice(1).forEach(async s => {
+    try {
+      const snap = await getDoc(doc(db, 'slideshows', s.id));
+      if (!snap.exists()) return;
+      const data = snap.data();
+      const slideArr = data.draftSlides ?? data.slides ?? [];
+      const n = slideArr.filter(sl => sl.active !== false).length;
+      const el = document.querySelector(`#showList .show-item[data-id="${CSS.escape(s.id)}"] .show-item-count`);
+      if (el) el.textContent = n + ' slide' + (n !== 1 ? 's' : '');
+    } catch(e) { /* non-critical */ }
+  });
 }
 
 // ── Billing ────────────────────────────────────────────────────────────────
