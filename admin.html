@@ -7331,6 +7331,7 @@ async function pushToFirestore() {
 
 // ── Publish modal ─────────────────────────────────────────────────────────
 let _publishSelectedIds = new Set();
+let _reopenPublishAfterPairing = false;
 
 window.publishToScreens = function() {
   if (!auth.currentUser) { toast("Sign in first.", true); return; }
@@ -7345,7 +7346,15 @@ function _openPublishModal() {
   const shows    = getAllShows();
 
   if (!screens.length) {
-    listEl.innerHTML = '<div class="publish-empty">No screens registered yet.<br>Add a screen from the Screens page first.</div>';
+    listEl.innerHTML = `<div class="publish-empty">
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:.4;margin-bottom:10px"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      <div style="margin-bottom:4px;font-weight:500">No screens registered yet</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:16px">Pair a display to get started</div>
+      <button class="btn btn-primary" onclick="closePublishModal();_reopenPublishAfterPairing=true;openAddScreenModal()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right:6px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add a Screen
+      </button>
+    </div>`;
     _publishSelectedIds = new Set();
   } else {
     // Pre-select screens already assigned to this slideshow
@@ -13689,9 +13698,16 @@ window.confirmPairingCode = async function() {
 };
 
 window.closePairingModal = function() {
+  const successVisible = document.getElementById('pairingSuccessSection').style.display !== 'none';
   document.getElementById('pairingModal').style.display = 'none';
   if (pairingInterval)      { clearInterval(pairingInterval);      pairingInterval = null; }
   if (pairingTimerInterval) { clearInterval(pairingTimerInterval); pairingTimerInterval = null; }
+  if (_reopenPublishAfterPairing && successVisible) {
+    _reopenPublishAfterPairing = false;
+    setTimeout(() => _openPublishModal(), 150);
+  } else {
+    _reopenPublishAfterPairing = false;
+  }
 };
 
 // ── Screen edit panel ────────────────────────────────────────────────────
