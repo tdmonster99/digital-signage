@@ -1418,6 +1418,39 @@ section.content {
 
 .canvas-surround {
   flex: 1;
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  grid-template-rows: 22px 1fr;
+  overflow: hidden;
+}
+#rulerCorner {
+  background: var(--surface2);
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+#rulerHWrap {
+  position: relative; overflow: hidden;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+}
+#rulerVWrap {
+  position: relative; overflow: hidden;
+  border-right: 1px solid var(--border);
+  background: var(--surface2);
+}
+#rulerH { display: block; width: 100%; height: 22px; }
+#rulerV { display: block; width: 22px; height: 100%; }
+.ruler-cursor-h {
+  position: absolute; top: 0; bottom: 0; width: 1px;
+  background: var(--accent); opacity: 0.75; pointer-events: none;
+  display: none;
+}
+.ruler-cursor-v {
+  position: absolute; left: 0; right: 0; height: 1px;
+  background: var(--accent); opacity: 0.75; pointer-events: none;
+  display: none;
+}
+#canvasArea {
   display: flex; align-items: center; justify-content: center;
   overflow: hidden;
   /* Checkerboard — like Figma/Canva outside the canvas bounds */
@@ -5153,6 +5186,16 @@ body.role-editor .admin-action {
 
     <!-- Canvas area -->
     <div class="canvas-surround" id="canvasSurround">
+      <div id="rulerCorner"></div>
+      <div id="rulerHWrap">
+        <canvas id="rulerH"></canvas>
+        <div class="ruler-cursor-h" id="rulerHCursor"></div>
+      </div>
+      <div id="rulerVWrap">
+        <canvas id="rulerV"></canvas>
+        <div class="ruler-cursor-v" id="rulerVCursor"></div>
+      </div>
+      <div id="canvasArea">
       <div id="canvasFrame">
         <div id="gridOverlay"></div>
         <div id="safeZoneOverlay">
@@ -5165,6 +5208,7 @@ body.role-editor .admin-action {
         <canvas id="designerCanvas"></canvas>
         <div id="guideOverlay"></div>
       </div>
+      </div><!-- /#canvasArea -->
     </div>
 
     <!-- Canvas right-click context menu -->
@@ -9584,12 +9628,132 @@ function onObjectMoving(e) {
   }
 }
 
+// ── Rulers ───────────────────────────────────────────────────────────────
+function _rulerInterval(minScreenPx, zoom) {
+  // Pick the smallest logical-px interval whose screen size >= minScreenPx
+  for (const i of [25, 50, 100, 200, 400, 500]) {
+    if (i * zoom >= minScreenPx) return i;
+  }
+  return 500;
+}
+
+function drawRulers() {
+  const canvasArea = document.getElementById('canvasArea');
+  const rulerH     = document.getElementById('rulerH');
+  const rulerV     = document.getElementById('rulerV');
+  const frame      = document.getElementById('canvasFrame');
+  if (!canvasArea || !rulerH || !rulerV || !frame || !fabricCanvas) return;
+
+  const zoom       = fabricCanvas.getZoom();
+  const areaRect   = canvasArea.getBoundingClientRect();
+  const frameRect  = frame.getBoundingClientRect();
+  const offsetX    = frameRect.left - areaRect.left;
+  const offsetY    = frameRect.top  - areaRect.top;
+  const aW         = canvasArea.clientWidth;
+  const aH         = canvasArea.clientHeight;
+  const isDark     = document.documentElement.getAttribute('data-theme') === 'dark';
+
+  _drawHRuler(rulerH, offsetX, zoom, aW, isDark);
+  _drawVRuler(rulerV, offsetY, zoom, aH, isDark);
+}
+
+function _drawHRuler(canvas, offsetX, zoom, totalW, isDark) {
+  const H         = 22;
+  const dpr       = window.devicePixelRatio || 1;
+  canvas.width    = totalW * dpr;
+  canvas.height   = H * dpr;
+  canvas.style.width  = totalW + 'px';
+  canvas.style.height = H + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  const tickCol   = isDark ? '#555' : '#bbb';
+  const labelCol  = isDark ? '#888' : '#999';
+  const edgeCol   = isDark ? '#666' : '#aaa';
+  const minor     = _rulerInterval(4,  zoom);   // small ticks — at least 4px apart
+  const medium    = _rulerInterval(12, zoom);   // medium ticks
+  const major     = _rulerInterval(50, zoom);   // labelled ticks
+
+  ctx.font         = `${9 * (1 / dpr + (dpr - 1) * 0.5)}px system-ui,sans-serif`;
+  ctx.textBaseline = 'top';
+
+  const startX = Math.floor((-offsetX / zoom) / minor) * minor;
+  const endX   = Math.ceil(((totalW - offsetX) / zoom) / minor) * minor;
+
+  for (let lx = startX; lx <= endX; lx += minor) {
+    const sx = offsetX + lx * zoom;
+    if (sx < 0 || sx > totalW) continue;
+    const isMajor  = lx % major  === 0;
+    const isMedium = lx % medium === 0;
+    const tH = isMajor ? 10 : isMedium ? 6 : 3;
+    ctx.fillStyle = tickCol;
+    ctx.fillRect(Math.round(sx), H - tH, 1, tH);
+    if (isMajor && lx >= 0 && lx <= CANVAS_W) {
+      ctx.fillStyle  = labelCol;
+      ctx.textAlign  = lx === 0 ? 'left' : 'center';
+      ctx.fillText(String(lx), Math.round(sx) + (lx === 0 ? 2 : 0), 2);
+    }
+  }
+  // Canvas edge markers
+  ctx.fillStyle = edgeCol;
+  ctx.fillRect(Math.round(offsetX), 0, 1, H);
+  ctx.fillRect(Math.round(offsetX + CANVAS_W * zoom), 0, 1, H);
+}
+
+function _drawVRuler(canvas, offsetY, zoom, totalH, isDark) {
+  const W         = 22;
+  const dpr       = window.devicePixelRatio || 1;
+  canvas.width    = W * dpr;
+  canvas.height   = totalH * dpr;
+  canvas.style.width  = W + 'px';
+  canvas.style.height = totalH + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  const tickCol   = isDark ? '#555' : '#bbb';
+  const labelCol  = isDark ? '#888' : '#999';
+  const edgeCol   = isDark ? '#666' : '#aaa';
+  const minor     = _rulerInterval(4,  zoom);
+  const medium    = _rulerInterval(12, zoom);
+  const major     = _rulerInterval(50, zoom);
+
+  ctx.font         = `${9 * (1 / dpr + (dpr - 1) * 0.5)}px system-ui,sans-serif`;
+  ctx.textAlign    = 'right';
+  ctx.textBaseline = 'middle';
+
+  const startY = Math.floor((-offsetY / zoom) / minor) * minor;
+  const endY   = Math.ceil(((totalH - offsetY) / zoom) / minor) * minor;
+
+  for (let ly = startY; ly <= endY; ly += minor) {
+    const sy = offsetY + ly * zoom;
+    if (sy < 0 || sy > totalH) continue;
+    const isMajor  = ly % major  === 0;
+    const isMedium = ly % medium === 0;
+    const tW = isMajor ? 10 : isMedium ? 6 : 3;
+    ctx.fillStyle = tickCol;
+    ctx.fillRect(W - tW, Math.round(sy), tW, 1);
+    if (isMajor && ly >= 0 && ly <= CANVAS_H) {
+      ctx.save();
+      ctx.fillStyle = labelCol;
+      ctx.translate(W - 12, Math.round(sy));
+      ctx.rotate(-Math.PI / 2);
+      ctx.textAlign = 'center';
+      ctx.fillText(String(ly), 0, 0);
+      ctx.restore();
+    }
+  }
+  // Canvas edge markers
+  ctx.fillStyle = edgeCol;
+  ctx.fillRect(0, Math.round(offsetY), W, 1);
+  ctx.fillRect(0, Math.round(offsetY + CANVAS_H * zoom), W, 1);
+}
+
 function initFabricCanvas() {
   try {
     if (fabricCanvas) { fabricCanvas.dispose(); fabricCanvas = null; }
     historyReset();
 
-    const surround = document.getElementById('canvasSurround');
+    const surround = document.getElementById('canvasArea') || document.getElementById('canvasSurround');
     const pad = 80;
     const scale = Math.min(
       (surround.clientWidth  - pad) / CANVAS_W,
@@ -9682,6 +9846,34 @@ function initFabricCanvas() {
 
     // Start the 30-second auto-save interval
     startAutoSaveTimer();
+
+    // Rulers — draw after canvas is sized, redraw on window resize
+    drawRulers();
+    if (!initFabricCanvas._rulerResizeSetup) {
+      initFabricCanvas._rulerResizeSetup = true;
+      window.addEventListener('resize', () => { if (fabricCanvas) drawRulers(); });
+    }
+
+    // Ruler mouse-cursor tracking
+    if (!initFabricCanvas._rulerMouseSetup) {
+      initFabricCanvas._rulerMouseSetup = true;
+      const canvasArea = document.getElementById('canvasArea');
+      canvasArea.addEventListener('mousemove', e => {
+        const r = canvasArea.getBoundingClientRect();
+        const x = e.clientX - r.left;
+        const y = e.clientY - r.top;
+        const ch = document.getElementById('rulerHCursor');
+        const cv = document.getElementById('rulerVCursor');
+        if (ch) { ch.style.display = ''; ch.style.left = x + 'px'; }
+        if (cv) { cv.style.display = ''; cv.style.top  = y + 'px'; }
+      });
+      canvasArea.addEventListener('mouseleave', () => {
+        const ch = document.getElementById('rulerHCursor');
+        const cv = document.getElementById('rulerVCursor');
+        if (ch) ch.style.display = 'none';
+        if (cv) cv.style.display = 'none';
+      });
+    }
 
     // Delete key removes selected object
     document.addEventListener('keydown', onDesignerKey);
