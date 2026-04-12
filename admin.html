@@ -2215,6 +2215,83 @@ section.content {
 .ctx-shortcut { font-size: 11px; color: var(--muted); flex-shrink: 0; }
 .ctx-divider { height: 1px; background: var(--border); margin: 4px 2px; }
 
+/* ── Ruler context menu ─────────────────────────────────────────────── */
+#rulerCtxMenu {
+  position: fixed; z-index: 960;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; box-shadow: 0 8px 32px rgba(0,0,0,.22);
+  padding: 5px; min-width: 200px; display: none;
+}
+#rulerCtxMenu.open { display: block; }
+.ctx-check { width: 14px; flex-shrink: 0; font-size: 12px; }
+.ctx-submenu-parent { position: relative; }
+.ctx-submenu-parent > .ctx-item { justify-content: space-between; }
+.ctx-submenu {
+  display: none; position: absolute; left: 100%; top: -5px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; box-shadow: 0 8px 32px rgba(0,0,0,.22);
+  padding: 5px; min-width: 160px; z-index: 961;
+}
+.ctx-submenu-parent:hover > .ctx-submenu { display: block; }
+.ctx-submenu .ctx-divider { margin: 4px 2px; }
+
+/* ── Permanent ruler guides ─────────────────────────────────────────── */
+#rulerGuidesOverlay {
+  position: absolute; inset: 0; pointer-events: none;
+  z-index: 15; overflow: hidden;
+}
+.ruler-guide-h {
+  position: absolute; left: 0; right: 0; height: 1px;
+  background: #06b6d4; opacity: 0.85;
+}
+.ruler-guide-v {
+  position: absolute; top: 0; bottom: 0; width: 1px;
+  background: #06b6d4; opacity: 0.85;
+}
+
+/* ── Edit Guides modal ──────────────────────────────────────────────── */
+#editGuidesModal {
+  display: none; position: fixed; inset: 0; z-index: 700;
+  background: rgba(0,0,0,.5); backdrop-filter: blur(4px);
+  align-items: center; justify-content: center; padding: 20px;
+}
+#editGuidesModal.open { display: flex; }
+.edit-guides-box {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; width: min(400px,96vw);
+  box-shadow: 0 8px 48px rgba(0,0,0,.18); overflow: hidden;
+}
+.edit-guides-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px 14px; border-bottom: 1px solid var(--border);
+}
+.edit-guides-head h3 { font-size: 15px; font-weight: 700; margin: 0; }
+.edit-guides-body { padding: 16px 20px; display: flex; flex-direction: column; gap: 14px; }
+.edit-guides-section-label {
+  font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .06em; color: var(--muted); margin-bottom: 6px;
+}
+.edit-guides-list { display: flex; flex-direction: column; gap: 4px; min-height: 24px; }
+.edit-guide-row {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px; color: var(--text);
+}
+.edit-guide-row span { flex: 1; }
+.edit-guide-del {
+  background: none; border: none; color: var(--muted); cursor: pointer;
+  padding: 3px 6px; border-radius: 5px; font-size: 14px;
+}
+.edit-guide-del:hover { color: var(--danger); background: rgba(239,68,68,.1); }
+.edit-guides-add { display: flex; gap: 8px; align-items: center; }
+.edit-guides-add input {
+  flex: 1; padding: 7px 10px; border: 1px solid var(--border);
+  border-radius: 8px; background: var(--surface2); color: var(--text);
+  font-size: 13px; font-family: inherit;
+}
+.edit-guides-foot {
+  padding: 12px 20px; border-top: 1px solid var(--border); text-align: right;
+}
+
 /* ── Alignment guides & grid ────────────────────────────────────────── */
 #guideOverlay {
   position: absolute; inset: 0;
@@ -5207,8 +5284,79 @@ body.role-editor .admin-action {
         </div>
         <canvas id="designerCanvas"></canvas>
         <div id="guideOverlay"></div>
+        <div id="rulerGuidesOverlay"></div>
       </div>
       </div><!-- /#canvasArea -->
+    </div>
+
+    <!-- Ruler right-click context menu -->
+    <div id="rulerCtxMenu">
+      <button class="ctx-item" id="rulerCtxAddGuide" onclick="rulerCtxAddGuide()">
+        <span id="rulerCtxAddLabel">Add vertical guide</span>
+      </button>
+      <button class="ctx-item" onclick="hideRulerCtxMenu();openEditGuides()">Edit guides</button>
+      <button class="ctx-item" onclick="hideRulerCtxMenu();toggleRulerGuides()">
+        <span style="display:flex;align-items:center;gap:8px">
+          <span class="ctx-check" id="rulerCtxGuidesCheck">✓</span>Show guides
+        </span>
+      </button>
+      <div class="ctx-divider"></div>
+      <button class="ctx-item" onclick="hideRulerCtxMenu();toggleRulerVisibility()">
+        <span style="display:flex;align-items:center;gap:8px">
+          <span class="ctx-check" id="rulerCtxRulerCheck">✓</span>Show ruler
+        </span>
+      </button>
+      <div class="ctx-divider"></div>
+      <div class="ctx-submenu-parent">
+        <button class="ctx-item">
+          Change units
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+        <div class="ctx-submenu">
+          <button class="ctx-item" onclick="hideRulerCtxMenu();setRulerUnits('px')">
+            <span style="display:flex;align-items:center;gap:8px"><span class="ctx-check" id="unitCheckPx">✓</span>Pixels</span>
+          </button>
+          <button class="ctx-item" onclick="hideRulerCtxMenu();setRulerUnits('in')">
+            <span style="display:flex;align-items:center;gap:8px"><span class="ctx-check" id="unitCheckIn"> </span>Inches</span>
+          </button>
+          <button class="ctx-item" onclick="hideRulerCtxMenu();setRulerUnits('cm')">
+            <span style="display:flex;align-items:center;gap:8px"><span class="ctx-check" id="unitCheckCm"> </span>Centimeters</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Guides modal -->
+    <div id="editGuidesModal" onclick="if(event.target===this)closeEditGuides()">
+      <div class="edit-guides-box">
+        <div class="edit-guides-head">
+          <h3>Edit Guides</h3>
+          <button class="add-media-close" onclick="closeEditGuides()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div class="edit-guides-body">
+          <div>
+            <div class="edit-guides-section-label">Vertical guides (X position)</div>
+            <div class="edit-guides-list" id="editGuidesV"></div>
+            <div class="edit-guides-add" style="margin-top:8px">
+              <input type="number" id="addGuideVInput" placeholder="X position in px" min="0" max="1920">
+              <button class="btn btn-secondary" style="font-size:12px;padding:6px 12px" onclick="addGuideFromInput('v')">Add</button>
+            </div>
+          </div>
+          <div>
+            <div class="edit-guides-section-label">Horizontal guides (Y position)</div>
+            <div class="edit-guides-list" id="editGuidesH"></div>
+            <div class="edit-guides-add" style="margin-top:8px">
+              <input type="number" id="addGuideHInput" placeholder="Y position in px" min="0" max="1080">
+              <button class="btn btn-secondary" style="font-size:12px;padding:6px 12px" onclick="addGuideFromInput('h')">Add</button>
+            </div>
+          </div>
+        </div>
+        <div class="edit-guides-foot">
+          <button class="btn btn-primary" onclick="closeEditGuides()">Done</button>
+        </div>
+      </div>
     </div>
 
     <!-- Canvas right-click context menu -->
@@ -9655,6 +9803,7 @@ function drawRulers() {
 
   _drawHRuler(rulerH, offsetX, zoom, aW, isDark);
   _drawVRuler(rulerV, offsetY, zoom, aH, isDark);
+  renderRulerGuides();
 }
 
 function _drawHRuler(canvas, offsetX, zoom, totalW, isDark) {
@@ -9691,7 +9840,7 @@ function _drawHRuler(canvas, offsetX, zoom, totalW, isDark) {
     if (isMajor && lx >= 0 && lx <= CANVAS_W) {
       ctx.fillStyle  = labelCol;
       ctx.textAlign  = lx === 0 ? 'left' : 'center';
-      ctx.fillText(String(lx), Math.round(sx) + (lx === 0 ? 2 : 0), 2);
+      ctx.fillText(_fmtRulerLabel(lx), Math.round(sx) + (lx === 0 ? 2 : 0), 2);
     }
   }
   // Canvas edge markers
@@ -9738,7 +9887,7 @@ function _drawVRuler(canvas, offsetY, zoom, totalH, isDark) {
       ctx.translate(W - 12, Math.round(sy));
       ctx.rotate(-Math.PI / 2);
       ctx.textAlign = 'center';
-      ctx.fillText(String(ly), 0, 0);
+      ctx.fillText(_fmtRulerLabel(ly), 0, 0);
       ctx.restore();
     }
   }
@@ -9747,6 +9896,220 @@ function _drawVRuler(canvas, offsetY, zoom, totalH, isDark) {
   ctx.fillRect(0, Math.round(offsetY), W, 1);
   ctx.fillRect(0, Math.round(offsetY + CANVAS_H * zoom), W, 1);
 }
+
+// ── Ruler context menu & guides ───────────────────────────────────────
+let rulerGuides     = { h: [], v: [] };  // logical-px positions
+let rulerGuidesVisible = true;
+let rulerVisible    = true;
+let rulerUnits      = 'px';
+let _rulerCtxAxis   = 'v';   // which ruler was right-clicked
+let _rulerCtxLogPos = 0;     // logical coordinate at click point
+
+const RULER_DPI = 96;  // assumed screen DPI for unit conversion
+
+function _logPosFromEvent(e, axis) {
+  // Convert a click event on a ruler wrap to a logical canvas coordinate
+  if (!fabricCanvas) return 0;
+  const canvasArea = document.getElementById('canvasArea');
+  const frame      = document.getElementById('canvasFrame');
+  if (!canvasArea || !frame) return 0;
+  const areaRect  = canvasArea.getBoundingClientRect();
+  const frameRect = frame.getBoundingClientRect();
+  const zoom      = fabricCanvas.getZoom();
+  if (axis === 'h') {
+    // Click on horizontal ruler → x coordinate
+    const rulerRect = document.getElementById('rulerHWrap').getBoundingClientRect();
+    const clickX    = e.clientX - rulerRect.left;
+    const offsetX   = frameRect.left - areaRect.left;
+    return Math.round((clickX - offsetX) / zoom);
+  } else {
+    // Click on vertical ruler → y coordinate
+    const rulerRect = document.getElementById('rulerVWrap').getBoundingClientRect();
+    const clickY    = e.clientY - rulerRect.top;
+    const offsetY   = frameRect.top - areaRect.top;
+    return Math.round((clickY - offsetY) / zoom);
+  }
+}
+
+function showRulerCtxMenu(e, axis) {
+  e.preventDefault();
+  e.stopPropagation();
+  _rulerCtxAxis   = axis;
+  _rulerCtxLogPos = _logPosFromEvent(e, axis);
+
+  document.getElementById('rulerCtxAddLabel').textContent =
+    axis === 'h' ? 'Add horizontal guide' : 'Add vertical guide';
+
+  // Update checkmarks
+  document.getElementById('rulerCtxGuidesCheck').textContent = rulerGuidesVisible ? '✓' : ' ';
+  document.getElementById('rulerCtxRulerCheck').textContent  = rulerVisible       ? '✓' : ' ';
+  document.getElementById('unitCheckPx').textContent = rulerUnits === 'px' ? '✓' : ' ';
+  document.getElementById('unitCheckIn').textContent = rulerUnits === 'in' ? '✓' : ' ';
+  document.getElementById('unitCheckCm').textContent = rulerUnits === 'cm' ? '✓' : ' ';
+
+  const menu = document.getElementById('rulerCtxMenu');
+  menu.classList.add('open');
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const mw = 210, mh = menu.offsetHeight || 220;
+  menu.style.left = Math.min(e.clientX, vw - mw - 8) + 'px';
+  menu.style.top  = Math.min(e.clientY, vh - mh - 8) + 'px';
+}
+
+window.hideRulerCtxMenu = function() {
+  document.getElementById('rulerCtxMenu').classList.remove('open');
+};
+
+document.addEventListener('click', e => {
+  if (!document.getElementById('rulerCtxMenu').contains(e.target)) hideRulerCtxMenu();
+});
+
+window.rulerCtxAddGuide = function() {
+  hideRulerCtxMenu();
+  const pos = _rulerCtxLogPos;
+  const axis = _rulerCtxAxis;
+  // Clamp to canvas bounds
+  const max = axis === 'h' ? CANVAS_H : CANVAS_W;
+  if (pos < 0 || pos > max) return;
+  if (!rulerGuides[axis].includes(pos)) {
+    rulerGuides[axis].push(pos);
+    rulerGuides[axis].sort((a, b) => a - b);
+  }
+  renderRulerGuides();
+};
+
+window.toggleRulerGuides = function() {
+  rulerGuidesVisible = !rulerGuidesVisible;
+  document.getElementById('rulerGuidesOverlay').style.display = rulerGuidesVisible ? '' : 'none';
+};
+
+window.toggleRulerVisibility = function() {
+  rulerVisible = !rulerVisible;
+  const surround = document.getElementById('canvasSurround');
+  if (rulerVisible) {
+    surround.style.gridTemplateColumns = '22px 1fr';
+    surround.style.gridTemplateRows    = '22px 1fr';
+    ['rulerCorner','rulerHWrap','rulerVWrap'].forEach(id => {
+      document.getElementById(id).style.display = '';
+    });
+  } else {
+    surround.style.gridTemplateColumns = '0 1fr';
+    surround.style.gridTemplateRows    = '0 1fr';
+    ['rulerCorner','rulerHWrap','rulerVWrap'].forEach(id => {
+      document.getElementById(id).style.display = 'none';
+    });
+  }
+  setTimeout(drawRulers, 50);  // re-measure after layout shift
+};
+
+window.setRulerUnits = function(unit) {
+  rulerUnits = unit;
+  drawRulers();
+};
+
+function _fmtRulerLabel(logicalPx) {
+  if (rulerUnits === 'in') {
+    const v = logicalPx / RULER_DPI;
+    return v % 1 === 0 ? v + '"' : v.toFixed(1) + '"';
+  }
+  if (rulerUnits === 'cm') {
+    const v = logicalPx / RULER_DPI * 2.54;
+    return v % 1 === 0 ? v + ' cm' : v.toFixed(1) + ' cm';
+  }
+  return String(logicalPx);
+}
+
+function renderRulerGuides() {
+  const overlay = document.getElementById('rulerGuidesOverlay');
+  if (!overlay || !fabricCanvas) return;
+  const zoom = fabricCanvas.getZoom();
+  overlay.innerHTML = '';
+  rulerGuides.v.forEach(x => {
+    const el = document.createElement('div');
+    el.className   = 'ruler-guide-v';
+    el.style.left  = Math.round(x * zoom) + 'px';
+    el.title       = `x = ${x}px`;
+    overlay.appendChild(el);
+  });
+  rulerGuides.h.forEach(y => {
+    const el = document.createElement('div');
+    el.className  = 'ruler-guide-h';
+    el.style.top  = Math.round(y * zoom) + 'px';
+    el.title      = `y = ${y}px`;
+    overlay.appendChild(el);
+  });
+}
+
+// Edit Guides modal
+window.openEditGuides = function() {
+  renderEditGuidesList();
+  document.getElementById('editGuidesModal').classList.add('open');
+};
+
+window.closeEditGuides = function() {
+  document.getElementById('editGuidesModal').classList.remove('open');
+};
+
+function renderEditGuidesList() {
+  const listV = document.getElementById('editGuidesV');
+  const listH = document.getElementById('editGuidesH');
+  const units = rulerUnits;
+
+  listV.innerHTML = rulerGuides.v.length
+    ? rulerGuides.v.map((x, i) =>
+        `<div class="edit-guide-row">
+          <span>x = ${x}px${units !== 'px' ? ` (${_fmtRulerLabel(x)})` : ''}</span>
+          <button class="edit-guide-del" onclick="deleteGuide('v',${i})">✕</button>
+        </div>`).join('')
+    : '<div style="font-size:12px;color:var(--muted)">No vertical guides</div>';
+
+  listH.innerHTML = rulerGuides.h.length
+    ? rulerGuides.h.map((y, i) =>
+        `<div class="edit-guide-row">
+          <span>y = ${y}px${units !== 'px' ? ` (${_fmtRulerLabel(y)})` : ''}</span>
+          <button class="edit-guide-del" onclick="deleteGuide('h',${i})">✕</button>
+        </div>`).join('')
+    : '<div style="font-size:12px;color:var(--muted)">No horizontal guides</div>';
+}
+
+window.deleteGuide = function(axis, idx) {
+  rulerGuides[axis].splice(idx, 1);
+  renderRulerGuides();
+  renderEditGuidesList();
+};
+
+window.addGuideFromInput = function(axis) {
+  const inputId = axis === 'v' ? 'addGuideVInput' : 'addGuideHInput';
+  const val     = parseInt(document.getElementById(inputId).value);
+  const max     = axis === 'v' ? CANVAS_W : CANVAS_H;
+  if (isNaN(val) || val < 0 || val > max) {
+    toast(`Enter a value between 0 and ${max}`, true);
+    return;
+  }
+  if (!rulerGuides[axis].includes(val)) {
+    rulerGuides[axis].push(val);
+    rulerGuides[axis].sort((a, b) => a - b);
+  }
+  document.getElementById(inputId).value = '';
+  renderRulerGuides();
+  renderEditGuidesList();
+};
+
+// Attach ruler context menu listeners immediately (module runs after DOM is parsed)
+(function() {
+  function onRulerEvent(e, axis) {
+    if (e.type === 'contextmenu' || e.button === 0) showRulerCtxMenu(e, axis);
+  }
+  const hWrap = document.getElementById('rulerHWrap');
+  const vWrap = document.getElementById('rulerVWrap');
+  if (hWrap) {
+    hWrap.addEventListener('contextmenu', e => onRulerEvent(e, 'h'));
+    hWrap.addEventListener('click',       e => onRulerEvent(e, 'h'));
+  }
+  if (vWrap) {
+    vWrap.addEventListener('contextmenu', e => onRulerEvent(e, 'v'));
+    vWrap.addEventListener('click',       e => onRulerEvent(e, 'v'));
+  }
+})();
 
 function initFabricCanvas() {
   try {
