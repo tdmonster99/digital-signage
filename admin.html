@@ -7360,19 +7360,26 @@ window.publishToScreens = function() {
 function _openPublishModal() {
   // Ensure screens are loaded even if the Screens page was never visited
   if (!screensUnsub) initScreensPage();
-  const screens  = _cachedScreens || [];
-  const listEl   = document.getElementById('publishScreenList');
-  const shows    = getAllShows();
+  const listEl = document.getElementById('publishScreenList');
+  const shows  = getAllShows();
+
+  // If snapshot hasn't fired yet, show a spinner and re-render when it does
+  if (!_screensReady) {
+    _pendingPublishModal = true;
+    listEl.innerHTML = `<div class="publish-empty"><div class="pairing-spinner" style="margin:0 auto"></div></div>`;
+    _publishSelectedIds = new Set();
+    _updatePublishFooter();
+    document.getElementById('publishModal').classList.add('open');
+    return;
+  }
+
+  const screens = _cachedScreens || [];
 
   if (!screens.length) {
     listEl.innerHTML = `<div class="publish-empty">
       <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:.4;margin-bottom:10px"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
       <div style="margin-bottom:4px;font-weight:500">No screens registered yet</div>
-      <div style="font-size:13px;color:var(--muted);margin-bottom:16px">Pair a display to get started</div>
-      <button class="btn btn-primary" onclick="closePublishModal();_reopenPublishAfterPairing=true;openAddScreenModal()">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right:6px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        Add a Screen
-      </button>
+      <div style="font-size:13px;color:var(--muted)">Use the <strong>+ Add Screen</strong> button below to pair a display</div>
     </div>`;
     _publishSelectedIds = new Set();
   } else {
@@ -13387,6 +13394,8 @@ let pairingInterval = null;
 let pairingExpiry   = null;
 let pairingTimerInterval = null;
 let _cachedScreens  = [];
+let _screensReady   = false;
+let _pendingPublishModal = false;
 
 function initScreensPage() {
   if (screensUnsub) { renderScreens(_cachedScreens); return; }
@@ -13396,7 +13405,13 @@ function initScreensPage() {
   screensUnsub = onSnapshot(q,
     snap => {
       _cachedScreens = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      _screensReady  = true;
       renderScreens(_cachedScreens);
+      // Re-render publish modal if it was opened before data arrived
+      if (_pendingPublishModal && document.getElementById('publishModal').classList.contains('open')) {
+        _pendingPublishModal = false;
+        _openPublishModal();
+      }
     },
     err => console.warn('Screens listener error:', err.message)
   );
