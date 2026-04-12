@@ -2641,19 +2641,82 @@ body.role-editor .admin-action {
   text-align: center; padding: 60px 24px; color: var(--muted); font-size: 13px;
 }
 
-/* ── Settings / Team page ──────────────────────────────────────────── */
-#page-settings.active { flex-direction: column; padding: 32px; gap: 0; }
-.settings-layout { display: flex; flex-direction: column; gap: 32px; max-width: 720px; }
-.settings-section {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: 14px; overflow: hidden;
-}
-.settings-section-header {
-  padding: 18px 24px; border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; justify-content: space-between;
-}
+/* ── Settings Hub ────────────────────────────────────────────────── */
+#page-settings.active { flex-direction: column; padding: 0; gap: 0; overflow-y: auto; }
+.settings-hub-wrap { padding: 32px; }
+.settings-hub-section { margin-bottom: 28px; }
+.settings-hub-cat { font-size: 12px; font-weight: 700; color: var(--accent); letter-spacing: .08em; text-transform: uppercase; margin-bottom: 10px; }
+.settings-hub-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+.settings-hub-row { display: flex; align-items: center; gap: 16px; padding: 16px 20px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background .12s; }
+.settings-hub-row:last-child { border-bottom: none; }
+.settings-hub-row:hover { background: var(--surface2); }
+.sh-icon { width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0; background: var(--surface2); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; color: var(--muted); }
+.sh-body { flex: 1; min-width: 0; }
+.sh-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+.sh-desc  { font-size: 12px; color: var(--muted); line-height: 1.4; }
+.sh-status { font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; margin-left: 8px; }
+.sh-arrow { color: var(--border); flex-shrink: 0; margin-left: 4px; }
+
+/* Settings sub-views */
+.settings-sub { display: none; padding: 32px; }
+.settings-sub.active { display: block; }
+.settings-sub-hdr { display: flex; align-items: center; gap: 14px; margin-bottom: 28px; }
+.settings-back { display: flex; align-items: center; gap: 6px; background: none; border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; font-size: 12px; font-weight: 500; color: var(--muted); cursor: pointer; font-family: 'DM Sans', sans-serif; transition: color .15s, border-color .15s; }
+.settings-back:hover { border-color: var(--accent); color: var(--accent); }
+.settings-sub-title { font-size: 20px; font-weight: 700; color: var(--text); }
+.settings-section { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; margin-bottom: 20px; }
+.settings-section-header { padding: 18px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
 .settings-section-title { font-size: 15px; font-weight: 700; color: var(--text); }
 .settings-section-body  { padding: 20px 24px; }
+
+/* ── Profile page ────────────────────────────────────────────────── */
+#page-profile.active { flex-direction: column; padding: 32px; overflow-y: auto; }
+.profile-wrap { max-width: 800px; }
+.profile-page-title { font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 24px; }
+.profile-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+.profile-tabs { display: flex; border-bottom: 1px solid var(--border); padding: 0 8px; overflow-x: auto; }
+.profile-tab { padding: 14px 16px; font-size: 13px; font-weight: 500; color: var(--muted); background: none; border: none; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; font-family: 'DM Sans', sans-serif; transition: color .15s; }
+.profile-tab:hover { color: var(--text); }
+.profile-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.profile-pane { display: none; }
+.profile-pane.active { display: block; }
+.profile-pane-body { padding: 28px 32px; }
+.pf-row { display: flex; align-items: center; margin-bottom: 16px; }
+.pf-label { width: 150px; flex-shrink: 0; font-size: 13px; color: var(--muted); text-align: right; padding-right: 20px; }
+.pf-label.req::after { content: '*'; color: var(--danger); margin-left: 2px; }
+.pf-ctrl { flex: 1; }
+.pf-ctrl input, .pf-ctrl select { width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface2); color: var(--text); font-size: 13px; font-family: 'DM Sans', sans-serif; outline: none; transition: border-color .15s; }
+.pf-ctrl input:focus, .pf-ctrl select:focus { border-color: var(--accent); }
+.pf-ctrl input[readonly] { color: var(--muted); cursor: default; background: var(--bg); }
+.pf-section { font-size: 14px; font-weight: 700; color: var(--text); border-bottom: 1px solid var(--border); padding-bottom: 10px; margin: 24px 0 16px; }
+.pf-radio-group { display: flex; flex-direction: column; gap: 10px; }
+.pf-radio-item { display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; }
+.pf-radio-item input[type="radio"] { accent-color: var(--accent); width: 16px; height: 16px; cursor: pointer; }
+.pf-radio-sep { width: 1px; height: 14px; background: var(--border); margin: 0 4px; }
+.pf-radio-hint { font-size: 12px; color: var(--muted); }
+.pf-footer { display: flex; justify-content: flex-end; gap: 10px; padding: 16px 32px; border-top: 1px solid var(--border); }
+.notif-row { display: flex; align-items: center; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--border); }
+.notif-row:last-of-type { border-bottom: none; }
+.notif-label { flex: 1; font-size: 13px; color: var(--text); text-align: right; padding-right: 12px; }
+.notif-info { background: rgba(0,67,206,.06); border: 1px solid rgba(0,67,206,.15); border-radius: 10px; padding: 14px 16px; margin: 12px 0; font-size: 13px; line-height: 1.5; }
+[data-theme="dark"] .notif-info { background: rgba(77,139,255,.08); border-color: rgba(77,139,255,.18); }
+.notif-info a { color: var(--accent); text-decoration: underline; cursor: pointer; }
+.sw { position: relative; width: 44px; height: 24px; display: inline-block; flex-shrink: 0; }
+.sw input { opacity: 0; width: 0; height: 0; position: absolute; }
+.sw-track { position: absolute; inset: 0; background: var(--border); border-radius: 24px; cursor: pointer; transition: background .2s; }
+.sw-track::after { content: ''; position: absolute; left: 2px; top: 2px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: transform .2s; box-shadow: 0 1px 3px rgba(0,0,0,.18); }
+.sw input:checked ~ .sw-track { background: var(--accent); }
+.sw input:checked ~ .sw-track::after { transform: translateX(20px); }
+.pw-wrap { position: relative; }
+.pw-wrap input { padding-right: 42px !important; }
+.pw-eye { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--muted); padding: 4px; display: flex; align-items: center; }
+.pw-eye:hover { color: var(--text); }
+.danger-link { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); cursor: pointer; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface2); }
+.danger-link:hover { border-color: var(--danger); color: var(--danger); background: var(--danger-bg); }
+.theme-opt { flex: 1; max-width: 160px; border: 2px solid var(--border); border-radius: 12px; padding: 14px; cursor: pointer; transition: border-color .15s; }
+.theme-opt:hover, .theme-opt.selected { border-color: var(--accent); }
+.sidebar-user-area { cursor: pointer; border-radius: 8px; padding: 4px 6px; margin: -4px -6px; transition: background .15s; }
+.sidebar-user-area:hover { background: var(--surface2); }
 .team-member-row {
   display: flex; align-items: center; gap: 12px;
   padding: 12px 0; border-bottom: 1px solid var(--border);
@@ -3096,20 +3159,32 @@ body.role-editor .admin-action {
       </svg>
       Settings
     </button>
+    <button class="nav-item" data-page="profile" onclick="showPage('profile')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+        <circle cx="12" cy="7" r="4"/>
+      </svg>
+      My Profile
+    </button>
   </div>
   <div class="sidebar-footer">
     <span id="liveBadge" class="live-badge offline">Offline</span>
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:6px">
-      <div style="display:flex;flex-direction:column;gap:2px;min-width:0">
-        <span id="userEmail" class="sidebar-user-email"></span>
-        <span id="roleBadge" class="role-badge" style="display:none"></span>
+    <div class="sidebar-user-area" onclick="showPage('profile')" title="My Profile">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:6px">
+        <div style="display:flex;flex-direction:column;gap:2px;min-width:0">
+          <span id="userEmail" class="sidebar-user-email"></span>
+          <span id="roleBadge" class="role-badge" style="display:none"></span>
+        </div>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="color:var(--muted);flex-shrink:0"><path d="M9 18l6-6-6-6"/></svg>
       </div>
-      <button id="themeToggle" class="btn btn-secondary" style="padding:5px 10px;font-size:12px;flex-shrink:0" onclick="toggleTheme()">
+    </div>
+    <div style="display:flex;gap:6px">
+      <button id="themeToggle" class="btn btn-secondary" style="padding:5px 10px;font-size:12px;flex:1" onclick="toggleTheme()">
         <span class="theme-moon">🌙 Dark</span>
         <span class="theme-sun">☀ Light</span>
       </button>
+      <button id="authBtn" class="btn btn-secondary" style="padding:7px 10px;font-size:12px" onclick="handleAuth()">Sign Out</button>
     </div>
-    <button id="authBtn" class="btn btn-secondary" style="padding:7px 14px;font-size:12px" onclick="handleAuth()">Sign In</button>
   </div>
 </nav>
 
@@ -3886,17 +3961,196 @@ body.role-editor .admin-action {
   </div>
 
   <div id="page-settings" class="page">
-    <div class="settings-layout">
 
-      <!-- Billing -->
+    <!-- ── Settings Hub ───────────────────────────────────────────── -->
+    <div id="settingsHub" class="settings-hub-wrap">
+
+      <!-- Subscription -->
+      <div class="settings-hub-section">
+        <div class="settings-hub-cat">Subscription</div>
+        <div class="settings-hub-card">
+          <div class="settings-hub-row" onclick="showSettingsSub('billing')">
+            <div class="sh-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+            </div>
+            <div class="sh-body">
+              <div class="sh-title">Account Subscription</div>
+              <div class="sh-desc">Upgrade your Zigns plan to unlock more screens and features.</div>
+            </div>
+            <span class="sh-status" id="shPlanStatus">Free</span>
+            <svg class="sh-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+          <div class="settings-hub-row" id="shBillingPortalRow" onclick="openBillingPortal()" style="display:none">
+            <div class="sh-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            </div>
+            <div class="sh-body">
+              <div class="sh-title">Manage Billing</div>
+              <div class="sh-desc">View invoices and manage your payment method.</div>
+            </div>
+            <svg class="sh-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Organization -->
+      <div class="settings-hub-section">
+        <div class="settings-hub-cat">Organization</div>
+        <div class="settings-hub-card">
+          <div class="settings-hub-row" onclick="showSettingsSub('org')">
+            <div class="sh-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            </div>
+            <div class="sh-body">
+              <div class="sh-title">Organization Name</div>
+              <div class="sh-desc">Set the display name for your organization.</div>
+            </div>
+            <span class="sh-status" id="shOrgNameStatus" style="max-width:180px;overflow:hidden;text-overflow:ellipsis">—</span>
+            <svg class="sh-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Team & Access -->
+      <div class="settings-hub-section">
+        <div class="settings-hub-cat">Team &amp; Access</div>
+        <div class="settings-hub-card">
+          <div class="settings-hub-row" onclick="showSettingsSub('team')">
+            <div class="sh-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <div class="sh-body">
+              <div class="sh-title">Team Members</div>
+              <div class="sh-desc">Add users to your account with different access levels.</div>
+            </div>
+            <span class="sh-status" id="shMembersStatus">—</span>
+            <svg class="sh-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+          <div class="settings-hub-row" onclick="showSettingsSub('roles')">
+            <div class="sh-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+            <div class="sh-body">
+              <div class="sh-title">Roles &amp; Permissions</div>
+              <div class="sh-desc">View the access levels for Admin, Editor, and Viewer roles.</div>
+            </div>
+            <svg class="sh-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Screens -->
+      <div class="settings-hub-section">
+        <div class="settings-hub-cat">Screens</div>
+        <div class="settings-hub-card">
+          <div class="settings-hub-row" onclick="showSettingsSub('screentags')">
+            <div class="sh-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+            </div>
+            <div class="sh-body">
+              <div class="sh-title">Screen Tags</div>
+              <div class="sh-desc">Create and manage tags to organize your screens.</div>
+            </div>
+            <span class="sh-status" id="shTagsStatus">0 Tags</span>
+            <svg class="sh-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+          <div class="settings-hub-row" onclick="showSettingsSub('bootscreen')">
+            <div class="sh-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            </div>
+            <div class="sh-body">
+              <div class="sh-title">Boot Screen</div>
+              <div class="sh-desc">Show a custom image when your screens start up.</div>
+            </div>
+            <span class="sh-status">Default</span>
+            <svg class="sh-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Content -->
+      <div class="settings-hub-section">
+        <div class="settings-hub-cat">Content</div>
+        <div class="settings-hub-card">
+          <div class="settings-hub-row" onclick="showPage('brandkit')">
+            <div class="sh-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg>
+            </div>
+            <div class="sh-body">
+              <div class="sh-title">Brand Kit</div>
+              <div class="sh-desc">Colors, logos, and fonts for your slide content.</div>
+            </div>
+            <svg class="sh-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+          <div class="settings-hub-row" onclick="showSettingsSub('ai')">
+            <div class="sh-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 6v6l4 2"/><path d="M18 2l3 3-3 3"/><path d="M21 5h-6"/></svg>
+            </div>
+            <div class="sh-body">
+              <div class="sh-title">AI Content Generation</div>
+              <div class="sh-desc">Generate text and slide layouts using AI assistance.</div>
+            </div>
+            <span class="sh-status">Enabled</span>
+            <svg class="sh-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+          <div class="settings-hub-row" onclick="showSettingsSub('fonts')">
+            <div class="sh-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+            </div>
+            <div class="sh-body">
+              <div class="sh-title">Custom Fonts</div>
+              <div class="sh-desc">Upload and use your own fonts in slide designs.</div>
+            </div>
+            <span class="sh-status" id="shFontsStatus">0 Custom Fonts</span>
+            <svg class="sh-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Advanced -->
+      <div class="settings-hub-section">
+        <div class="settings-hub-cat">Advanced</div>
+        <div class="settings-hub-card">
+          <div class="settings-hub-row" onclick="showSettingsSub('api')">
+            <div class="sh-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            </div>
+            <div class="sh-body">
+              <div class="sh-title">API Access</div>
+              <div class="sh-desc">Generate tokens to integrate Zigns with external tools.</div>
+            </div>
+            <svg class="sh-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+          <div class="settings-hub-row" onclick="showSettingsSub('privacy')">
+            <div class="sh-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+            <div class="sh-body">
+              <div class="sh-title">Data &amp; Privacy</div>
+              <div class="sh-desc">Manage your account data and privacy settings.</div>
+            </div>
+            <svg class="sh-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /settingsHub -->
+
+    <!-- ── Sub-view: Billing ──────────────────────────────────────── -->
+    <div id="settingsSub-billing" class="settings-sub">
+      <div class="settings-sub-hdr">
+        <button class="settings-back" onclick="showSettingsHub()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+          Settings
+        </button>
+        <h2 class="settings-sub-title">Account Subscription</h2>
+      </div>
       <div class="settings-section">
         <div class="settings-section-header">
           <div class="settings-section-title">Billing &amp; Plan</div>
           <button class="btn btn-secondary" id="manageBillingBtn" onclick="openBillingPortal()" style="display:none">Manage Billing</button>
         </div>
         <div class="settings-section-body">
-
-          <!-- Current plan + usage -->
           <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:24px;flex-wrap:wrap">
             <div>
               <div style="font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.06em">Current Plan</div>
@@ -3907,56 +4161,44 @@ body.role-editor .admin-action {
             </div>
             <div id="usageDisplay" style="display:flex;flex-direction:column;gap:10px;min-width:200px"></div>
           </div>
-
-          <!-- Plan comparison table -->
           <div style="overflow-x:auto">
             <table class="plan-table">
               <thead>
                 <tr>
                   <th style="width:35%">Feature</th>
-                  <th class="plan-col">Early Adopter</th>
-                  <th class="plan-col">Early Adopter</th>
-                  <th class="plan-col">Early Adopter</th>
+                  <th class="plan-col">Free</th>
+                  <th class="plan-col">Starter</th>
+                  <th class="plan-col">Pro</th>
                 </tr>
               </thead>
               <tbody>
-                <tr><td>Price</td>
-                  <td class="plan-col">Free</td><td class="plan-col">$5 / screen / mo</td><td class="plan-col">$50 / mo</td></tr>
-                <tr><td>Screens</td>
-                  <td class="plan-col">1</td><td class="plan-col">Unlimited</td><td class="plan-col">Unlimited</td></tr>
-                <tr><td>Users</td>
-                  <td class="plan-col">1</td><td class="plan-col">Unlimited</td><td class="plan-col">Unlimited</td></tr>
-                <tr><td>Storage</td>
-                  <td class="plan-col">1 GB</td><td class="plan-col">10 GB</td><td class="plan-col">50 GB</td></tr>
-                <tr><td>All Templates</td>
-                  <td class="plan-col"><span class="plan-x">✗</span></td>
-                  <td class="plan-col"><span class="plan-check">✓</span></td>
-                  <td class="plan-col"><span class="plan-check">✓</span></td></tr>
-                <tr><td>Scheduling</td>
-                  <td class="plan-col"><span class="plan-x">✗</span></td>
-                  <td class="plan-col"><span class="plan-check">✓</span></td>
-                  <td class="plan-col"><span class="plan-check">✓</span></td></tr>
-                <tr><td>Support</td>
-                  <td class="plan-col">—</td>
-                  <td class="plan-col">Email</td>
-                  <td class="plan-col">Priority</td></tr>
-                <tr id="planActionRow">
-                  <td></td>
-                  <td class="plan-col" id="freePlanAction"></td>
-                  <td class="plan-col" id="starterPlanAction"></td>
-                  <td class="plan-col" id="proPlanAction"></td>
-                </tr>
+                <tr><td>Price</td><td class="plan-col">Free</td><td class="plan-col">$5/screen/mo</td><td class="plan-col">$50/mo</td></tr>
+                <tr><td>Screens</td><td class="plan-col">1</td><td class="plan-col">Unlimited</td><td class="plan-col">Unlimited</td></tr>
+                <tr><td>Users</td><td class="plan-col">1</td><td class="plan-col">Unlimited</td><td class="plan-col">Unlimited</td></tr>
+                <tr><td>Storage</td><td class="plan-col">1 GB</td><td class="plan-col">10 GB</td><td class="plan-col">50 GB</td></tr>
+                <tr><td>All Templates</td><td class="plan-col"><span class="plan-x">✗</span></td><td class="plan-col"><span class="plan-check">✓</span></td><td class="plan-col"><span class="plan-check">✓</span></td></tr>
+                <tr><td>Scheduling</td><td class="plan-col"><span class="plan-x">✗</span></td><td class="plan-col"><span class="plan-check">✓</span></td><td class="plan-col"><span class="plan-check">✓</span></td></tr>
+                <tr><td>Support</td><td class="plan-col">—</td><td class="plan-col">Email</td><td class="plan-col">Priority</td></tr>
+                <tr id="planActionRow"><td></td><td class="plan-col" id="freePlanAction"></td><td class="plan-col" id="starterPlanAction"></td><td class="plan-col" id="proPlanAction"></td></tr>
               </tbody>
             </table>
           </div>
-
         </div>
       </div>
+    </div>
 
-      <!-- Organization -->
+    <!-- ── Sub-view: Organization ─────────────────────────────────── -->
+    <div id="settingsSub-org" class="settings-sub">
+      <div class="settings-sub-hdr">
+        <button class="settings-back" onclick="showSettingsHub()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+          Settings
+        </button>
+        <h2 class="settings-sub-title">Organization</h2>
+      </div>
       <div class="settings-section">
         <div class="settings-section-header">
-          <div class="settings-section-title">Organization</div>
+          <div class="settings-section-title">Organization Name</div>
         </div>
         <div class="settings-section-body" style="display:flex;gap:12px;align-items:flex-end">
           <div style="flex:1">
@@ -3966,8 +4208,17 @@ body.role-editor .admin-action {
           <button class="btn btn-primary admin-action" onclick="saveOrgName()">Save</button>
         </div>
       </div>
+    </div>
 
-      <!-- Team Members -->
+    <!-- ── Sub-view: Team ─────────────────────────────────────────── -->
+    <div id="settingsSub-team" class="settings-sub">
+      <div class="settings-sub-hdr">
+        <button class="settings-back" onclick="showSettingsHub()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+          Settings
+        </button>
+        <h2 class="settings-sub-title">Team Members</h2>
+      </div>
       <div class="settings-section">
         <div class="settings-section-header">
           <div class="settings-section-title">Team Members</div>
@@ -3980,8 +4231,6 @@ body.role-editor .admin-action {
           <div id="teamMembersList"><p style="font-size:13px;color:var(--muted)">Loading…</p></div>
         </div>
       </div>
-
-      <!-- Pending Invitations -->
       <div class="settings-section" id="pendingInvitesSection" style="display:none">
         <div class="settings-section-header">
           <div class="settings-section-title">Pending Invitations</div>
@@ -3990,9 +4239,445 @@ body.role-editor .admin-action {
           <div id="pendingInvitesList"></div>
         </div>
       </div>
-
     </div>
-  </div>
+
+    <!-- ── Sub-view: Roles ────────────────────────────────────────── -->
+    <div id="settingsSub-roles" class="settings-sub">
+      <div class="settings-sub-hdr">
+        <button class="settings-back" onclick="showSettingsHub()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+          Settings
+        </button>
+        <h2 class="settings-sub-title">Roles &amp; Permissions</h2>
+      </div>
+      <div class="settings-section">
+        <div class="settings-section-body">
+          <div style="display:flex;flex-direction:column;gap:20px">
+            <div>
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span class="role-badge admin">admin</span><span style="font-size:14px;font-weight:600">Admin</span></div>
+              <p style="font-size:13px;color:var(--muted)">Full access including team management, billing, and all screens. Can invite and remove members and change roles.</p>
+            </div>
+            <div style="border-top:1px solid var(--border);padding-top:20px">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span class="role-badge editor">editor</span><span style="font-size:14px;font-weight:600">Editor</span></div>
+              <p style="font-size:13px;color:var(--muted)">Can create and edit slideshows and slides. Cannot manage team members or billing settings.</p>
+            </div>
+            <div style="border-top:1px solid var(--border);padding-top:20px">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span class="role-badge viewer">viewer</span><span style="font-size:14px;font-weight:600">Viewer</span></div>
+              <p style="font-size:13px;color:var(--muted)">Read-only access. Can view slideshows and screens but cannot make any changes.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Sub-view: Screen Tags ──────────────────────────────────── -->
+    <div id="settingsSub-screentags" class="settings-sub">
+      <div class="settings-sub-hdr">
+        <button class="settings-back" onclick="showSettingsHub()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+          Settings
+        </button>
+        <h2 class="settings-sub-title">Screen Tags</h2>
+      </div>
+      <div class="settings-section">
+        <div class="settings-section-header">
+          <div class="settings-section-title">Manage Tags</div>
+          <button class="btn btn-primary" onclick="openAddScreenTagModal()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add Tag
+          </button>
+        </div>
+        <div class="settings-section-body">
+          <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Tags help you organize and filter your screens. Assign tags to screens from the Screens page.</p>
+          <div id="screenTagsList"><p style="font-size:13px;color:var(--muted)">No tags yet. Add a tag to get started.</p></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Sub-view: Boot Screen ──────────────────────────────────── -->
+    <div id="settingsSub-bootscreen" class="settings-sub">
+      <div class="settings-sub-hdr">
+        <button class="settings-back" onclick="showSettingsHub()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+          Settings
+        </button>
+        <h2 class="settings-sub-title">Boot Screen</h2>
+      </div>
+      <div class="settings-section">
+        <div class="settings-section-body">
+          <p style="font-size:13px;color:var(--muted);margin-bottom:20px">Choose a custom image to display while your screens are loading.</p>
+          <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+            <div style="width:160px;height:90px;border:2px dashed var(--border);border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--surface2);color:var(--muted)">
+              <div style="text-align:center">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                <div style="font-size:11px;margin-top:6px">Default</div>
+              </div>
+            </div>
+            <div>
+              <p style="font-size:13px;font-weight:600;margin-bottom:6px">Boot Screen Logo</p>
+              <p style="font-size:12px;color:var(--muted);margin-bottom:12px">Recommended: 1920×1080px PNG or JPEG</p>
+              <button class="btn btn-secondary" style="font-size:12px">Upload Image</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Sub-view: AI ───────────────────────────────────────────── -->
+    <div id="settingsSub-ai" class="settings-sub">
+      <div class="settings-sub-hdr">
+        <button class="settings-back" onclick="showSettingsHub()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+          Settings
+        </button>
+        <h2 class="settings-sub-title">AI Content Generation</h2>
+      </div>
+      <div class="settings-section">
+        <div class="settings-section-body">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:20px;padding:8px 0">
+            <div>
+              <div style="font-size:14px;font-weight:600;margin-bottom:4px">Enable AI Content Generation</div>
+              <div style="font-size:12px;color:var(--muted)">Use AI to generate text, rewrite content, and create slide layouts.</div>
+            </div>
+            <label class="sw">
+              <input type="checkbox" id="aiEnabledToggle" checked>
+              <span class="sw-track"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Sub-view: Custom Fonts ─────────────────────────────────── -->
+    <div id="settingsSub-fonts" class="settings-sub">
+      <div class="settings-sub-hdr">
+        <button class="settings-back" onclick="showSettingsHub()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+          Settings
+        </button>
+        <h2 class="settings-sub-title">Custom Fonts</h2>
+      </div>
+      <div class="settings-section">
+        <div class="settings-section-header">
+          <div class="settings-section-title">Uploaded Fonts</div>
+          <button class="btn btn-primary" style="font-size:12px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Upload Font
+          </button>
+        </div>
+        <div class="settings-section-body">
+          <p style="font-size:13px;color:var(--muted)">Upload .ttf, .otf, or .woff2 font files to use in your slide designs. Custom fonts will appear in the font picker in the slide editor.</p>
+          <div style="margin-top:16px;padding:32px;text-align:center;border:2px dashed var(--border);border-radius:10px;color:var(--muted)">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" style="margin-bottom:10px"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+            <p style="font-size:13px">No custom fonts uploaded yet</p>
+            <p style="font-size:12px;margin-top:4px">Supports .ttf, .otf, .woff2</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Sub-view: API ──────────────────────────────────────────── -->
+    <div id="settingsSub-api" class="settings-sub">
+      <div class="settings-sub-hdr">
+        <button class="settings-back" onclick="showSettingsHub()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+          Settings
+        </button>
+        <h2 class="settings-sub-title">API Access</h2>
+      </div>
+      <div class="settings-section">
+        <div class="settings-section-header">
+          <div class="settings-section-title">API Tokens</div>
+          <button class="btn btn-primary" style="font-size:12px" onclick="generateApiToken()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Generate Token
+          </button>
+        </div>
+        <div class="settings-section-body">
+          <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Use API tokens to authenticate and authorize access to Zigns from external applications and services.</p>
+          <div id="apiTokensList">
+            <div style="padding:24px;text-align:center;border:2px dashed var(--border);border-radius:10px;color:var(--muted)">
+              <p style="font-size:13px">No API tokens yet</p>
+              <p style="font-size:12px;margin-top:4px">Generate a token to get started</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Sub-view: Privacy ──────────────────────────────────────── -->
+    <div id="settingsSub-privacy" class="settings-sub">
+      <div class="settings-sub-hdr">
+        <button class="settings-back" onclick="showSettingsHub()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+          Settings
+        </button>
+        <h2 class="settings-sub-title">Data &amp; Privacy</h2>
+      </div>
+      <div class="settings-section">
+        <div class="settings-section-body">
+          <div style="font-size:14px;font-weight:600;margin-bottom:12px">How we use your data</div>
+          <p style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:16px">Zigns stores your account information, organization data, slideshows, and screen configurations in Firebase. Media files are stored securely in AWS S3. We do not sell your personal data to third parties.</p>
+          <div style="font-size:14px;font-weight:600;margin-bottom:12px;margin-top:20px;padding-top:20px;border-top:1px solid var(--border)">Export your data</div>
+          <p style="font-size:13px;color:var(--muted);margin-bottom:12px">Download a copy of your Zigns account data including slideshows, schedules, and settings.</p>
+          <button class="btn btn-secondary" style="font-size:12px">Request Data Export</button>
+          <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border)">
+            <div style="font-size:14px;font-weight:600;color:var(--danger);margin-bottom:8px">Danger Zone</div>
+            <p style="font-size:13px;color:var(--muted);margin-bottom:12px">Permanently delete your account and all associated data. This action cannot be undone.</p>
+            <button class="btn" style="background:var(--danger-bg);color:var(--danger);border:1px solid var(--danger-border);font-size:12px" onclick="requestAccountDeletion()">Request Account Deletion</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /page-settings -->
+
+  <!-- ── Profile page ───────────────────────────────────────────────── -->
+  <div id="page-profile" class="page">
+    <div class="profile-wrap">
+      <h1 class="profile-page-title">Profile Settings</h1>
+      <div class="profile-card">
+
+        <!-- Tabs -->
+        <div class="profile-tabs">
+          <button class="profile-tab active" onclick="switchProfileTab('basic',this)">Basic Info</button>
+          <button class="profile-tab" onclick="switchProfileTab('notifications',this)">Notifications</button>
+          <button class="profile-tab" onclick="switchProfileTab('password',this)">Password</button>
+          <button class="profile-tab" onclick="switchProfileTab('twofactor',this)">Two Factor</button>
+          <button class="profile-tab" onclick="switchProfileTab('theme',this)">Theme</button>
+        </div>
+
+        <!-- Basic Info pane -->
+        <div id="profilePane-basic" class="profile-pane active">
+          <div class="profile-pane-body">
+            <div class="pf-row">
+              <div class="pf-label">First Name</div>
+              <div class="pf-ctrl"><input type="text" id="pfFirstName" placeholder="First name" autocomplete="given-name"></div>
+            </div>
+            <div class="pf-row">
+              <div class="pf-label">Last Name</div>
+              <div class="pf-ctrl"><input type="text" id="pfLastName" placeholder="Last name" autocomplete="family-name"></div>
+            </div>
+            <div class="pf-row">
+              <div class="pf-label req">Email</div>
+              <div class="pf-ctrl"><input type="email" id="pfEmail" readonly autocomplete="email"></div>
+            </div>
+
+            <div class="pf-section">Time Zone &amp; Language</div>
+            <div class="pf-row">
+              <div class="pf-label">Timezone</div>
+              <div class="pf-ctrl">
+                <select id="pfTimezone">
+                  <option value="America/New_York">America / New York (ET)</option>
+                  <option value="America/Chicago">America / Chicago (CT)</option>
+                  <option value="America/Denver">America / Denver (MT)</option>
+                  <option value="America/Los_Angeles">America / Los Angeles (PT)</option>
+                  <option value="America/Anchorage">America / Anchorage (AKT)</option>
+                  <option value="Pacific/Honolulu">Pacific / Honolulu (HT)</option>
+                  <option value="Europe/London">Europe / London (GMT)</option>
+                  <option value="Europe/Paris">Europe / Paris (CET)</option>
+                  <option value="Europe/Berlin">Europe / Berlin (CET)</option>
+                  <option value="Europe/Moscow">Europe / Moscow (MSK)</option>
+                  <option value="Asia/Dubai">Asia / Dubai (GST)</option>
+                  <option value="Asia/Kolkata">Asia / Kolkata (IST)</option>
+                  <option value="Asia/Singapore">Asia / Singapore (SGT)</option>
+                  <option value="Asia/Tokyo">Asia / Tokyo (JST)</option>
+                  <option value="Asia/Shanghai">Asia / Shanghai (CST)</option>
+                  <option value="Australia/Sydney">Australia / Sydney (AET)</option>
+                  <option value="Pacific/Auckland">Pacific / Auckland (NZT)</option>
+                </select>
+              </div>
+            </div>
+            <div class="pf-row">
+              <div class="pf-label">Language</div>
+              <div class="pf-ctrl">
+                <select id="pfLanguage">
+                  <option value="en">English</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="pf-section">Date &amp; Time</div>
+            <div class="pf-row">
+              <div class="pf-label">Date Format</div>
+              <div class="pf-ctrl">
+                <select id="pfDateFormat">
+                  <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                  <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                  <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+                  <option value="MMM D, YYYY">MMM D, YYYY</option>
+                </select>
+              </div>
+            </div>
+            <div class="pf-row" style="align-items:flex-start">
+              <div class="pf-label" style="padding-top:2px">Time Format</div>
+              <div class="pf-ctrl">
+                <div class="pf-radio-group">
+                  <label class="pf-radio-item">
+                    <input type="radio" name="pfTimeFormat" value="12" checked>
+                    12-hour
+                    <span class="pf-radio-sep"></span>
+                    <span class="pf-radio-hint">5:14 AM</span>
+                  </label>
+                  <label class="pf-radio-item">
+                    <input type="radio" name="pfTimeFormat" value="24">
+                    24-hour
+                    <span class="pf-radio-sep"></span>
+                    <span class="pf-radio-hint">17:14</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+            <div class="pf-row" style="align-items:flex-start">
+              <div class="pf-label" style="padding-top:2px">First Day of Week</div>
+              <div class="pf-ctrl">
+                <div class="pf-radio-group">
+                  <label class="pf-radio-item"><input type="radio" name="pfFirstDay" value="monday" checked> Monday</label>
+                  <label class="pf-radio-item"><input type="radio" name="pfFirstDay" value="sunday"> Sunday</label>
+                </div>
+              </div>
+            </div>
+
+            <div class="pf-section">Cookies &amp; Privacy</div>
+            <div style="padding-left:170px">
+              <label style="display:flex;align-items:flex-start;gap:10px;font-size:13px;cursor:pointer;margin-bottom:4px">
+                <input type="checkbox" id="pfNewsletter" style="accent-color:var(--accent);width:15px;height:15px;flex-shrink:0;margin-top:2px">
+                <span>Do you want to get announcements of new features? <span style="color:var(--muted);font-size:12px">(1 email every 6 weeks)</span></span>
+              </label>
+            </div>
+            <div style="padding-left:170px;margin-top:24px">
+              <button class="danger-link" onclick="requestAccountDeletion()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                Request account deletion
+              </button>
+            </div>
+          </div>
+          <div class="pf-footer">
+            <button class="btn btn-secondary" onclick="loadProfileData()">Cancel</button>
+            <button class="btn btn-primary" onclick="saveProfileBasicInfo()">Save</button>
+          </div>
+        </div>
+
+        <!-- Notifications pane -->
+        <div id="profilePane-notifications" class="profile-pane">
+          <div class="profile-pane-body">
+            <div class="notif-row">
+              <div class="notif-label">Send me an email when a screen goes offline</div>
+              <label class="sw"><input type="checkbox" id="pfNotifOffline" checked><span class="sw-track"></span></label>
+            </div>
+            <div class="notif-row">
+              <div class="notif-label">Send me an email when a screen comes back online</div>
+              <label class="sw"><input type="checkbox" id="pfNotifOnline"><span class="sw-track"></span></label>
+            </div>
+            <div class="notif-info">
+              Want to receive emails only for specific screens?<br>
+              In <a onclick="showPage('screens')">Screen Details</a>, you can customize notifications per screen to ensure the right people are notified at the right time.
+            </div>
+            <div class="notif-row" style="border-bottom:none">
+              <div class="notif-label">Send me an email when someone logs in from a new location</div>
+              <label class="sw"><input type="checkbox" id="pfNotifNewLogin"><span class="sw-track"></span></label>
+            </div>
+          </div>
+          <div class="pf-footer">
+            <button class="btn btn-secondary" onclick="loadProfileData()">Cancel</button>
+            <button class="btn btn-primary" onclick="saveProfileNotifications()">Save</button>
+          </div>
+        </div>
+
+        <!-- Password pane -->
+        <div id="profilePane-password" class="profile-pane">
+          <div class="profile-pane-body">
+            <div class="pf-row">
+              <div class="pf-label req">Old Password</div>
+              <div class="pf-ctrl">
+                <div class="pw-wrap">
+                  <input type="password" id="pfOldPassword" placeholder="Current password" autocomplete="current-password">
+                  <button class="pw-eye" type="button" onclick="togglePwEye('pfOldPassword',this)" tabindex="-1">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="pf-row">
+              <div class="pf-label req">Password</div>
+              <div class="pf-ctrl">
+                <div class="pw-wrap">
+                  <input type="password" id="pfNewPassword" placeholder="New password" autocomplete="new-password">
+                  <button class="pw-eye" type="button" onclick="togglePwEye('pfNewPassword',this)" tabindex="-1">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="pf-row">
+              <div class="pf-label req">Verify Password</div>
+              <div class="pf-ctrl">
+                <div class="pw-wrap">
+                  <input type="password" id="pfVerifyPassword" placeholder="Repeat new password" autocomplete="new-password">
+                  <button class="pw-eye" type="button" onclick="togglePwEye('pfVerifyPassword',this)" tabindex="-1">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div id="pfPasswordError" style="display:none;color:var(--danger);font-size:12px;padding-left:170px;margin-bottom:8px"></div>
+          </div>
+          <div class="pf-footer">
+            <button class="btn btn-secondary" onclick="document.querySelectorAll('#profilePane-password input[type=password]').forEach(i=>i.value='');document.getElementById('pfPasswordError').style.display='none'">Cancel</button>
+            <button class="btn btn-primary" onclick="saveProfilePassword()">Save</button>
+          </div>
+        </div>
+
+        <!-- Two Factor pane -->
+        <div id="profilePane-twofactor" class="profile-pane">
+          <div class="profile-pane-body">
+            <div style="display:flex;align-items:center;gap:16px;font-size:13px;padding:8px 0">
+              <span style="font-size:14px;font-weight:500">Use Two Factor Authentication</span>
+              <label class="sw"><input type="checkbox" id="pfTwoFactor"><span class="sw-track"></span></label>
+            </div>
+            <p style="font-size:12px;color:var(--muted);margin-top:12px;line-height:1.6">Two-factor authentication adds an extra layer of security to your account. When enabled, you'll be required to enter a code from your authenticator app each time you sign in.</p>
+          </div>
+          <div class="pf-footer">
+            <button class="btn btn-secondary">Cancel</button>
+            <button class="btn btn-primary" onclick="saveProfileTwoFactor()">Save</button>
+          </div>
+        </div>
+
+        <!-- Theme pane -->
+        <div id="profilePane-theme" class="profile-pane">
+          <div class="profile-pane-body">
+            <p style="font-size:13px;color:var(--muted);margin-bottom:20px">Choose your preferred display theme for the Zigns dashboard.</p>
+            <div style="display:flex;gap:16px;flex-wrap:wrap">
+              <div class="theme-opt" id="themeOptLight" onclick="selectThemeOpt('light')">
+                <div style="background:#f0f2f5;border:1px solid #e2e6ec;border-radius:8px;height:80px;margin-bottom:12px;display:flex;align-items:center;justify-content:center;overflow:hidden">
+                  <div style="width:55%;height:65%;background:#fff;border-radius:5px;box-shadow:0 1px 4px rgba(0,0,0,.1);display:flex;flex-direction:column">
+                    <div style="height:20%;background:#e2e6ec;border-radius:5px 5px 0 0"></div>
+                  </div>
+                </div>
+                <label class="pf-radio-item" style="justify-content:center">
+                  <input type="radio" name="pfTheme" value="light" style="accent-color:var(--accent)"> Light
+                </label>
+              </div>
+              <div class="theme-opt" id="themeOptDark" onclick="selectThemeOpt('dark')">
+                <div style="background:#0d0f12;border:1px solid #252a38;border-radius:8px;height:80px;margin-bottom:12px;display:flex;align-items:center;justify-content:center;overflow:hidden">
+                  <div style="width:55%;height:65%;background:#151820;border-radius:5px;box-shadow:0 2px 8px rgba(0,0,0,.5);display:flex;flex-direction:column">
+                    <div style="height:20%;background:#252a38;border-radius:5px 5px 0 0"></div>
+                  </div>
+                </div>
+                <label class="pf-radio-item" style="justify-content:center">
+                  <input type="radio" name="pfTheme" value="dark" style="accent-color:var(--accent)"> Dark
+                </label>
+              </div>
+            </div>
+          </div>
+          <div class="pf-footer">
+            <button class="btn btn-primary" onclick="saveProfileTheme()">Save</button>
+          </div>
+        </div>
+
+      </div><!-- /profile-card -->
+    </div><!-- /profile-wrap -->
+  </div><!-- /page-profile -->
 
   <!-- Sign-in modal -->
   <div id="signInModal">
@@ -6298,9 +6983,10 @@ import { getFirestore, doc, collection, setDoc, onSnapshot, getDoc, deleteDoc,
                                        from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, GoogleAuthProvider, OAuthProvider,
          signInWithPopup, signInWithRedirect, getRedirectResult,
-         onAuthStateChanged, signOut,
+         onAuthStateChanged, signOut, updateProfile,
          createUserWithEmailAndPassword, signInWithEmailAndPassword,
-         sendPasswordResetEmail }
+         sendPasswordResetEmail, EmailAuthProvider,
+         reauthenticateWithCredential, updatePassword }
                                        from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getMessaging, getToken, onMessage }
                                        from "https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js";
@@ -14309,8 +14995,214 @@ const _origShowPage = window.showPage;
 window.showPage = function(name) {
   _origShowPage(name);
   if (name === 'schedules') renderScheduleGrid();
-  if (name === 'settings')  renderTeamPage();
+  if (name === 'settings')  { showSettingsHub(); renderTeamPage(); updateSettingsHubStatus(); }
   if (name === 'analytics') loadAnalytics();
+  if (name === 'profile')   loadProfileData();
+};
+
+// ── Settings hub navigation ────────────────────────────────────────────────
+window.showSettingsHub = function() {
+  const hub = document.getElementById('settingsHub');
+  if (hub) hub.style.display = '';
+  document.querySelectorAll('.settings-sub').forEach(el => el.classList.remove('active'));
+};
+
+window.showSettingsSub = function(subId) {
+  const hub = document.getElementById('settingsHub');
+  if (hub) hub.style.display = 'none';
+  document.querySelectorAll('.settings-sub').forEach(el => el.classList.remove('active'));
+  const sub = document.getElementById('settingsSub-' + subId);
+  if (sub) sub.classList.add('active');
+};
+
+function updateSettingsHubStatus() {
+  // Plan status
+  const plan = currentSubscription?.plan || 'free';
+  const planEl = document.getElementById('shPlanStatus');
+  if (planEl) planEl.textContent = plan.charAt(0).toUpperCase() + plan.slice(1) + ' Plan';
+
+  // Show billing portal row if paid
+  const bpRow = document.getElementById('shBillingPortalRow');
+  if (bpRow) bpRow.style.display = (plan !== 'free') ? '' : 'none';
+
+  // Org name
+  const orgEl = document.getElementById('shOrgNameStatus');
+  if (orgEl) orgEl.textContent = currentOrg?.name || '—';
+
+  // Members count
+  const members = currentOrg?.members || [];
+  const memEl = document.getElementById('shMembersStatus');
+  if (memEl) memEl.textContent = members.length + ' Member' + (members.length !== 1 ? 's' : '');
+}
+
+// ── Screen Tags (placeholder) ─────────────────────────────────────────────
+window.openAddScreenTagModal = function() {
+  toast('Screen tags coming soon');
+};
+
+// ── API Token generation (placeholder) ────────────────────────────────────
+window.generateApiToken = function() {
+  toast('API token generation coming soon');
+};
+
+// ── Profile tab switching ─────────────────────────────────────────────────
+window.switchProfileTab = function(tabName, btn) {
+  document.querySelectorAll('.profile-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.profile-pane').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  const pane = document.getElementById('profilePane-' + tabName);
+  if (pane) pane.classList.add('active');
+  // Sync theme options when switching to theme tab
+  if (tabName === 'theme') syncThemeOpts();
+};
+
+// ── Load profile data from Firebase ───────────────────────────────────────
+window.loadProfileData = async function() {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  const emailEl = document.getElementById('pfEmail');
+  if (emailEl) emailEl.value = user.email || '';
+
+  try {
+    const userSnap = await getDoc(doc(db, 'users', user.uid));
+    if (userSnap.exists()) {
+      const d = userSnap.data();
+      const setVal = (id, val) => { const el = document.getElementById(id); if (el && val !== undefined) el.value = val; };
+      const setChk = (id, val) => { const el = document.getElementById(id); if (el) el.checked = !!val; };
+      const setRad = (name, val) => { const el = document.querySelector(`input[name="${name}"][value="${val}"]`); if (el) el.checked = true; };
+
+      setVal('pfFirstName', d.firstName || '');
+      setVal('pfLastName',  d.lastName  || '');
+      if (d.timezone)   setVal('pfTimezone',   d.timezone);
+      if (d.dateFormat) setVal('pfDateFormat', d.dateFormat);
+      if (d.timeFormat) setRad('pfTimeFormat', d.timeFormat);
+      if (d.firstDay)   setRad('pfFirstDay',   d.firstDay);
+      setChk('pfNewsletter',   d.newsletter);
+      setChk('pfNotifOffline', d.notifOffline !== false);
+      setChk('pfNotifOnline',  d.notifOnline  || false);
+      setChk('pfNotifNewLogin',d.notifNewLogin|| false);
+    }
+  } catch(e) { console.warn('Could not load profile:', e.message); }
+
+  syncThemeOpts();
+};
+
+// ── Save profile: Basic Info ───────────────────────────────────────────────
+window.saveProfileBasicInfo = async function() {
+  const user = auth.currentUser;
+  if (!user) { toast('Not signed in', true); return; }
+  try {
+    const data = {
+      firstName:   (document.getElementById('pfFirstName')?.value || '').trim(),
+      lastName:    (document.getElementById('pfLastName')?.value  || '').trim(),
+      timezone:    document.getElementById('pfTimezone')?.value   || 'America/New_York',
+      dateFormat:  document.getElementById('pfDateFormat')?.value || 'MM/DD/YYYY',
+      timeFormat:  document.querySelector('input[name="pfTimeFormat"]:checked')?.value || '12',
+      firstDay:    document.querySelector('input[name="pfFirstDay"]:checked')?.value   || 'monday',
+      newsletter:  document.getElementById('pfNewsletter')?.checked || false,
+    };
+    await updateDoc(doc(db, 'users', user.uid), data);
+    const fullName = [data.firstName, data.lastName].filter(Boolean).join(' ');
+    if (fullName && user.displayName !== fullName) {
+      await updateProfile(user, { displayName: fullName });
+    }
+    toast('Profile saved');
+  } catch(e) { toast('Save failed: ' + e.message, true); }
+};
+
+// ── Save profile: Notifications ────────────────────────────────────────────
+window.saveProfileNotifications = async function() {
+  const user = auth.currentUser;
+  if (!user) return;
+  try {
+    await updateDoc(doc(db, 'users', user.uid), {
+      notifOffline:  document.getElementById('pfNotifOffline')?.checked  || false,
+      notifOnline:   document.getElementById('pfNotifOnline')?.checked   || false,
+      notifNewLogin: document.getElementById('pfNotifNewLogin')?.checked || false,
+    });
+    toast('Notification preferences saved');
+  } catch(e) { toast('Save failed: ' + e.message, true); }
+};
+
+// ── Save profile: Password ─────────────────────────────────────────────────
+window.saveProfilePassword = async function() {
+  const user = auth.currentUser;
+  if (!user) return;
+  const oldPass    = document.getElementById('pfOldPassword')?.value    || '';
+  const newPass    = document.getElementById('pfNewPassword')?.value    || '';
+  const verifyPass = document.getElementById('pfVerifyPassword')?.value || '';
+  const errEl      = document.getElementById('pfPasswordError');
+
+  const showErr = msg => { if (errEl) { errEl.textContent = msg; errEl.style.display = 'block'; } };
+  if (errEl) errEl.style.display = 'none';
+
+  if (!oldPass || !newPass || !verifyPass) { showErr('All password fields are required.'); return; }
+  if (newPass !== verifyPass)               { showErr('Passwords do not match.');          return; }
+  if (newPass.length < 6)                   { showErr('Password must be at least 6 characters.'); return; }
+
+  try {
+    const credential = EmailAuthProvider.credential(user.email, oldPass);
+    await reauthenticateWithCredential(user, credential);
+    await updatePassword(user, newPass);
+    ['pfOldPassword','pfNewPassword','pfVerifyPassword'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.value = '';
+    });
+    toast('Password updated successfully');
+  } catch(e) {
+    showErr(e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential'
+      ? 'Old password is incorrect.' : e.message);
+  }
+};
+
+// ── Toggle password eye icon ───────────────────────────────────────────────
+window.togglePwEye = function(inputId, btn) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  const isPassword = input.type === 'password';
+  input.type = isPassword ? 'text' : 'password';
+  btn.innerHTML = isPassword
+    ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`
+    : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+};
+
+// ── Save profile: Two Factor (placeholder) ─────────────────────────────────
+window.saveProfileTwoFactor = function() {
+  toast('Two-factor authentication coming soon');
+};
+
+// ── Theme selector in profile ──────────────────────────────────────────────
+function syncThemeOpts() {
+  const current = document.documentElement.getAttribute('data-theme') || 'light';
+  const radio = document.querySelector(`input[name="pfTheme"][value="${current}"]`);
+  if (radio) radio.checked = true;
+  document.querySelectorAll('.theme-opt').forEach(opt => opt.classList.remove('selected'));
+  const selOpt = document.getElementById('themeOpt' + current.charAt(0).toUpperCase() + current.slice(1));
+  if (selOpt) selOpt.classList.add('selected');
+}
+
+window.selectThemeOpt = function(theme) {
+  const radio = document.querySelector(`input[name="pfTheme"][value="${theme}"]`);
+  if (radio) radio.checked = true;
+  document.querySelectorAll('.theme-opt').forEach(opt => opt.classList.remove('selected'));
+  const selOpt = document.getElementById('themeOpt' + theme.charAt(0).toUpperCase() + theme.slice(1));
+  if (selOpt) selOpt.classList.add('selected');
+};
+
+window.saveProfileTheme = function() {
+  const selected = document.querySelector('input[name="pfTheme"]:checked')?.value;
+  if (selected) {
+    document.documentElement.setAttribute('data-theme', selected);
+    localStorage.setItem('signage-theme', selected);
+    toast('Theme updated');
+  }
+};
+
+// ── Request account deletion ───────────────────────────────────────────────
+window.requestAccountDeletion = function() {
+  if (confirm('Are you sure you want to request account deletion?\n\nThis will permanently delete your account, organization, and all associated data. This action cannot be undone.')) {
+    toast('Account deletion request received. We\'ll send you an email with next steps within 24 hours.');
+  }
 };
 
 // ── Clock App ─────────────────────────────────────────────────────────────
