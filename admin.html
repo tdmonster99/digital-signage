@@ -9660,8 +9660,12 @@ function initFabricCanvas() {
     fabricCanvas.on('mouse:up',      clearGuides);
     updateGridOverlay();
 
-    // Right-click context menu on canvas
-    document.getElementById('designerCanvas').addEventListener('contextmenu', e => {
+    // Right-click context menu on canvas.
+    // Must listen on #canvasFrame (not #designerCanvas directly) because Fabric.js
+    // wraps the canvas in a .canvas-container and places an upper-canvas sibling on
+    // top for all pointer events — contextmenu fires on that element and never
+    // reaches #designerCanvas. #canvasFrame is the shared ancestor.
+    document.getElementById('canvasFrame').addEventListener('contextmenu', e => {
       e.preventDefault();
       showCanvasCtxMenu(e.clientX, e.clientY);
     });
