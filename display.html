@@ -12,7 +12,7 @@
 <script type="module">
   import { initializeApp }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, doc, collection, onSnapshot, setDoc, getDoc, updateDoc, addDoc }
+  import { getFirestore, doc, collection, onSnapshot, setDoc, addDoc }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   const firebaseConfig = {
@@ -770,13 +770,15 @@
     let currentSlideshowId = null;
     const screenRef = doc(db, "screens", screenId);
 
-    // Heartbeat every 2 min — admin detects offline within ~3 min
+    // Heartbeat every 5 min — admin detects offline within ~6 min.
+    // IMPORTANT: never call heartbeat() from inside the screenRef onSnapshot
+    // callback — doing so writes lastSeen → re-triggers the snapshot → infinite write loop.
     async function heartbeat() {
       try { await setDoc(screenRef, { lastSeen: new Date().toISOString() }, { merge: true }); }
       catch(e) {}
     }
     heartbeat();
-    setInterval(heartbeat, 2 * 60 * 1000);
+    setInterval(heartbeat, 5 * 60 * 1000);
 
     // Emit analytics online event once we know orgId; offline on page unload
     function emitOnline(orgId) {
@@ -805,7 +807,8 @@
             slideshowId:  "main",
             name:         "Screen " + shortId,
             registeredAt: new Date().toISOString(),
-            lastSeen:     new Date().toISOString(),
+            // lastSeen omitted here — the heartbeat interval covers it and
+            // writing it here would re-trigger this callback (write loop).
           }).catch(e => console.warn("Screen registration failed:", e.message));
           if (!currentSlideshowId) {
             currentSlideshowId = "main";
@@ -814,7 +817,8 @@
         } else {
           const data  = snap.data();
           const newId = data.slideshowId || "main";
-          heartbeat();
+          // NOTE: do NOT call heartbeat() here — it writes to screenRef which
+          // re-fires this snapshot callback, causing an infinite write loop.
           emitOnline(data.orgId);
           if (newId !== currentSlideshowId) {
             currentSlideshowId                 = newId;
@@ -874,31 +878,30 @@
     const pairEl = document.getElementById("pairingScreen");
     pairEl.style.display = "flex";
 
-    const pollInterval = setInterval(async () => {
-      try {
-        const snap = await getDoc(doc(db, "pairingCodes", code));
-        if (!snap.exists()) return;
-        const data = snap.data();
+    // Use onSnapshot instead of polling — fires immediately when admin pairs,
+    // zero repeated reads while waiting.
+    const pairingUnsub = onSnapshot(doc(db, "pairingCodes", code), snap => {
+      if (!snap.exists()) return;
+      const data = snap.data();
 
-        // Expired — generate a fresh code
-        if (data.expiresAt && new Date() > new Date(data.expiresAt)) {
-          clearInterval(pollInterval);
-          pairEl.style.display = "none";
-          showReadyToConnect();
-          return;
-        }
+      // Expired — generate a fresh code
+      if (data.expiresAt && new Date() > new Date(data.expiresAt)) {
+        pairingUnsub();
+        pairEl.style.display = "none";
+        showReadyToConnect();
+        return;
+      }
 
-        // Admin claimed the code and assigned a screenId
-        if (data.status === "paired" && data.screenId) {
-          clearInterval(pollInterval);
-          localStorage.setItem(STORAGE_KEY, data.screenId);
-          screenId = data.screenId;
-          pairEl.style.transition = "opacity 0.8s";
-          pairEl.style.opacity = "0";
-          setTimeout(() => { pairEl.style.display = "none"; startNormalMode(data.screenId); }, 800);
-        }
-      } catch(e) { console.warn("Pairing poll error:", e.message); }
-    }, 3000);
+      // Admin claimed the code and assigned a screenId
+      if (data.status === "paired" && data.screenId) {
+        pairingUnsub();
+        localStorage.setItem(STORAGE_KEY, data.screenId);
+        screenId = data.screenId;
+        pairEl.style.transition = "opacity 0.8s";
+        pairEl.style.opacity = "0";
+        setTimeout(() => { pairEl.style.display = "none"; startNormalMode(data.screenId); }, 800);
+      }
+    }, e => console.warn("Pairing listener error:", e.message));
   }
 
   scheduleNightlyReload();
