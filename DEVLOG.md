@@ -4,6 +4,20 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-04-14 — Claude
+Working down the Phase 1 roadmap testing list.
+- **#5 RSS Ticker** tested end-to-end. Fixed three bugs:
+  - display.html: animation wasn't resetting cleanly on content change (glitch)
+  - display.html: ticker was being hidden/re-fetched on every designed-slide load, causing a flash every 5–10s on loop. Added per-URL cache + skip-if-already-running guard
+  - api/rss-proxy.js: capped at 8 headlines (was 20) so full-cycle scroll time stays reasonable
+  - Bumped speed constants: slow 80→120, medium 160→250, fast 280→420 px/sec
+- **#2 QR Code** previously tested ✓
+- **#3 Weather Widget** partially tested:
+  - admin.html saveWeatherSlide: fixed silent-failure bugs (captured editIdx before close; try/catch around save; empty-targetShowId guard; _populateShowSelect length check)
+  - display.html applyPlaylist: widened filter to include `weather` and `youtube` types (were being silently dropped from the playlist, causing "No active slides")
+  - **Blocked on OPENWEATHER_API_KEY activation** — user added the key but API was returning 401. New OpenWeatherMap keys can take up to 2 hours to activate. Verify redeploy happened after adding the env var.
+- **Next up:** #1 Schedule Display-Side Enforcement. Schedule reader logic already exists in display.html around line 972–1036 — test by creating a schedule, assigning it to a screen, and verifying slideshow switches at block boundaries.
+
 ## 2026-04-08 — Claude
 - Migrated all media storage from Cloudinary to AWS S3 (us-east-2, bucket: zigns-media) + CloudFront
   - Created api/upload-url.js: presigned PUT URL generator (15 min expiry, checksum disabled, path-style URLs)

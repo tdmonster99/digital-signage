@@ -93,6 +93,9 @@ Each file exports a single `module.exports = async function handler(req, res)`. 
 | `stripe-checkout.js` | Creates Stripe checkout sessions |
 | `stripe-portal.js` | Creates Stripe billing portal sessions |
 | `stripe-webhook.js` | Handles Stripe webhooks, updates Firestore subscription state |
+| `weather.js` | Proxies OpenWeatherMap (current + 3-day forecast) for the weather widget |
+| `rss-proxy.js` | Fetches + parses RSS feeds server-side (avoids CORS) for the ticker |
+| `screen-monitor.js` | Vercel cron (every 5 min) — detects offline/online screens and emails notifications via Resend |
 
 ### Firebase / Firestore
 Firebase project: `digital-signage-2`. Collections:
@@ -197,3 +200,16 @@ Set in Vercel Dashboard → digital-signage project → Settings → Environment
 - `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `AWS_S3_BUCKET`, `CLOUDFRONT_BASE_URL`
 - `RESEND_API_KEY`
 - `ANTHROPIC_API_KEY`
+- `OPENWEATHER_API_KEY` (free tier; new keys can take up to 2 hours to activate)
+
+## Live URL
+Production: `https://app.zigns.io` (custom subdomain, replaced `digital-signage-pi.vercel.app` on 2026-04-07).
+
+## Slide types recognized by `display.html`
+`applyPlaylist()` in `display.html` filters out any slide type it doesn't explicitly recognize — adding a new widget type requires updating this filter or the slide will be silently dropped from the playlist.
+
+Current recognized types: `designed`, `video`, `youtube`, `webpage`, `image` (inferred from `url`), `clock`, `qr`, `weather`, `group` (expanded to designed children).
+
+## Workflow docs
+- **`ROADMAP.md`** — prioritized feature list (Phase 1/2/3) that drives what to build next. Reference this when the user asks "what's next".
+- **`DEVLOG.md`** — running log of changes by session. **Prepend a new entry at the top** after any session that makes changes; include date and a bulleted summary of what was done.
