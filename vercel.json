@@ -11,5 +11,8 @@
         { "key": "Cross-Origin-Embedder-Policy", "value": "unsafe-none" }
       ]
     }
+  ],
+  "crons": [
+    { "path": "/api/screen-monitor", "schedule": "*/5 * * * *" }
   ]
 }

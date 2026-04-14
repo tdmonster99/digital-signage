@@ -2539,6 +2539,31 @@ section.content {
   border-top: 1px solid var(--border);
 }
 
+/* ── QR modal ──────────────────────────────────────────────────────── */
+#qrModal {
+  display: none; position: fixed; inset: 0; z-index: 400;
+  background: rgba(0,0,0,.5); align-items: center; justify-content: center;
+  backdrop-filter: blur(4px); padding: 20px;
+}
+.qr-modal-box {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+  width: 100%; max-width: 760px; display: flex; overflow: hidden; max-height: 90vh;
+}
+.qr-modal-left  { flex: 1; padding: 28px 24px; overflow-y: auto; border-right: 1px solid var(--border); }
+.qr-modal-right { width: 260px; flex-shrink: 0; background: var(--surface2); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 24px; }
+.qr-preview-wrap { background: #fff; border-radius: 12px; padding: 16px; display: flex; align-items: center; justify-content: center; }
+
+/* ── Weather modal ─────────────────────────────────────────────────── */
+#weatherModal {
+  display: none; position: fixed; inset: 0; z-index: 400;
+  background: rgba(0,0,0,.5); align-items: center; justify-content: center;
+  backdrop-filter: blur(4px); padding: 20px;
+}
+.weather-modal-box {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+  width: 100%; max-width: 500px; padding: 28px 24px; overflow-y: auto; max-height: 90vh;
+}
+
 /* ── Role badge ────────────────────────────────────────────────────── */
 .role-badge {
   display: inline-block; font-size: 10px; font-weight: 700;
@@ -3521,8 +3546,8 @@ body.role-editor .admin-action {
         <button class="app-card-add" onclick="event.stopPropagation();openClockModal(null)">Add →</button>
       </div>
 
-      <!-- Weather — coming soon -->
-      <div class="app-card app-coming-soon" data-category="widgets" data-name="weather" onclick="appsComingSoon()">
+      <!-- Weather -->
+      <div class="app-card" data-category="widgets" data-name="weather" onclick="openWeatherModal(null)">
         <div class="app-card-icon" style="background:rgba(59,130,246,.15)">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="1.8" stroke-linecap="round">
             <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>
@@ -3530,11 +3555,11 @@ body.role-editor .admin-action {
         </div>
         <div class="app-card-name">Weather</div>
         <div class="app-card-desc">Current conditions and forecast for any location</div>
-        <span class="app-card-soon-badge">Coming Soon</span>
+        <button class="app-card-add" onclick="event.stopPropagation();openWeatherModal(null)">Add →</button>
       </div>
 
-      <!-- QR Code — coming soon -->
-      <div class="app-card app-coming-soon" data-category="widgets" data-name="qr code" onclick="appsComingSoon()">
+      <!-- QR Code -->
+      <div class="app-card" data-category="widgets" data-name="qr code" onclick="openQrModal(null)">
         <div class="app-card-icon" style="background:rgba(139,92,246,.15)">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="1.8" stroke-linecap="round">
             <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
@@ -3543,7 +3568,7 @@ body.role-editor .admin-action {
         </div>
         <div class="app-card-name">QR Code</div>
         <div class="app-card-desc">Display a scannable QR code for any URL</div>
-        <span class="app-card-soon-badge">Coming Soon</span>
+        <button class="app-card-add" onclick="event.stopPropagation();openQrModal(null)">Add →</button>
       </div>
 
       <!-- RSS Ticker — coming soon -->
@@ -6691,6 +6716,11 @@ body.role-editor .admin-action {
             <input type="text" id="propTickerSep" class="prop-input" value="  •  "
                    oninput="updateTickerProp('tickerSep', this.value)">
           </div>
+          <div class="prop-row" style="flex-direction:column;align-items:flex-start;gap:6px">
+            <div class="prop-label">RSS Feed URL <span style="font-size:10px;color:var(--muted);font-weight:400">— overrides text above</span></div>
+            <input type="url" id="propTickerRssUrl" class="prop-input" placeholder="https://feeds.bbci.co.uk/news/rss.xml"
+                   oninput="updateTickerProp('rssUrl', this.value)" style="width:100%">
+          </div>
         </div>
       </div>
 
@@ -6974,6 +7004,109 @@ body.role-editor .admin-action {
   </div>
 </div>
 
+<!-- QR Code generator (used for the QR slide preview in admin) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<!-- QR Code Modal -->
+<div id="qrModal">
+  <div class="qr-modal-box">
+    <div class="qr-modal-left">
+      <h2 style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:20px" id="qrModalTitle">Add QR Code Slide</h2>
+
+      <div class="clock-field">
+        <label>Slide Name</label>
+        <input type="text" id="qrName" placeholder="QR Code" />
+      </div>
+      <div class="clock-field">
+        <label>Duration (seconds)</label>
+        <input type="number" id="qrDwell" min="5" max="3600" value="15" />
+      </div>
+      <div class="clock-field">
+        <label>URL</label>
+        <input type="url" id="qrUrl" placeholder="https://example.com"
+               oninput="updateQrPreview()" style="font-family:monospace" />
+      </div>
+      <div class="clock-field">
+        <label>Label Text <span style="font-size:11px;color:var(--muted);font-weight:400">(optional)</span></label>
+        <input type="text" id="qrLabel" placeholder="Scan to visit our menu" />
+      </div>
+      <div class="clock-field">
+        <label>QR Size (px)</label>
+        <input type="range" id="qrSize" min="100" max="500" value="280" step="20"
+               oninput="updateQrPreview()" style="width:100%" />
+      </div>
+      <div class="color-row">
+        <div class="clock-field">
+          <label>Foreground</label>
+          <input type="color" id="qrFgColor" value="#000000" oninput="updateQrPreview()"
+                 style="width:100%;height:36px;padding:2px;cursor:pointer;border-radius:6px;border:1px solid var(--border);background:var(--surface2)" />
+        </div>
+        <div class="clock-field">
+          <label>Background</label>
+          <input type="color" id="qrBgColor" value="#ffffff" oninput="updateQrPreview()"
+                 style="width:100%;height:36px;padding:2px;cursor:pointer;border-radius:6px;border:1px solid var(--border);background:var(--surface2)" />
+        </div>
+      </div>
+      <div class="clock-modal-footer">
+        <button class="btn btn-secondary" onclick="closeQrModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveQrSlide()">Add to Slideshow</button>
+      </div>
+    </div>
+    <div class="qr-modal-right">
+      <div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em">Preview</div>
+      <div class="qr-preview-wrap">
+        <div id="qrPreviewEl"></div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);text-align:center">Updates as you type</div>
+    </div>
+  </div>
+</div>
+
+<!-- Weather Modal -->
+<div id="weatherModal">
+  <div class="weather-modal-box">
+    <h2 style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:20px" id="weatherModalTitle">Add Weather Slide</h2>
+
+    <div class="clock-field">
+      <label>Slide Name</label>
+      <input type="text" id="wxName" placeholder="Weather" />
+    </div>
+    <div class="clock-field">
+      <label>Duration (seconds)</label>
+      <input type="number" id="wxDwell" min="5" max="3600" value="30" />
+    </div>
+    <div class="clock-field">
+      <label>Location</label>
+      <input type="text" id="wxLocation" placeholder="Chicago, IL" />
+    </div>
+    <div class="clock-field">
+      <label>Units</label>
+      <select id="wxUnits">
+        <option value="imperial">°F — Imperial (US)</option>
+        <option value="metric">°C — Metric</option>
+      </select>
+    </div>
+    <div class="clock-field">
+      <label>Display Style</label>
+      <select id="wxStyle">
+        <option value="current">Current conditions only</option>
+        <option value="forecast">Current + 3-day forecast</option>
+      </select>
+    </div>
+    <div class="clock-field">
+      <label>Theme</label>
+      <div class="font-style-btns">
+        <button class="font-style-btn active" data-wxtheme="dark"  onclick="selectWxTheme(this,'dark')">Dark</button>
+        <button class="font-style-btn"        data-wxtheme="light" onclick="selectWxTheme(this,'light')">Light</button>
+      </div>
+    </div>
+    <div class="clock-modal-footer">
+      <button class="btn btn-secondary" onclick="closeWeatherModal()">Cancel</button>
+      <button class="btn btn-primary"   onclick="saveWeatherSlide()">Add to Slideshow</button>
+    </div>
+  </div>
+</div>
+
 <!-- Firebase SDK -->
 <script type="module">
 import { initializeApp }              from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -7238,6 +7371,7 @@ async function initUserAndOrg(user) {
 
   applyRole(currentRole);
   await loadShowsFromOrg();
+  await loadSchedulesFromOrg();
   loadBrandKit();
 
   // Show billing success toast if returning from Stripe
@@ -9379,12 +9513,24 @@ function renderGrid() {
     const isYoutube  = s.type === 'youtube';
     const isVideo    = s.type === 'video';
     const isClock    = s.type === 'clock';
+    const isQr       = s.type === 'qr';
+    const isWeather  = s.type === 'weather';
     const thumbUrl   = isDesigned ? s.thumbnailUrl
                      : isYoutube  ? `https://img.youtube.com/vi/${s.videoId}/mqdefault.jpg`
-                     : (isWebpage || isVideo || isClock) ? null
+                     : (isWebpage || isVideo || isClock || isQr || isWeather) ? null
                      : s.url;
+    const editSvg    = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
     const placeholder = isClock
       ? clockThumbHTML(s)
+      : isQr
+      ? `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="1.5">
+           <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+           <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="3" height="3"/>
+         </svg>`
+      : isWeather
+      ? `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="1.5">
+           <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>
+         </svg>`
       : isWebpage
       ? `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="1.5">
            <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>
@@ -9406,21 +9552,17 @@ function renderGrid() {
                 : isWebpage  ? `<div class="designed-badge" style="background:#0ea5e9cc">Web</div>`
                 : isVideo    ? `<div class="designed-badge" style="background:#7c3aedcc">Video</div>`
                 : isClock    ? `<div class="designed-badge" style="background:#059669cc">Clock</div>`
+                : isQr       ? `<div class="designed-badge" style="background:#8b5cf6cc">QR</div>`
+                : isWeather  ? `<div class="designed-badge" style="background:#3b82f6cc">Weather</div>`
                 : '';
     const editBtn    = isDesigned
-      ? `<button class="icon-btn toggle" title="Edit in Designer" onclick="editDesignedSlide(${i})">
-           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2">
-             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-           </svg>
-         </button>`
+      ? `<button class="icon-btn toggle" title="Edit in Designer" onclick="editDesignedSlide(${i})">${editSvg}</button>`
       : isClock
-      ? `<button class="icon-btn toggle" title="Edit Clock" onclick="openClockModal(${i})">
-           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2">
-             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-           </svg>
-         </button>`
+      ? `<button class="icon-btn toggle" title="Edit Clock"   onclick="openClockModal(${i})">${editSvg}</button>`
+      : isQr
+      ? `<button class="icon-btn toggle" title="Edit QR Code" onclick="openQrModal(${i})">${editSvg}</button>`
+      : isWeather
+      ? `<button class="icon-btn toggle" title="Edit Weather" onclick="openWeatherModal(${i})">${editSvg}</button>`
       : `<button class="icon-btn toggle" title="${s.active === false ? 'Show' : 'Hide'}" onclick="toggleSlide(${i})">
            ${s.active === false
              ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`
@@ -11529,6 +11671,7 @@ fabric.TickerBar = fabric.util.createClass(fabric.Rect, {
     options.tickerOpacity  = options.tickerOpacity  !== undefined ? options.tickerOpacity : 0.75;
     options.tickerFontSize = options.tickerFontSize || 36;
     options.tickerSep      = options.tickerSep      || '  •  ';
+    options.rssUrl         = options.rssUrl         || '';
     this.callSuper('initialize', options);
     this.on('scaling', function() { this.set({ scaleX: 1, scaleY: 1 }); });
   },
@@ -11543,6 +11686,7 @@ fabric.TickerBar = fabric.util.createClass(fabric.Rect, {
       tickerOpacity:  this.tickerOpacity,
       tickerFontSize: this.tickerFontSize,
       tickerSep:      this.tickerSep,
+      rssUrl:         this.rssUrl,
     });
   },
 
@@ -11790,6 +11934,7 @@ function updatePropsPanel() {
     document.getElementById('propTickerOpacity').value  = obj.tickerOpacity  !== undefined ? obj.tickerOpacity : 0.75;
     document.getElementById('propTickerFontSize').value = obj.tickerFontSize  || 36;
     document.getElementById('propTickerSep').value      = obj.tickerSep       !== undefined ? obj.tickerSep : '  •  ';
+    document.getElementById('propTickerRssUrl').value   = obj.rssUrl          || '';
     document.querySelectorAll('#propsTicker .ticker-speed-btn').forEach(b =>
       b.classList.toggle('active', b.dataset.speed === (obj.tickerSpeed || 'medium'))
     );
@@ -14601,6 +14746,20 @@ function getAllShows() {
   }));
 }
 
+// ── Load schedules from Firestore ─────────────────────────────────────────
+async function loadSchedulesFromOrg() {
+  if (!currentOrgId) return;
+  try {
+    const snap = await getDocs(collection(db, 'organizations', currentOrgId, 'schedules'));
+    if (!snap.empty) {
+      allSchedules = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+    }
+  } catch(e) {
+    console.warn('Could not load schedules from Firestore:', e.message);
+    // Keep dummy data as fallback
+  }
+}
+
 // ── Schedule list page ────────────────────────────────────────────────────
 function renderScheduleGrid() {
   const grid = document.getElementById('scheduleGrid');
@@ -14655,7 +14814,7 @@ window.closeScheduleEditor = function() {
   editingSchedule = null;
 };
 
-window.saveScheduleEditor = function() {
+window.saveScheduleEditor = async function() {
   if (!editingSchedule) return;
   editingSchedule.name = document.getElementById('schedEditorName').value.trim() || 'Untitled Schedule';
   editingSchedule.fillerSlideshowId = document.getElementById('schedFillerSel')?.value || 'main';
@@ -14663,6 +14822,18 @@ window.saveScheduleEditor = function() {
   const idx = allSchedules.findIndex(s => s.id === editingSchedule.id);
   if (idx >= 0) allSchedules[idx] = editingSchedule;
   else          allSchedules.push(editingSchedule);
+
+  // Persist to Firestore
+  if (currentOrgId) {
+    try {
+      await setDoc(
+        doc(db, 'organizations', currentOrgId, 'schedules', editingSchedule.id),
+        { ...editingSchedule, updatedAt: new Date().toISOString() }
+      );
+    } catch(e) {
+      console.warn('Failed to save schedule to Firestore:', e.message);
+    }
+  }
 
   renderScheduleGrid();
   closeScheduleEditor();
@@ -15324,6 +15495,131 @@ window.saveClockSlide = async function() {
   renderGrid();
   toast(clockEditIdx !== null ? 'Clock slide updated ✓' : 'Clock slide added ✓');
   logActivity(clockEditIdx !== null ? 'Edited clock slide' : 'Added clock slide');
+  updateDashboard();
+};
+
+// ── QR Code modal ─────────────────────────────────────────────────────────
+let qrEditIdx      = null;
+let _qrPreviewInst = null;
+
+window.openQrModal = function(slideIdx) {
+  qrEditIdx = slideIdx;
+  const s   = slideIdx !== null ? slides[slideIdx] : null;
+  document.getElementById('qrModalTitle').textContent = s ? 'Edit QR Code Slide' : 'Add QR Code Slide';
+  document.getElementById('qrName').value    = s?.name    || 'QR Code';
+  document.getElementById('qrDwell').value   = s?.dwell   ?? 15;
+  document.getElementById('qrUrl').value     = s?.url     || '';
+  document.getElementById('qrLabel').value   = s?.label   || '';
+  document.getElementById('qrSize').value    = s?.size    || 280;
+  document.getElementById('qrFgColor').value = s?.fgColor || '#000000';
+  document.getElementById('qrBgColor').value = s?.bgColor || '#ffffff';
+  document.getElementById('qrModal').style.display = 'flex';
+  updateQrPreview();
+};
+
+window.closeQrModal = function() {
+  document.getElementById('qrModal').style.display = 'none';
+  qrEditIdx = null;
+};
+
+window.updateQrPreview = function() {
+  const url     = document.getElementById('qrUrl').value.trim() || 'https://zigns.io';
+  const size    = parseInt(document.getElementById('qrSize').value, 10) || 160;
+  const fgColor = document.getElementById('qrFgColor').value;
+  const bgColor = document.getElementById('qrBgColor').value;
+  const el      = document.getElementById('qrPreviewEl');
+  el.innerHTML  = '';
+  try {
+    _qrPreviewInst = new QRCode(el, {
+      text: url, width: Math.min(size, 160), height: Math.min(size, 160),
+      colorDark: fgColor, colorLight: bgColor,
+      correctLevel: QRCode.CorrectLevel.M,
+    });
+  } catch(e) {}
+  el.closest('.qr-preview-wrap').style.background = bgColor;
+};
+
+window.saveQrSlide = async function() {
+  const url = document.getElementById('qrUrl').value.trim();
+  if (!url) { toast('Please enter a URL'); return; }
+
+  const slide = {
+    id:      qrEditIdx !== null ? slides[qrEditIdx].id : crypto.randomUUID(),
+    type:    'qr',
+    name:    document.getElementById('qrName').value.trim()    || 'QR Code',
+    dwell:   parseInt(document.getElementById('qrDwell').value,   10) || 15,
+    url,
+    label:   document.getElementById('qrLabel').value.trim(),
+    size:    parseInt(document.getElementById('qrSize').value,    10) || 280,
+    fgColor: document.getElementById('qrFgColor').value,
+    bgColor: document.getElementById('qrBgColor').value,
+    active:  true,
+  };
+
+  if (qrEditIdx !== null) slides[qrEditIdx] = slide;
+  else                    slides.push(slide);
+
+  closeQrModal();
+  await saveSlides();
+  renderGrid();
+  toast(qrEditIdx !== null ? 'QR slide updated ✓' : 'QR slide added ✓');
+  logActivity(qrEditIdx !== null ? 'Edited QR slide' : 'Added QR slide');
+  updateDashboard();
+};
+
+// ── Weather modal ──────────────────────────────────────────────────────────
+let weatherEditIdx = null;
+
+window.openWeatherModal = function(slideIdx) {
+  weatherEditIdx = slideIdx;
+  const s = slideIdx !== null ? slides[slideIdx] : null;
+  document.getElementById('weatherModalTitle').textContent = s ? 'Edit Weather Slide' : 'Add Weather Slide';
+  document.getElementById('wxName').value     = s?.name     || 'Weather';
+  document.getElementById('wxDwell').value    = s?.dwell    ?? 30;
+  document.getElementById('wxLocation').value = s?.location || '';
+  document.getElementById('wxUnits').value    = s?.units    || 'imperial';
+  document.getElementById('wxStyle').value    = s?.style    || 'current';
+  const theme = s?.theme || 'dark';
+  document.querySelectorAll('[data-wxtheme]').forEach(b =>
+    b.classList.toggle('active', b.dataset.wxtheme === theme)
+  );
+  document.getElementById('weatherModal').style.display = 'flex';
+};
+
+window.closeWeatherModal = function() {
+  document.getElementById('weatherModal').style.display = 'none';
+  weatherEditIdx = null;
+};
+
+window.selectWxTheme = function(btn, theme) {
+  document.querySelectorAll('[data-wxtheme]').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+};
+
+window.saveWeatherSlide = async function() {
+  const location = document.getElementById('wxLocation').value.trim();
+  if (!location) { toast('Please enter a location'); return; }
+
+  const slide = {
+    id:       weatherEditIdx !== null ? slides[weatherEditIdx].id : crypto.randomUUID(),
+    type:     'weather',
+    name:     document.getElementById('wxName').value.trim()  || 'Weather',
+    dwell:    parseInt(document.getElementById('wxDwell').value, 10) || 30,
+    location,
+    units:    document.getElementById('wxUnits').value,
+    style:    document.getElementById('wxStyle').value,
+    theme:    document.querySelector('[data-wxtheme].active')?.dataset.wxtheme || 'dark',
+    active:   true,
+  };
+
+  if (weatherEditIdx !== null) slides[weatherEditIdx] = slide;
+  else                         slides.push(slide);
+
+  closeWeatherModal();
+  await saveSlides();
+  renderGrid();
+  toast(weatherEditIdx !== null ? 'Weather slide updated ✓' : 'Weather slide added ✓');
+  logActivity(weatherEditIdx !== null ? 'Edited weather slide' : 'Added weather slide');
   updateDashboard();
 };
 

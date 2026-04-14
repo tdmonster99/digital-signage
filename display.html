@@ -8,6 +8,9 @@
 <!-- Fabric.js (StaticCanvas for designed slides) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
 
+<!-- QR Code generator (used by QR slide type) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
 <!-- Firebase SDK -->
 <script type="module">
   import { initializeApp }
@@ -103,6 +106,8 @@
   const iframeWebpage = document.getElementById("iframeWebpage");
   const stageClock    = document.getElementById("stageClock");
   const clockEl       = document.getElementById("clockEl");
+  const stageQr       = document.getElementById("stageQr");
+  const stageWeather  = document.getElementById("stageWeather");
   const loader        = document.getElementById("loader");
   const errBox        = document.getElementById("errBox");
   const errMsg        = document.getElementById("errMsg");
@@ -249,50 +254,69 @@
     return `rgba(${r},${g},${b},${alpha})`;
   }
 
-  function renderTicker(cfg) {
-    const speeds = { slow: 40, medium: 80, fast: 140 };
+  let rssRefreshTimer = null;
+
+  function _applyTickerText(cfg, text) {
+    const speeds    = { slow: 40, medium: 80, fast: 140 };
     const px_per_sec = speeds[cfg.tickerSpeed] || 80;
-    const text  = (cfg.tickerText || '') + (cfg.tickerSep || '  •  ');
+    const fullText  = text + (cfg.tickerSep || '  •  ');
     const fontSize  = cfg.tickerFontSize || 36;
     const barHeight = fontSize * 2.4;
     const bgColor   = hexToRgbaDisplay(cfg.tickerBg || '#000000', cfg.tickerOpacity !== undefined ? cfg.tickerOpacity : 0.75);
     const badgeW    = 120;
 
-    tickerWrap.style.height     = barHeight + 'px';
-    tickerWrap.style.background = bgColor;
-    tickerWrap.className        = cfg.tickerPos === 'top' ? 'ticker-top' : 'ticker-bottom';
-    tickerWrap.style.display    = 'block';
+    tickerWrap.style.height      = barHeight + 'px';
+    tickerWrap.style.background  = bgColor;
+    tickerWrap.className         = cfg.tickerPos === 'top' ? 'ticker-top' : 'ticker-bottom';
+    tickerWrap.style.display     = 'block';
     tickerWrap.style.paddingLeft = badgeW + 'px';
 
     tickerBadge.style.width    = badgeW + 'px';
     tickerBadge.style.fontSize = (fontSize * 0.5) + 'px';
 
-    // Build doubled text for seamless loop
     const span1 = document.createElement('span');
     const span2 = document.createElement('span');
     [span1, span2].forEach(s => {
-      s.textContent        = text;
-      s.style.color        = cfg.tickerColor || '#ffffff';
-      s.style.fontSize     = fontSize + 'px';
-      s.style.fontFamily   = "'Segoe UI', sans-serif";
-      s.style.fontWeight   = '400';
-      s.style.paddingRight = '0';
+      s.textContent      = fullText;
+      s.style.color      = cfg.tickerColor || '#ffffff';
+      s.style.fontSize   = fontSize + 'px';
+      s.style.fontFamily = "'Segoe UI', sans-serif";
+      s.style.fontWeight = '400';
     });
     tickerTrack.innerHTML = '';
     tickerTrack.appendChild(span1);
     tickerTrack.appendChild(span2);
 
-    // Measure one copy width, set animation duration
     requestAnimationFrame(() => {
       const w = span1.offsetWidth;
-      if (w > 0) {
-        const dur = w / px_per_sec;
-        tickerTrack.style.animationDuration = dur + 's';
-      }
+      if (w > 0) tickerTrack.style.animationDuration = (w / px_per_sec) + 's';
     });
   }
 
+  function renderTicker(cfg) {
+    if (rssRefreshTimer) { clearInterval(rssRefreshTimer); rssRefreshTimer = null; }
+
+    // Show immediately with static text (or placeholder while RSS loads)
+    _applyTickerText(cfg, cfg.tickerText || '');
+
+    if (cfg.rssUrl) {
+      async function loadRss() {
+        try {
+          const r = await fetch('/api/rss-proxy?url=' + encodeURIComponent(cfg.rssUrl));
+          if (!r.ok) return;
+          const data = await r.json();
+          if (data.headlines && data.headlines.length) {
+            _applyTickerText(cfg, data.headlines.join(cfg.tickerSep || '  •  '));
+          }
+        } catch(e) { /* non-critical — keep showing static text */ }
+      }
+      loadRss();
+      rssRefreshTimer = setInterval(loadRss, 5 * 60 * 1000);
+    }
+  }
+
   function stopTicker() {
+    if (rssRefreshTimer) { clearInterval(rssRefreshTimer); rssRefreshTimer = null; }
     tickerWrap.style.display = 'none';
     tickerTrack.innerHTML    = '';
   }
@@ -412,6 +436,104 @@
     if (clockInterval) { clearInterval(clockInterval); clockInterval = null; }
   }
 
+  // ── QR Code slide ─────────────────────────────────────────────────────────
+  function renderQr(slide) {
+    const el = document.getElementById('qrEl');
+    el.innerHTML = '';
+    const size    = slide.size || 300;
+    const isDark  = slide.theme === 'dark';
+    const fgColor = slide.fgColor || (isDark ? '#ffffff' : '#000000');
+    const bgColor = slide.bgColor || (isDark ? '#111111' : '#ffffff');
+
+    stageWeather.style.opacity = "0";
+    stageQr.style.background   = bgColor;
+
+    try {
+      new QRCode(el, {
+        text:        slide.url || 'https://zigns.io',
+        width:       size,
+        height:      size,
+        colorDark:   fgColor,
+        colorLight:  bgColor,
+        correctLevel: QRCode.CorrectLevel.M,
+      });
+    } catch(e) { console.warn('[QR] render error:', e.message); }
+
+    const labelEl = document.getElementById('qrLabel');
+    if (slide.label) {
+      labelEl.textContent  = slide.label;
+      labelEl.style.color  = fgColor;
+      labelEl.style.display = '';
+    } else {
+      labelEl.style.display = 'none';
+    }
+  }
+
+  // ── Weather slide ──────────────────────────────────────────────────────────
+  let weatherRefreshTimer = null;
+
+  function stopWeather() {
+    if (weatherRefreshTimer) { clearInterval(weatherRefreshTimer); weatherRefreshTimer = null; }
+  }
+
+  async function renderWeather(slide) {
+    stopWeather();
+    const el = document.getElementById('weatherEl');
+    el.innerHTML = '<div class="wx-loading">Loading weather…</div>';
+
+    async function load() {
+      try {
+        const params = new URLSearchParams({ location: slide.location || 'New York', units: slide.units || 'imperial' });
+        const r      = await fetch('/api/weather?' + params);
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const data = await r.json();
+        if (!data.ok) throw new Error(data.error || 'Weather error');
+        _renderWeatherDOM(el, data, slide);
+      } catch(e) {
+        el.innerHTML = `<div class="wx-error">Weather unavailable<br><small>${e.message}</small></div>`;
+      }
+    }
+    await load();
+    weatherRefreshTimer = setInterval(load, 10 * 60 * 1000); // refresh every 10 min
+  }
+
+  function _renderWeatherDOM(el, data, slide) {
+    const c      = data.current;
+    const isDark = slide.theme !== 'light';
+    const unit   = data.units === 'metric' ? '°C' : '°F';
+    const iconUrl = icon => `https://openweathermap.org/img/wn/${icon}@2x.png`;
+    const fg     = isDark ? '#ffffff' : '#1a1a1a';
+    const bg     = isDark ? '#0f172a' : '#f0f9ff';
+    const card   = isDark ? '#1e293b' : '#ffffff';
+
+    stageWeather.style.background = bg;
+
+    const showForecast = slide.style === 'forecast' && data.forecast && data.forecast.length;
+    const forecastHTML = showForecast ? `
+      <div class="wx-forecast">
+        ${data.forecast.map(d => `
+          <div class="wx-day">
+            <div class="wx-day-name">${d.day}</div>
+            <img class="wx-day-icon" src="${iconUrl(d.icon)}" alt="${d.desc}">
+            <div class="wx-day-temp"><span class="wx-high">${d.high}°</span> <span class="wx-low">${d.low}°</span></div>
+          </div>`).join('')}
+      </div>` : '';
+
+    el.style.color = fg;
+    el.innerHTML = `
+      <div class="wx-location">${esc(c.city)}, ${esc(c.country)}</div>
+      <div class="wx-current">
+        <img class="wx-icon" src="${iconUrl(c.icon)}" alt="${esc(c.desc)}">
+        <div class="wx-temp">${c.temp}${unit}</div>
+      </div>
+      <div class="wx-desc">${cap(c.desc)}</div>
+      <div class="wx-meta">Feels like ${c.feelsLike}${unit} · Humidity ${c.humidity}%</div>
+      ${forecastHTML}`;
+  }
+
+  function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
+
   // ── Offline indicator ─────────────────────────────────────────────────────
   function setOffline(offline) {
     isOffline = offline;
@@ -513,6 +635,19 @@
 
   // ── Crossfade ────────────────────────────────────────────────────────────────
   // Returns true if slide was shown, false if it should be skipped.
+  function _hideAllStages() {
+    active.style.opacity        = "0";
+    stageDesigned.style.opacity = "0";
+    stageVideo.style.opacity    = "0"; videoEl.pause(); videoEl.src = "";
+    stageYoutube.style.opacity  = "0"; iframeYoutube.src = "about:blank";
+    stageWebpage.style.opacity  = "0"; iframeWebpage.src = "about:blank";
+    stageQr.style.opacity       = "0";
+    stageWeather.style.opacity  = "0";
+    stopClock();    stageClock.style.opacity   = "0";
+    stopWeather();
+    stopTicker();
+  }
+
   async function crossfadeTo(slide) {
     if (slide.type === "designed" && slide.canvasJson) {
       try {
@@ -526,7 +661,10 @@
       stageVideo.style.opacity    = "0"; videoEl.pause(); videoEl.src = "";
       stageYoutube.style.opacity  = "0"; iframeYoutube.src = "about:blank";
       stageWebpage.style.opacity  = "0"; iframeWebpage.src = "about:blank";
-      stopClock(); stageClock.style.opacity = "0";
+      stageQr.style.opacity       = "0";
+      stageWeather.style.opacity  = "0";
+      stopClock();    stageClock.style.opacity   = "0";
+      stopWeather();
       // Fire entrance animations after crossfade transition (1.2s CSS)
       if (pendingAnimations.length) {
         const batch = pendingAnimations.slice();
@@ -539,49 +677,40 @@
       }
 
     } else if (slide.type === "video") {
-      stopTicker();
-      videoEl.src                 = slide.url;
+      _hideAllStages();
+      videoEl.src              = slide.url;
       videoEl.play();
-      stageVideo.style.opacity    = "1";
-      active.style.opacity        = "0";
-      stageDesigned.style.opacity = "0";
-      stageYoutube.style.opacity  = "0"; iframeYoutube.src = "about:blank";
-      stageWebpage.style.opacity  = "0"; iframeWebpage.src = "about:blank";
-      stopClock(); stageClock.style.opacity = "0";
+      stageVideo.style.opacity = "1";
 
     } else if (slide.type === "youtube") {
-      stopTicker();
-      const params = "autoplay=1&mute=1&controls=0&loop=1&modestbranding=1&rel=0&playlist=" + slide.videoId;
-      iframeYoutube.src           = `https://www.youtube.com/embed/${slide.videoId}?${params}`;
-      stageYoutube.style.opacity  = "1";
-      active.style.opacity        = "0";
-      stageDesigned.style.opacity = "0";
-      stageVideo.style.opacity    = "0"; videoEl.pause(); videoEl.src = "";
-      stageWebpage.style.opacity  = "0"; iframeWebpage.src = "about:blank";
-      stopClock(); stageClock.style.opacity = "0";
+      _hideAllStages();
+      const params  = "autoplay=1&mute=1&controls=0&loop=1&modestbranding=1&rel=0&playlist=" + slide.videoId;
+      iframeYoutube.src          = `https://www.youtube.com/embed/${slide.videoId}?${params}`;
+      stageYoutube.style.opacity = "1";
 
     } else if (slide.type === "webpage") {
-      stopTicker();
-      iframeWebpage.src           = slide.url;
-      stageWebpage.style.opacity  = "1";
-      active.style.opacity        = "0";
-      stageDesigned.style.opacity = "0";
-      stageVideo.style.opacity    = "0"; videoEl.pause(); videoEl.src = "";
-      stageYoutube.style.opacity  = "0"; iframeYoutube.src = "about:blank";
-      stopClock(); stageClock.style.opacity = "0";
+      _hideAllStages();
+      iframeWebpage.src          = slide.url;
+      stageWebpage.style.opacity = "1";
 
     } else if (slide.type === "clock") {
-      stopTicker();
+      _hideAllStages();
       startClock(slide);
-      stageClock.style.opacity    = "1";
-      active.style.opacity        = "0";
-      stageDesigned.style.opacity = "0";
-      stageVideo.style.opacity    = "0"; videoEl.pause(); videoEl.src = "";
-      stageYoutube.style.opacity  = "0"; iframeYoutube.src = "about:blank";
-      stageWebpage.style.opacity  = "0"; iframeWebpage.src = "about:blank";
+      stageClock.style.opacity = "1";
+
+    } else if (slide.type === "qr") {
+      _hideAllStages();
+      renderQr(slide);
+      stageQr.style.opacity = "1";
+
+    } else if (slide.type === "weather") {
+      _hideAllStages();
+      renderWeather(slide);
+      stageWeather.style.opacity = "1";
 
     } else {
       stopTicker();
+      stopWeather();
       // Image slide
       const url = slide.url;
       const fit = slide.fit || "contain";
@@ -604,6 +733,8 @@
       stageVideo.style.opacity    = "0"; videoEl.pause(); videoEl.src = "";
       stageYoutube.style.opacity  = "0"; iframeYoutube.src = "about:blank";
       stageWebpage.style.opacity  = "0"; iframeWebpage.src = "about:blank";
+      stageQr.style.opacity       = "0";
+      stageWeather.style.opacity  = "0";
       stopClock(); stageClock.style.opacity = "0";
 
       const tmp = active;
@@ -798,6 +929,52 @@
       }
     });
 
+    // ── Schedule enforcement ─────────────────────────────────────────────────
+    // Reads the assigned schedule doc from Firestore and switches the playing
+    // slideshow at each minute boundary based on active time blocks.
+
+    let baseShowId    = null;  // the screen doc's default slideshowId
+    let activeSchedId = null;  // the scheduleId currently subscribed
+    let schedData     = null;  // loaded schedule document data
+    let schedUnsub    = null;  // onSnapshot unsubscribe for the schedule doc
+    let schedMinTick  = null;  // setInterval handle for minute-boundary checks
+
+    function _schedGetTarget() {
+      if (!schedData || !Array.isArray(schedData.events)) return baseShowId;
+      const now  = new Date();
+      const dow  = now.getDay(); // 0=Sun, 1=Mon … 6=Sat
+      const mins = now.getHours() * 60 + now.getMinutes();
+      for (const ev of schedData.events) {
+        if (!Array.isArray(ev.days) || !ev.days.includes(dow)) continue;
+        const start = (ev.startHour || 0) * 60 + (ev.startMin || 0);
+        const end   = (ev.endHour   || 0) * 60 + (ev.endMin   || 0);
+        if (mins >= start && mins < end) return ev.slideshowId || baseShowId;
+      }
+      return schedData.fillerSlideshowId || baseShowId;
+    }
+
+    function _schedApply() {
+      const target = _schedGetTarget();
+      if (!target || target === activeSlideshowId) return;
+      currentSlideshowIdForAnalytics = target;
+      slides = []; current = 0; clearTimeout(timer);
+      subscribeToSlideshow(target);
+    }
+
+    function _startSchedule(orgId, schedId) {
+      if (schedUnsub)   { schedUnsub();                schedUnsub   = null; }
+      if (schedMinTick) { clearInterval(schedMinTick); schedMinTick = null; }
+      schedData = null;
+      if (!schedId || !orgId) return;
+
+      schedUnsub = onSnapshot(
+        doc(db, 'organizations', orgId, 'schedules', schedId),
+        snap => { schedData = snap.exists() ? snap.data() : null; _schedApply(); },
+        err  => console.warn('[Schedule]', err.message)
+      );
+      schedMinTick = setInterval(_schedApply, 60 * 1000);
+    }
+
     onSnapshot(
       screenRef,
       snap => {
@@ -810,30 +987,39 @@
             // lastSeen omitted here — the heartbeat interval covers it and
             // writing it here would re-trigger this callback (write loop).
           }).catch(e => console.warn("Screen registration failed:", e.message));
-          if (!currentSlideshowId) {
-            currentSlideshowId = "main";
+          if (!activeSlideshowId) {
+            baseShowId = "main";
             subscribeToSlideshow("main");
           }
         } else {
-          const data  = snap.data();
-          const newId = data.slideshowId || "main";
+          const data       = snap.data();
+          const newBaseId  = data.slideshowId || "main";
+          const newSchedId = data.scheduleId  || null;
+          const newOrgId   = data.orgId       || null;
+
           // NOTE: do NOT call heartbeat() here — it writes to screenRef which
           // re-fires this snapshot callback, causing an infinite write loop.
-          emitOnline(data.orgId);
-          if (newId !== currentSlideshowId) {
-            currentSlideshowId                 = newId;
-            currentSlideshowIdForAnalytics     = newId;
+          emitOnline(newOrgId);
+          baseShowId = newBaseId;
+
+          if (newSchedId !== activeSchedId) {
+            activeSchedId = newSchedId;
+            _startSchedule(newOrgId, newSchedId);
+          }
+
+          if (activeSchedId) {
+            // Schedule is in charge — re-evaluate in case base show or schedule changed
+            _schedApply();
+          } else if (newBaseId !== activeSlideshowId) {
+            currentSlideshowIdForAnalytics = newBaseId;
             slides = []; current = 0; clearTimeout(timer);
-            subscribeToSlideshow(newId);
+            subscribeToSlideshow(newBaseId);
           }
         }
       },
       err => {
         console.warn("Screen listener error:", err.message);
-        if (!currentSlideshowId) {
-          currentSlideshowId = "main";
-          subscribeToSlideshow("main");
-        }
+        if (!activeSlideshowId) subscribeToSlideshow(baseShowId || "main");
       }
     );
   }
@@ -937,6 +1123,8 @@
   #stageYoutube  { z-index: 5; background: #000; }
   #stageWebpage  { z-index: 6; background: #000; }
   #stageClock    { z-index: 7; background: #000; }
+  #stageQr       { z-index: 8; background: #fff; }
+  #stageWeather  { z-index: 9; background: #0f172a; }
   #clockEl {
     position: absolute; inset: 0;
     display: flex; flex-direction: column;
@@ -970,6 +1158,36 @@
   #stageDesigned canvas {
     display: block;
   }
+
+  /* ── QR Code stage ─────────────────────────────────────────────────── */
+  #qrEl canvas, #qrEl img {
+    display: block;
+    border-radius: 12px;
+  }
+
+  /* ── Weather stage ──────────────────────────────────────────────────── */
+  .wx-wrap {
+    text-align: center;
+    color: #fff;
+    font-family: 'Segoe UI', sans-serif;
+    padding: 40px;
+    max-width: 900px;
+    width: 100%;
+  }
+  .wx-location  { font-size: 2.2vw; font-weight: 500; opacity: 0.7; margin-bottom: 0.3em; letter-spacing: 0.04em; text-transform: uppercase; }
+  .wx-current   { display: flex; align-items: center; justify-content: center; gap: 0.2em; }
+  .wx-icon      { width: 12vw; height: 12vw; }
+  .wx-temp      { font-size: 14vw; font-weight: 700; line-height: 1; letter-spacing: -0.04em; }
+  .wx-desc      { font-size: 2.4vw; opacity: 0.85; margin-top: 0.2em; }
+  .wx-meta      { font-size: 1.6vw; opacity: 0.55; margin-top: 0.4em; }
+  .wx-forecast  { display: flex; justify-content: center; gap: 4vw; margin-top: 3vw; padding-top: 2vw; border-top: 1px solid rgba(255,255,255,.15); }
+  .wx-day       { display: flex; flex-direction: column; align-items: center; gap: 0.4em; }
+  .wx-day-name  { font-size: 1.8vw; font-weight: 600; opacity: 0.7; }
+  .wx-day-icon  { width: 5vw; height: 5vw; }
+  .wx-day-temp  { font-size: 1.8vw; }
+  .wx-high      { font-weight: 700; }
+  .wx-low       { opacity: 0.55; }
+  .wx-loading, .wx-error { font-size: 1.8vw; opacity: 0.5; }
 
   /* ── Ticker overlay ────────────────────────────────────────────────── */
   #tickerWrap {
@@ -1180,6 +1398,17 @@
     <div class="clock-time"></div>
     <div class="clock-date"></div>
   </div>
+</div>
+
+<!-- QR Code slide stage -->
+<div id="stageQr" class="stage" style="display:flex;align-items:center;justify-content:center;flex-direction:column;gap:24px">
+  <div id="qrEl"></div>
+  <div id="qrLabel" style="font-size:2vw;font-weight:600;letter-spacing:0.02em;text-align:center;padding:0 40px"></div>
+</div>
+
+<!-- Weather slide stage -->
+<div id="stageWeather" class="stage" style="display:flex;align-items:center;justify-content:center">
+  <div id="weatherEl" class="wx-wrap"></div>
 </div>
 
 <!-- Ticker overlay (above all stages) -->
