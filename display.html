@@ -255,7 +255,9 @@
   }
 
   let rssRefreshTimer = null;
-  let _lastTickerText = null;  // prevents animation reset on refresh when content unchanged
+  let _lastTickerText = null;  // prevents animation reset when content unchanged
+  let _activeRssUrl   = null;  // RSS URL currently displayed
+  let _rssCache       = {};    // url → last fetched text (survives stopTicker)
 
   function _applyTickerText(cfg, text) {
     // Skip re-render if content hasn't changed and ticker is already running
@@ -307,23 +309,41 @@
     if (rssRefreshTimer) { clearInterval(rssRefreshTimer); rssRefreshTimer = null; }
 
     if (cfg.rssUrl) {
-      // Hide until RSS content arrives — avoids flash of empty/static text then reset
-      tickerWrap.style.display = 'none';
+      // Same URL already running and visible — just re-arm the refresh timer, no flicker
+      if (cfg.rssUrl === _activeRssUrl && tickerWrap.style.display !== 'none') {
+        rssRefreshTimer = setInterval(loadRss, 5 * 60 * 1000);
+        return;
+      }
+
+      _activeRssUrl = cfg.rssUrl;
+      const sep = cfg.tickerSep || '  •  ';
+
       async function loadRss() {
         try {
           const r = await fetch('/api/rss-proxy?url=' + encodeURIComponent(cfg.rssUrl));
           if (!r.ok) { _applyTickerText(cfg, cfg.tickerText || ''); return; }
           const data = await r.json();
-          _applyTickerText(cfg, data.headlines && data.headlines.length
-            ? data.headlines.join(cfg.tickerSep || '  •  ')
-            : (cfg.tickerText || ''));
+          const text = data.headlines && data.headlines.length
+            ? data.headlines.join(sep)
+            : (cfg.tickerText || '');
+          _rssCache[cfg.rssUrl] = text;
+          _applyTickerText(cfg, text);
         } catch(e) {
           _applyTickerText(cfg, cfg.tickerText || '');
         }
       }
+
+      // Show cached content immediately if available — no hide/flash while fetching
+      if (_rssCache[cfg.rssUrl]) {
+        _applyTickerText(cfg, _rssCache[cfg.rssUrl]);
+      } else {
+        tickerWrap.style.display = 'none';
+      }
+
       loadRss();
       rssRefreshTimer = setInterval(loadRss, 5 * 60 * 1000);
     } else {
+      _activeRssUrl = null;
       _applyTickerText(cfg, cfg.tickerText || '');
     }
   }
@@ -331,6 +351,8 @@
   function stopTicker() {
     if (rssRefreshTimer) { clearInterval(rssRefreshTimer); rssRefreshTimer = null; }
     _lastTickerText = null;
+    _activeRssUrl   = null;
+    // _rssCache intentionally kept — avoids re-flash if this URL is shown again soon
     tickerWrap.style.display = 'none';
     tickerTrack.innerHTML    = '';
   }
