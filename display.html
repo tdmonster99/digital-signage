@@ -507,6 +507,8 @@
 
   // ── Weather slide ──────────────────────────────────────────────────────────
   let weatherRefreshTimer = null;
+  const _weatherCache = {}; // keyed by "location|units", value: { data, ts }
+  const WEATHER_TTL = 30 * 60 * 1000; // 30 min client-side cache
 
   function stopWeather() {
     if (weatherRefreshTimer) { clearInterval(weatherRefreshTimer); weatherRefreshTimer = null; }
@@ -515,22 +517,29 @@
   async function renderWeather(slide) {
     stopWeather();
     const el = document.getElementById('weatherEl');
-    el.innerHTML = '<div class="wx-loading">Loading weather…</div>';
 
     async function load() {
+      const cacheKey = `${slide.location || 'New York'}|${slide.units || 'imperial'}`;
+      const cached   = _weatherCache[cacheKey];
+      if (cached && (Date.now() - cached.ts) < WEATHER_TTL) {
+        _renderWeatherDOM(el, cached.data, slide);
+        return;
+      }
+      el.innerHTML = '<div class="wx-loading">Loading weather…</div>';
       try {
         const params = new URLSearchParams({ location: slide.location || 'New York', units: slide.units || 'imperial' });
         const r      = await fetch('/api/weather?' + params);
         if (!r.ok) throw new Error('HTTP ' + r.status);
         const data = await r.json();
         if (!data.ok) throw new Error(data.error || 'Weather error');
+        _weatherCache[cacheKey] = { data, ts: Date.now() };
         _renderWeatherDOM(el, data, slide);
       } catch(e) {
         el.innerHTML = `<div class="wx-error">Weather unavailable<br><small>${e.message}</small></div>`;
       }
     }
     await load();
-    weatherRefreshTimer = setInterval(load, 10 * 60 * 1000); // refresh every 10 min
+    weatherRefreshTimer = setInterval(load, WEATHER_TTL); // refresh every 30 min
   }
 
   function _renderWeatherDOM(el, data, slide) {

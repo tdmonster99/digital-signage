@@ -53,7 +53,7 @@ module.exports = async function handler(req, res) {
       }
     }
 
-    res.setHeader('Cache-Control', 's-maxage=600, stale-while-revalidate=120');
+    res.setHeader('Cache-Control', 's-maxage=1800, stale-while-revalidate=300');
     return res.status(200).json({
       ok: true,
       units: u,
