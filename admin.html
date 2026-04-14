@@ -7023,8 +7023,8 @@ body.role-editor .admin-action {
       </div>
       <div class="clock-field">
         <label>URL</label>
-        <input type="url" id="qrUrl" placeholder="https://example.com"
-               oninput="updateQrPreview()" style="font-family:monospace" />
+        <input type="text" id="qrUrl" placeholder="https://example.com"
+               oninput="this.style.borderColor='';updateQrPreview()" style="font-family:monospace" />
       </div>
       <div class="clock-field">
         <label>Label Text <span style="font-size:11px;color:var(--muted);font-weight:400">(optional)</span></label>
@@ -7047,9 +7047,13 @@ body.role-editor .admin-action {
                  style="width:100%;height:36px;padding:2px;cursor:pointer;border-radius:6px;border:1px solid var(--border);background:var(--surface2)" />
         </div>
       </div>
+      <div class="clock-field" id="qrShowTargetWrap">
+        <label>Add to Slideshow</label>
+        <select id="qrShowTarget"></select>
+      </div>
       <div class="clock-modal-footer">
         <button class="btn btn-secondary" onclick="closeQrModal()">Cancel</button>
-        <button class="btn btn-primary" onclick="saveQrSlide()">Add to Slideshow</button>
+        <button class="btn btn-primary" onclick="saveQrSlide()" id="qrSaveBtn">Add to Slideshow</button>
       </div>
     </div>
     <div class="qr-modal-right">
@@ -7100,9 +7104,13 @@ body.role-editor .admin-action {
         <button class="font-style-btn"        data-wxtheme="light" onclick="selectWxTheme(this,'light')">Light</button>
       </div>
     </div>
+    <div class="clock-field" id="wxShowTargetWrap">
+      <label>Add to Slideshow</label>
+      <select id="wxShowTarget"></select>
+    </div>
     <div class="clock-modal-footer">
       <button class="btn btn-secondary" onclick="closeWeatherModal()">Cancel</button>
-      <button class="btn btn-primary"   onclick="saveWeatherSlide()">Add to Slideshow</button>
+      <button class="btn btn-primary"   onclick="saveWeatherSlide()" id="wxSaveBtn">Add to Slideshow</button>
     </div>
   </div>
 </div>
@@ -15491,12 +15499,40 @@ window.saveClockSlide = async function() {
   }
 
   closeClockModal();
-  await saveSlides();
+  await pushToFirestore();
   renderGrid();
   toast(clockEditIdx !== null ? 'Clock slide updated ✓' : 'Clock slide added ✓');
   logActivity(clockEditIdx !== null ? 'Edited clock slide' : 'Added clock slide');
   updateDashboard();
 };
+
+// ── Shared helper: populate a <select> with the org's slideshows ──────────
+function _populateShowSelect(selectId) {
+  const sel   = document.getElementById(selectId);
+  // Use length-check so an empty array [] doesn't suppress the fallback
+  const shows = currentOrg?.slideshows?.length
+    ? currentOrg.slideshows
+    : [{ id: currentShowId || 'main', name: 'Main Slideshow' }];
+  sel.innerHTML = shows.map(s =>
+    `<option value="${s.id}"${s.id === currentShowId ? ' selected' : ''}>${s.name}</option>`
+  ).join('');
+}
+
+// ── Save a slide to a show that isn't currently loaded ─────────────────────
+async function _addSlideToShow(showId, slide) {
+  const snap = await getDoc(doc(db, 'slideshows', showId));
+  const data = snap.exists() ? snap.data() : {};
+  const existing = (data.draftSlides ?? data.slides ?? []).slice();
+  existing.push(slide);
+  await setDoc(doc(db, 'slideshows', showId), {
+    draftSlides:    existing,
+    draftUpdatedAt: new Date().toISOString(),
+    ...(currentOrgId && { orgId: currentOrgId }),
+  }, { merge: true });
+  // refresh the slide count badge in the sidebar
+  const el = document.querySelector(`#showList .show-item[data-id="${CSS.escape(showId)}"] .show-item-count`);
+  if (el) el.textContent = existing.filter(s => s.active !== false).length + ' slides';
+}
 
 // ── QR Code modal ─────────────────────────────────────────────────────────
 let qrEditIdx      = null;
@@ -15504,8 +15540,10 @@ let _qrPreviewInst = null;
 
 window.openQrModal = function(slideIdx) {
   qrEditIdx = slideIdx;
-  const s   = slideIdx !== null ? slides[slideIdx] : null;
+  const s      = slideIdx !== null ? slides[slideIdx] : null;
+  const isNew  = slideIdx === null;
   document.getElementById('qrModalTitle').textContent = s ? 'Edit QR Code Slide' : 'Add QR Code Slide';
+  document.getElementById('qrSaveBtn').textContent    = s ? 'Save Changes' : 'Add to Slideshow';
   document.getElementById('qrName').value    = s?.name    || 'QR Code';
   document.getElementById('qrDwell').value   = s?.dwell   ?? 15;
   document.getElementById('qrUrl').value     = s?.url     || '';
@@ -15513,6 +15551,8 @@ window.openQrModal = function(slideIdx) {
   document.getElementById('qrSize').value    = s?.size    || 280;
   document.getElementById('qrFgColor').value = s?.fgColor || '#000000';
   document.getElementById('qrBgColor').value = s?.bgColor || '#ffffff';
+  document.getElementById('qrShowTargetWrap').style.display = isNew ? '' : 'none';
+  if (isNew) _populateShowSelect('qrShowTarget');
   document.getElementById('qrModal').style.display = 'flex';
   updateQrPreview();
 };
@@ -15540,8 +15580,15 @@ window.updateQrPreview = function() {
 };
 
 window.saveQrSlide = async function() {
-  const url = document.getElementById('qrUrl').value.trim();
-  if (!url) { toast('Please enter a URL'); return; }
+  const urlInput = document.getElementById('qrUrl');
+  const url = urlInput.value.trim();
+  if (!url) {
+    urlInput.style.borderColor = '#ef4444';
+    urlInput.focus();
+    toast('Please enter a URL');
+    return;
+  }
+  urlInput.style.borderColor = '';
 
   const slide = {
     id:      qrEditIdx !== null ? slides[qrEditIdx].id : crypto.randomUUID(),
@@ -15556,13 +15603,23 @@ window.saveQrSlide = async function() {
     active:  true,
   };
 
-  if (qrEditIdx !== null) slides[qrEditIdx] = slide;
-  else                    slides.push(slide);
+  const targetShowId = qrEditIdx === null
+    ? document.getElementById('qrShowTarget').value
+    : currentShowId;
 
   closeQrModal();
-  await saveSlides();
-  renderGrid();
-  toast(qrEditIdx !== null ? 'QR slide updated ✓' : 'QR slide added ✓');
+
+  if (targetShowId === currentShowId) {
+    if (qrEditIdx !== null) slides[qrEditIdx] = slide;
+    else                    slides.push(slide);
+    await pushToFirestore();
+    renderGrid();
+    toast(qrEditIdx !== null ? 'QR slide updated ✓' : 'QR slide added ✓');
+  } else {
+    await _addSlideToShow(targetShowId, slide);
+    const targetName = (currentOrg?.slideshows || []).find(s => s.id === targetShowId)?.name || targetShowId;
+    toast(`QR slide added to "${targetName}" ✓`);
+  }
   logActivity(qrEditIdx !== null ? 'Edited QR slide' : 'Added QR slide');
   updateDashboard();
 };
@@ -15572,8 +15629,10 @@ let weatherEditIdx = null;
 
 window.openWeatherModal = function(slideIdx) {
   weatherEditIdx = slideIdx;
-  const s = slideIdx !== null ? slides[slideIdx] : null;
+  const s     = slideIdx !== null ? slides[slideIdx] : null;
+  const isNew = slideIdx === null;
   document.getElementById('weatherModalTitle').textContent = s ? 'Edit Weather Slide' : 'Add Weather Slide';
+  document.getElementById('wxSaveBtn').textContent         = s ? 'Save Changes' : 'Add to Slideshow';
   document.getElementById('wxName').value     = s?.name     || 'Weather';
   document.getElementById('wxDwell').value    = s?.dwell    ?? 30;
   document.getElementById('wxLocation').value = s?.location || '';
@@ -15583,6 +15642,8 @@ window.openWeatherModal = function(slideIdx) {
   document.querySelectorAll('[data-wxtheme]').forEach(b =>
     b.classList.toggle('active', b.dataset.wxtheme === theme)
   );
+  document.getElementById('wxShowTargetWrap').style.display = isNew ? '' : 'none';
+  if (isNew) _populateShowSelect('wxShowTarget');
   document.getElementById('weatherModal').style.display = 'flex';
 };
 
@@ -15600,8 +15661,11 @@ window.saveWeatherSlide = async function() {
   const location = document.getElementById('wxLocation').value.trim();
   if (!location) { toast('Please enter a location'); return; }
 
+  // Capture before closeWeatherModal() resets it to null
+  const editIdx = weatherEditIdx;
+
   const slide = {
-    id:       weatherEditIdx !== null ? slides[weatherEditIdx].id : crypto.randomUUID(),
+    id:       editIdx !== null ? slides[editIdx].id : crypto.randomUUID(),
     type:     'weather',
     name:     document.getElementById('wxName').value.trim()  || 'Weather',
     dwell:    parseInt(document.getElementById('wxDwell').value, 10) || 30,
@@ -15612,15 +15676,32 @@ window.saveWeatherSlide = async function() {
     active:   true,
   };
 
-  if (weatherEditIdx !== null) slides[weatherEditIdx] = slide;
-  else                         slides.push(slide);
+  const targetShowId = editIdx === null
+    ? document.getElementById('wxShowTarget').value
+    : currentShowId;
+
+  if (!targetShowId) { toast('Please select a slideshow', true); return; }
 
   closeWeatherModal();
-  await saveSlides();
-  renderGrid();
-  toast(weatherEditIdx !== null ? 'Weather slide updated ✓' : 'Weather slide added ✓');
-  logActivity(weatherEditIdx !== null ? 'Edited weather slide' : 'Added weather slide');
-  updateDashboard();
+
+  try {
+    if (targetShowId === currentShowId) {
+      if (editIdx !== null) slides[editIdx] = slide;
+      else                  slides.push(slide);
+      await pushToFirestore();
+      renderGrid();
+      toast(editIdx !== null ? 'Weather slide updated ✓' : 'Weather slide added ✓');
+    } else {
+      await _addSlideToShow(targetShowId, slide);
+      const targetName = (currentOrg?.slideshows || []).find(s => s.id === targetShowId)?.name || targetShowId;
+      toast(`Weather slide added to "${targetName}" ✓`);
+    }
+    logActivity(editIdx !== null ? 'Edited weather slide' : 'Added weather slide');
+    updateDashboard();
+  } catch(e) {
+    console.error('saveWeatherSlide:', e);
+    toast('Could not save weather slide: ' + e.message, true);
+  }
 };
 
 // ── Theme toggle ──────────────────────────────────────────────────────────
