@@ -19,7 +19,5 @@
       ]
     }
   ],
-  "crons": [
-    { "path": "/api/screen-monitor", "schedule": "0 * * * *" }
-  ]
+  "crons": []
 }
