@@ -20,6 +20,6 @@
     }
   ],
   "crons": [
-    { "path": "/api/screen-monitor", "schedule": "*/5 * * * *" }
+    { "path": "/api/screen-monitor", "schedule": "0 * * * *" }
   ]
 }
