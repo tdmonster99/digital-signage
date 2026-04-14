@@ -47,7 +47,7 @@ function parseRss(xml) {
     if (first) { first = false; continue; } // skip the channel/feed <title>
     const t = decodeEntities(m[1].trim());
     if (t) headlines.push(t);
-    if (headlines.length >= 20) break;
+    if (headlines.length >= 8) break;
   }
   return headlines;
 }

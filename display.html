@@ -257,7 +257,7 @@
   let rssRefreshTimer = null;
 
   function _applyTickerText(cfg, text) {
-    const speeds    = { slow: 40, medium: 80, fast: 140 };
+    const speeds    = { slow: 80, medium: 160, fast: 280 };
     const px_per_sec = speeds[cfg.tickerSpeed] || 80;
     const fullText  = text + (cfg.tickerSep || '  •  ');
     const fontSize  = cfg.tickerFontSize || 36;
@@ -289,7 +289,13 @@
 
     requestAnimationFrame(() => {
       const w = span1.offsetWidth;
-      if (w > 0) tickerTrack.style.animationDuration = (w / px_per_sec) + 's';
+      if (w > 0) {
+        const dur = (w / px_per_sec) + 's';
+        // Force a clean restart so glitches don't occur when content changes
+        tickerTrack.style.animation = 'none';
+        void tickerTrack.offsetWidth; // trigger reflow
+        tickerTrack.style.animation = `tickerScroll ${dur} linear infinite`;
+      }
     });
   }
 
