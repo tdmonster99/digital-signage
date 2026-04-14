@@ -848,7 +848,10 @@
         expanded.push(s);
       }
     }
-    const incoming = expanded.filter(s => s.url || s.canvasJson || s.type === 'clock');
+    const incoming = expanded.filter(s =>
+      s.url || s.canvasJson ||
+      s.type === 'clock' || s.type === 'weather' || s.type === 'youtube'
+    );
 
     if (!incoming.length) {
       showError("No active slides. Enable some slides in the Admin Panel.");
