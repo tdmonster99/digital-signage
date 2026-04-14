@@ -255,15 +255,20 @@
   }
 
   let rssRefreshTimer = null;
+  let _lastTickerText = null;  // prevents animation reset on refresh when content unchanged
 
   function _applyTickerText(cfg, text) {
-    const speeds    = { slow: 80, medium: 160, fast: 280 };
-    const px_per_sec = speeds[cfg.tickerSpeed] || 80;
-    const fullText  = text + (cfg.tickerSep || '  •  ');
-    const fontSize  = cfg.tickerFontSize || 36;
-    const barHeight = fontSize * 2.4;
-    const bgColor   = hexToRgbaDisplay(cfg.tickerBg || '#000000', cfg.tickerOpacity !== undefined ? cfg.tickerOpacity : 0.75);
-    const badgeW    = 120;
+    // Skip re-render if content hasn't changed and ticker is already running
+    if (text === _lastTickerText && tickerWrap.style.display !== 'none') return;
+    _lastTickerText = text;
+
+    const speeds     = { slow: 120, medium: 250, fast: 420 };
+    const px_per_sec = speeds[cfg.tickerSpeed] || 120;
+    const fullText   = text + (cfg.tickerSep || '  •  ');
+    const fontSize   = cfg.tickerFontSize || 36;
+    const barHeight  = fontSize * 2.4;
+    const bgColor    = hexToRgbaDisplay(cfg.tickerBg || '#000000', cfg.tickerOpacity !== undefined ? cfg.tickerOpacity : 0.75);
+    const badgeW     = 120;
 
     tickerWrap.style.height      = barHeight + 'px';
     tickerWrap.style.background  = bgColor;
@@ -291,7 +296,6 @@
       const w = span1.offsetWidth;
       if (w > 0) {
         const dur = (w / px_per_sec) + 's';
-        // Force a clean restart so glitches don't occur when content changes
         tickerTrack.style.animation = 'none';
         void tickerTrack.offsetWidth; // trigger reflow
         tickerTrack.style.animation = `tickerScroll ${dur} linear infinite`;
@@ -302,27 +306,31 @@
   function renderTicker(cfg) {
     if (rssRefreshTimer) { clearInterval(rssRefreshTimer); rssRefreshTimer = null; }
 
-    // Show immediately with static text (or placeholder while RSS loads)
-    _applyTickerText(cfg, cfg.tickerText || '');
-
     if (cfg.rssUrl) {
+      // Hide until RSS content arrives — avoids flash of empty/static text then reset
+      tickerWrap.style.display = 'none';
       async function loadRss() {
         try {
           const r = await fetch('/api/rss-proxy?url=' + encodeURIComponent(cfg.rssUrl));
-          if (!r.ok) return;
+          if (!r.ok) { _applyTickerText(cfg, cfg.tickerText || ''); return; }
           const data = await r.json();
-          if (data.headlines && data.headlines.length) {
-            _applyTickerText(cfg, data.headlines.join(cfg.tickerSep || '  •  '));
-          }
-        } catch(e) { /* non-critical — keep showing static text */ }
+          _applyTickerText(cfg, data.headlines && data.headlines.length
+            ? data.headlines.join(cfg.tickerSep || '  •  ')
+            : (cfg.tickerText || ''));
+        } catch(e) {
+          _applyTickerText(cfg, cfg.tickerText || '');
+        }
       }
       loadRss();
       rssRefreshTimer = setInterval(loadRss, 5 * 60 * 1000);
+    } else {
+      _applyTickerText(cfg, cfg.tickerText || '');
     }
   }
 
   function stopTicker() {
     if (rssRefreshTimer) { clearInterval(rssRefreshTimer); rssRefreshTimer = null; }
+    _lastTickerText = null;
     tickerWrap.style.display = 'none';
     tickerTrack.innerHTML    = '';
   }
