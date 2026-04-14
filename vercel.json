@@ -8,7 +8,14 @@
       "source": "/admin.html",
       "headers": [
         { "key": "Cross-Origin-Opener-Policy", "value": "same-origin-allow-popups" },
-        { "key": "Cross-Origin-Embedder-Policy", "value": "unsafe-none" }
+        { "key": "Cross-Origin-Embedder-Policy", "value": "unsafe-none" },
+        { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate" }
+      ]
+    },
+    {
+      "source": "/display.html",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate" }
       ]
     }
   ],
