@@ -67,6 +67,7 @@
   const MAX_BACKOFF     = 5 * 60 * 1000;  // cap at 5 minutes
   let reconnectTimer    = null;
   let activeSlideshowId = null;
+  let screenTimezone    = null; // IANA string or 'local'/null (falls back to device time)
   let lastUpdateTime    = null;
   let watchdogHandle    = null;
   let debugVisible      = false;
@@ -1071,7 +1072,6 @@
     // Reads the assigned schedule doc from Firestore and switches the playing
     // slideshow at each minute boundary based on active time blocks.
 
-    let screenTimezone = null; // IANA string or 'local'/null (falls back to device time)
     let baseShowId    = null;  // the screen doc's default slideshowId
     let activeSchedId = null;  // the scheduleId currently subscribed
     let schedData     = null;  // loaded schedule document data
