@@ -992,7 +992,7 @@
     function _schedGetTarget() {
       if (!schedData || !Array.isArray(schedData.events)) return baseShowId;
       const now  = new Date();
-      const dow  = now.getDay(); // 0=Sun, 1=Mon … 6=Sat
+      const dow  = (now.getDay() + 6) % 7; // convert JS Sun=0 to Mon=0, matching admin's day-btn data-day values
       const mins = now.getHours() * 60 + now.getMinutes();
       for (const ev of schedData.events) {
         if (!Array.isArray(ev.days) || !ev.days.includes(dow)) continue;
