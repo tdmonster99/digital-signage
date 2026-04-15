@@ -5,6 +5,12 @@ Running log of changes by session. Append a new entry at the top after each sess
 ---
 
 ## 2026-04-15 (cont.) — Claude
+- **Phase 3 #8 Per-Screen Timezone** implemented and tested end-to-end. Set screen tz to London, confirmed clock, schedule eval, and working hours all respect it.
+  - admin.html: IANA timezone dropdown added to the screen edit panel (same options as clock widget); loaded/saved on `screen.timezone`
+  - display.html: new `_tzNow()` helper derives `{dow, mins}` in the screen's tz via `Intl.DateTimeFormat`; reused by `_schedGetTarget` and `_whIsOpen`. `renderClockEl` falls back: slide tz → screen tz → device local
+  - Bug fixed: initial declaration of `screenTimezone` was in an inner scope — `renderClockEl` couldn't see it, threw ReferenceError. Hoisted to module scope alongside `activeSlideshowId`.
+
+## 2026-04-15 (cont.) — Claude
 - **Phase 2 #7 Countdown Timer** implemented and tested end-to-end.
   - admin.html: activated the Apps "Countdown Timer" card (was Coming Soon); added `#countdownModal` (label, target datetime, units d/h/m/s selector, end message, theme, accent color, dwell); slide-card thumb/badge/edit; `openCountdownModal`/`saveCountdownSlide`
   - display.html: `#stageCountdown` with `vw`-scaled typography; `renderCountdown` ticks every 1s (or 30s when seconds aren't shown); swaps to end-message text at zero; wired into `_hideAllStages`, `crossfadeTo`, and playlist filter
