@@ -888,7 +888,6 @@
   let slideshowUnsub = null;
 
   function subscribeToSlideshow(slideshowId) {
-    console.log('[Sub] subscribeToSlideshow(' + slideshowId + ') — previous activeSlideshowId=' + activeSlideshowId);
     if (slideshowUnsub) { slideshowUnsub(); slideshowUnsub = null; }
     clearTimeout(reconnectTimer);
     activeSlideshowId = slideshowId;
@@ -991,30 +990,21 @@
     let schedMinTick  = null;  // setInterval handle for minute-boundary checks
 
     function _schedGetTarget() {
-      if (!schedData || !Array.isArray(schedData.events)) {
-        console.log('[Sched] no schedData or no events → baseShowId:', baseShowId);
-        return baseShowId;
-      }
+      if (!schedData || !Array.isArray(schedData.events)) return baseShowId;
       const now  = new Date();
       const dow  = (now.getDay() + 6) % 7; // convert JS Sun=0 to Mon=0, matching admin's day-btn data-day values
       const mins = now.getHours() * 60 + now.getMinutes();
-      console.log('[Sched] evaluating: dow=' + dow + ' mins=' + mins + ' events=' + schedData.events.length);
       for (const ev of schedData.events) {
-        const dayOk = Array.isArray(ev.days) && ev.days.includes(dow);
+        if (!Array.isArray(ev.days) || !ev.days.includes(dow)) continue;
         const start = (ev.startHour || 0) * 60 + (ev.startMin || 0);
         const end   = (ev.endHour   || 0) * 60 + (ev.endMin   || 0);
-        const timeOk = mins >= start && mins < end;
-        console.log('[Sched]  event "' + (ev.name || ev.id) + '" days=' + JSON.stringify(ev.days) + ' dayOk=' + dayOk + ' ' + start + '–' + end + ' timeOk=' + timeOk + ' → ' + ev.slideshowId);
-        if (!dayOk) continue;
-        if (timeOk) return ev.slideshowId || baseShowId;
+        if (mins >= start && mins < end) return ev.slideshowId || baseShowId;
       }
-      console.log('[Sched] no active event → filler:', schedData.fillerSlideshowId);
       return schedData.fillerSlideshowId || baseShowId;
     }
 
     function _schedApply() {
       const target = _schedGetTarget();
-      console.log('[Sched] _schedApply: target=' + target + ' activeSlideshowId=' + activeSlideshowId);
       if (!target || target === activeSlideshowId) return;
       currentSlideshowIdForAnalytics = target;
       slides = []; current = 0; clearTimeout(timer);
@@ -1022,11 +1012,10 @@
     }
 
     function _startSchedule(orgId, schedId) {
-      console.log('[Sched] _startSchedule orgId=' + orgId + ' schedId=' + schedId);
       if (schedUnsub)   { schedUnsub();                schedUnsub   = null; }
       if (schedMinTick) { clearInterval(schedMinTick); schedMinTick = null; }
       schedData = null;
-      if (!schedId || !orgId) { console.warn('[Sched] bailing — missing orgId or schedId'); return; }
+      if (!schedId || !orgId) return;
 
       schedUnsub = onSnapshot(
         doc(db, 'organizations', orgId, 'schedules', schedId),

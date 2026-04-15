@@ -4,6 +4,16 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-04-14 (cont.) — Claude
+- **#3 Weather Widget** — added client + server caching to stop 429 rate-limit blocks:
+  - display.html: 30-min in-memory cache keyed by `location|units`; playlist loops no longer re-fetch on every weather slide
+  - api/weather.js: bumped Vercel CDN cache from `s-maxage=600` → `1800`
+- **#1 Schedule Display-Side Enforcement** tested end-to-end. Three bugs found and fixed:
+  - display.html subscribeToSlideshow: added stale-callback guard (`if (activeSlideshowId !== slideshowId) return`) so a late-firing snapshot from a previously-cancelled listener can't stomp the current show after a schedule switch
+  - display.html _schedGetTarget: day-of-week mismatch — admin day buttons use Mon=0…Sun=6 (per DAY_LABELS), but JS `getDay()` is Sun=0…Sat=6. Fixed with `(getDay() + 6) % 7` conversion
+  - Firestore security rules: added `organizations/{orgId}/schedules/{schedId}` with `allow read: if true` so the unauthenticated display can read the schedule doc
+  - admin.html loadSchedulesFromOrg: the built-in `sched-demo` schedule lived only in memory. Users could assign it to a screen, but the Firestore doc didn't exist, so display silently fell back to baseShowId. Now seeds the demo to Firestore if the org has no schedules yet.
+
 ## 2026-04-14 — Claude
 Working down the Phase 1 roadmap testing list.
 - **#5 RSS Ticker** tested end-to-end. Fixed three bugs:

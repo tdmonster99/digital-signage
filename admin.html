@@ -14761,6 +14761,16 @@ async function loadSchedulesFromOrg() {
     const snap = await getDocs(collection(db, 'organizations', currentOrgId, 'schedules'));
     if (!snap.empty) {
       allSchedules = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+    } else {
+      // Seed the in-memory demo schedule to Firestore so it's assignable to screens.
+      // Otherwise the dropdown shows a schedule whose doc doesn't exist, and display.html
+      // falls back to baseShowId silently when the schedule listener finds no doc.
+      for (const s of allSchedules) {
+        await setDoc(
+          doc(db, 'organizations', currentOrgId, 'schedules', s.id),
+          { ...s, updatedAt: new Date().toISOString() }
+        );
+      }
     }
   } catch(e) {
     console.warn('Could not load schedules from Firestore:', e.message);
