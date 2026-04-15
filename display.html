@@ -535,7 +535,10 @@
       try {
         const params = new URLSearchParams({ location: slide.location || 'New York', units: slide.units || 'imperial' });
         const r      = await fetch('/api/weather?' + params);
-        if (!r.ok) throw new Error('HTTP ' + r.status);
+        if (!r.ok) {
+          const body = await r.json().catch(() => ({}));
+          throw new Error(body.error || 'HTTP ' + r.status);
+        }
         const data = await r.json();
         if (!data.ok) throw new Error(data.error || 'Weather error');
         _weatherCache[cacheKey] = { data, ts: Date.now() };

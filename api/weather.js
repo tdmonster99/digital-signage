@@ -15,7 +15,10 @@ module.exports = async function handler(req, res) {
   if (!apiKey)  return res.status(500).json({ error: 'Weather service not configured' });
 
   const u = units === 'metric' ? 'metric' : 'imperial';
-  const q = encodeURIComponent(location);
+  // Normalize common "City, ST" US formats → "City,ST,US" so OWM can resolve them.
+  // OWM accepts city / city,country / city,state,country but NOT "City, ST" (space + no country).
+  const normalized = location.replace(/^([^,]+),\s*([A-Z]{2})\s*$/, '$1,$2,US');
+  const q = encodeURIComponent(normalized);
 
   try {
     const [curRes, fcastRes] = await Promise.all([
@@ -30,7 +33,10 @@ module.exports = async function handler(req, res) {
       const ttl = (curRes.status === 429 || curRes.status === 403) ? 900 : 300;
       res.setHeader('Cache-Control', `s-maxage=${ttl}, stale-while-revalidate=60`);
       const err = await curRes.json().catch(() => ({}));
-      return res.status(curRes.status).json({ error: err.message || `Weather API error ${curRes.status}` });
+      // Map OWM's 404 ("city not found") to 422 so our API doesn't return a
+      // misleading 404 that looks like the endpoint itself is missing.
+      const clientStatus = curRes.status === 404 ? 422 : curRes.status;
+      return res.status(clientStatus).json({ error: err.message || `Weather API error ${curRes.status}` });
     }
 
     const cur   = await curRes.json();
