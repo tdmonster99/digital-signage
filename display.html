@@ -1022,10 +1022,11 @@
     }
 
     function _startSchedule(orgId, schedId) {
+      console.log('[Sched] _startSchedule orgId=' + orgId + ' schedId=' + schedId);
       if (schedUnsub)   { schedUnsub();                schedUnsub   = null; }
       if (schedMinTick) { clearInterval(schedMinTick); schedMinTick = null; }
       schedData = null;
-      if (!schedId || !orgId) return;
+      if (!schedId || !orgId) { console.warn('[Sched] bailing — missing orgId or schedId'); return; }
 
       schedUnsub = onSnapshot(
         doc(db, 'organizations', orgId, 'schedules', schedId),
