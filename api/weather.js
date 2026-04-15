@@ -24,6 +24,11 @@ module.exports = async function handler(req, res) {
     ]);
 
     if (!curRes.ok) {
+      // Cache error responses at the CDN too — otherwise every display call during a
+      // rate-limit block still hits OpenWeather, which keeps extending the block.
+      // 429/403 = account blocked → cache 15 min; other errors → cache 5 min.
+      const ttl = (curRes.status === 429 || curRes.status === 403) ? 900 : 300;
+      res.setHeader('Cache-Control', `s-maxage=${ttl}, stale-while-revalidate=60`);
       const err = await curRes.json().catch(() => ({}));
       return res.status(curRes.status).json({ error: err.message || `Weather API error ${curRes.status}` });
     }
