@@ -3951,6 +3951,36 @@ body.role-editor .admin-action {
         <label>Tags (comma separated)</label>
         <input type="text" id="sepTags" placeholder="e.g. lobby, floor-1, retail">
       </div>
+      <div class="sep-field">
+        <label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:13px;color:var(--text);font-weight:500">
+          <input type="checkbox" id="sepWHEnabled" style="width:auto;margin:0" onchange="document.getElementById('sepWHBody').style.display = this.checked ? 'flex' : 'none'">
+          Working Hours (automatic on/off)
+        </label>
+        <div id="sepWHBody" style="display:none;flex-direction:column;gap:10px;margin-top:10px;padding:12px;background:var(--surface2);border-radius:8px">
+          <div style="display:flex;gap:10px">
+            <div style="flex:1">
+              <label style="font-size:10px">Start</label>
+              <input type="time" id="sepWHStart" value="08:00">
+            </div>
+            <div style="flex:1">
+              <label style="font-size:10px">End</label>
+              <input type="time" id="sepWHEnd" value="18:00">
+            </div>
+          </div>
+          <div>
+            <label style="font-size:10px;margin-bottom:4px">Active Days</label>
+            <div id="sepWHDays" style="display:flex;gap:4px">
+              <button type="button" class="day-btn" data-day="0" onclick="this.classList.toggle('active')">Mo</button>
+              <button type="button" class="day-btn" data-day="1" onclick="this.classList.toggle('active')">Tu</button>
+              <button type="button" class="day-btn" data-day="2" onclick="this.classList.toggle('active')">We</button>
+              <button type="button" class="day-btn" data-day="3" onclick="this.classList.toggle('active')">Th</button>
+              <button type="button" class="day-btn" data-day="4" onclick="this.classList.toggle('active')">Fr</button>
+              <button type="button" class="day-btn" data-day="5" onclick="this.classList.toggle('active')">Sa</button>
+              <button type="button" class="day-btn" data-day="6" onclick="this.classList.toggle('active')">Su</button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
     <div class="sep-footer">
       <button class="btn-danger" onclick="confirmDeleteScreen()">Delete</button>
@@ -14594,6 +14624,19 @@ window.openScreenEdit = function(screenId) {
   document.getElementById('sepOrientation').value = screen.orientation || 'landscape';
   document.getElementById('sepTags').value        = (screen.tags || []).join(', ');
 
+  // Working Hours
+  const wh = screen.workingHours || {};
+  const whEnabled = !!wh.enabled;
+  document.getElementById('sepWHEnabled').checked = whEnabled;
+  document.getElementById('sepWHBody').style.display = whEnabled ? 'flex' : 'none';
+  const pad = n => String(n ?? 0).padStart(2, '0');
+  document.getElementById('sepWHStart').value = `${pad(wh.startHour ?? 8)}:${pad(wh.startMin ?? 0)}`;
+  document.getElementById('sepWHEnd').value   = `${pad(wh.endHour   ?? 18)}:${pad(wh.endMin ?? 0)}`;
+  const activeDays = Array.isArray(wh.days) ? wh.days : [0,1,2,3,4];
+  document.querySelectorAll('#sepWHDays .day-btn').forEach(b => {
+    b.classList.toggle('active', activeDays.includes(+b.dataset.day));
+  });
+
   // Populate slideshow dropdown
   const shows = getAllShows();
   const sepShow = document.getElementById('sepSlideshow');
@@ -14623,10 +14666,22 @@ window.saveScreenEdit = async function() {
   const tagsRaw     = document.getElementById('sepTags').value;
   const tags        = tagsRaw.split(',').map(t => t.trim()).filter(Boolean);
 
+  // Working Hours
+  const whEnabled = document.getElementById('sepWHEnabled').checked;
+  const [whSH, whSM] = document.getElementById('sepWHStart').value.split(':').map(Number);
+  const [whEH, whEM] = document.getElementById('sepWHEnd').value.split(':').map(Number);
+  const whDays = Array.from(document.querySelectorAll('#sepWHDays .day-btn.active')).map(b => +b.dataset.day);
+  const workingHours = {
+    enabled:   whEnabled,
+    startHour: whSH || 0, startMin: whSM || 0,
+    endHour:   whEH || 0, endMin:   whEM || 0,
+    days:      whDays,
+  };
+
   try {
     await setDoc(doc(db, 'screens', editingScreenId), {
       ...(name        && { name }),
-      location, slideshowId, scheduleId, orientation, tags,
+      location, slideshowId, scheduleId, orientation, tags, workingHours,
     }, { merge: true });
     toast('Screen saved ✓');
     closeScreenEdit();

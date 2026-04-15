@@ -1004,6 +1004,7 @@
     }
 
     function _schedApply() {
+      if (whIsClosed) return;
       const target = _schedGetTarget();
       if (!target || target === activeSlideshowId) return;
       currentSlideshowIdForAnalytics = target;
@@ -1023,6 +1024,60 @@
         err  => console.warn('[Schedule]', err.message)
       );
       schedMinTick = setInterval(_schedApply, 60 * 1000);
+    }
+
+    // ── Working Hours enforcement ────────────────────────────────────────────
+    // When enabled, blacks out the display outside the configured window.
+    let workingHours = null;   // { enabled, startHour, startMin, endHour, endMin, days[] }
+    let whIsClosed   = false;
+    let whMinTick    = null;
+    const stageClosed = document.getElementById('stageClosed');
+
+    function _whIsOpen() {
+      if (!workingHours || !workingHours.enabled) return true;
+      const days = Array.isArray(workingHours.days) ? workingHours.days : [];
+      if (!days.length) return true;
+      const now  = new Date();
+      const dow  = (now.getDay() + 6) % 7;
+      if (!days.includes(dow)) return false;
+      const mins  = now.getHours() * 60 + now.getMinutes();
+      const start = (workingHours.startHour || 0) * 60 + (workingHours.startMin || 0);
+      const end   = (workingHours.endHour   || 0) * 60 + (workingHours.endMin   || 0);
+      if (start === end) return true;
+      if (start < end) return mins >= start && mins < end;
+      // wraps past midnight
+      return mins >= start || mins < end;
+    }
+
+    function _whApply() {
+      const open = _whIsOpen();
+      if (open && whIsClosed) {
+        whIsClosed = false;
+        stageClosed.style.opacity = '0';
+        // Resume: re-trigger schedule/slideshow
+        if (activeSchedId) _schedApply();
+        else if (baseShowId) {
+          currentSlideshowIdForAnalytics = baseShowId;
+          slides = []; current = 0; clearTimeout(timer);
+          subscribeToSlideshow(baseShowId);
+        }
+      } else if (!open && !whIsClosed) {
+        whIsClosed = true;
+        clearTimeout(timer);
+        stageClosed.style.opacity = '1';
+      }
+    }
+
+    function _setWorkingHours(wh) {
+      workingHours = wh || null;
+      if (whMinTick) { clearInterval(whMinTick); whMinTick = null; }
+      if (workingHours && workingHours.enabled) {
+        whMinTick = setInterval(_whApply, 60 * 1000);
+      } else if (whIsClosed) {
+        whIsClosed = false;
+        stageClosed.style.opacity = '0';
+      }
+      _whApply();
     }
 
     onSnapshot(
@@ -1051,6 +1106,8 @@
           // re-fires this snapshot callback, causing an infinite write loop.
           emitOnline(newOrgId);
           baseShowId = newBaseId;
+          _setWorkingHours(data.workingHours || null);
+          if (whIsClosed) return;
 
           if (newSchedId !== activeSchedId) {
             activeSchedId = newSchedId;
@@ -1175,6 +1232,9 @@
   #stageClock    { z-index: 7; background: #000; }
   #stageQr       { z-index: 8; background: #fff; }
   #stageWeather  { z-index: 9; background: #0f172a; }
+  #stageClosed   { z-index: 100; background: #000; opacity: 0; display: flex;
+    align-items: center; justify-content: center; color: #555;
+    font-family: 'Segoe UI', Arial, sans-serif; font-size: 28px; letter-spacing: 0.5px; }
   #clockEl {
     position: absolute; inset: 0;
     display: flex; flex-direction: column;
@@ -1460,6 +1520,8 @@
 <div id="stageWeather" class="stage" style="display:flex;align-items:center;justify-content:center">
   <div id="weatherEl" class="wx-wrap"></div>
 </div>
+
+<div id="stageClosed" class="stage">Outside working hours</div>
 
 <!-- Ticker overlay (above all stages) -->
 <div id="tickerWrap" class="ticker-bottom">
