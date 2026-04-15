@@ -439,7 +439,10 @@
   };
 
   function renderClockEl(config) {
-    const tz     = (!config.timezone || config.timezone === 'local') ? undefined : config.timezone;
+    // Slide-level tz wins; otherwise fall back to the screen's configured tz.
+    const slideTz  = (!config.timezone || config.timezone === 'local') ? null : config.timezone;
+    const screenTz = (screenTimezone && screenTimezone !== 'local') ? screenTimezone : null;
+    const tz       = slideTz || screenTz || undefined;
     const fmt12  = config.format === '12h';
     const now    = new Date();
     const tOpts  = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: fmt12, ...(tz ? { timeZone: tz } : {}) };
@@ -1068,17 +1071,37 @@
     // Reads the assigned schedule doc from Firestore and switches the playing
     // slideshow at each minute boundary based on active time blocks.
 
+    let screenTimezone = null; // IANA string or 'local'/null (falls back to device time)
     let baseShowId    = null;  // the screen doc's default slideshowId
     let activeSchedId = null;  // the scheduleId currently subscribed
     let schedData     = null;  // loaded schedule document data
     let schedUnsub    = null;  // onSnapshot unsubscribe for the schedule doc
     let schedMinTick  = null;  // setInterval handle for minute-boundary checks
 
+    // Returns { dow: 0=Mon..6=Sun, mins: 0..1439 } for the screen's configured tz.
+    function _tzNow() {
+      const tz = screenTimezone && screenTimezone !== 'local' ? screenTimezone : undefined;
+      try {
+        const parts = new Intl.DateTimeFormat('en-US', {
+          ...(tz ? { timeZone: tz } : {}),
+          hourCycle: 'h23',
+          weekday: 'short',
+          hour: '2-digit', minute: '2-digit',
+        }).formatToParts(new Date());
+        const wkday = parts.find(p => p.type === 'weekday').value;
+        const hour  = +parts.find(p => p.type === 'hour').value;
+        const min   = +parts.find(p => p.type === 'minute').value;
+        const wk    = { Mon:0, Tue:1, Wed:2, Thu:3, Fri:4, Sat:5, Sun:6 };
+        return { dow: wk[wkday] ?? 0, mins: hour * 60 + min };
+      } catch(e) {
+        const d = new Date();
+        return { dow: (d.getDay() + 6) % 7, mins: d.getHours() * 60 + d.getMinutes() };
+      }
+    }
+
     function _schedGetTarget() {
       if (!schedData || !Array.isArray(schedData.events)) return baseShowId;
-      const now  = new Date();
-      const dow  = (now.getDay() + 6) % 7; // convert JS Sun=0 to Mon=0, matching admin's day-btn data-day values
-      const mins = now.getHours() * 60 + now.getMinutes();
+      const { dow, mins } = _tzNow();
       for (const ev of schedData.events) {
         if (!Array.isArray(ev.days) || !ev.days.includes(dow)) continue;
         const start = (ev.startHour || 0) * 60 + (ev.startMin || 0);
@@ -1122,10 +1145,8 @@
       if (!workingHours || !workingHours.enabled) return true;
       const days = Array.isArray(workingHours.days) ? workingHours.days : [];
       if (!days.length) return true;
-      const now  = new Date();
-      const dow  = (now.getDay() + 6) % 7;
+      const { dow, mins } = _tzNow();
       if (!days.includes(dow)) return false;
-      const mins  = now.getHours() * 60 + now.getMinutes();
       const start = (workingHours.startHour || 0) * 60 + (workingHours.startMin || 0);
       const end   = (workingHours.endHour   || 0) * 60 + (workingHours.endMin   || 0);
       if (start === end) return true;
@@ -1191,6 +1212,7 @@
           // re-fires this snapshot callback, causing an infinite write loop.
           emitOnline(newOrgId);
           baseShowId = newBaseId;
+          screenTimezone = data.timezone || null;
           _setWorkingHours(data.workingHours || null);
           if (whIsClosed) return;
 

@@ -3963,6 +3963,36 @@ body.role-editor .admin-action {
         <input type="text" id="sepTags" placeholder="e.g. lobby, floor-1, retail">
       </div>
       <div class="sep-field">
+        <label>Timezone</label>
+        <select id="sepTimezone">
+          <option value="local">Local (device time)</option>
+          <optgroup label="US">
+            <option value="America/New_York">Eastern (New York)</option>
+            <option value="America/Chicago">Central (Chicago)</option>
+            <option value="America/Denver">Mountain (Denver)</option>
+            <option value="America/Phoenix">Arizona (Phoenix)</option>
+            <option value="America/Los_Angeles">Pacific (Los Angeles)</option>
+            <option value="America/Anchorage">Alaska (Anchorage)</option>
+            <option value="Pacific/Honolulu">Hawaii (Honolulu)</option>
+          </optgroup>
+          <optgroup label="Europe">
+            <option value="Europe/London">London</option>
+            <option value="Europe/Paris">Paris / Berlin / Madrid</option>
+            <option value="Europe/Helsinki">Helsinki / Athens</option>
+            <option value="Europe/Moscow">Moscow</option>
+          </optgroup>
+          <optgroup label="Asia / Pacific">
+            <option value="Asia/Dubai">Dubai</option>
+            <option value="Asia/Kolkata">India (Mumbai / Delhi)</option>
+            <option value="Asia/Bangkok">Bangkok / Jakarta</option>
+            <option value="Asia/Singapore">Singapore / KL</option>
+            <option value="Asia/Tokyo">Tokyo / Seoul</option>
+            <option value="Australia/Sydney">Sydney</option>
+            <option value="Pacific/Auckland">Auckland</option>
+          </optgroup>
+        </select>
+      </div>
+      <div class="sep-field">
         <label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:13px;color:var(--text);font-weight:500">
           <input type="checkbox" id="sepWHEnabled" style="width:auto;margin:0" onchange="document.getElementById('sepWHBody').style.display = this.checked ? 'flex' : 'none'">
           Working Hours (automatic on/off)
@@ -14702,6 +14732,7 @@ window.openScreenEdit = function(screenId) {
   document.getElementById('sepLocation').value    = screen.location || '';
   document.getElementById('sepOrientation').value = screen.orientation || 'landscape';
   document.getElementById('sepTags').value        = (screen.tags || []).join(', ');
+  document.getElementById('sepTimezone').value    = screen.timezone || 'local';
 
   // Working Hours
   const wh = screen.workingHours || {};
@@ -14761,6 +14792,7 @@ window.saveScreenEdit = async function() {
     await setDoc(doc(db, 'screens', editingScreenId), {
       ...(name        && { name }),
       location, slideshowId, scheduleId, orientation, tags, workingHours,
+      timezone: document.getElementById('sepTimezone').value,
     }, { merge: true });
     toast('Screen saved ✓');
     closeScreenEdit();
