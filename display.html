@@ -912,6 +912,9 @@
       current        = (current + 1) % slides.length;
       slideViewStart = Date.now();
       const slide    = slides[current];
+      if (slide.expiresAt && new Date(slide.expiresAt).getTime() <= Date.now()) {
+        continue; // silently skip expired slides discovered mid-playback
+      }
       const ok       = await crossfadeTo(slide);
       if (ok) {
         scheduleNext(slide.dwell ?? defaultDwell);
@@ -935,11 +938,15 @@
     loader.style.display = "none";
 
     // Expand groups into their individual slides, then filter active ones
+    const nowMs = Date.now();
+    const _isExpired = s => s.expiresAt && new Date(s.expiresAt).getTime() <= nowMs;
     const expanded = [];
     for (const s of data.slides) {
       if (s.active === false) continue;
+      if (_isExpired(s))      continue;
       if (s.type === 'group' && Array.isArray(s.slides) && s.slides.length) {
         for (const gs of s.slides) {
+          if (_isExpired(gs)) continue;
           expanded.push({ ...gs, type: 'designed', _groupName: s.name });
         }
       } else {

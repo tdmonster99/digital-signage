@@ -2564,6 +2564,26 @@ section.content {
   width: 100%; max-width: 500px; padding: 28px 24px; overflow-y: auto; max-height: 90vh;
 }
 
+/* ── Expiration modal ──────────────────────────────────────────────── */
+#expirationModal {
+  display: none; position: fixed; inset: 0; z-index: 400;
+  background: rgba(0,0,0,.5); align-items: center; justify-content: center;
+  backdrop-filter: blur(4px); padding: 20px;
+}
+.expiration-modal-box {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+  width: 100%; max-width: 420px; padding: 24px 22px;
+}
+
+/* Expiration badges on slide cards */
+.expires-badge {
+  position: absolute; top: 8px; left: 8px; z-index: 3;
+  padding: 3px 8px; border-radius: 6px; font-size: 10px; font-weight: 700;
+  letter-spacing: 0.04em; text-transform: uppercase; color: #fff;
+}
+.expires-badge.expired   { background: #dc2626cc; }
+.expires-badge.expiring  { background: #f59e0bcc; }
+
 /* ── Countdown modal ───────────────────────────────────────────────── */
 #countdownModal {
   display: none; position: fixed; inset: 0; z-index: 400;
@@ -7195,6 +7215,27 @@ body.role-editor .admin-action {
   </div>
 </div>
 
+<!-- Expiration Modal -->
+<div id="expirationModal">
+  <div class="expiration-modal-box">
+    <h2 style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:6px">Set Expiration Date</h2>
+    <p style="font-size:13px;color:var(--muted);margin:0 0 18px;line-height:1.5">
+      The slide will stop playing on displays after this date. Leave blank for no expiration.
+    </p>
+    <div class="clock-field">
+      <label>Expires On</label>
+      <input type="datetime-local" id="expDateInput" />
+    </div>
+    <div style="display:flex;gap:8px;justify-content:space-between;align-items:center;margin-top:18px">
+      <button class="btn btn-secondary" onclick="clearExpiration()" id="expClearBtn" style="visibility:hidden">Remove</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-secondary" onclick="closeExpirationModal()">Cancel</button>
+        <button class="btn btn-primary"   onclick="saveExpiration()">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Countdown Modal -->
 <div id="countdownModal">
   <div class="countdown-modal-box">
@@ -9718,7 +9759,14 @@ function renderGrid() {
         </div>
         <div class="designed-badge" style="background:#7c3aedcc">Group</div>
         ${count > 0 ? `<div class="group-count-badge">${count} slide${count !== 1 ? 's' : ''}</div>` : ''}
+        ${expirationBadgeHtml(s)}
         <div class="slide-actions">
+          <button class="icon-btn" title="Set Expiration" onclick="openExpirationModal(${i})" style="background:${s.expiresAt ? 'rgba(245,158,11,.85)' : 'rgba(0,0,0,.55)'}">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round">
+              <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/>
+              <line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+          </button>
           <button class="icon-btn toggle" title="Open Group" onclick="openGroupEditor(${i})">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -9825,7 +9873,14 @@ function renderGrid() {
         ${placeholder}
       </div>
       ${badge}
+      ${expirationBadgeHtml(s)}
       <div class="slide-actions">
+        <button class="icon-btn" title="Set Expiration" onclick="openExpirationModal(${i})" style="background:${s.expiresAt ? 'rgba(245,158,11,.85)' : 'rgba(0,0,0,.55)'}">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round">
+            <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+        </button>
         ${editBtn}
         ${thumbUrl ? `<button class="icon-btn preview" title="Preview" onclick="openSlidePreview(${i})">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round">
@@ -15975,6 +16030,85 @@ window.saveWeatherSlide = async function() {
   } catch(e) {
     console.error('saveWeatherSlide:', e);
     toast('Could not save weather slide: ' + e.message, true);
+  }
+};
+
+// ── Slide expiration ─────────────────────────────────────────────────────
+let expirationEditIdx = null;
+const EXPIRING_SOON_MS = 3 * 24 * 60 * 60 * 1000; // 3 days
+
+function _expStatus(expiresAt) {
+  if (!expiresAt) return null;
+  const ms = new Date(expiresAt).getTime();
+  if (!Number.isFinite(ms)) return null;
+  const diff = ms - Date.now();
+  if (diff <= 0)               return 'expired';
+  if (diff <= EXPIRING_SOON_MS) return 'expiring';
+  return 'active';
+}
+
+function expirationBadgeHtml(s) {
+  const status = _expStatus(s.expiresAt);
+  if (status === 'expired')  return `<div class="expires-badge expired">Expired</div>`;
+  if (status === 'expiring') return `<div class="expires-badge expiring">Expires soon</div>`;
+  return '';
+}
+
+window.openExpirationModal = function(slideIdx) {
+  expirationEditIdx = slideIdx;
+  const s = slides[slideIdx];
+  const input = document.getElementById('expDateInput');
+  const clearBtn = document.getElementById('expClearBtn');
+  if (s.expiresAt) {
+    // datetime-local wants YYYY-MM-DDTHH:MM in local time
+    const d = new Date(s.expiresAt);
+    const pad = n => String(n).padStart(2, '0');
+    input.value = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    clearBtn.style.visibility = 'visible';
+  } else {
+    // Default suggestion: 7 days from now
+    const d = new Date(Date.now() + 7 * 86400 * 1000);
+    d.setSeconds(0, 0);
+    const pad = n => String(n).padStart(2, '0');
+    input.value = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    clearBtn.style.visibility = 'hidden';
+  }
+  document.getElementById('expirationModal').style.display = 'flex';
+};
+
+window.closeExpirationModal = function() {
+  document.getElementById('expirationModal').style.display = 'none';
+  expirationEditIdx = null;
+};
+
+window.saveExpiration = async function() {
+  if (expirationEditIdx === null) return;
+  const val = document.getElementById('expDateInput').value;
+  if (!val) { toast('Please pick a date', true); return; }
+  const iso = new Date(val).toISOString();
+  slides[expirationEditIdx].expiresAt = iso;
+  const idx = expirationEditIdx;
+  closeExpirationModal();
+  try {
+    await pushToFirestore();
+    renderGrid();
+    toast('Expiration date saved ✓');
+    logActivity('Set expiration on "' + (slides[idx].name || 'slide') + '"');
+  } catch(e) {
+    toast('Could not save: ' + e.message, true);
+  }
+};
+
+window.clearExpiration = async function() {
+  if (expirationEditIdx === null) return;
+  delete slides[expirationEditIdx].expiresAt;
+  closeExpirationModal();
+  try {
+    await pushToFirestore();
+    renderGrid();
+    toast('Expiration removed ✓');
+  } catch(e) {
+    toast('Could not save: ' + e.message, true);
   }
 };
 
