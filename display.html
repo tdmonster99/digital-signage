@@ -514,7 +514,7 @@
   // ── Weather slide ──────────────────────────────────────────────────────────
   let weatherRefreshTimer = null;
   const _weatherCache = {}; // keyed by "location|units", value: { data, ts }
-  const WEATHER_TTL = 30 * 60 * 1000; // 30 min client-side cache
+  const WEATHER_TTL = 10 * 60 * 1000; // 10 min client-side cache
 
   function stopWeather() {
     if (weatherRefreshTimer) { clearInterval(weatherRefreshTimer); weatherRefreshTimer = null; }
