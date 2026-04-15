@@ -4959,6 +4959,7 @@ body.role-editor .admin-action {
       </div>
 
       <input type="file" id="dashFileInput" multiple accept="image/*,video/*" style="display:none">
+      <input type="file" id="pdfFileInput"  multiple accept="application/pdf,.pdf" style="display:none">
     </div>
   </div>
 
@@ -5023,6 +5024,14 @@ body.role-editor .admin-action {
             <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
           </svg>
           Web Page
+        </button>
+        <button class="add-media-row-btn" onclick="closeAddMediaModal();document.getElementById('pdfFileInput').click()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e53935" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <text x="7.5" y="17" font-size="6" font-weight="700" stroke="none" fill="#e53935" font-family="Arial">PDF</text>
+          </svg>
+          PDF
         </button>
         <button class="add-media-row-btn" onclick="closeAddMediaModal();openGslidesModal()">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="flex-shrink:0">
@@ -8464,6 +8473,13 @@ dropzone.addEventListener("drop", e => {
   handleFiles(Array.from(e.dataTransfer.files));
 });
 fileInput.addEventListener("change", () => handleFiles(Array.from(fileInput.files)));
+
+// Dedicated PDF picker — opens the OS file dialog already filtered to PDFs,
+// so non-tech users don't have to flip Windows' "Custom files" filter.
+document.getElementById("pdfFileInput").addEventListener("change", e => {
+  handleFiles(Array.from(e.target.files));
+  e.target.value = ""; // allow re-selecting the same file
+});
 
 async function handleFiles(files) {
   if (!auth.currentUser) { toast("Sign in first to upload files.", true); return; }
