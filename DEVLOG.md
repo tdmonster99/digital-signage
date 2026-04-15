@@ -5,6 +5,11 @@ Running log of changes by session. Append a new entry at the top after each sess
 ---
 
 ## 2026-04-15 (cont.) — Claude
+- **Phase 3 #10 Media Expiration Dates** implemented and tested end-to-end. Roadmap complete.
+  - admin.html: per-slide calendar icon on slide/group cards opens `#expirationModal` (datetime-local input + Save/Remove); stores ISO string on `slide.expiresAt`. `expirationBadgeHtml` renders red "Expired" or amber "Expires in Nd" badges (`EXPIRING_SOON_MS = 3 days`). Calendar button turns amber when a date is set.
+  - display.html: `applyPlaylist` filters slides (and group children) where `expiresAt <= now`. `advance()` re-checks mid-playback so a slide that expires while playing is skipped on next tick.
+
+## 2026-04-15 (cont.) — Claude
 - **Phase 3 #9 PDF Display** implemented and tested end-to-end (client-side conversion path).
   - admin.html: `fileInput` accepts PDFs; `handleFiles` branches to `handlePdfFile`, which lazy-loads pdf.js (jsdelivr CDN v4.7.76), renders each page to a 1920px-wide canvas, uploads each as a PNG via `s3UploadBlob`, and pushes a Slide Group (one image slide per page). Zero display.html / backend changes — pages flow through the existing image pipeline.
 - display.html: added `<link rel="icon" href="/favicon.svg">` to stop browsers auto-probing `/favicon.ico` (404 noise).
