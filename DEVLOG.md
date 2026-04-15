@@ -4,6 +4,11 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-04-15 (cont.) — Claude
+- **Phase 2 #6 Working Hours** implemented and tested end-to-end.
+  - admin.html: Working Hours section in screen edit panel (enable toggle, start/end time, day pickers using Mon=0 convention); load/save to `screen.workingHours`
+  - display.html: `#stageClosed` full-screen overlay (z-index 100); `_whIsOpen` with wrap-past-midnight support; minute tick; guards in screen snapshot and `_schedApply` to halt playback while closed and resume on open transition
+
 ## 2026-04-15 — Claude
 - **#4 Online/Offline Email Notifications** tested end-to-end. Vercel Hobby plan only allows daily crons, so we're driving `/api/screen-monitor` from cron-job.org every 5 min.
   - api/screen-monitor.js: added `CRON_SECRET` Bearer check, then added `?secret=` query-param fallback since cron-job.org's Authorization header didn't reach the handler on first attempt (401)
