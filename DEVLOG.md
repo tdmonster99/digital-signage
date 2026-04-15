@@ -5,6 +5,11 @@ Running log of changes by session. Append a new entry at the top after each sess
 ---
 
 ## 2026-04-15 (cont.) — Claude
+- **Phase 3 #9 PDF Display** implemented and tested end-to-end (client-side conversion path).
+  - admin.html: `fileInput` accepts PDFs; `handleFiles` branches to `handlePdfFile`, which lazy-loads pdf.js (jsdelivr CDN v4.7.76), renders each page to a 1920px-wide canvas, uploads each as a PNG via `s3UploadBlob`, and pushes a Slide Group (one image slide per page). Zero display.html / backend changes — pages flow through the existing image pipeline.
+- display.html: added `<link rel="icon" href="/favicon.svg">` to stop browsers auto-probing `/favicon.ico` (404 noise).
+
+## 2026-04-15 (cont.) — Claude
 - **Phase 3 #8 Per-Screen Timezone** implemented and tested end-to-end. Set screen tz to London, confirmed clock, schedule eval, and working hours all respect it.
   - admin.html: IANA timezone dropdown added to the screen edit panel (same options as clock widget); loaded/saved on `screen.timezone`
   - display.html: new `_tzNow()` helper derives `{dow, mins}` in the screen's tz via `Intl.DateTimeFormat`; reused by `_schedGetTarget` and `_whIsOpen`. `renderClockEl` falls back: slide tz → screen tz → device local
