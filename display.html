@@ -108,6 +108,7 @@
   const clockEl       = document.getElementById("clockEl");
   const stageQr       = document.getElementById("stageQr");
   const stageWeather  = document.getElementById("stageWeather");
+  const stageCountdown = document.getElementById("stageCountdown");
   const loader        = document.getElementById("loader");
   const errBox        = document.getElementById("errBox");
   const errMsg        = document.getElementById("errMsg");
@@ -579,6 +580,82 @@
   function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
   function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
 
+  // ── Countdown slide ────────────────────────────────────────────────────────
+  let countdownTick = null;
+
+  function stopCountdown() {
+    if (countdownTick) { clearInterval(countdownTick); countdownTick = null; }
+  }
+
+  function renderCountdown(slide) {
+    stopCountdown();
+
+    const isDark = (slide.theme || 'dark') === 'dark';
+    const accent = slide.accent || '#f07c00';
+    stageCountdown.style.background = isDark ? '#0f172a' : '#f5f5f5';
+    stageCountdown.style.color      = isDark ? '#ffffff' : '#111111';
+
+    const labelEl = document.getElementById('cdLabelEl');
+    const timerEl = document.getElementById('cdTimerEl');
+    const endEl   = document.getElementById('cdEndEl');
+    labelEl.textContent = slide.label || '';
+    labelEl.style.display = slide.label ? '' : 'none';
+
+    // Parse "YYYY-MM-DDTHH:MM" as local time
+    const targetMs = slide.target ? new Date(slide.target).getTime() : NaN;
+    if (!Number.isFinite(targetMs)) {
+      timerEl.innerHTML = '';
+      endEl.style.display = '';
+      endEl.style.color   = accent;
+      endEl.textContent   = 'Invalid date';
+      return;
+    }
+
+    const units = slide.units || 'dhms';
+    const parts = [];
+    if (units.includes('d')) parts.push({ key: 'd', name: 'Days'    });
+    if (units.includes('h')) parts.push({ key: 'h', name: 'Hours'   });
+    if (units.includes('m')) parts.push({ key: 'm', name: 'Minutes' });
+    if (units.includes('s')) parts.push({ key: 's', name: 'Seconds' });
+
+    function tick() {
+      const diff = targetMs - Date.now();
+      if (diff <= 0) {
+        timerEl.innerHTML = '';
+        endEl.style.color = accent;
+        endEl.textContent = slide.endMsg || '0';
+        endEl.style.display = '';
+        stopCountdown();
+        return;
+      }
+      endEl.style.display = 'none';
+
+      let remaining = Math.floor(diff / 1000);
+      const showDays = units.includes('d');
+      const showHrs  = units.includes('h');
+      const showMin  = units.includes('m');
+      const showSec  = units.includes('s');
+
+      let d = 0, h = 0, m = 0, s = 0;
+      if (showDays) { d = Math.floor(remaining / 86400); remaining -= d * 86400; }
+      if (showHrs)  { h = Math.floor(remaining / 3600);  remaining -= h * 3600;  }
+      if (showMin)  { m = Math.floor(remaining / 60);    remaining -= m * 60;    }
+      if (showSec)  { s = remaining; }
+
+      const pad = n => String(n).padStart(2, '0');
+      const vals = { d: String(d), h: pad(h), m: pad(m), s: pad(s) };
+
+      timerEl.innerHTML = parts.map(p =>
+        `<div class="cd-unit"><div class="cd-num" style="color:${accent}">${vals[p.key]}</div><div class="cd-name">${p.name}</div></div>`
+      ).join('');
+    }
+
+    tick();
+    // Only tick each second if seconds are shown; otherwise minute is enough.
+    const period = units.includes('s') ? 1000 : 30000;
+    countdownTick = setInterval(tick, period);
+  }
+
   // ── Offline indicator ─────────────────────────────────────────────────────
   function setOffline(offline) {
     isOffline = offline;
@@ -688,8 +765,10 @@
     stageWebpage.style.opacity  = "0"; iframeWebpage.src = "about:blank";
     stageQr.style.opacity       = "0";
     stageWeather.style.opacity  = "0";
+    stageCountdown.style.opacity = "0";
     stopClock();    stageClock.style.opacity   = "0";
     stopWeather();
+    stopCountdown();
     stopTicker();
   }
 
@@ -752,6 +831,11 @@
       _hideAllStages();
       renderWeather(slide);
       stageWeather.style.opacity = "1";
+
+    } else if (slide.type === "countdown") {
+      _hideAllStages();
+      renderCountdown(slide);
+      stageCountdown.style.opacity = "1";
 
     } else {
       stopTicker();
@@ -859,7 +943,8 @@
     }
     const incoming = expanded.filter(s =>
       s.url || s.canvasJson ||
-      s.type === 'clock' || s.type === 'weather' || s.type === 'youtube'
+      s.type === 'clock' || s.type === 'weather' || s.type === 'youtube' ||
+      s.type === 'countdown'
     );
 
     if (!incoming.length) {
@@ -1232,6 +1317,19 @@
   #stageClock    { z-index: 7; background: #000; }
   #stageQr       { z-index: 8; background: #fff; }
   #stageWeather  { z-index: 9; background: #0f172a; }
+  #stageCountdown { z-index: 9; background: #0f172a; display: flex;
+    flex-direction: column; align-items: center; justify-content: center;
+    font-family: 'Segoe UI', Arial, sans-serif; text-align: center; padding: 4vw; }
+  #stageCountdown .cd-label { font-size: 3.2vw; font-weight: 500; letter-spacing: 0.04em;
+    opacity: 0.85; margin-bottom: 3vh; }
+  #stageCountdown .cd-timer { display: flex; gap: 2.5vw; justify-content: center; align-items: flex-end; }
+  #stageCountdown .cd-unit  { display: flex; flex-direction: column; align-items: center;
+    min-width: 11vw; }
+  #stageCountdown .cd-num   { font-size: 12vw; font-weight: 800; line-height: 1;
+    font-variant-numeric: tabular-nums; }
+  #stageCountdown .cd-name  { font-size: 1.6vw; font-weight: 600; letter-spacing: 0.14em;
+    text-transform: uppercase; opacity: 0.7; margin-top: 0.8vh; }
+  #stageCountdown .cd-end   { font-size: 9vw; font-weight: 800; letter-spacing: -0.01em; }
   #stageClosed   { z-index: 100; background: #000; opacity: 0; display: flex;
     align-items: center; justify-content: center; color: #555;
     font-family: 'Segoe UI', Arial, sans-serif; font-size: 28px; letter-spacing: 0.5px; }
@@ -1519,6 +1617,13 @@
 <!-- Weather slide stage -->
 <div id="stageWeather" class="stage" style="display:flex;align-items:center;justify-content:center">
   <div id="weatherEl" class="wx-wrap"></div>
+</div>
+
+<!-- Countdown slide stage -->
+<div id="stageCountdown" class="stage">
+  <div class="cd-label" id="cdLabelEl"></div>
+  <div class="cd-timer" id="cdTimerEl"></div>
+  <div class="cd-end"   id="cdEndEl" style="display:none"></div>
 </div>
 
 <div id="stageClosed" class="stage">Outside working hours</div>

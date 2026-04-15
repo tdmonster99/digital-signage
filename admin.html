@@ -2564,6 +2564,17 @@ section.content {
   width: 100%; max-width: 500px; padding: 28px 24px; overflow-y: auto; max-height: 90vh;
 }
 
+/* ── Countdown modal ───────────────────────────────────────────────── */
+#countdownModal {
+  display: none; position: fixed; inset: 0; z-index: 400;
+  background: rgba(0,0,0,.5); align-items: center; justify-content: center;
+  backdrop-filter: blur(4px); padding: 20px;
+}
+.countdown-modal-box {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+  width: 100%; max-width: 500px; padding: 28px 24px; overflow-y: auto; max-height: 90vh;
+}
+
 /* ── Role badge ────────────────────────────────────────────────────── */
 .role-badge {
   display: inline-block; font-size: 10px; font-weight: 700;
@@ -3652,8 +3663,8 @@ body.role-editor .admin-action {
         <span class="app-card-soon-badge">Coming Soon</span>
       </div>
 
-      <!-- Countdown Timer — coming soon -->
-      <div class="app-card app-coming-soon" data-category="widgets" data-name="countdown timer" onclick="appsComingSoon()">
+      <!-- Countdown Timer -->
+      <div class="app-card" data-category="widgets" data-name="countdown timer" onclick="openCountdownModal(null)">
         <div class="app-card-icon" style="background:rgba(240,124,0,.15)">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#f07c00" stroke-width="1.8" stroke-linecap="round">
             <circle cx="12" cy="13" r="8"/><polyline points="12 9 12 13 14 15"/>
@@ -3662,7 +3673,7 @@ body.role-editor .admin-action {
         </div>
         <div class="app-card-name">Countdown Timer</div>
         <div class="app-card-desc">Count down to events, launches, or deadlines</div>
-        <span class="app-card-soon-badge">Coming Soon</span>
+        <button class="app-card-add" onclick="event.stopPropagation();openCountdownModal(null)">Add →</button>
       </div>
 
       <!-- WiFi Password — coming soon -->
@@ -7145,6 +7156,65 @@ body.role-editor .admin-action {
   </div>
 </div>
 
+<!-- Countdown Modal -->
+<div id="countdownModal">
+  <div class="countdown-modal-box">
+    <h2 style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:20px" id="countdownModalTitle">Add Countdown Slide</h2>
+
+    <div class="clock-field">
+      <label>Slide Name</label>
+      <input type="text" id="cdName" placeholder="Countdown" />
+    </div>
+    <div class="clock-field">
+      <label>Duration (seconds)</label>
+      <input type="number" id="cdDwell" min="5" max="3600" value="15" />
+    </div>
+    <div class="clock-field">
+      <label>Label Text <span style="font-size:11px;color:var(--muted);font-weight:400">(shown above the timer)</span></label>
+      <input type="text" id="cdLabel" placeholder="Grand Opening In" />
+    </div>
+    <div class="clock-field">
+      <label>Target Date &amp; Time</label>
+      <input type="datetime-local" id="cdTarget" />
+    </div>
+    <div class="clock-field">
+      <label>Units to Show</label>
+      <select id="cdUnits">
+        <option value="dhms">Days · Hours · Minutes · Seconds</option>
+        <option value="dhm">Days · Hours · Minutes</option>
+        <option value="hms">Hours · Minutes · Seconds</option>
+        <option value="d">Days only</option>
+      </select>
+    </div>
+    <div class="clock-field">
+      <label>Message at Zero</label>
+      <input type="text" id="cdEndMsg" placeholder="We're Open!" />
+    </div>
+    <div class="clock-field">
+      <label>Theme</label>
+      <div class="font-style-btns">
+        <button class="font-style-btn active" data-cdtheme="dark"  onclick="selectCdTheme(this,'dark')">Dark</button>
+        <button class="font-style-btn"        data-cdtheme="light" onclick="selectCdTheme(this,'light')">Light</button>
+      </div>
+    </div>
+    <div class="color-row">
+      <div class="clock-field">
+        <label>Accent Color</label>
+        <input type="color" id="cdAccent" value="#f07c00"
+               style="width:100%;height:36px;padding:2px;cursor:pointer;border-radius:6px;border:1px solid var(--border);background:var(--surface2)" />
+      </div>
+    </div>
+    <div class="clock-field" id="cdShowTargetWrap">
+      <label>Add to Slideshow</label>
+      <select id="cdShowTarget"></select>
+    </div>
+    <div class="clock-modal-footer">
+      <button class="btn btn-secondary" onclick="closeCountdownModal()">Cancel</button>
+      <button class="btn btn-primary"   onclick="saveCountdownSlide()" id="cdSaveBtn">Add to Slideshow</button>
+    </div>
+  </div>
+</div>
+
 <!-- Firebase SDK -->
 <script type="module">
 import { initializeApp }              from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -9553,9 +9623,10 @@ function renderGrid() {
     const isClock    = s.type === 'clock';
     const isQr       = s.type === 'qr';
     const isWeather  = s.type === 'weather';
+    const isCountdown = s.type === 'countdown';
     const thumbUrl   = isDesigned ? s.thumbnailUrl
                      : isYoutube  ? `https://img.youtube.com/vi/${s.videoId}/mqdefault.jpg`
-                     : (isWebpage || isVideo || isClock || isQr || isWeather) ? null
+                     : (isWebpage || isVideo || isClock || isQr || isWeather || isCountdown) ? null
                      : s.url;
     const editSvg    = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
     const placeholder = isClock
@@ -9568,6 +9639,11 @@ function renderGrid() {
       : isWeather
       ? `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="1.5">
            <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>
+         </svg>`
+      : isCountdown
+      ? `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#f07c00" stroke-width="1.5" stroke-linecap="round">
+           <circle cx="12" cy="13" r="8"/><polyline points="12 9 12 13 14 15"/>
+           <line x1="12" y1="3" x2="12" y2="5"/>
          </svg>`
       : isWebpage
       ? `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="1.5">
@@ -9592,6 +9668,7 @@ function renderGrid() {
                 : isClock    ? `<div class="designed-badge" style="background:#059669cc">Clock</div>`
                 : isQr       ? `<div class="designed-badge" style="background:#8b5cf6cc">QR</div>`
                 : isWeather  ? `<div class="designed-badge" style="background:#3b82f6cc">Weather</div>`
+                : isCountdown ? `<div class="designed-badge" style="background:#f07c00cc">Countdown</div>`
                 : '';
     const editBtn    = isDesigned
       ? `<button class="icon-btn toggle" title="Edit in Designer" onclick="editDesignedSlide(${i})">${editSvg}</button>`
@@ -9601,6 +9678,8 @@ function renderGrid() {
       ? `<button class="icon-btn toggle" title="Edit QR Code" onclick="openQrModal(${i})">${editSvg}</button>`
       : isWeather
       ? `<button class="icon-btn toggle" title="Edit Weather" onclick="openWeatherModal(${i})">${editSvg}</button>`
+      : isCountdown
+      ? `<button class="icon-btn toggle" title="Edit Countdown" onclick="openCountdownModal(${i})">${editSvg}</button>`
       : `<button class="icon-btn toggle" title="${s.active === false ? 'Show' : 'Hide'}" onclick="toggleSlide(${i})">
            ${s.active === false
              ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`
@@ -15766,6 +15845,97 @@ window.saveWeatherSlide = async function() {
   } catch(e) {
     console.error('saveWeatherSlide:', e);
     toast('Could not save weather slide: ' + e.message, true);
+  }
+};
+
+// ── Countdown slide ───────────────────────────────────────────────────────
+let countdownEditIdx = null;
+
+window.openCountdownModal = function(slideIdx) {
+  countdownEditIdx = slideIdx;
+  const s     = slideIdx !== null ? slides[slideIdx] : null;
+  const isNew = slideIdx === null;
+  document.getElementById('countdownModalTitle').textContent = s ? 'Edit Countdown Slide' : 'Add Countdown Slide';
+  document.getElementById('cdSaveBtn').textContent          = s ? 'Save Changes' : 'Add to Slideshow';
+  document.getElementById('cdName').value   = s?.name    || 'Countdown';
+  document.getElementById('cdDwell').value  = s?.dwell   ?? 15;
+  document.getElementById('cdLabel').value  = s?.label   || '';
+  document.getElementById('cdUnits').value  = s?.units   || 'dhms';
+  document.getElementById('cdEndMsg').value = s?.endMsg  || '';
+  document.getElementById('cdAccent').value = s?.accent  || '#f07c00';
+  // Default target = 7 days from now (local datetime-local format)
+  let defaultTarget = s?.target;
+  if (!defaultTarget) {
+    const d = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    d.setSeconds(0, 0);
+    const pad = n => String(n).padStart(2, '0');
+    defaultTarget = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+  document.getElementById('cdTarget').value = defaultTarget;
+  const theme = s?.theme || 'dark';
+  document.querySelectorAll('[data-cdtheme]').forEach(b =>
+    b.classList.toggle('active', b.dataset.cdtheme === theme)
+  );
+  document.getElementById('cdShowTargetWrap').style.display = isNew ? '' : 'none';
+  if (isNew) _populateShowSelect('cdShowTarget');
+  document.getElementById('countdownModal').style.display = 'flex';
+};
+
+window.closeCountdownModal = function() {
+  document.getElementById('countdownModal').style.display = 'none';
+  countdownEditIdx = null;
+};
+
+window.selectCdTheme = function(btn, theme) {
+  document.querySelectorAll('[data-cdtheme]').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+};
+
+window.saveCountdownSlide = async function() {
+  const target = document.getElementById('cdTarget').value;
+  if (!target) { toast('Please set a target date and time', true); return; }
+
+  const editIdx = countdownEditIdx;
+
+  const slide = {
+    id:     editIdx !== null ? slides[editIdx].id : crypto.randomUUID(),
+    type:   'countdown',
+    name:   document.getElementById('cdName').value.trim() || 'Countdown',
+    dwell:  parseInt(document.getElementById('cdDwell').value, 10) || 15,
+    label:  document.getElementById('cdLabel').value.trim(),
+    target, // stored as local datetime-local string; display parses via new Date(target)
+    units:  document.getElementById('cdUnits').value,
+    endMsg: document.getElementById('cdEndMsg').value.trim(),
+    theme:  document.querySelector('[data-cdtheme].active')?.dataset.cdtheme || 'dark',
+    accent: document.getElementById('cdAccent').value,
+    active: true,
+  };
+
+  const targetShowId = editIdx === null
+    ? document.getElementById('cdShowTarget').value
+    : currentShowId;
+
+  if (!targetShowId) { toast('Please select a slideshow', true); return; }
+
+  closeCountdownModal();
+
+  try {
+    if (targetShowId === currentShowId) {
+      if (editIdx !== null) slides[editIdx] = slide;
+      else                  slides.push(slide);
+      await pushToFirestore();
+      renderGrid();
+      toast(editIdx !== null ? 'Countdown slide updated ✓' : 'Countdown slide added ✓');
+    } else {
+      await _addSlideToShow(targetShowId, slide);
+      const targetName = (currentOrg?.slideshows || []).find(s => s.id === targetShowId)?.name || targetShowId;
+      toast(`Countdown slide added to "${targetName}" ✓`);
+    }
+    logActivity(editIdx !== null ? 'Edited countdown slide' : 'Added countdown slide');
+    updateDashboard();
+  } catch(e) {
+    console.error('saveCountdownSlide:', e);
+    toast('Could not save countdown slide: ' + e.message, true);
   }
 };
 
