@@ -5,6 +5,10 @@ Running log of changes by session. Append a new entry at the top after each sess
 ---
 
 ## 2026-04-15 (cont.) — Claude
+- **Phase 2 #7 Countdown Timer** implemented and tested end-to-end.
+  - admin.html: activated the Apps "Countdown Timer" card (was Coming Soon); added `#countdownModal` (label, target datetime, units d/h/m/s selector, end message, theme, accent color, dwell); slide-card thumb/badge/edit; `openCountdownModal`/`saveCountdownSlide`
+  - display.html: `#stageCountdown` with `vw`-scaled typography; `renderCountdown` ticks every 1s (or 30s when seconds aren't shown); swaps to end-message text at zero; wired into `_hideAllStages`, `crossfadeTo`, and playlist filter
+
 - **Phase 2 #6 Working Hours** implemented and tested end-to-end.
   - admin.html: Working Hours section in screen edit panel (enable toggle, start/end time, day pickers using Mon=0 convention); load/save to `screen.workingHours`
   - display.html: `#stageClosed` full-screen overlay (z-index 100); `_whIsOpen` with wrap-past-midnight support; minute tick; guards in screen snapshot and `_schedApply` to halt playback while closed and resume on open transition
