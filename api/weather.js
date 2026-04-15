@@ -23,7 +23,7 @@ module.exports = async function handler(req, res) {
   try {
     const [curRes, fcastRes] = await Promise.all([
       fetch(`https://api.openweathermap.org/data/2.5/weather?q=${q}&units=${u}&appid=${apiKey}`),
-      fetch(`https://api.openweathermap.org/data/2.5/forecast?q=${q}&units=${u}&cnt=24&appid=${apiKey}`),
+      fetch(`https://api.openweathermap.org/data/2.5/forecast?q=${q}&units=${u}&cnt=40&appid=${apiKey}`),
     ]);
 
     if (!curRes.ok) {
@@ -55,12 +55,13 @@ module.exports = async function handler(req, res) {
         seen.add(day);
         days.push({
           day,
+          dt:   item.dt,
           high: Math.round(item.main.temp_max),
           low:  Math.round(item.main.temp_min),
           icon: item.weather[0].icon,
           desc: item.weather[0].description,
         });
-        if (days.length >= 3) break;
+        if (days.length >= 5) break;
       }
     }
 

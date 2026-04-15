@@ -7185,6 +7185,11 @@ body.role-editor .admin-action {
       <div style="font-size:11px;color:var(--muted);margin-top:4px">City name, or <em>City, ST</em> / <em>City, Country</em> (e.g. Chicago, IL &nbsp;·&nbsp; London, GB)</div>
     </div>
     <div class="clock-field">
+      <label>Location Label <span style="font-weight:400;opacity:.6">(optional)</span></label>
+      <input type="text" id="wxLabel" placeholder="e.g. Our Office, Downtown HQ" />
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">Overrides the city name shown on screen. Leave blank to use the city name from weather data.</div>
+    </div>
+    <div class="clock-field">
       <label>Units</label>
       <select id="wxUnits">
         <option value="imperial">°F — Imperial (US)</option>
@@ -7192,10 +7197,11 @@ body.role-editor .admin-action {
       </select>
     </div>
     <div class="clock-field">
-      <label>Display Style</label>
-      <select id="wxStyle">
-        <option value="current">Current conditions only</option>
-        <option value="forecast">Current + 3-day forecast</option>
+      <label>Forecast Days</label>
+      <select id="wxForecastDays">
+        <option value="0">Current conditions only</option>
+        <option value="3">3-day forecast</option>
+        <option value="5">5-day forecast</option>
       </select>
     </div>
     <div class="clock-field">
@@ -15965,9 +15971,12 @@ window.openWeatherModal = function(slideIdx) {
   document.getElementById('wxSaveBtn').textContent         = s ? 'Save Changes' : 'Add to Slideshow';
   document.getElementById('wxName').value     = s?.name     || 'Weather';
   document.getElementById('wxDwell').value    = s?.dwell    ?? 30;
-  document.getElementById('wxLocation').value = s?.location || '';
-  document.getElementById('wxUnits').value    = s?.units    || 'imperial';
-  document.getElementById('wxStyle').value    = s?.style    || 'current';
+  document.getElementById('wxLocation').value     = s?.location     || '';
+  document.getElementById('wxLabel').value        = s?.label        || '';
+  document.getElementById('wxUnits').value        = s?.units        || 'imperial';
+  // Support legacy style:'forecast' → forecastDays:3
+  const legacyDays = s?.style === 'forecast' ? '3' : '0';
+  document.getElementById('wxForecastDays').value = s?.forecastDays != null ? String(s.forecastDays) : legacyDays;
   const theme = s?.theme || 'dark';
   document.querySelectorAll('[data-wxtheme]').forEach(b =>
     b.classList.toggle('active', b.dataset.wxtheme === theme)
@@ -16000,9 +16009,10 @@ window.saveWeatherSlide = async function() {
     name:     document.getElementById('wxName').value.trim()  || 'Weather',
     dwell:    parseInt(document.getElementById('wxDwell').value, 10) || 30,
     location,
-    units:    document.getElementById('wxUnits').value,
-    style:    document.getElementById('wxStyle').value,
-    theme:    document.querySelector('[data-wxtheme].active')?.dataset.wxtheme || 'dark',
+    label:        document.getElementById('wxLabel').value.trim(),
+    units:        document.getElementById('wxUnits').value,
+    forecastDays: parseInt(document.getElementById('wxForecastDays').value, 10),
+    theme:        document.querySelector('[data-wxtheme].active')?.dataset.wxtheme || 'dark',
     active:   true,
   };
 

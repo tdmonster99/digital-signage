@@ -552,37 +552,87 @@
   }
 
   function _renderWeatherDOM(el, data, slide) {
-    const c      = data.current;
-    const isDark = slide.theme !== 'light';
-    const unit   = data.units === 'metric' ? '°C' : '°F';
+    const c       = data.current;
+    const isDark  = slide.theme !== 'light';
+    const unit    = data.units === 'metric' ? '°C' : '°F';
     const iconUrl = icon => `https://openweathermap.org/img/wn/${icon}@2x.png`;
-    const fg     = isDark ? '#ffffff' : '#1a1a1a';
-    const bg     = isDark ? '#0f172a' : '#f0f9ff';
-    const card   = isDark ? '#1e293b' : '#ffffff';
+    const fg      = isDark ? '#ffffff' : '#1a1a1a';
+    const bg      = isDark ? '#0f172a' : '#f0f9ff';
+    const divider = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+    const fBorder = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
 
     stageWeather.style.background = bg;
 
-    const showForecast = slide.style === 'forecast' && data.forecast && data.forecast.length;
-    const forecastHTML = showForecast ? `
-      <div class="wx-forecast">
-        ${data.forecast.map(d => `
-          <div class="wx-day">
-            <div class="wx-day-name">${d.day}</div>
-            <img class="wx-day-icon" src="${iconUrl(d.icon)}" alt="${d.desc}">
-            <div class="wx-day-temp"><span class="wx-high">${d.high}°</span> <span class="wx-low">${d.low}°</span></div>
+    // Support legacy style:'forecast' field alongside new forecastDays
+    const forecastDays = slide.forecastDays != null
+      ? parseInt(slide.forecastDays, 10)
+      : (slide.style === 'forecast' ? 3 : 0);
+    const days = (data.forecast || []).slice(0, forecastDays);
+    const hasForecast = days.length > 0;
+
+    // Custom label overrides the city name returned by OWM
+    const cityName   = slide.label?.trim() || c.city;
+    const cityRegion = slide.label?.trim() ? null : c.country;
+
+    // Day label: Today / Tmrw / Mon etc.
+    const todayStr    = new Date().toDateString();
+    const tomorrowStr = new Date(Date.now() + 86400000).toDateString();
+    function fDayLabel(dt) {
+      const d = new Date(dt * 1000);
+      if (d.toDateString() === todayStr)    return 'Today';
+      if (d.toDateString() === tomorrowStr) return 'Tmrw';
+      return d.toLocaleDateString('en-US', { weekday: 'short' });
+    }
+    function fDayDate(dt) { return new Date(dt * 1000).getDate(); }
+
+    el.style.color = fg;
+
+    const forecastHTML = hasForecast ? `
+      <div class="wx-forecast" style="border-top:1px solid ${divider}">
+        ${days.map((d, i) => `
+          <div class="wx-fday" style="${i > 0 ? `border-left:1px solid ${fBorder}` : ''}">
+            <div class="wx-fday-label">${fDayLabel(d.dt)}</div>
+            <div class="wx-fday-date">${fDayDate(d.dt)}</div>
+            <img class="wx-fday-icon" src="${iconUrl(d.icon)}" alt="${esc(d.desc)}">
+            <div class="wx-fday-temps"><span class="wx-fday-hi">${d.high}°</span><span class="wx-fday-lo">${d.low}°</span></div>
+            <div class="wx-fday-desc">${cap(d.desc)}</div>
           </div>`).join('')}
       </div>` : '';
 
-    el.style.color = fg;
-    el.innerHTML = `
-      <div class="wx-location">${esc(c.city)}, ${esc(c.country)}</div>
-      <div class="wx-current">
-        <img class="wx-icon" src="${iconUrl(c.icon)}" alt="${esc(c.desc)}">
-        <div class="wx-temp">${c.temp}${unit}</div>
-      </div>
-      <div class="wx-desc">${cap(c.desc)}</div>
-      <div class="wx-meta">Feels like ${c.feelsLike}${unit} · Humidity ${c.humidity}%</div>
-      ${forecastHTML}`;
+    if (!hasForecast) {
+      // Full-screen centered layout
+      el.innerHTML = `
+        <div class="wx-hero wx-centered">
+          <div class="wx-city-name">${esc(cityName)}</div>
+          ${cityRegion ? `<div class="wx-city-region">${esc(cityRegion)}</div>` : ''}
+          <div class="wx-right">
+            <img class="wx-icon" src="${iconUrl(c.icon)}" alt="${esc(c.desc)}">
+            <div class="wx-temp-desc">
+              <div class="wx-temp">${c.temp}${unit}</div>
+              <div class="wx-desc">${cap(c.desc)}</div>
+            </div>
+          </div>
+          <div class="wx-meta">Feels like ${c.feelsLike}${unit} · Humidity ${c.humidity}%</div>
+        </div>`;
+    } else {
+      // Split: hero left/right + forecast strip
+      el.innerHTML = `
+        <div class="wx-hero">
+          <div class="wx-left">
+            <div class="wx-city-name">${esc(cityName)}</div>
+            ${cityRegion ? `<div class="wx-city-region">${esc(cityRegion)}</div>` : ''}
+            <div class="wx-meta">Feels like ${c.feelsLike}${unit} · Humidity ${c.humidity}%</div>
+          </div>
+          <div class="wx-right">
+            <img class="wx-icon" src="${iconUrl(c.icon)}" alt="${esc(c.desc)}">
+            <div class="wx-temp-desc">
+              <div class="wx-temp">${c.temp}${unit}</div>
+              <div class="wx-desc">${cap(c.desc)}</div>
+            </div>
+          </div>
+        </div>
+        ${forecastHTML}`;
+    }
   }
 
   function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -1407,27 +1457,36 @@
   }
 
   /* ── Weather stage ──────────────────────────────────────────────────── */
-  .wx-wrap {
-    text-align: center;
-    color: #fff;
-    font-family: 'Segoe UI', sans-serif;
-    padding: 40px;
-    max-width: 900px;
-    width: 100%;
-  }
-  .wx-location  { font-size: 2.2vw; font-weight: 500; opacity: 0.7; margin-bottom: 0.3em; letter-spacing: 0.04em; text-transform: uppercase; }
-  .wx-current   { display: flex; align-items: center; justify-content: center; gap: 0.2em; }
-  .wx-icon      { width: 12vw; height: 12vw; }
-  .wx-temp      { font-size: 14vw; font-weight: 700; line-height: 1; letter-spacing: -0.04em; }
-  .wx-desc      { font-size: 2.4vw; opacity: 0.85; margin-top: 0.2em; }
-  .wx-meta      { font-size: 1.6vw; opacity: 0.55; margin-top: 0.4em; }
-  .wx-forecast  { display: flex; justify-content: center; gap: 4vw; margin-top: 3vw; padding-top: 2vw; border-top: 1px solid rgba(255,255,255,.15); }
-  .wx-day       { display: flex; flex-direction: column; align-items: center; gap: 0.4em; }
-  .wx-day-name  { font-size: 1.8vw; font-weight: 600; opacity: 0.7; }
-  .wx-day-icon  { width: 5vw; height: 5vw; }
-  .wx-day-temp  { font-size: 1.8vw; }
-  .wx-high      { font-weight: 700; }
-  .wx-low       { opacity: 0.55; }
+  .wx-wrap        { width: 100%; height: 100%; display: flex; flex-direction: column; overflow: hidden; box-sizing: border-box; }
+  /* Hero: left = city info, right = big conditions */
+  .wx-hero        { flex: 1; display: flex; align-items: center; padding: 0 7vw; gap: 5vw; min-height: 0; }
+  .wx-left        { flex: 1; }
+  .wx-city-name   { font-size: 4.5vw; font-weight: 800; letter-spacing: -0.01em; text-transform: uppercase; line-height: 1.1; }
+  .wx-city-region { font-size: 1.8vw; opacity: 0.5; text-transform: uppercase; letter-spacing: 0.08em; margin-top: 0.3em; }
+  .wx-meta        { font-size: 1.5vw; opacity: 0.5; margin-top: 3em; }
+  .wx-right       { display: flex; align-items: center; gap: 1vw; flex-shrink: 0; }
+  .wx-icon        { width: 11vw; height: 11vw; }
+  .wx-temp-desc   { display: flex; flex-direction: column; }
+  .wx-temp        { font-size: 12vw; font-weight: 700; letter-spacing: -0.04em; line-height: 1; }
+  .wx-desc        { font-size: 1.9vw; opacity: 0.75; margin-top: 0.15em; }
+  /* Hero centered variant (no forecast) */
+  .wx-hero.wx-centered { flex-direction: column; justify-content: center; text-align: center; gap: 0; padding: 6vw; }
+  .wx-centered .wx-city-name  { font-size: 3.2vw; }
+  .wx-centered .wx-right      { justify-content: center; margin: 0.5vw 0; }
+  .wx-centered .wx-icon       { width: 13vw; height: 13vw; }
+  .wx-centered .wx-temp       { font-size: 14vw; }
+  .wx-centered .wx-desc       { font-size: 2.2vw; text-align: center; }
+  .wx-centered .wx-meta       { margin-top: 1em; }
+  /* Forecast strip */
+  .wx-forecast    { display: flex; flex-shrink: 0; padding: 2vw 5vw; }
+  .wx-fday        { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0.45em; padding: 0 0.5vw; }
+  .wx-fday-label  { font-size: 1.2vw; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.45; }
+  .wx-fday-date   { font-size: 2.1vw; font-weight: 700; line-height: 1; }
+  .wx-fday-icon   { width: 4.5vw; height: 4.5vw; }
+  .wx-fday-temps  { font-size: 1.8vw; }
+  .wx-fday-hi     { font-weight: 700; }
+  .wx-fday-lo     { opacity: 0.5; margin-left: 0.4em; }
+  .wx-fday-desc   { font-size: 1.15vw; opacity: 0.6; text-align: center; line-height: 1.2; }
   .wx-loading, .wx-error { font-size: 1.8vw; opacity: 0.5; }
 
   /* ── Ticker overlay ────────────────────────────────────────────────── */
@@ -1648,7 +1707,7 @@
 </div>
 
 <!-- Weather slide stage -->
-<div id="stageWeather" class="stage" style="display:flex;align-items:center;justify-content:center">
+<div id="stageWeather" class="stage">
   <div id="weatherEl" class="wx-wrap"></div>
 </div>
 
