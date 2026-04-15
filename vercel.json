@@ -33,7 +33,5 @@
       ]
     }
   ],
-  "crons": [
-    { "path": "/api/screen-monitor", "schedule": "*/5 * * * *" }
-  ]
+  "crons": []
 }

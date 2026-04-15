@@ -1,9 +1,10 @@
-// Vercel cron function — runs every 5 minutes.
+// Screen status monitor — designed to be hit every ~5 min by an external cron
+// (e.g. cron-job.org) since Vercel Hobby plan only allows daily crons.
 // Detects screens that have gone offline (lastSeen > 10 min ago) or come back online,
 // then emails the org's members who have notifications enabled via Resend.
 //
-// Required env vars: FIREBASE_SERVICE_ACCOUNT_JSON, RESEND_API_KEY
-// Cron entry in vercel.json: { "path": "/api/screen-monitor", "schedule": "*/5 * * * *" }
+// Required env vars: FIREBASE_SERVICE_ACCOUNT_JSON, RESEND_API_KEY, CRON_SECRET
+// The caller must send `Authorization: Bearer <CRON_SECRET>`.
 
 let _admin;
 function getFirestore() {
@@ -22,6 +23,12 @@ const OFFLINE_THRESHOLD_MS = 10 * 60 * 1000; // 10 minutes
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   if (req.method === 'OPTIONS') return res.status(200).end();
+
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret) return res.status(500).json({ error: 'CRON_SECRET not configured' });
+  if (req.headers.authorization !== `Bearer ${cronSecret}`) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
 
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) return res.status(500).json({ error: 'RESEND_API_KEY not configured' });
