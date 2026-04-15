@@ -4,6 +4,13 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-04-15 — Claude
+- **#4 Online/Offline Email Notifications** tested end-to-end. Vercel Hobby plan only allows daily crons, so we're driving `/api/screen-monitor` from cron-job.org every 5 min.
+  - api/screen-monitor.js: added `CRON_SECRET` Bearer check, then added `?secret=` query-param fallback since cron-job.org's Authorization header didn't reach the handler on first attempt (401)
+  - vercel.json: removed the Vercel cron entry (not used)
+  - cron-job.org URL: `https://app.zigns.io/api/screen-monitor?secret=...`, GET, every 5 min
+  - First test run: 200 OK, 11 screens checked, 5 flipped to offline with notifications delivered (expected one-time cold-start noise since `onlineStatus` was undefined on every screen)
+
 ## 2026-04-14 (cont.) — Claude
 - **#3 Weather Widget** — added client + server caching to stop 429 rate-limit blocks:
   - display.html: 30-min in-memory cache keyed by `location|units`; playlist loops no longer re-fetch on every weather slide
