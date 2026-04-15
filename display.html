@@ -904,6 +904,7 @@
     slideshowUnsub = onSnapshot(
       doc(db, "slideshows", slideshowId),
       snap => {
+        if (activeSlideshowId !== slideshowId) return; // stale callback — a newer show has taken over
         reconnectBackoff = 5000;         // reset backoff on any successful event
         lastUpdateTime   = Date.now();
         setOffline(false);
@@ -917,6 +918,7 @@
         }
       },
       err => {
+        if (activeSlideshowId !== slideshowId) return; // stale callback
         loader.style.display = "none";
         console.warn('[Firebase] Listener error:', err.code, err.message);
 
