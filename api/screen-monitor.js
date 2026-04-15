@@ -26,7 +26,9 @@ module.exports = async function handler(req, res) {
 
   const cronSecret = process.env.CRON_SECRET;
   if (!cronSecret) return res.status(500).json({ error: 'CRON_SECRET not configured' });
-  if (req.headers.authorization !== `Bearer ${cronSecret}`) {
+  const headerOk = req.headers.authorization === `Bearer ${cronSecret}`;
+  const queryOk  = (req.query && req.query.secret) === cronSecret;
+  if (!headerOk && !queryOk) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
