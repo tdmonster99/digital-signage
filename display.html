@@ -2119,5 +2119,16 @@
 <!-- Debug overlay — toggle with Ctrl+Shift+D, invisible to viewers -->
 <div id="debugOverlay"></div>
 
+<script>
+  // Register display service worker for offline media caching
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/display-sw.js').catch(() => {});
+  }
+  // Mirror browser online/offline events to the existing setOffline indicator.
+  // (Firestore disconnect also calls setOffline — whichever fires first wins.)
+  window.addEventListener('offline', () => { if (typeof setOffline === 'function') setOffline(true);  });
+  window.addEventListener('online',  () => { if (typeof setOffline === 'function') setOffline(false); });
+</script>
+
 </body>
 </html>

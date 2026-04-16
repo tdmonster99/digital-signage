@@ -4,6 +4,13 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-04-16 — Claude
+- **Multizone black bars fixed**: switched widget zone scaling from `Math.min` (fit/letterbox) to `Math.max` (cover/fill) in `display.html:775`. Eliminates top/bottom black bars in left-right split layouts.
+- **Offline media caching** (Phase 4 #2): created `display-sw.js` — dedicated service worker for `display.html` that caches the display shell (network-first) and all CloudFront media assets (`*.cloudfront.net`, cache-first). Registered via inline `<script>` at bottom of `display.html`. Also wired `window.online/offline` browser events to the existing `setOffline()` indicator. Slideshow JSON was already cached in localStorage; this adds the missing media layer so slides play fully offline.
+- **ROADMAP updated**: added PowerPoint integration entry (#4); marked multi-zone and offline caching as shipped.
+
+---
+
 ## 2026-04-15 (cont.) — Claude
 - **Multi-zone widget rendering bugs fixed** (follow-up to Phase 4 #1).
   - display.html `_mzRenderCountdown`: replaced all CSS class-based sizing (`#stageCountdown .cd-*` rules don't apply inside `.mz-zone-inner`) with inline styles — `12vw` digit, `1.6vw` unit label, flex layout on container. Countdown now renders at correct size in zones.

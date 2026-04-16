@@ -44,7 +44,20 @@ Gap analysis against Yodeck, ScreenCloud, Rise Vision, OptiSigns, Screenly, and 
 
 ---
 
-### 4. Canva Integration
+### 4. PowerPoint Integration
+**Why:** Present in 4/6 competitors. PowerPoint is the most common content format in offices and schools — operators already have decks they want on screen without redesigning from scratch. Importing PPTX directly removes the biggest friction point for the office/education vertical.
+**What to build:**
+- "Import PowerPoint" button in the Add Slide / media flow
+- Backend `api/import-pptx.js`: accepts an uploaded `.pptx` file, uses LibreOffice (Vercel container) or the Microsoft Graph API to convert each slide to a PNG, uploads PNGs to S3
+- Alternatively: use a third-party conversion service (e.g. CloudConvert API) to avoid self-hosting a converter
+- Each converted PNG becomes an `image` slide in the current slideshow, preserving slide order
+- Show a progress indicator during conversion (may take several seconds per slide)
+
+**Files:** `admin.html`, `api/import-pptx.js`
+
+---
+
+### 5. Canva Integration
 **Why:** Present in 6/6 competitors. SMBs already use Canva daily for menus, promos, and social posts. Import directly rather than forcing users to export a PNG, then upload manually. Lowest-friction content creation path for non-designers.
 **What to build:**
 - "Import from Canva" button in Add Media modal using the [Canva Button SDK](https://www.canva.com/developers/docs/button/)
@@ -56,7 +69,7 @@ Gap analysis against Yodeck, ScreenCloud, Rise Vision, OptiSigns, Screenly, and 
 
 ---
 
-### 5. Social Media Feeds (Instagram + Google Reviews)
+### 6. Social Media Feeds (Instagram + Google Reviews)
 **Why:** Instagram is on 6/6 competitors; Google Reviews on 4/6. High demand in restaurants and retail — live social proof with zero content-creation effort for operators.
 **What to build:**
 - **Instagram:** New widget slide type `instagram`. Admin modal: access token + username, display style (grid 2×3 or single post), refresh interval. Backend proxy `api/instagram-feed.js` fetches latest posts via Instagram Basic Display API. `display.html`: cycles through posts.
@@ -66,7 +79,7 @@ Gap analysis against Yodeck, ScreenCloud, Rise Vision, OptiSigns, Screenly, and 
 
 ---
 
-### 6. Content Templates Library
+### 7. Content Templates Library
 **Why:** Present in 5/6 competitors (500–1,000+ templates each). A blank canvas is a barrier for non-designers. Even 30–50 quality templates dramatically reduce onboarding drop-off — operators can pick a template and swap in their content in minutes.
 **What to build:**
 - `templates.js`: a static array of template objects, each with a name, category tag, thumbnail URL (S3), and a `slides[]` payload matching the existing slide schema
@@ -77,7 +90,7 @@ Gap analysis against Yodeck, ScreenCloud, Rise Vision, OptiSigns, Screenly, and 
 
 ---
 
-### 7. Proof of Play Reporting
+### 8. Proof of Play Reporting
 **Why:** Present in 5/6 competitors. Gates access to advertising and franchise customer segments — any operator running paid content on screens, or any franchisor verifying brand compliance, needs to verify content actually played.
 **What to build:**
 - `display.html`: on each slide advance, write an event to `organizations/{orgId}/analytics` with `{slideId, slideshowId, screenId, playedAt, durationMs}`
@@ -88,7 +101,7 @@ Gap analysis against Yodeck, ScreenCloud, Rise Vision, OptiSigns, Screenly, and 
 
 ---
 
-### 8. Google Sheets Live Data Widget
+### 9. Google Sheets Live Data Widget
 **Why:** SMB version of Power BI — present in 6/6 competitors. Offices display daily sales numbers, inventory counts, shift schedules, or leaderboards from a Google Sheet without a BI tool. Low effort with very high perceived value.
 **What to build:**
 - New widget slide type `googlesheets`. Admin modal: Google Sheet URL input, range (e.g. `Sheet1!A1:D10`), refresh interval, display style (table or single-value)
@@ -99,7 +112,7 @@ Gap analysis against Yodeck, ScreenCloud, Rise Vision, OptiSigns, Screenly, and 
 
 ---
 
-### 9. Emergency Broadcast Override
+### 10. Emergency Broadcast Override
 **Why:** Present in 3/6 competitors (ScreenCloud, OptiSigns primarily). Instantly override all screens with an urgent message — fire drill, store closure, urgent safety alert — without navigating to each screen. Low effort to build, high operational safety value.
 **What to build:**
 - "Broadcast" button in admin header (Admin role only): opens a modal with message text input + optional background color (red/yellow/white)
@@ -111,7 +124,7 @@ Gap analysis against Yodeck, ScreenCloud, Rise Vision, OptiSigns, Screenly, and 
 
 ---
 
-### 10. Content Approval Workflow
+### 11. Content Approval Workflow
 **Why:** Present in 4/6 competitors. Unlocks franchise, multi-location, and regulated-industry accounts — managers can approve slides before they go live. Without it, the Editor role can publish anything with no review gate.
 **What to build:**
 - Add `approvalRequired: boolean` setting to org (Admin toggles in Settings)
@@ -128,16 +141,17 @@ Gap analysis against Yodeck, ScreenCloud, Rise Vision, OptiSigns, Screenly, and 
 
 | # | Feature | Effort | Impact | Competitors |
 |---|---|---|---|---|
-| 1 | Multi-zone layouts | High | Very High | 6/6 |
-| 2 | Offline content caching | Medium | Very High | 6/6 |
+| 1 | Multi-zone layouts | High | Very High | 6/6 | ✓ |
+| 2 | Offline content caching | Medium | Very High | 6/6 | ✓ |
 | 3 | Digital menu board | Medium | High | 5/6 |
-| 4 | Canva integration | Low | High | 6/6 |
-| 5 | Social media feeds (Instagram + Reviews) | Medium | High | 6/6 / 4/6 |
-| 6 | Content templates library | Medium | High | 5/6 |
-| 7 | Proof of play reporting | Low | High | 5/6 |
-| 8 | Google Sheets live data widget | Low | High | 6/6 |
-| 9 | Emergency broadcast override | Low | Medium | 3/6 |
-| 10 | Content approval workflow | Medium | Medium | 4/6 |
+| 4 | PowerPoint integration | Medium | High | 4/6 |
+| 5 | Canva integration | Low | High | 6/6 |
+| 6 | Social media feeds (Instagram + Reviews) | Medium | High | 6/6 / 4/6 |
+| 7 | Content templates library | Medium | High | 5/6 |
+| 8 | Proof of play reporting | Low | High | 5/6 |
+| 9 | Google Sheets live data widget | Low | High | 6/6 |
+| 10 | Emergency broadcast override | Low | Medium | 3/6 |
+| 11 | Content approval workflow | Medium | Medium | 4/6 |
 
 ---
 
@@ -147,6 +161,8 @@ All items below are shipped and in production as of April 2026.
 
 | # | Feature | Phase | Shipped |
 |---|---|---|---|
+| 11 | Multi-zone / split-screen layouts | 4 | ✓ 2026-04-16 |
+| 12 | Offline content caching | 4 | ✓ 2026-04-16 |
 | 1 | Schedule display-side enforcement | 1 | ✓ 2026-04-14 |
 | 2 | QR code widget | 1 | ✓ 2026-04-14 |
 | 3 | Weather widget | 1 | ✓ 2026-04-14 |
