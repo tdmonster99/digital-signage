@@ -769,10 +769,10 @@
       zoneEl.appendChild(ifr);
 
     } else {
-      // Widget zone: render at 1920×1080 then scale to fit
+      // Widget zone: render at 1920×1080 then scale to cover (fill zone, clip overflow)
       const sw   = window.innerWidth, sh = window.innerHeight;
       const zw   = zone.w / 100 * sw, zh = zone.h / 100 * sh;
-      const scale = Math.min(zw / 1920, zh / 1080);
+      const scale = Math.max(zw / 1920, zh / 1080);
       const tx    = (zw - 1920 * scale) / 2;
       const ty    = (zh - 1080 * scale) / 2;
 
