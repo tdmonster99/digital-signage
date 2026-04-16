@@ -5,6 +5,15 @@ Running log of changes by session. Append a new entry at the top after each sess
 ---
 
 ## 2026-04-15 (cont.) — Claude
+- **Multi-zone widget rendering bugs fixed** (follow-up to Phase 4 #1).
+  - display.html `_mzRenderCountdown`: replaced all CSS class-based sizing (`#stageCountdown .cd-*` rules don't apply inside `.mz-zone-inner`) with inline styles — `12vw` digit, `1.6vw` unit label, flex layout on container. Countdown now renders at correct size in zones.
+  - display.html `_mzRenderWeather`: pre-set background/color synchronously before async fetch so loading and error states are visible (was black-on-black before fix).
+  - display.html weather caching (both standalone and multizone): errors now cached client-side with 10-min TTL — on 429 or any fetch failure, subsequent slide loops show cached error immediately without hitting the API. Stops the rate-limit spiral where every loop retried the blocked key. Added AbortController 15s timeout and surfaced error message text in zone UI.
+  - **Note:** OpenWeather API key hit rate limit during testing — will self-clear within 1-2 hours. Verify via `/api/weather?location=Chicago,IL&units=imperial`.
+
+---
+
+## 2026-04-15 (cont.) — Claude
 - **Phase 4 #1 Multi-Zone Layout** implemented (competitive parity — present in 6/6 competitors).
   - admin.html: new `multizone` slide type; `MZ_PRESETS` defines 6 layouts (Main+Sidebar 70/30, Split 50/50, Main+Bottom Bar, Header+Main, 4-Up Grid, Content+Panel 60/40); modal uses same two-column dark-left design as weather modal; layout picker renders SVG rect thumbnails; per-zone content type selector (image/video/youtube/clock/weather/qr/countdown/webpage) with type-specific config fields; zone state preserved when switching types; `openMultiZoneModal(editIdx)` handles both add and edit; slide card shows "Zones" badge + layout SVG thumbnail.
   - display.html: `#stageMultizone` stage (z-index 9); `renderMultizone(slide)` creates absolutely-positioned `.mz-zone` divs per zone; media zones (image/video/youtube/webpage) use native fill; widget zones (clock/weather/qr/countdown) render into a 1920×1080 inner div scaled via `transform: scale()` to fit the zone; `mzTimers[]` tracks all zone intervals, `stopMultizone()` clears them on slide change; `applyPlaylist` filter extended to include multizone type.
