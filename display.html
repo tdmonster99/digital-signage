@@ -815,7 +815,6 @@
     const loc      = config.location || 'New York';
     const units    = config.units    || 'imperial';
     const cacheKey = `${loc}|${units}`;
-    const cached   = _weatherCache[cacheKey];
 
     // Adapt config to the shape _renderWeatherDOM expects
     const fakeSlide = { ...config, location: loc, units, theme: config.theme || 'dark' };
@@ -831,21 +830,30 @@
     inner.style.color   = isDarkWx ? '#ffffff'  : '#1a1a1a';
 
     async function load() {
-      if (cached && (Date.now() - cached.ts) < WEATHER_TTL) {
-        _renderWeatherDOMInEl(inner, cached.data, fakeSlide);
+      // Re-read cache each call so interval refreshes benefit from prior fetches
+      const nowCached = _weatherCache[cacheKey];
+      if (nowCached && (Date.now() - nowCached.ts) < WEATHER_TTL) {
+        _renderWeatherDOMInEl(inner, nowCached.data, fakeSlide);
         return;
       }
       inner.innerHTML = '<div class="wx-loading" style="display:flex;align-items:center;justify-content:center;height:100%;font-size:1.8vw;opacity:0.5">Loading weather…</div>';
       try {
         const params = new URLSearchParams({ location: loc, units });
-        const r      = await fetch('/api/weather?' + params);
+        const ctrl   = new AbortController();
+        const tmo    = setTimeout(() => ctrl.abort(), 15000);
+        const r      = await fetch('/api/weather?' + params, { signal: ctrl.signal });
+        clearTimeout(tmo);
         if (!r.ok) { const b = await r.json().catch(()=>({})); throw new Error(b.error||'HTTP '+r.status); }
         const data = await r.json();
         if (!data.ok) throw new Error(data.error || 'Weather error');
         _weatherCache[cacheKey] = { data, ts: Date.now() };
         _renderWeatherDOMInEl(inner, data, fakeSlide);
       } catch(e) {
-        inner.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:1.8vw;opacity:0.5">Weather unavailable</div>`;
+        console.warn('[MZ Weather] fetch failed:', e.message);
+        inner.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;flex-direction:column;height:100%;gap:1vh;text-align:center;padding:2vw;">
+          <div style="font-size:1.8vw;opacity:0.6">Weather unavailable</div>
+          <div style="font-size:1.2vw;opacity:0.4">${e.message}</div>
+        </div>`;
       }
     }
     await load();
