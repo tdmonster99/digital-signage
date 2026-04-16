@@ -17354,7 +17354,7 @@ function _mzRenderLayoutGrid() {
   `).join('');
 }
 
-function _mzSelectLayout(key) {
+window._mzSelectLayout = function _mzSelectLayout(key) {
   if (!MZ_PRESETS[key]) return;
   mzCurrentLayout = key;
   // Reset zone states when layout changes
@@ -17362,7 +17362,7 @@ function _mzSelectLayout(key) {
   _mzRenderLayoutGrid();
   _mzRenderPreview();
   _mzRenderZonesList();
-}
+};
 
 function _mzRenderPreview() {
   const wrap = document.getElementById('mzPreviewWrap');
