@@ -13670,7 +13670,29 @@ function tmplRect(left, top, width, height, opts = {}) {
 }
 
 function tmplBgPhoto(photoId, overlayRgba) {
-  if (_tmplCanvas) return; // skip async photo load during thumbnail generation
+  if (_tmplCanvas) {
+    // Thumbnail mode: use pre-fetched small URL if available
+    const url = _tmplPhotoUrls[photoId];
+    if (!url) return;
+    _tmplPhotoPending++;
+    fabric.Image.fromURL(url, (img) => {
+      _tmplPhotoPending--;
+      if (!img || !_tmplCanvas) return;
+      const scale = Math.max(CANVAS_W / img.width, CANVAS_H / img.height);
+      img.set({ scaleX: scale, scaleY: scale, left: CANVAS_W/2, top: CANVAS_H/2,
+                originX: 'center', originY: 'center', selectable: false, evented: false });
+      _tmplCanvas.add(img);
+      if (overlayRgba) {
+        const ov = new fabric.Rect({ left:0, top:0, width:CANVAS_W, height:CANVAS_H,
+          fill: overlayRgba, selectable: false, evented: false, rx:0 });
+        _tmplCanvas.add(ov);
+        _tmplCanvas.sendToBack(ov);
+      }
+      _tmplCanvas.sendToBack(img);
+      _tmplCanvas.renderAll();
+    }, { crossOrigin: 'anonymous' });
+    return;
+  }
   if (!UNSPLASH_ACCESS_KEY || !fabricCanvas) return;
   fetch(`${UNSPLASH_BASE}/photos/${photoId}?client_id=${UNSPLASH_ACCESS_KEY}`)
     .then(r => r.json())
@@ -15149,6 +15171,30 @@ const TMPL_THUMB_NAMES = [
   'schoolevents','classroomannouncement','socialpromo'
 ];
 
+// Photo templates: map photoId → small CDN url (populated by prefetch)
+let _tmplPhotoUrls = {};
+let _tmplPhotoPending = 0; // count of in-flight image loads on _tmplCanvas
+
+const TMPL_PHOTO_IDS = [
+  'kcA-c3f_3FE','vexxZA_JNso','3C7G04ownm8','tE7_jvK-_YU',
+  'MgvEHXxGrUs','ocb4ft1qyjA','zFSo6bnZJTw','GRUhkcD9k8o','KY01qp6xKlQ'
+];
+const TMPL_PHOTO_TEMPLATES = new Set([
+  'dailyspecial','happyhour','eventpromo','waitingroomwelcome',
+  'seasonsgreetings','newyear','schoolevents','socialpromo'
+]);
+
+async function prefetchTmplPhotoUrls() {
+  await Promise.allSettled(TMPL_PHOTO_IDS.map(async id => {
+    if (_tmplPhotoUrls[id]) return;
+    try {
+      const r = await fetch(`${UNSPLASH_BASE}/photos/${id}?client_id=${UNSPLASH_ACCESS_KEY}`);
+      const p = await r.json();
+      if (p?.urls?.small) _tmplPhotoUrls[id] = p.urls.small;
+    } catch(e) {}
+  }));
+}
+
 function applyTmplThumb(name, dataUrl) {
   const btn = document.querySelector(`#galleryGrid button[onclick="selectTemplate('${name}')"]`);
   if (!btn) return;
@@ -15163,35 +15209,56 @@ function applyTmplThumb(name, dataUrl) {
 async function generateTemplateThumbnails() {
   if (typeof fabric === 'undefined') return;
 
-  // Restore cached thumbnails immediately (subsequent gallery opens)
+  // Restore cached thumbnails immediately on subsequent gallery opens
   Object.entries(_tmplThumbnails).forEach(([n, url]) => applyTmplThumb(n, url));
-
   const pending = TMPL_THUMB_NAMES.filter(n => !_tmplThumbnails[n]);
   if (!pending.length) return;
 
-  // Create hidden offscreen Fabric canvas at full 1920×1080
+  // Step 1: Pre-load all template fonts + pre-fetch photo URLs in parallel
+  const TMPL_FONTS = ['Anton','Bebas Neue','Montserrat','Open Sans','Playfair Display','Raleway','Nunito'];
+  TMPL_FONTS.forEach(loadGoogleFont);
+  await Promise.allSettled([
+    prefetchTmplPhotoUrls(),
+    Promise.race([
+      Promise.allSettled(TMPL_FONTS.map(f => document.fonts.load(`bold 72px "${f}"`))),
+      new Promise(r => setTimeout(r, 4000))
+    ])
+  ]);
+
+  // Step 2: Create hidden offscreen Fabric canvas at full 1920×1080
   const el = document.createElement('canvas');
   el.width = 1920; el.height = 1080;
   el.style.cssText = 'position:fixed;left:-9999px;top:0;pointer-events:none;opacity:0';
   document.body.appendChild(el);
   _tmplCanvas = new fabric.StaticCanvas(el, { width: 1920, height: 1080 });
 
+  // Step 3: Render each template
   for (const name of pending) {
     _tmplCanvas.clear();
-    (_tmplCanvas||fabricCanvas).backgroundColor = '#ffffff';
+    _tmplCanvas.backgroundColor = '#ffffff';
+    _tmplPhotoPending = 0;
     applyTemplate(name);
-    _tmplCanvas.renderAll();
-    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+    // Wait for photos to finish loading (up to 2s), then a short settle
+    if (TMPL_PHOTO_TEMPLATES.has(name) && Object.keys(_tmplPhotoUrls).length > 0) {
+      const deadline = Date.now() + 2000;
+      while (_tmplPhotoPending > 0 && Date.now() < deadline) {
+        await new Promise(r => setTimeout(r, 40));
+      }
+      await new Promise(r => setTimeout(r, 80));
+    } else {
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    }
+
     _tmplCanvas.renderAll();
     try {
-      const url = _tmplCanvas.toDataURL({ format: 'jpeg', quality: 0.80, multiplier: 0.167 });
+      const url = _tmplCanvas.toDataURL({ format: 'jpeg', quality: 0.82, multiplier: 0.167 });
       _tmplThumbnails[name] = url;
       applyTmplThumb(name, url);
     } catch(e) { console.warn('Thumbnail failed:', name, e); }
-    await new Promise(r => setTimeout(r, 15));
+    await new Promise(r => setTimeout(r, 10));
   }
 
-  // Clean up offscreen canvas
   el.remove();
   _tmplCanvas = null;
 }
