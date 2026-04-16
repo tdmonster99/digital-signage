@@ -141,7 +141,10 @@ async function checkJob(req, res, apiKey) {
     files.sort((a, b) => a.filename.localeCompare(b.filename, undefined, { numeric: true, sensitivity: 'base' }));
 
     const cfBase = (process.env.CLOUDFRONT_BASE_URL || '').replace(/\/$/, '');
-    const urls   = files.map(f => `${cfBase}/pptx-imports/${orgId}/${batchId}/${f.filename}`);
+    // encodeURIComponent the filename — LibreOffice preserves the original name
+    // (e.g. "My Deck-0001.png") so spaces and special chars must be encoded for
+    // the URL to work in browsers and <img> tags.
+    const urls   = files.map(f => `${cfBase}/pptx-imports/${orgId}/${batchId}/${encodeURIComponent(f.filename)}`);
 
     return res.status(200).json({ status: 'finished', urls, count: urls.length });
   } catch (e) {
