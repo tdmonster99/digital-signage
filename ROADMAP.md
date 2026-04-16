@@ -148,7 +148,7 @@ Gap analysis against Yodeck, ScreenCloud, Rise Vision, OptiSigns, Screenly, and 
 | 1 | Multi-zone layouts | High | Very High | 6/6 | ✓ |
 | 2 | Offline content caching | Medium | Very High | 6/6 | ✓ |
 | 3 | Digital menu board | Medium | High | 5/6 |
-| 4 | PowerPoint integration | Medium | High | 4/6 |
+| 4 | PowerPoint integration | Medium | High | 4/6 | ✓ |
 | 5 | Canva integration (Connect APIs) | Medium | High | 6/6 | |
 | 6 | Social media feeds (Instagram + Reviews) | Medium | High | 6/6 / 4/6 |
 | 7 | Content templates library | Medium | High | 5/6 |
@@ -170,6 +170,7 @@ All items below are shipped and in production as of April 2026.
 | 13 | Canva integration — removed (Button SDK deprecated, revisit with Connect APIs) | 4 | — |
 | 14 | Google Sheets live data widget | 4 | ✓ 2026-04-16 |
 | 15 | Emergency broadcast override | 4 | ✓ 2026-04-16 |
+| 16 | PowerPoint integration | 4 | ✓ 2026-04-16 |
 | 1 | Schedule display-side enforcement | 1 | ✓ 2026-04-14 |
 | 2 | QR code widget | 1 | ✓ 2026-04-14 |
 | 3 | Weather widget | 1 | ✓ 2026-04-14 |

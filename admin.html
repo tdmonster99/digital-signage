@@ -5253,6 +5253,7 @@ body.role-editor .admin-action {
 
       <input type="file" id="dashFileInput" multiple accept="image/*,video/*" style="display:none">
       <input type="file" id="pdfFileInput"  multiple accept="application/pdf,.pdf" style="display:none">
+      <input type="file" id="pptxFileInput" accept=".pptx,application/vnd.openxmlformats-officedocument.presentationml.presentation" style="display:none">
     </div>
   </div>
 
@@ -5334,6 +5335,14 @@ body.role-editor .admin-action {
             <rect x="7" y="14" width="6" height="1.5" rx=".75" fill="#fff"/>
           </svg>
           Google Slides
+        </button>
+        <button class="add-media-row-btn" onclick="closeAddMediaModal();document.getElementById('pptxFileInput').click()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">
+            <rect x="3" y="2" width="18" height="20" rx="2" fill="#d14424" stroke="none"/>
+            <polyline points="14 2 14 8 20 8" fill="#b33518" stroke="none"/>
+            <text x="6" y="17" font-size="5.5" font-weight="700" stroke="none" fill="#fff" font-family="Arial">PPT</text>
+          </svg>
+          PowerPoint
         </button>
         <button class="add-media-row-btn" onclick="closeAddMediaModal();addByUrl()">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0">
@@ -8997,6 +9006,12 @@ document.getElementById("pdfFileInput").addEventListener("change", e => {
   e.target.value = ""; // allow re-selecting the same file
 });
 
+// Dedicated PowerPoint picker
+document.getElementById("pptxFileInput").addEventListener("change", e => {
+  handleFiles(Array.from(e.target.files));
+  e.target.value = "";
+});
+
 async function handleFiles(files) {
   if (!auth.currentUser) { toast("Sign in first to upload files.", true); return; }
   const progress = document.getElementById("uploadProgress");
@@ -9009,6 +9024,7 @@ async function handleFiles(files) {
     const file    = files[i];
     const isVideo = file.type.startsWith("video/");
     const isPdf   = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+    const isPptx  = /\.pptx$/i.test(file.name) || file.type === 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
     label.textContent = `Uploading ${i+1}/${files.length}: ${file.name}`;
     bar.style.width = "0%";
     pct.textContent = "0%";
@@ -9016,6 +9032,8 @@ async function handleFiles(files) {
     try {
       if (isPdf) {
         await handlePdfFile(file, { bar, pct, label });
+      } else if (isPptx) {
+        await handlePptxFile(file, { bar, pct, label });
       } else {
         const { url, key } = await s3UploadWithProgress(
           file,
@@ -9115,6 +9133,86 @@ async function handlePdfFile(file, { bar, pct, label }) {
   }
   renderGrid(); updateCount();
   toast(`PDF "${baseName}" added (${total} page${total > 1 ? 's' : ''})`);
+}
+
+// ── PowerPoint → image slides (server-side conversion via CloudConvert) ────
+// Uploads the .pptx to S3, kicks off a CloudConvert job to convert each slide
+// to a PNG stored in S3, polls until done, then creates a Slide Group just
+// like the PDF path. Requires CLOUDCONVERT_API_KEY in Vercel env vars.
+async function handlePptxFile(file, { bar, pct, label }) {
+  const baseName = file.name.replace(/\.pptx$/i, '');
+
+  // ── Step 1: Upload PPTX to S3 (maps to 0–30% on the progress bar) ────────
+  label.textContent = `Uploading ${file.name}…`;
+  bar.style.width = '0%'; pct.textContent = '0%';
+  let cfUrl;
+  try {
+    const result = await s3UploadWithProgress(
+      file,
+      `pptx-imports/${currentOrgId}`,
+      p => { bar.style.width = Math.round(p * 0.3) + '%'; pct.textContent = Math.round(p * 0.3) + '%'; }
+    );
+    cfUrl = result.url;
+  } catch (e) {
+    throw new Error(`Upload failed: ${e.message}`);
+  }
+
+  // ── Step 2: Start CloudConvert job ────────────────────────────────────────
+  label.textContent = 'Starting PowerPoint conversion…';
+  bar.style.width = '32%'; pct.textContent = '32%';
+
+  const jobRes = await fetch('/api/import-pptx', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ cfUrl, basename: baseName, orgId: currentOrgId }),
+  });
+  if (!jobRes.ok) {
+    const err = await jobRes.json().catch(() => ({}));
+    throw new Error(err.error || 'Failed to start conversion');
+  }
+  const { jobId, batchId } = await jobRes.json();
+
+  // ── Step 3: Poll for completion (fills 32–90% over up to 2 minutes) ──────
+  label.textContent = 'Converting slides… (this may take a moment)';
+  let urls = [];
+  for (let attempt = 0; attempt < 60; attempt++) {
+    await new Promise(r => setTimeout(r, 2000));
+    const pollRes = await fetch(`/api/import-pptx?jobId=${encodeURIComponent(jobId)}&batchId=${encodeURIComponent(batchId)}&orgId=${encodeURIComponent(currentOrgId)}`);
+    if (!pollRes.ok) {
+      const err = await pollRes.json().catch(() => ({}));
+      throw new Error(err.error || 'Conversion check failed');
+    }
+    const poll = await pollRes.json();
+
+    if (poll.status === 'error') throw new Error(poll.error || 'Conversion failed');
+    if (poll.status === 'finished') { urls = poll.urls; break; }
+
+    // Animate progress: 32% → 90% over 60 attempts
+    const prog = 32 + Math.min(Math.round(attempt * 0.97), 58);
+    bar.style.width = prog + '%'; pct.textContent = prog + '%';
+  }
+
+  if (!urls.length) throw new Error('Conversion timed out — no slides returned');
+
+  // ── Step 4: Build slide group ─────────────────────────────────────────────
+  bar.style.width = '95%'; pct.textContent = '95%';
+  label.textContent = `Creating ${urls.length} slide${urls.length !== 1 ? 's' : ''}…`;
+
+  const pageSlides = urls.map((url, i) => {
+    const pageName = `${baseName}-slide${i + 1}.png`;
+    saveMediaRecord(url, pageName, 'image', null);
+    return { id: crypto.randomUUID(), url, name: pageName, active: true };
+  });
+
+  if (pageSlides.length === 1) {
+    slides.push(pageSlides[0]);
+  } else {
+    slides.push({ id: crypto.randomUUID(), type: 'group', name: baseName, active: true, slides: pageSlides });
+  }
+
+  bar.style.width = '100%'; pct.textContent = '100%';
+  renderGrid(); updateCount();
+  toast(`"${baseName}" imported (${urls.length} slide${urls.length !== 1 ? 's' : ''})`);
 }
 
 // ── Add by URL ────────────────────────────────────────────────────────────
