@@ -1,148 +1,159 @@
 # Zigns Development Roadmap
 
-Prioritized based on feature audit (2026-04-12). Focused on SMB target market: restaurants, retail, offices.
+---
+
+## Phase 4 — Competitive Parity (Current Focus)
+
+Gap analysis against Yodeck, ScreenCloud, Rise Vision, OptiSigns, Screenly, and TelemetryTV (April 2026). Items ordered by priority: table-stakes gaps first, then high-value differentiators.
 
 ---
 
-## Phase 1 — Core Gaps (High Impact, Low-Medium Effort)
-
-These fix existing infrastructure that is built but not wired up, or add small widgets with outsized customer value.
-
-### 1. Schedule Display-Side Enforcement
-**Why:** The full schedule editor exists in `admin.html` and saves to Firestore. `display.html` never reads it — screens just loop their assigned slideshow regardless of schedule. This is the highest-leverage fix in the codebase.
+### 1. Multi-Zone / Split-Screen Layouts
+**Why:** Present in 6/6 competitors. The single biggest functional gap — competitors treat zone layouts as a core feature. Restaurants need a ticker strip + main content zone. Offices want a clock/date zone + bulletin zone. Without it, Zigns can't match a basic Yodeck or OptiSigns demo.
 **What to build:**
-- Read `screen.scheduleId` in `display.html` on load
-- Fetch the schedule doc from Firestore
-- At each minute boundary, check which time block is active and switch the playing slideshow accordingly
-- Handle day-of-week and recurrence rules already stored in the schedule data model
-
-**Files:** `display.html`
-
----
-
-### 2. QR Code Widget
-**Why:** Extremely high demand in restaurants (table ordering, WiFi password), retail (product pages, loyalty programs), and offices (meeting room booking, surveys). Small library, fast to build.
-**What to build:**
-- Add QR code slide type using `qrcode.js` (~3 KB)
-- Admin modal: URL input, size, foreground/background color, optional label text
-- `display.html`: render QR as canvas or SVG element on screen
+- Zone editor in the slide designer: drag-and-resize zone rectangles on a canvas (similar to Fabric.js object model already in use)
+- Zone types: media (image/video), widget (clock/weather/etc.), ticker, web page
+- Save zones as an array on the slide doc with `{type, x, y, w, h, content}`
+- `display.html`: render each zone as an absolutely-positioned div at its saved coordinates
 
 **Files:** `admin.html`, `display.html`
 
 ---
 
-### 3. Weather Widget
-**Why:** Standard expectation for any digital signage platform. High value in retail lobbies, waiting rooms, hospitality.
+### 2. Offline Content Caching
+**Why:** Present in 6/6 competitors. Every competitor caches content to the device so screens survive network interruptions. Zigns requires a live connection — if Firestore or Wi-Fi drops, the screen goes blank. Unacceptable for unattended screens in restaurants and retail.
 **What to build:**
-- Admin modal: city/zip input, unit (°F/°C), display style (current only vs. 3-day forecast), theme
-- Backend proxy route `/api/weather` — fetches from OpenWeatherMap free tier, returns sanitized JSON
-- `display.html`: weather slide type renders icon, temperature, condition, location label
+- Service worker (already registered) — extend to cache all media URLs (images, videos) using a Cache Storage strategy on first play
+- On Firestore disconnect: continue playing from the in-memory slide list (already held in `slides[]`)
+- Cache invalidation: re-download assets when slide content changes (compare `updatedAt` timestamp)
+- Visual indicator in `display.html` when running in offline mode
 
-**Files:** `admin.html`, `display.html`, `api/weather.js`
+**Files:** `display.html`, `service-worker.js`
 
 ---
 
-### 4. Online/Offline Email Notifications
-**Why:** Operators of unattended screens (restaurants, retail) need to know when a screen goes dark. The preference UI and Firestore storage are already done — only the delivery is missing.
+### 3. Digital Menu Board Mode
+**Why:** Present in 5/6 competitors. Restaurants are a primary SMB vertical. A purpose-built menu board is a specific slide type with category headers, item rows (name, description, price), allergen badges, and a background color/image — distinct from a free-form designed slide.
 **What to build:**
-- Vercel cron job (`/api/screen-monitor`) runs every 5 minutes
-- Reads all screens where `lastSeen` is older than threshold (e.g. 10 min)
-- If screen transitions to offline and `notifOffline` is true, send email via Resend (already integrated)
-- Track `lastNotifiedAt` on the screen doc to avoid repeated alerts
-- Same logic for online recovery notification
-
-**Files:** `api/screen-monitor.js`, `vercel.json` (cron config)
-
----
-
-### 5. RSS Ticker with Live Feed
-**Why:** The scrolling ticker overlay and renderer in `display.html` are fully built — it just uses static text. Connecting it to a live RSS feed is a small delta with high perceived value (news, sports, company announcements).
-**What to build:**
-- Admin ticker modal: add "RSS Feed URL" input option alongside static text
-- Backend proxy route `/api/rss-proxy` — fetches RSS XML server-side (avoids CORS), parses `<title>` items, returns JSON array of headlines
-- `display.html`: if slide has `rssUrl`, fetch from proxy on load and refresh headlines every N minutes
-
-**Files:** `admin.html`, `display.html`, `api/rss-proxy.js`
-
----
-
-## Phase 2 — Scheduling & Automation
-
-Features that reduce manual work for operators managing multiple locations.
-
-### 6. Working Hours (Automatic Screen On/Off)
-**Why:** Restaurants and retail stores want screens on at opening and off at close without anyone touching anything. Reduces power consumption and prevents content showing outside business hours.
-**What to build:**
-- Add "Working Hours" section to screen edit panel: start time, end time, active days (checkboxes)
-- Save to screen Firestore doc
-- `display.html`: on each minute tick, check if current local time is within working hours
-  - Outside hours: black screen (stop playback, hide all elements)
-  - On transition to "open": resume playback
+- New slide type `menuboard` in admin: modal with category/item editor (add/remove rows, name, price, description, badge icons)
+- Menu board theme picker: background color, accent color, font style
+- `display.html`: `renderMenuBoard()` — renders a structured layout from the items data, not a Fabric.js canvas
+- Optional: time-of-day pricing zones (breakfast/lunch/dinner menus via expiration dates already built)
 
 **Files:** `admin.html`, `display.html`
 
 ---
 
-### 7. Countdown Timer Widget
-**Why:** Happy hour countdowns, sale end times, event promos — all key use cases for restaurants and retail. Template gallery already has a static placeholder.
+### 4. Canva Integration
+**Why:** Present in 6/6 competitors. SMBs already use Canva daily for menus, promos, and social posts. Import directly rather than forcing users to export a PNG, then upload manually. Lowest-friction content creation path for non-designers.
 **What to build:**
-- Admin modal: target date/time, label text, display style (days/hours/mins/secs), font/color/bg options
-- `display.html`: `renderCountdown()` updates every second; when timer reaches zero, show configurable end message or auto-remove slide
+- "Import from Canva" button in Add Media modal using the [Canva Button SDK](https://www.canva.com/developers/docs/button/)
+- SDK opens a Canva picker popup; user selects a design; SDK returns a rendered image URL
+- Upload the returned image to S3 via the existing `s3Upload` utility
+- Creates an image slide in the current slideshow
+
+**Files:** `admin.html`
+
+---
+
+### 5. Social Media Feeds (Instagram + Google Reviews)
+**Why:** Instagram is on 6/6 competitors; Google Reviews on 4/6. High demand in restaurants and retail — live social proof with zero content-creation effort for operators.
+**What to build:**
+- **Instagram:** New widget slide type `instagram`. Admin modal: access token + username, display style (grid 2×3 or single post), refresh interval. Backend proxy `api/instagram-feed.js` fetches latest posts via Instagram Basic Display API. `display.html`: cycles through posts.
+- **Google Reviews:** New widget slide type `googlereviews`. Admin modal: Google Place ID input, min star filter, max reviews to show. Backend proxy `api/reviews-proxy.js` fetches via Google Places API. `display.html`: renders star rating + review text + reviewer name.
+
+**Files:** `admin.html`, `display.html`, `api/instagram-feed.js`, `api/reviews-proxy.js`
+
+---
+
+### 6. Content Templates Library
+**Why:** Present in 5/6 competitors (500–1,000+ templates each). A blank canvas is a barrier for non-designers. Even 30–50 quality templates dramatically reduce onboarding drop-off — operators can pick a template and swap in their content in minutes.
+**What to build:**
+- `templates.js`: a static array of template objects, each with a name, category tag, thumbnail URL (S3), and a `slides[]` payload matching the existing slide schema
+- Template gallery modal in admin: filter by category (Restaurant, Retail, Office, Event, Holiday), click to preview, "Use Template" inserts slides into the current slideshow
+- Initial set: 40–60 templates covering primary verticals; thumbnails generated from designed slides
+
+**Files:** `admin.html`, `templates.js`
+
+---
+
+### 7. Proof of Play Reporting
+**Why:** Present in 5/6 competitors. Gates access to advertising and franchise customer segments — any operator running paid content on screens, or any franchisor verifying brand compliance, needs to verify content actually played.
+**What to build:**
+- `display.html`: on each slide advance, write an event to `organizations/{orgId}/analytics` with `{slideId, slideshowId, screenId, playedAt, durationMs}`
+- Admin analytics page: query the collection, group by slide/screen/date; render a table and chart — "Slide X played N times across Y screens in date range"
+- Export to CSV button
+
+**Files:** `display.html`, `admin.html`
+
+---
+
+### 8. Google Sheets Live Data Widget
+**Why:** SMB version of Power BI — present in 6/6 competitors. Offices display daily sales numbers, inventory counts, shift schedules, or leaderboards from a Google Sheet without a BI tool. Low effort with very high perceived value.
+**What to build:**
+- New widget slide type `googlesheets`. Admin modal: Google Sheet URL input, range (e.g. `Sheet1!A1:D10`), refresh interval, display style (table or single-value)
+- Backend proxy `api/sheets-proxy.js`: accepts sheet ID + range + API key, returns JSON array of rows
+- `display.html`: `renderGoogleSheet()` — renders a styled table or big-number display from the data
+
+**Files:** `admin.html`, `display.html`, `api/sheets-proxy.js`
+
+---
+
+### 9. Emergency Broadcast Override
+**Why:** Present in 3/6 competitors (ScreenCloud, OptiSigns primarily). Instantly override all screens with an urgent message — fire drill, store closure, urgent safety alert — without navigating to each screen. Low effort to build, high operational safety value.
+**What to build:**
+- "Broadcast" button in admin header (Admin role only): opens a modal with message text input + optional background color (red/yellow/white)
+- Writes to `organizations/{orgId}/broadcast` doc with `{active: true, message, color, createdAt}`
+- `display.html`: `onSnapshot` listener on the broadcast doc; when `active: true`, immediately overlays a full-screen message div (z-index above everything including working-hours overlay)
+- Auto-dismiss after configurable timeout, or manually cleared from admin by setting `active: false`
 
 **Files:** `admin.html`, `display.html`
 
 ---
 
-## Phase 3 — Multi-Location & Scale
-
-Features needed as customers grow beyond a single location.
-
-### 8. Per-Screen Timezone
-**Why:** Any customer with screens in multiple time zones (national chain, franchise) needs this. The clock widget already supports IANA timezones per-slide — this lifts it to the screen level.
+### 10. Content Approval Workflow
+**Why:** Present in 4/6 competitors. Unlocks franchise, multi-location, and regulated-industry accounts — managers can approve slides before they go live. Without it, the Editor role can publish anything with no review gate.
 **What to build:**
-- Add timezone dropdown (IANA strings) to screen edit panel in `admin.html`
-- Pass `screen.timezone` to `display.html` via Firestore
-- Use it as the reference timezone for: clock rendering, schedule enforcement (item 1), working hours (item 6)
+- Add `approvalRequired: boolean` setting to org (Admin toggles in Settings)
+- When enabled: Editor's Publish button changes to "Submit for Review" → sets slideshow to `status: 'pending_review'`
+- Admin sees a "Pending Review" badge on slideshows and a review queue in the Slideshows page
+- Admin can Approve (publishes immediately) or Reject (returns to draft with optional comment)
+- Email notification via Resend on both submit and approval/rejection
 
-**Files:** `admin.html`, `display.html`
+**Files:** `admin.html`, `api/send-invite.js` (or new `api/send-notification.js`)
 
 ---
 
-### 9. PDF Display
-**Why:** Menus, flyers, and price lists are commonly in PDF format. High demand from restaurants and hospitality customers who want to reuse existing assets.
-**What to build:**
-- Option A (server-side, recommended): `/api/pdf-convert` — accepts a PDF URL, uses `pdf-to-img` or Puppeteer to render pages as PNG images, returns image URLs stored in S3
-- Option B (client-side): Use `pdf.js` in `display.html` to render pages directly in the browser
-- Admin: PDF upload → convert to slide sequence or single-page slide
-- `display.html`: handle `type:'pdf'` (or treat converted pages as regular image slides)
+## Summary Table — Phase 4
 
-**Files:** `admin.html`, `display.html`, `api/pdf-convert.js`
-
----
-
-### 10. Media Expiration Dates
-**Why:** Promotional content (Happy Hour, weekend sale, seasonal menu) should disappear automatically after a date without the operator having to manually remove it. Prevents stale content from displaying indefinitely.
-**What to build:**
-- Add optional "Expires on" date picker to slide card settings in `admin.html`
-- Store `expiresAt` (ISO timestamp) on the slide object in Firestore
-- `display.html` `applyPlaylist()`: filter out any slides where `expiresAt` is in the past before building the play queue
-- Admin: visual indicator on expired/expiring-soon slide cards
-
-**Files:** `admin.html`, `display.html`
-
----
-
-## Summary Table
-
-| # | Feature | Phase | Effort | Impact |
+| # | Feature | Effort | Impact | Competitors |
 |---|---|---|---|---|
-| 1 | Schedule display-side enforcement | 1 | Medium | High |
-| 2 | QR code widget | 1 | Low | High |
-| 3 | Weather widget | 1 | Low-Medium | High |
-| 4 | Online/offline email notifications | 1 | Low | High |
-| 5 | RSS ticker with live feed | 1 | Low | Medium |
-| 6 | Working hours | 2 | Low | High |
-| 7 | Countdown timer | 2 | Low | Medium |
-| 8 | Per-screen timezone | 3 | Low | Medium |
-| 9 | PDF display | 3 | High | Medium |
-| 10 | Media expiration dates | 3 | Low | Medium |
+| 1 | Multi-zone layouts | High | Very High | 6/6 |
+| 2 | Offline content caching | Medium | Very High | 6/6 |
+| 3 | Digital menu board | Medium | High | 5/6 |
+| 4 | Canva integration | Low | High | 6/6 |
+| 5 | Social media feeds (Instagram + Reviews) | Medium | High | 6/6 / 4/6 |
+| 6 | Content templates library | Medium | High | 5/6 |
+| 7 | Proof of play reporting | Low | High | 5/6 |
+| 8 | Google Sheets live data widget | Low | High | 6/6 |
+| 9 | Emergency broadcast override | Low | Medium | 3/6 |
+| 10 | Content approval workflow | Medium | Medium | 4/6 |
+
+---
+
+## Completed — Phase 1–3
+
+All items below are shipped and in production as of April 2026.
+
+| # | Feature | Phase | Shipped |
+|---|---|---|---|
+| 1 | Schedule display-side enforcement | 1 | ✓ 2026-04-14 |
+| 2 | QR code widget | 1 | ✓ 2026-04-14 |
+| 3 | Weather widget | 1 | ✓ 2026-04-14 |
+| 4 | Online/offline email notifications | 1 | ✓ 2026-04-15 |
+| 5 | RSS ticker with live feed | 1 | ✓ 2026-04-14 |
+| 6 | Working hours (auto screen on/off) | 2 | ✓ 2026-04-15 |
+| 7 | Countdown timer widget | 2 | ✓ 2026-04-15 |
+| 8 | Per-screen timezone | 3 | ✓ 2026-04-15 |
+| 9 | PDF display | 3 | ✓ 2026-04-15 |
+| 10 | Media expiration dates | 3 | ✓ 2026-04-15 |

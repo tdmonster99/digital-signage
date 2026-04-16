@@ -714,6 +714,296 @@
     countdownTick = setInterval(tick, period);
   }
 
+  // ── Multi-Zone Layout ─────────────────────────────────────────────────────
+
+  function renderMultizone(slide) {
+    stopMultizone();
+    if (!slide.zones || !slide.zones.length) return;
+
+    slide.zones.forEach(zone => {
+      const zoneEl = document.createElement('div');
+      zoneEl.className = 'mz-zone';
+      zoneEl.style.cssText = `left:${zone.x}%;top:${zone.y}%;width:${zone.w}%;height:${zone.h}%;overflow:hidden;`;
+      stageMultizone.appendChild(zoneEl);
+      _mzRenderZoneContent(zoneEl, zone);
+    });
+  }
+
+  function _mzRenderZoneContent(zoneEl, zone) {
+    const type = zone.contentType || 'image';
+    const c    = zone.content || {};
+
+    if (type === 'image') {
+      zoneEl.style.background = `url('${c.url}') center / ${c.fit || 'cover'} no-repeat #000`;
+
+    } else if (type === 'video') {
+      const v = document.createElement('video');
+      v.src = c.url; v.autoplay = true; v.muted = true; v.loop = true;
+      v.style.cssText = 'width:100%;height:100%;object-fit:cover;';
+      zoneEl.appendChild(v);
+
+    } else if (type === 'youtube') {
+      const id  = c.videoId || c.url || '';
+      const ifr = document.createElement('iframe');
+      ifr.src = `https://www.youtube.com/embed/${id}?autoplay=1&mute=1&controls=0&loop=1&playlist=${id}`;
+      ifr.style.cssText = 'width:100%;height:100%;border:none;';
+      ifr.allow = 'autoplay; encrypted-media';
+      zoneEl.appendChild(ifr);
+
+    } else if (type === 'webpage') {
+      const ifr = document.createElement('iframe');
+      ifr.src = c.url;
+      ifr.style.cssText = 'width:100%;height:100%;border:none;';
+      zoneEl.appendChild(ifr);
+
+    } else {
+      // Widget zone: render at 1920×1080 then scale to fit
+      const sw   = window.innerWidth, sh = window.innerHeight;
+      const zw   = zone.w / 100 * sw, zh = zone.h / 100 * sh;
+      const scale = Math.min(zw / 1920, zh / 1080);
+      const tx    = (zw - 1920 * scale) / 2;
+      const ty    = (zh - 1080 * scale) / 2;
+
+      const inner = document.createElement('div');
+      inner.className  = 'mz-zone-inner';
+      inner.style.transform = `translate(${tx}px,${ty}px) scale(${scale})`;
+      zoneEl.appendChild(inner);
+
+      if      (type === 'clock')     _mzRenderClock(inner, c);
+      else if (type === 'weather')   _mzRenderWeather(inner, c);
+      else if (type === 'qr')        _mzRenderQr(inner, c);
+      else if (type === 'countdown') _mzRenderCountdown(inner, c);
+    }
+  }
+
+  // Clock zone renderer — self-contained version that writes to `el`
+  function _mzRenderClock(el, config) {
+    const CLOCK_FONTS = {
+      minimal: { ff: "'Courier New', monospace",            fw: '200', ls: '0.05em'  },
+      bold:    { ff: "'Arial Black', 'DM Sans', sans-serif", fw: '900', ls: '-0.02em' },
+      elegant: { ff: "Georgia, 'Times New Roman', serif",   fw: '400', ls: '0.06em'  },
+    };
+    const font = CLOCK_FONTS[config.fontStyle] || CLOCK_FONTS.minimal;
+    el.style.cssText += `background:${config.bgColor||'#000'};color:${config.textColor||'#fff'};
+      font-family:${font.ff};font-weight:${font.fw};letter-spacing:${font.ls};
+      display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px;`;
+    el.innerHTML = '<div class="clock-time" style="font-size:15vw;line-height:1"></div><div class="clock-date" style="font-size:2.5vw;margin-top:0.5em;opacity:0.75"></div>';
+
+    function tick() {
+      const tz    = config.timezone && config.timezone !== 'local' ? config.timezone : undefined;
+      const fmt12 = config.format !== '24h';
+      const now   = new Date();
+      const tOpts = { hour:'2-digit', minute:'2-digit', second:'2-digit', hour12: fmt12, ...(tz ? { timeZone: tz } : {}) };
+      const dOpts = { weekday:'long', month:'long', day:'numeric', ...(tz ? { timeZone: tz } : {}) };
+      const timeStr = new Intl.DateTimeFormat('en-US', tOpts).format(now);
+      const dateStr = new Intl.DateTimeFormat('en-US', dOpts).format(now);
+      const timeEl  = el.querySelector('.clock-time');
+      const dateEl  = el.querySelector('.clock-date');
+      if (timeEl) timeEl.textContent = timeStr;
+      if (dateEl) {
+        dateEl.textContent = config.showDate !== false ? dateStr : '';
+        dateEl.style.display = config.showDate !== false ? '' : 'none';
+      }
+    }
+    tick();
+    const id = setInterval(tick, 1000);
+    mzTimers.push({ type: 'interval', id });
+  }
+
+  // Weather zone renderer — reuses shared cache + _renderWeatherDOM logic
+  async function _mzRenderWeather(el, config) {
+    const loc      = config.location || 'New York';
+    const units    = config.units    || 'imperial';
+    const cacheKey = `${loc}|${units}`;
+    const cached   = _weatherCache[cacheKey];
+
+    // Adapt config to the shape _renderWeatherDOM expects
+    const fakeSlide = { ...config, location: loc, units, theme: config.theme || 'dark' };
+
+    el.style.cssText += 'overflow:hidden;';
+    const inner = document.createElement('div');
+    inner.className = 'wx-wrap';
+    el.appendChild(inner);
+
+    async function load() {
+      if (cached && (Date.now() - cached.ts) < WEATHER_TTL) {
+        _renderWeatherDOMInEl(inner, cached.data, fakeSlide);
+        return;
+      }
+      inner.innerHTML = '<div class="wx-loading" style="display:flex;align-items:center;justify-content:center;height:100%;font-size:1.8vw;opacity:0.5">Loading weather…</div>';
+      try {
+        const params = new URLSearchParams({ location: loc, units });
+        const r      = await fetch('/api/weather?' + params);
+        if (!r.ok) { const b = await r.json().catch(()=>({})); throw new Error(b.error||'HTTP '+r.status); }
+        const data = await r.json();
+        if (!data.ok) throw new Error(data.error || 'Weather error');
+        _weatherCache[cacheKey] = { data, ts: Date.now() };
+        _renderWeatherDOMInEl(inner, data, fakeSlide);
+      } catch(e) {
+        inner.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:1.8vw;opacity:0.5">Weather unavailable</div>`;
+      }
+    }
+    await load();
+    const id = setInterval(load, WEATHER_TTL);
+    mzTimers.push({ type: 'interval', id });
+  }
+
+  // Same as _renderWeatherDOM but writes bg to el instead of stageWeather
+  function _renderWeatherDOMInEl(el, data, slide) {
+    const c      = data.current;
+    const isDark = slide.theme !== 'light';
+    const unit   = data.units === 'metric' ? '°C' : '°F';
+    const iconUrl = icon => `https://openweathermap.org/img/wn/${icon}@2x.png`;
+    const fg     = isDark ? '#ffffff' : '#1a1a1a';
+    const bg     = isDark ? '#0f172a' : '#f0f9ff';
+    const divider = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+    const fBorder = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
+    el.parentElement.style.background = bg;
+    el.style.color = fg;
+
+    const forecastDays = slide.forecastDays != null ? parseInt(slide.forecastDays, 10) : 0;
+    const days = (data.forecast || []).slice(0, forecastDays);
+    const hasForecast = days.length > 0;
+    const cityName   = slide.label?.trim() || c.city;
+    const cityRegion = slide.label?.trim() ? null : c.country;
+    const todayStr    = new Date().toDateString();
+    const tomorrowStr = new Date(Date.now() + 86400000).toDateString();
+    function fDayLabel(dt) {
+      const d = new Date(dt * 1000);
+      if (d.toDateString() === todayStr)    return 'Today';
+      if (d.toDateString() === tomorrowStr) return 'Tmrw';
+      return d.toLocaleDateString('en-US', { weekday: 'short' });
+    }
+    const forecastHTML = hasForecast ? `
+      <div class="wx-forecast" style="border-top:1px solid ${divider}">
+        ${days.map((d,i) => `
+          <div class="wx-fday" style="${i>0?`border-left:1px solid ${fBorder}`:''}">
+            <div class="wx-fday-label">${fDayLabel(d.dt)}</div>
+            <div class="wx-fday-date">${new Date(d.dt*1000).getDate()}</div>
+            <img class="wx-fday-icon" src="${iconUrl(d.icon)}" alt="${esc(d.desc)}">
+            <div class="wx-fday-temps"><span class="wx-fday-hi">${d.high}°</span><span class="wx-fday-lo">${d.low}°</span></div>
+            <div class="wx-fday-desc">${cap(d.desc)}</div>
+          </div>`).join('')}
+      </div>` : '';
+
+    if (!hasForecast) {
+      el.innerHTML = `
+        <div class="wx-hero wx-centered">
+          <div class="wx-city-name">${esc(cityName)}</div>
+          ${cityRegion ? `<div class="wx-city-region">${esc(cityRegion)}</div>` : ''}
+          <div class="wx-right">
+            <img class="wx-icon" src="${iconUrl(c.icon)}" alt="${esc(c.desc)}">
+            <div class="wx-temp-desc">
+              <div class="wx-temp">${c.temp}${unit}</div>
+              <div class="wx-desc">${cap(c.desc)}</div>
+            </div>
+          </div>
+          <div class="wx-meta">Feels like ${c.feelsLike}${unit} · Humidity ${c.humidity}%</div>
+        </div>`;
+    } else {
+      el.innerHTML = `
+        <div class="wx-hero">
+          <div class="wx-left">
+            <div class="wx-city-name">${esc(cityName)}</div>
+            ${cityRegion ? `<div class="wx-city-region">${esc(cityRegion)}</div>` : ''}
+            <div class="wx-meta">Feels like ${c.feelsLike}${unit} · Humidity ${c.humidity}%</div>
+          </div>
+          <div class="wx-right">
+            <img class="wx-icon" src="${iconUrl(c.icon)}" alt="${esc(c.desc)}">
+            <div class="wx-temp-desc">
+              <div class="wx-temp">${c.temp}${unit}</div>
+              <div class="wx-desc">${cap(c.desc)}</div>
+            </div>
+          </div>
+        </div>
+        ${forecastHTML}`;
+    }
+  }
+
+  // QR zone renderer
+  function _mzRenderQr(el, config) {
+    const isDark  = config.theme !== 'light';
+    const fgColor = config.fgColor || (isDark ? '#ffffff' : '#000000');
+    const bgColor = config.bgColor || (isDark ? '#111111' : '#ffffff');
+    el.style.cssText += `background:${bgColor};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;`;
+    const qrEl = document.createElement('div');
+    el.appendChild(qrEl);
+    try {
+      new QRCode(qrEl, {
+        text: config.url || 'https://zigns.io',
+        width: 300, height: 300,
+        colorDark:  fgColor, colorLight: bgColor,
+        correctLevel: QRCode.CorrectLevel.M,
+      });
+    } catch(e) { console.warn('[MZ QR]', e.message); }
+    if (config.label) {
+      const lbl = document.createElement('div');
+      lbl.textContent = config.label;
+      lbl.style.cssText = `font-size:2vw;font-weight:600;letter-spacing:0.02em;text-align:center;padding:0 40px;color:${fgColor}`;
+      el.appendChild(lbl);
+    }
+  }
+
+  // Countdown zone renderer
+  function _mzRenderCountdown(el, config) {
+    const isDark = (config.theme || 'dark') === 'dark';
+    const accent = config.accent || '#f07c00';
+    el.style.cssText += `background:${isDark?'#0f172a':'#f5f5f5'};color:${isDark?'#fff':'#111'};
+      display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:4vw;
+      font-family:'Segoe UI',Arial,sans-serif;`;
+
+    const labelEl = document.createElement('div');
+    labelEl.className = 'cd-label';
+    labelEl.textContent = config.label || '';
+    labelEl.style.display = config.label ? '' : 'none';
+    const timerEl = document.createElement('div');
+    timerEl.className = 'cd-timer';
+    const endEl = document.createElement('div');
+    endEl.className = 'cd-end';
+    endEl.style.display = 'none';
+    el.append(labelEl, timerEl, endEl);
+
+    const targetMs = config.target ? new Date(config.target).getTime() : NaN;
+    if (!Number.isFinite(targetMs)) {
+      endEl.style.display = '';
+      endEl.style.color   = accent;
+      endEl.textContent   = 'Invalid date';
+      return;
+    }
+    const units = config.units || 'dhms';
+    const parts = [];
+    if (units.includes('d')) parts.push({ key:'d', name:'Days'    });
+    if (units.includes('h')) parts.push({ key:'h', name:'Hours'   });
+    if (units.includes('m')) parts.push({ key:'m', name:'Minutes' });
+    if (units.includes('s')) parts.push({ key:'s', name:'Seconds' });
+
+    function tick() {
+      const diff = targetMs - Date.now();
+      if (diff <= 0) {
+        timerEl.innerHTML = '';
+        endEl.style.color = accent;
+        endEl.textContent = config.endMsg || '0';
+        endEl.style.display = '';
+        return;
+      }
+      endEl.style.display = 'none';
+      let rem = Math.floor(diff / 1000);
+      const d = units.includes('d') ? Math.floor(rem / 86400) : 0; rem -= d * 86400;
+      const h = units.includes('h') ? Math.floor(rem / 3600)  : 0; rem -= h * 3600;
+      const m = units.includes('m') ? Math.floor(rem / 60)    : 0; rem -= m * 60;
+      const s = units.includes('s') ? rem : 0;
+      const pad = n => String(n).padStart(2,'0');
+      const vals = { d: String(d), h: pad(h), m: pad(m), s: pad(s) };
+      timerEl.innerHTML = parts.map(p =>
+        `<div class="cd-unit"><div class="cd-num" style="color:${accent}">${vals[p.key]}</div><div class="cd-name">${p.name}</div></div>`
+      ).join('');
+    }
+    tick();
+    const period = units.includes('s') ? 1000 : 30000;
+    const id = setInterval(tick, period);
+    mzTimers.push({ type: 'interval', id });
+  }
+
   // ── Offline indicator ─────────────────────────────────────────────────────
   function setOffline(offline) {
     isOffline = offline;
@@ -815,15 +1105,25 @@
 
   // ── Crossfade ────────────────────────────────────────────────────────────────
   // Returns true if slide was shown, false if it should be skipped.
+  const stageMultizone = document.getElementById('stageMultizone');
+  let mzTimers = [];
+
+  function stopMultizone() {
+    mzTimers.forEach(t => { if (t.type === 'interval') clearInterval(t.id); else clearTimeout(t.id); });
+    mzTimers = [];
+    stageMultizone.innerHTML = '';
+  }
+
   function _hideAllStages() {
-    active.style.opacity        = "0";
-    stageDesigned.style.opacity = "0";
-    stageVideo.style.opacity    = "0"; videoEl.pause(); videoEl.src = "";
-    stageYoutube.style.opacity  = "0"; iframeYoutube.src = "about:blank";
-    stageWebpage.style.opacity  = "0"; iframeWebpage.src = "about:blank";
-    stageQr.style.opacity       = "0";
-    stageWeather.style.opacity  = "0";
+    active.style.opacity         = "0";
+    stageDesigned.style.opacity  = "0";
+    stageVideo.style.opacity     = "0"; videoEl.pause(); videoEl.src = "";
+    stageYoutube.style.opacity   = "0"; iframeYoutube.src = "about:blank";
+    stageWebpage.style.opacity   = "0"; iframeWebpage.src = "about:blank";
+    stageQr.style.opacity        = "0";
+    stageWeather.style.opacity   = "0";
     stageCountdown.style.opacity = "0";
+    stageMultizone.style.opacity = "0"; stopMultizone();
     stopClock();    stageClock.style.opacity   = "0";
     stopWeather();
     stopCountdown();
@@ -894,6 +1194,11 @@
       _hideAllStages();
       renderCountdown(slide);
       stageCountdown.style.opacity = "1";
+
+    } else if (slide.type === "multizone") {
+      _hideAllStages();
+      renderMultizone(slide);
+      stageMultizone.style.opacity = "1";
 
     } else {
       stopTicker();
@@ -1009,7 +1314,7 @@
     const incoming = expanded.filter(s =>
       s.url || s.canvasJson ||
       s.type === 'clock' || s.type === 'weather' || s.type === 'youtube' ||
-      s.type === 'countdown'
+      s.type === 'countdown' || s.type === 'multizone'
     );
 
     if (!incoming.length) {
@@ -1413,6 +1718,10 @@
   #stageCountdown .cd-name  { font-size: 1.6vw; font-weight: 600; letter-spacing: 0.14em;
     text-transform: uppercase; opacity: 0.7; margin-top: 0.8vh; }
   #stageCountdown .cd-end   { font-size: 9vw; font-weight: 800; letter-spacing: -0.01em; }
+  #stageMultizone { z-index: 9; background: #000; }
+  .mz-zone { position: absolute; box-sizing: border-box; }
+  .mz-zone-inner { position: absolute; width: 1920px; height: 1080px; transform-origin: top left; }
+
   #stageClosed   { z-index: 100; background: #000; opacity: 0; display: flex;
     align-items: center; justify-content: center; color: #555;
     font-family: 'Segoe UI', Arial, sans-serif; font-size: 28px; letter-spacing: 0.5px; }
@@ -1717,6 +2026,9 @@
   <div class="cd-timer" id="cdTimerEl"></div>
   <div class="cd-end"   id="cdEndEl" style="display:none"></div>
 </div>
+
+<!-- Multi-Zone Layout stage -->
+<div id="stageMultizone" class="stage"></div>
 
 <div id="stageClosed" class="stage">Outside working hours</div>
 

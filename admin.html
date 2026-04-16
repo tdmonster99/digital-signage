@@ -2674,6 +2674,82 @@ section.content {
   width: 100%; max-width: 500px; padding: 28px 24px; overflow-y: auto; max-height: 90vh;
 }
 
+/* ── Multi-Zone modal ──────────────────────────────────────────────── */
+#multiZoneModal {
+  display: none; position: fixed; inset: 0; z-index: 400;
+  background: rgba(0,0,0,.65); align-items: center; justify-content: center;
+  backdrop-filter: blur(8px); padding: 20px;
+}
+.mz-modal-box {
+  width: 100%; max-width: 920px; max-height: 92vh;
+  border-radius: 20px; overflow: hidden;
+  border: 1px solid var(--border);
+  display: grid;
+  grid-template: "left form" 1fr "left foot" auto / 272px 1fr;
+  box-shadow: 0 32px 96px rgba(0,0,0,.45);
+}
+.mz-modal-left {
+  grid-area: left;
+  background: linear-gradient(160deg, #060f22 0%, #0b1f3f 55%, #122e58 100%);
+  padding: 24px 20px; display: flex; flex-direction: column; gap: 14px; overflow-y: auto;
+}
+.mz-modal-right {
+  grid-area: form;
+  background: var(--surface); padding: 24px 26px; overflow-y: auto;
+}
+.mz-modal-footer {
+  grid-area: foot;
+  background: var(--surface); border-top: 1px solid var(--border);
+  padding: 14px 26px; display: flex; justify-content: flex-end; gap: 8px;
+}
+.mz-preview-wrap {
+  aspect-ratio: 16/9; border-radius: 10px; overflow: hidden;
+  position: relative; background: #0a0f1a; border: 1px solid rgba(255,255,255,.08);
+  flex-shrink: 0;
+}
+.mz-preview-zone { position: absolute; box-sizing: border-box; }
+.mz-layout-grid  { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.mz-layout-thumb {
+  aspect-ratio: 16/9; border-radius: 7px; overflow: hidden; cursor: pointer;
+  border: 2px solid transparent; transition: border-color .15s, transform .1s;
+  background: rgba(255,255,255,.04);
+}
+.mz-layout-thumb:hover  { border-color: rgba(77,139,255,.4); transform: scale(1.04); }
+.mz-layout-thumb.active { border-color: #4d8bff; }
+.mz-layout-thumb svg    { width: 100%; height: 100%; display: block; }
+.mz-layout-label { font-size: 9px; color: rgba(255,255,255,.4); text-align: center; margin-top: 2px; }
+.mz-section-label {
+  font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--accent); padding-bottom: 8px; border-bottom: 1px solid var(--border);
+  margin-bottom: 14px;
+}
+.mz-field { margin-bottom: 14px; }
+.mz-field label { display: block; font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+.mz-field input, .mz-field select {
+  width: 100%; box-sizing: border-box;
+  font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--text);
+  background: var(--surface2); border: 1.5px solid var(--border);
+  border-radius: 10px; padding: 10px 14px; outline: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+.mz-field input:focus, .mz-field select:focus {
+  border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,67,206,.12);
+}
+.mz-zone-card { border: 1.5px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 14px; }
+.mz-zone-header {
+  display: flex; align-items: center; gap: 10px; padding: 11px 14px;
+  background: var(--surface2); cursor: default;
+}
+.mz-zone-dot   { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.mz-zone-hlabel { font-size: 13px; font-weight: 700; color: var(--text); flex: 1; }
+.mz-zone-hdims  { font-size: 11px; color: var(--muted); }
+.mz-zone-body   { padding: 14px; background: var(--surface); }
+.mz-left-input {
+  width: 100%; box-sizing: border-box; font-family: 'DM Sans', sans-serif; font-size: 13px;
+  background: rgba(255,255,255,.07); border: 1.5px solid rgba(255,255,255,.12);
+  border-radius: 9px; padding: 9px 12px; color: #fff; outline: none;
+}
+
 /* ── Role badge ────────────────────────────────────────────────────── */
 .role-badge {
   display: inline-block; font-size: 10px; font-weight: 700;
@@ -3773,6 +3849,20 @@ body.role-editor .admin-action {
         <div class="app-card-name">Countdown Timer</div>
         <div class="app-card-desc">Count down to events, launches, or deadlines</div>
         <button class="app-card-add" onclick="event.stopPropagation();openCountdownModal(null)">Add →</button>
+      </div>
+
+      <!-- Multi-Zone Layout -->
+      <div class="app-card" data-category="layouts" data-name="multi zone layout split screen zones" onclick="openMultiZoneModal(null)">
+        <div class="app-card-icon" style="background:rgba(16,185,129,.15)">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round">
+            <rect x="2" y="3" width="20" height="18" rx="2"/>
+            <line x1="12" y1="3" x2="12" y2="21"/>
+            <line x1="2" y1="13" x2="12" y2="13"/>
+          </svg>
+        </div>
+        <div class="app-card-name">Multi-Zone Layout</div>
+        <div class="app-card-desc">Split your screen into zones — clock, weather, video, and more simultaneously</div>
+        <button class="app-card-add" onclick="event.stopPropagation();openMultiZoneModal(null)">Add →</button>
       </div>
 
       <!-- WiFi Password — coming soon -->
@@ -7447,6 +7537,72 @@ body.role-editor .admin-action {
   </div>
 </div>
 
+<!-- ── Multi-Zone Layout modal ──────────────────────────────────────── -->
+<div id="multiZoneModal">
+  <div class="mz-modal-box">
+
+    <!-- Left: preview + layout picker + settings -->
+    <div class="mz-modal-left">
+
+      <div style="display:flex;align-items:center;gap:12px;flex-shrink:0;">
+        <div style="width:42px;height:42px;background:linear-gradient(135deg,#059669,#10b981);border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round">
+            <rect x="2" y="3" width="20" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/><line x1="2" y1="13" x2="12" y2="13"/>
+          </svg>
+        </div>
+        <div>
+          <div id="mzModalTitle" style="font-size:15px;font-weight:700;color:#fff;line-height:1.2;">Add Zone Layout</div>
+          <div style="font-size:10px;color:rgba(255,255,255,.4);margin-top:2px;">Simultaneous zones on one slide</div>
+        </div>
+      </div>
+
+      <!-- Live layout preview -->
+      <div class="mz-preview-wrap" id="mzPreviewWrap"><!-- zones rendered by JS --></div>
+
+      <!-- Preset picker -->
+      <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:6px;">Layout</div>
+      <div class="mz-layout-grid" id="mzLayoutGrid"><!-- rendered by JS --></div>
+
+      <!-- Slide settings -->
+      <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.35);margin-top:4px;margin-bottom:6px;">Settings</div>
+      <div>
+        <div style="margin-bottom:10px;">
+          <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,.6);margin-bottom:5px;">Slide Name</div>
+          <input type="text" id="mzName" class="mz-left-input" placeholder="Zone Layout" />
+        </div>
+        <div>
+          <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,.6);margin-bottom:5px;">Duration (seconds)</div>
+          <input type="number" id="mzDwell" class="mz-left-input" value="30" min="5" max="3600" />
+        </div>
+      </div>
+
+      <div style="margin-top:auto;font-size:10px;color:rgba(255,255,255,.18);text-align:center;line-height:1.5;flex-shrink:0;">
+        All zones play simultaneously<br>on your connected screens
+      </div>
+    </div>
+
+    <!-- Right: zone configuration -->
+    <div class="mz-modal-right">
+      <div class="mz-section-label">Configure Zones</div>
+      <div id="mzZonesList"><!-- rendered by JS --></div>
+
+      <div id="mzShowTargetWrap">
+        <div class="mz-section-label">Slideshow</div>
+        <div class="mz-field">
+          <label>Add to</label>
+          <select id="mzShowTarget"></select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="mz-modal-footer">
+      <button class="btn btn-secondary" onclick="closeMultiZoneModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveMultiZoneSlide()" id="mzSaveBtn">Add to Slideshow</button>
+    </div>
+  </div>
+</div>
+
 <!-- Firebase SDK -->
 <script type="module">
 import { initializeApp }              from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -9944,17 +10100,18 @@ function renderGrid() {
         </div>
       </div>`;
     }
-    const isDesigned = s.type === 'designed';
-    const isWebpage  = s.type === 'webpage';
-    const isYoutube  = s.type === 'youtube';
-    const isVideo    = s.type === 'video';
-    const isClock    = s.type === 'clock';
-    const isQr       = s.type === 'qr';
-    const isWeather  = s.type === 'weather';
-    const isCountdown = s.type === 'countdown';
+    const isDesigned   = s.type === 'designed';
+    const isWebpage    = s.type === 'webpage';
+    const isYoutube    = s.type === 'youtube';
+    const isVideo      = s.type === 'video';
+    const isClock      = s.type === 'clock';
+    const isQr         = s.type === 'qr';
+    const isWeather    = s.type === 'weather';
+    const isCountdown  = s.type === 'countdown';
+    const isMultizone  = s.type === 'multizone';
     const thumbUrl   = isDesigned ? s.thumbnailUrl
                      : isYoutube  ? `https://img.youtube.com/vi/${s.videoId}/mqdefault.jpg`
-                     : (isWebpage || isVideo || isClock || isQr || isWeather || isCountdown) ? null
+                     : (isWebpage || isVideo || isClock || isQr || isWeather || isCountdown || isMultizone) ? null
                      : s.url;
     const editSvg    = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
     const placeholder = isClock
@@ -9973,6 +10130,8 @@ function renderGrid() {
            <circle cx="12" cy="13" r="8"/><polyline points="12 9 12 13 14 15"/>
            <line x1="12" y1="3" x2="12" y2="5"/>
          </svg>`
+      : isMultizone
+      ? _mzLayoutThumbSvg(s.layout || 'split-lr-7030', 28)
       : isWebpage
       ? `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="1.5">
            <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>
@@ -9996,7 +10155,8 @@ function renderGrid() {
                 : isClock    ? `<div class="designed-badge" style="background:#059669cc">Clock</div>`
                 : isQr       ? `<div class="designed-badge" style="background:#8b5cf6cc">QR</div>`
                 : isWeather  ? `<div class="designed-badge" style="background:#3b82f6cc">Weather</div>`
-                : isCountdown ? `<div class="designed-badge" style="background:#f07c00cc">Countdown</div>`
+                : isCountdown  ? `<div class="designed-badge" style="background:#f07c00cc">Countdown</div>`
+                : isMultizone ? `<div class="designed-badge" style="background:#059669cc">Zones</div>`
                 : '';
     const editBtn    = isDesigned
       ? `<button class="icon-btn toggle" title="Edit in Designer" onclick="editDesignedSlide(${i})">${editSvg}</button>`
@@ -10008,6 +10168,8 @@ function renderGrid() {
       ? `<button class="icon-btn toggle" title="Edit Weather" onclick="openWeatherModal(${i})">${editSvg}</button>`
       : isCountdown
       ? `<button class="icon-btn toggle" title="Edit Countdown" onclick="openCountdownModal(${i})">${editSvg}</button>`
+      : isMultizone
+      ? `<button class="icon-btn toggle" title="Edit Zone Layout" onclick="openMultiZoneModal(${i})">${editSvg}</button>`
       : `<button class="icon-btn toggle" title="${s.active === false ? 'Show' : 'Hide'}" onclick="toggleSlide(${i})">
            ${s.active === false
              ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`
@@ -17101,6 +17263,368 @@ document.getElementById('quickUploadInput').addEventListener('change', function(
 document.getElementById('quickUploadInputCamera').addEventListener('change', function() {
   _handleQuickUploadFile(this);
 });
+
+// ── Multi-Zone Layout ─────────────────────────────────────────────────────
+
+const MZ_ZONE_COLORS = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899'];
+
+const MZ_PRESETS = {
+  'split-lr-7030': {
+    label: 'Main + Sidebar',
+    zones: [
+      { id:'z1', label:'Main (Left)',     x:0,  y:0, w:70, h:100 },
+      { id:'z2', label:'Sidebar (Right)', x:70, y:0, w:30, h:100 },
+    ],
+  },
+  'split-lr-5050': {
+    label: 'Split Screen',
+    zones: [
+      { id:'z1', label:'Left',  x:0,  y:0, w:50, h:100 },
+      { id:'z2', label:'Right', x:50, y:0, w:50, h:100 },
+    ],
+  },
+  'main-bottom-bar': {
+    label: 'Main + Info Bar',
+    zones: [
+      { id:'z1', label:'Main',       x:0, y:0,  w:100, h:80 },
+      { id:'z2', label:'Bottom Bar', x:0, y:80, w:100, h:20 },
+    ],
+  },
+  'main-top-bar': {
+    label: 'Header + Main',
+    zones: [
+      { id:'z1', label:'Header Bar', x:0, y:0,  w:100, h:15 },
+      { id:'z2', label:'Main',       x:0, y:15, w:100, h:85 },
+    ],
+  },
+  'grid-4': {
+    label: '4-Up Grid',
+    zones: [
+      { id:'z1', label:'Top Left',     x:0,  y:0,  w:50, h:50 },
+      { id:'z2', label:'Top Right',    x:50, y:0,  w:50, h:50 },
+      { id:'z3', label:'Bottom Left',  x:0,  y:50, w:50, h:50 },
+      { id:'z4', label:'Bottom Right', x:50, y:50, w:50, h:50 },
+    ],
+  },
+  'split-lr-6040': {
+    label: 'Content + Panel',
+    zones: [
+      { id:'z1', label:'Main (Left)',   x:0,  y:0, w:60, h:100 },
+      { id:'z2', label:'Panel (Right)', x:60, y:0, w:40, h:100 },
+    ],
+  },
+};
+
+let mzEditIdx      = null;
+let mzCurrentLayout = 'split-lr-7030';
+let mzZoneStates   = []; // [{contentType, content}] per zone, preserves values across type switch
+
+function _mzLayoutThumbSvg(layoutKey, size) {
+  const preset = MZ_PRESETS[layoutKey] || MZ_PRESETS['split-lr-7030'];
+  const zones  = preset.zones;
+  const W = 160, H = 90;
+  const rects = zones.map((z, idx) => {
+    const x = z.x / 100 * W, y = z.y / 100 * H;
+    const w = z.w / 100 * W, h = z.h / 100 * H;
+    const col = MZ_ZONE_COLORS[idx] || '#666';
+    return `<rect x="${x+1}" y="${y+1}" width="${w-2}" height="${h-2}" rx="3" fill="${col}" opacity="0.75"/>`;
+  }).join('');
+  if (size) {
+    return `<svg width="${size}" height="${Math.round(size*9/16)}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+      <rect width="${W}" height="${H}" fill="#0a0f1a" rx="4"/>
+      ${rects}
+    </svg>`;
+  }
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+    <rect width="${W}" height="${H}" fill="#0a0f1a"/>
+    ${rects}
+  </svg>`;
+}
+
+function _mzRenderLayoutGrid() {
+  const grid = document.getElementById('mzLayoutGrid');
+  if (!grid) return;
+  grid.innerHTML = Object.entries(MZ_PRESETS).map(([key, p]) => `
+    <div>
+      <div class="mz-layout-thumb ${mzCurrentLayout === key ? 'active' : ''}" onclick="_mzSelectLayout('${key}')">
+        ${_mzLayoutThumbSvg(key)}
+      </div>
+      <div class="mz-layout-label">${p.label}</div>
+    </div>
+  `).join('');
+}
+
+function _mzSelectLayout(key) {
+  if (!MZ_PRESETS[key]) return;
+  mzCurrentLayout = key;
+  // Reset zone states when layout changes
+  mzZoneStates = MZ_PRESETS[key].zones.map(() => ({ contentType: 'image', content: {} }));
+  _mzRenderLayoutGrid();
+  _mzRenderPreview();
+  _mzRenderZonesList();
+}
+
+function _mzRenderPreview() {
+  const wrap = document.getElementById('mzPreviewWrap');
+  if (!wrap) return;
+  const preset = MZ_PRESETS[mzCurrentLayout];
+  wrap.innerHTML = preset.zones.map((z, idx) => {
+    const col = MZ_ZONE_COLORS[idx] || '#666';
+    return `<div class="mz-preview-zone" style="left:${z.x}%;top:${z.y}%;width:${z.w}%;height:${z.h}%;background:${col};opacity:0.25;"></div>
+            <div class="mz-preview-zone" style="left:${z.x}%;top:${z.y}%;width:${z.w}%;height:${z.h}%;border:1.5px solid ${col};opacity:0.6;"></div>`;
+  }).join('');
+}
+
+function _mzZoneTypeOptions(selectedType) {
+  const opts = [
+    ['image','Image'],['video','Video'],['youtube','YouTube'],
+    ['clock','Clock'],['weather','Weather'],['qr','QR Code'],
+    ['countdown','Countdown'],['webpage','Web Page'],
+  ];
+  return opts.map(([v,l]) => `<option value="${v}" ${selectedType===v?'selected':''}>${l}</option>`).join('');
+}
+
+function _mzZoneFieldsHtml(idx, contentType, saved) {
+  const c = saved || {};
+  const tzOpts = `
+    <option value="local" ${c.timezone==='local'||!c.timezone?'selected':''}>Local (device time)</option>
+    <optgroup label="US">
+      <option value="America/New_York"    ${c.timezone==='America/New_York'   ?'selected':''}>Eastern (New York)</option>
+      <option value="America/Chicago"     ${c.timezone==='America/Chicago'    ?'selected':''}>Central (Chicago)</option>
+      <option value="America/Denver"      ${c.timezone==='America/Denver'     ?'selected':''}>Mountain (Denver)</option>
+      <option value="America/Los_Angeles" ${c.timezone==='America/Los_Angeles'?'selected':''}>Pacific (Los Angeles)</option>
+    </optgroup>
+    <optgroup label="Europe">
+      <option value="Europe/London" ${c.timezone==='Europe/London'?'selected':''}>London</option>
+      <option value="Europe/Paris"  ${c.timezone==='Europe/Paris' ?'selected':''}>Paris / Berlin</option>
+    </optgroup>
+    <optgroup label="Asia / Pacific">
+      <option value="Asia/Tokyo"        ${c.timezone==='Asia/Tokyo'       ?'selected':''}>Tokyo / Seoul</option>
+      <option value="Asia/Singapore"    ${c.timezone==='Asia/Singapore'   ?'selected':''}>Singapore</option>
+      <option value="Asia/Kolkata"      ${c.timezone==='Asia/Kolkata'     ?'selected':''}>India</option>
+      <option value="Australia/Sydney"  ${c.timezone==='Australia/Sydney' ?'selected':''}>Sydney</option>
+    </optgroup>`;
+
+  if (contentType === 'image') return `
+    <div class="mz-field"><label>Image URL</label>
+      <input type="url" id="mzZ${idx}_url" value="${c.url||''}" placeholder="https://..." /></div>
+    <div class="mz-field"><label>Fit</label>
+      <select id="mzZ${idx}_fit">
+        <option value="cover"   ${(c.fit||'cover')==='cover'   ?'selected':''}>Cover (fill zone)</option>
+        <option value="contain" ${c.fit==='contain'            ?'selected':''}>Contain (show full image)</option>
+      </select></div>`;
+
+  if (contentType === 'video') return `
+    <div class="mz-field"><label>Video URL (MP4)</label>
+      <input type="url" id="mzZ${idx}_url" value="${c.url||''}" placeholder="https://..." /></div>`;
+
+  if (contentType === 'youtube') return `
+    <div class="mz-field"><label>YouTube URL</label>
+      <input type="url" id="mzZ${idx}_url" value="${c.url||c.videoId||''}" placeholder="https://www.youtube.com/watch?v=..." /></div>`;
+
+  if (contentType === 'webpage') return `
+    <div class="mz-field"><label>URL</label>
+      <input type="url" id="mzZ${idx}_url" value="${c.url||''}" placeholder="https://..." /></div>`;
+
+  if (contentType === 'clock') return `
+    <div class="mz-field"><label>Timezone</label>
+      <select id="mzZ${idx}_timezone">${tzOpts}</select></div>
+    <div style="display:flex;gap:10px;">
+      <div class="mz-field" style="flex:1"><label>Background</label>
+        <input type="color" id="mzZ${idx}_bgColor" value="${c.bgColor||'#000000'}"
+          style="width:100%;height:38px;padding:2px;cursor:pointer;border-radius:8px;border:1.5px solid var(--border);background:var(--surface2)" /></div>
+      <div class="mz-field" style="flex:1"><label>Text Color</label>
+        <input type="color" id="mzZ${idx}_textColor" value="${c.textColor||'#ffffff'}"
+          style="width:100%;height:38px;padding:2px;cursor:pointer;border-radius:8px;border:1.5px solid var(--border);background:var(--surface2)" /></div>
+    </div>`;
+
+  if (contentType === 'weather') return `
+    <div class="mz-field"><label>Location</label>
+      <input type="text" id="mzZ${idx}_location" value="${c.location||''}" placeholder="Chicago, IL" /></div>
+    <div class="mz-field"><label>Units</label>
+      <select id="mzZ${idx}_units">
+        <option value="imperial" ${(c.units||'imperial')==='imperial'?'selected':''}>°F — Imperial</option>
+        <option value="metric"   ${c.units==='metric'               ?'selected':''}>°C — Metric</option>
+      </select></div>
+    <div class="mz-field"><label>Forecast</label>
+      <select id="mzZ${idx}_forecastDays">
+        <option value="0" ${(!c.forecastDays||c.forecastDays===0)?'selected':''}>Current only</option>
+        <option value="3" ${c.forecastDays===3                    ?'selected':''}>3-day forecast</option>
+      </select></div>`;
+
+  if (contentType === 'qr') return `
+    <div class="mz-field"><label>URL</label>
+      <input type="url" id="mzZ${idx}_url" value="${c.url||''}" placeholder="https://..." /></div>
+    <div class="mz-field"><label>Label <span style="font-weight:400;opacity:.5">(optional)</span></label>
+      <input type="text" id="mzZ${idx}_label" value="${c.label||''}" placeholder="" /></div>`;
+
+  if (contentType === 'countdown') return `
+    <div class="mz-field"><label>Target Date &amp; Time</label>
+      <input type="datetime-local" id="mzZ${idx}_target" value="${c.target||''}" /></div>
+    <div class="mz-field"><label>Label <span style="font-weight:400;opacity:.5">(optional)</span></label>
+      <input type="text" id="mzZ${idx}_label" value="${c.label||''}" placeholder="Grand Opening In" /></div>
+    <div class="mz-field"><label>Message at Zero</label>
+      <input type="text" id="mzZ${idx}_endMsg" value="${c.endMsg||''}" placeholder="We're here!" /></div>`;
+
+  return '';
+}
+
+function _mzRenderZonesList() {
+  const preset = MZ_PRESETS[mzCurrentLayout];
+  const list   = document.getElementById('mzZonesList');
+  if (!list) return;
+  list.innerHTML = preset.zones.map((z, idx) => {
+    const state   = mzZoneStates[idx] || { contentType: 'image', content: {} };
+    const col     = MZ_ZONE_COLORS[idx] || '#666';
+    const dims    = `${z.w}% × ${z.h}%`;
+    return `
+    <div class="mz-zone-card">
+      <div class="mz-zone-header">
+        <div class="mz-zone-dot" style="background:${col}"></div>
+        <div class="mz-zone-hlabel">${z.label}</div>
+        <div class="mz-zone-hdims">${dims}</div>
+      </div>
+      <div class="mz-zone-body">
+        <div class="mz-field">
+          <label>Content Type</label>
+          <select onchange="_mzZoneTypeChanged(${idx}, this.value)" id="mzZ${idx}_type">
+            ${_mzZoneTypeOptions(state.contentType)}
+          </select>
+        </div>
+        <div id="mzZoneFields_${idx}">
+          ${_mzZoneFieldsHtml(idx, state.contentType, state.content)}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+window._mzZoneTypeChanged = function(idx, newType) {
+  // Save current field values before re-rendering
+  _mzSaveZoneState(idx);
+  mzZoneStates[idx].contentType = newType;
+  const fieldsEl = document.getElementById(`mzZoneFields_${idx}`);
+  if (fieldsEl) fieldsEl.innerHTML = _mzZoneFieldsHtml(idx, newType, mzZoneStates[idx].content);
+};
+
+function _mzSaveZoneState(idx) {
+  if (!mzZoneStates[idx]) mzZoneStates[idx] = { contentType: 'image', content: {} };
+  const type = document.getElementById(`mzZ${idx}_type`)?.value || 'image';
+  const get  = id => document.getElementById(id)?.value || '';
+  const c    = {};
+  if (['image','video','youtube','webpage','qr'].includes(type)) c.url = get(`mzZ${idx}_url`);
+  if (type === 'image')    c.fit         = get(`mzZ${idx}_fit`) || 'cover';
+  if (type === 'clock') {
+    c.timezone  = get(`mzZ${idx}_timezone`) || 'local';
+    c.bgColor   = get(`mzZ${idx}_bgColor`)  || '#000000';
+    c.textColor = get(`mzZ${idx}_textColor`)|| '#ffffff';
+  }
+  if (type === 'weather') {
+    c.location    = get(`mzZ${idx}_location`);
+    c.units       = get(`mzZ${idx}_units`) || 'imperial';
+    c.forecastDays= parseInt(get(`mzZ${idx}_forecastDays`), 10) || 0;
+  }
+  if (type === 'qr')       c.label  = get(`mzZ${idx}_label`);
+  if (type === 'countdown'){
+    c.target = get(`mzZ${idx}_target`);
+    c.label  = get(`mzZ${idx}_label`);
+    c.endMsg = get(`mzZ${idx}_endMsg`);
+  }
+  mzZoneStates[idx].contentType = type;
+  mzZoneStates[idx].content     = c;
+}
+
+function _mzCollectZones() {
+  const preset = MZ_PRESETS[mzCurrentLayout];
+  return preset.zones.map((z, idx) => {
+    _mzSaveZoneState(idx);
+    const state   = mzZoneStates[idx];
+    const type    = state.contentType;
+    const c       = { ...state.content };
+    // Parse YouTube video ID from URL
+    if (type === 'youtube' && c.url) {
+      const m = c.url.match(/(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/);
+      c.videoId = m ? m[1] : c.url;
+    }
+    return { id: z.id, x: z.x, y: z.y, w: z.w, h: z.h, label: z.label, contentType: type, content: c };
+  });
+}
+
+window.openMultiZoneModal = function(slideIdx) {
+  mzEditIdx = slideIdx;
+  const s   = slideIdx !== null ? slides[slideIdx] : null;
+  const isNew = slideIdx === null;
+
+  document.getElementById('mzModalTitle').textContent = s ? 'Edit Zone Layout' : 'Add Zone Layout';
+  document.getElementById('mzSaveBtn').textContent    = s ? 'Save Changes' : 'Add to Slideshow';
+  document.getElementById('mzName').value  = s?.name  || 'Zone Layout';
+  document.getElementById('mzDwell').value = s?.dwell ?? 30;
+  document.getElementById('mzShowTargetWrap').style.display = isNew ? '' : 'none';
+  if (isNew) _populateShowSelect('mzShowTarget');
+
+  mzCurrentLayout = s?.layout || 'split-lr-7030';
+
+  // Restore zone states from existing slide, or init defaults
+  const preset = MZ_PRESETS[mzCurrentLayout];
+  mzZoneStates = preset.zones.map((z, idx) => {
+    const existing = s?.zones?.[idx];
+    return existing
+      ? { contentType: existing.contentType || 'image', content: existing.content || {} }
+      : { contentType: 'image', content: {} };
+  });
+
+  _mzRenderLayoutGrid();
+  _mzRenderPreview();
+  _mzRenderZonesList();
+  document.getElementById('multiZoneModal').style.display = 'flex';
+};
+
+window.closeMultiZoneModal = function() {
+  document.getElementById('multiZoneModal').style.display = 'none';
+  mzEditIdx = null;
+};
+
+window.saveMultiZoneSlide = async function() {
+  const zones = _mzCollectZones();
+  const editIdx = mzEditIdx;
+
+  const slide = {
+    id:     editIdx !== null ? slides[editIdx].id : crypto.randomUUID(),
+    type:   'multizone',
+    layout: mzCurrentLayout,
+    name:   document.getElementById('mzName').value.trim()  || 'Zone Layout',
+    dwell:  parseInt(document.getElementById('mzDwell').value, 10) || 30,
+    zones,
+    active: true,
+  };
+
+  const targetShowId = editIdx === null
+    ? document.getElementById('mzShowTarget').value
+    : currentShowId;
+
+  if (!targetShowId) { toast('Please select a slideshow', true); return; }
+
+  closeMultiZoneModal();
+
+  try {
+    if (targetShowId === currentShowId) {
+      if (editIdx !== null) slides[editIdx] = slide;
+      else                  slides.push(slide);
+      await pushToFirestore();
+      renderGrid();
+      toast(editIdx !== null ? 'Zone layout updated ✓' : 'Zone layout added ✓');
+    } else {
+      await _addSlideToShow(targetShowId, slide);
+      const targetName = (currentOrg?.slideshows || []).find(s => s.id === targetShowId)?.name || targetShowId;
+      toast(`Zone layout added to "${targetName}" ✓`);
+    }
+    logActivity(editIdx !== null ? 'Edited multi-zone slide' : 'Added multi-zone slide');
+    updateDashboard();
+  } catch(e) {
+    console.error('saveMultiZoneSlide:', e);
+    toast('Could not save zone layout: ' + e.message, true);
+  }
+};
 
 // ── Pull-to-refresh (on the app-main scroll area) ─────────────────────────
 (function setupPullToRefresh() {
