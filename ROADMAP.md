@@ -59,13 +59,17 @@ Gap analysis against Yodeck, ScreenCloud, Rise Vision, OptiSigns, Screenly, and 
 
 ### 5. Canva Integration
 **Why:** Present in 6/6 competitors. SMBs already use Canva daily for menus, promos, and social posts. Import directly rather than forcing users to export a PNG, then upload manually. Lowest-friction content creation path for non-designers.
-**What to build:**
-- "Import from Canva" button in Add Media modal using the [Canva Button SDK](https://www.canva.com/developers/docs/button/)
-- SDK opens a Canva picker popup; user selects a design; SDK returns a rendered image URL
-- Upload the returned image to S3 via the existing `s3Upload` utility
-- Creates an image slide in the current slideshow
 
-**Files:** `admin.html`
+**Note:** The old Canva Design Button SDK is deprecated. The current path is **Canva Connect APIs** (OAuth 2.0). The button has been removed from the UI until the proper integration is built.
+
+**What to build:**
+- Register an app in the Canva developer portal → Connect APIs
+- OAuth 2.0 flow: user authorizes Zigns to access their Canva designs
+- Backend `api/canva-callback.js`: handles OAuth callback, exchanges code for access token, stores token in Firestore against `users/{uid}`
+- "Import from Canva" button opens OAuth popup; on completion, fetches user's recent designs via Canva Connect API
+- User picks a design → export as PNG → upload to S3 → create image slide
+
+**Files:** `admin.html`, `api/canva-callback.js`, `api/canva-export.js`
 
 ---
 
@@ -145,7 +149,7 @@ Gap analysis against Yodeck, ScreenCloud, Rise Vision, OptiSigns, Screenly, and 
 | 2 | Offline content caching | Medium | Very High | 6/6 | ✓ |
 | 3 | Digital menu board | Medium | High | 5/6 |
 | 4 | PowerPoint integration | Medium | High | 4/6 |
-| 5 | Canva integration | Low | High | 6/6 | ✓ |
+| 5 | Canva integration (Connect APIs) | Medium | High | 6/6 | |
 | 6 | Social media feeds (Instagram + Reviews) | Medium | High | 6/6 / 4/6 |
 | 7 | Content templates library | Medium | High | 5/6 |
 | 8 | Proof of play reporting | Low | High | 5/6 | ✓ |
@@ -163,7 +167,7 @@ All items below are shipped and in production as of April 2026.
 |---|---|---|---|
 | 11 | Multi-zone / split-screen layouts | 4 | ✓ 2026-04-16 |
 | 12 | Offline content caching | 4 | ✓ 2026-04-16 |
-| 13 | Canva integration | 4 | ✓ 2026-04-16 |
+| 13 | Canva integration — removed (Button SDK deprecated, revisit with Connect APIs) | 4 | — |
 | 14 | Google Sheets live data widget | 4 | ✓ 2026-04-16 |
 | 1 | Schedule display-side enforcement | 1 | ✓ 2026-04-14 |
 | 2 | QR code widget | 1 | ✓ 2026-04-14 |

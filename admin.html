@@ -21,8 +21,6 @@
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <!-- S3 upload utilities -->
 <script src="/lib/s3-upload.js"></script>
-<!-- Canva Button SDK (lazy — loaded on first importFromCanva() call) -->
-<script>window._canvaSDKUrl = 'https://sdk.canva.com/designbutton/v2/api.js';</script>
 <!-- Microsoft MSAL (for OneDrive Picker) -->
 <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
 
@@ -5224,13 +5222,6 @@ body.role-editor .admin-action {
           </svg>
           Dropbox
         </button>
-        <button class="add-media-btn" id="canvaImportBtn" onclick="closeAddMediaModal();importFromCanva()">
-          <svg width="26" height="26" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="32" cy="32" r="32" fill="#7d2ae8"/>
-            <path d="M44.6 38.7c-.8.4-1.5.2-2-.6-1.6-2.5-3-5.1-4.3-7.8-.3-.6-.5-.8-1.2-.5-1.6.7-3.3 1.3-5 1.8-.6.2-.8.4-.7 1 .3 2.1.5 4.2.7 6.3.1 1-.3 1.6-1.2 1.8-.9.2-1.6-.2-1.9-1.1-.1-.3-.1-.6-.2-.9-.2-1.9-.4-3.8-.7-5.8 0-.4-.2-.6-.6-.6-1.2-.1-2.4-.1-3.5-.4-3.3-.8-5-3.1-4.9-6.5.1-3.1 2.2-5.6 5.3-6.3 2.1-.5 4.2-.3 6.3.2 3.4.8 6.4 2.4 9.1 4.5 2 1.5 3.6 3.4 4.3 5.9.6 2-.1 4.2-1.5 5.5-.5.4-.5.8-.1 1.3.5.6.9 1.3 1.4 1.9.5.7.5 1.4-.1 1.8zm-14.3-9.5c1.3-.4 2.5-.8 3.7-1.3.5-.2.5-.5.3-.9-.8-1.8-1.9-3.3-3.5-4.5-.5-.4-1-.5-1.5-.1-.6.4-.8 1-.6 1.7.4 1.5.9 3 1.6 5.1z" fill="#fff"/>
-          </svg>
-          Canva
-        </button>
       </div>
       <div class="add-media-section-label">Other sources</div>
       <div class="add-media-row">
@@ -7728,9 +7719,6 @@ const firebaseConfig = {
 
 // ── AI GENERATE — key lives in Vercel env vars, proxied via /api/ai-generate ──
 
-// ── CANVA — obtain an API key at https://www.canva.com/developers/ ───────────
-// Register app.zigns.io as an allowed domain in your Canva developer settings.
-const CANVA_API_KEY = '';   // ← paste your Canva Button SDK API key here
 
 const app  = initializeApp(firebaseConfig);
 const db   = getFirestore(app);
@@ -9571,55 +9559,6 @@ function _closeOverflowOutside(e) {
 }
 
 // ── Add from Dropbox ──────────────────────────────────────────────────────
-// ── Canva Button SDK integration ─────────────────────────────────────────────
-let _canvaApi = null;
-
-async function _loadCanvaSdk() {
-  if (window.Canva?.DesignButton) return;
-  await new Promise((resolve, reject) => {
-    const s = document.createElement('script');
-    s.src = window._canvaSDKUrl;
-    s.onload = resolve;
-    s.onerror = reject;
-    document.head.appendChild(s);
-  });
-}
-
-window.importFromCanva = async function() {
-  if (!CANVA_API_KEY) {
-    toast('Canva API key not configured — add your key to admin.html (CANVA_API_KEY).', true);
-    return;
-  }
-  try {
-    await _loadCanvaSdk();
-    if (!_canvaApi) {
-      _canvaApi = await window.Canva.DesignButton.initialize({ apiKey: CANVA_API_KEY });
-    }
-    _canvaApi.createDesign({
-      design: { type: 'Presentation' },
-      onDesignPublish: async ({ exportUrl, designTitle }) => {
-        const name = (designTitle || 'Canva design').replace(/[^a-z0-9 _-]/gi, '') + '.png';
-        try {
-          const res  = await fetch(exportUrl);
-          if (!res.ok) throw new Error('Could not fetch Canva export (' + res.status + ')');
-          const blob = await res.blob();
-          const { url, key } = await s3UploadBlob(blob, name, `signage/${currentShowId}`);
-          slides.push({ id: crypto.randomUUID(), url, name, active: true });
-          renderGrid();
-          updateCount();
-          await pushToFirestore();
-          saveMediaRecord(url, name, 'image', key);
-          toast('Canva design added ✓');
-        } catch (e) {
-          toast('Failed to import Canva design: ' + e.message, true);
-        }
-      },
-    });
-  } catch (e) {
-    toast('Could not open Canva: ' + e.message, true);
-  }
-};
-
 window.addFromDropbox = function() {
   if (typeof Dropbox === 'undefined') {
     toast('Dropbox picker failed to load — please refresh and try again.', true);
