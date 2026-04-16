@@ -5,6 +5,12 @@ Running log of changes by session. Append a new entry at the top after each sess
 ---
 
 ## 2026-04-15 (cont.) — Claude
+- **Phase 4 #1 Multi-Zone Layout** implemented (competitive parity — present in 6/6 competitors).
+  - admin.html: new `multizone` slide type; `MZ_PRESETS` defines 6 layouts (Main+Sidebar 70/30, Split 50/50, Main+Bottom Bar, Header+Main, 4-Up Grid, Content+Panel 60/40); modal uses same two-column dark-left design as weather modal; layout picker renders SVG rect thumbnails; per-zone content type selector (image/video/youtube/clock/weather/qr/countdown/webpage) with type-specific config fields; zone state preserved when switching types; `openMultiZoneModal(editIdx)` handles both add and edit; slide card shows "Zones" badge + layout SVG thumbnail.
+  - display.html: `#stageMultizone` stage (z-index 9); `renderMultizone(slide)` creates absolutely-positioned `.mz-zone` divs per zone; media zones (image/video/youtube/webpage) use native fill; widget zones (clock/weather/qr/countdown) render into a 1920×1080 inner div scaled via `transform: scale()` to fit the zone; `mzTimers[]` tracks all zone intervals, `stopMultizone()` clears them on slide change; `applyPlaylist` filter extended to include multizone type.
+- **Competitive gap analysis** added to ROADMAP.md as Phase 4 (10 items, priorities based on live competitor research across Yodeck, ScreenCloud, Rise Vision, OptiSigns, Screenly, TelemetryTV). Phases 1–3 archived as completed.
+
+## 2026-04-15 (cont.) — Claude
 - **Phase 3 #10 Media Expiration Dates** implemented and tested end-to-end. Roadmap complete.
   - admin.html: per-slide calendar icon on slide/group cards opens `#expirationModal` (datetime-local input + Save/Remove); stores ISO string on `slide.expiresAt`. `expirationBadgeHtml` renders red "Expired" or amber "Expires in Nd" badges (`EXPIRING_SOON_MS = 3 days`). Calendar button turns amber when a date is set.
   - display.html: `applyPlaylist` filters slides (and group children) where `expiresAt <= now`. `advance()` re-checks mid-playback so a slide that expires while playing is skipped on next tick.
