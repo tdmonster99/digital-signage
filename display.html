@@ -1570,6 +1570,43 @@
     heartbeat();
     setInterval(heartbeat, 5 * 60 * 1000);
 
+    // ── Emergency Broadcast ──────────────────────────────────────────────────
+    let _broadcastUnsub = null;
+    let _broadcastDismissTimer = null;
+
+    function _subscribeBroadcast(orgId) {
+      if (!orgId || _broadcastUnsub) return;
+      const broadcastEl  = document.getElementById('stageBroadcast');
+      const broadcastMsg = document.getElementById('broadcastMsgEl');
+      _broadcastUnsub = onSnapshot(doc(db, 'broadcasts', orgId), snap => {
+        const data   = snap.exists() ? snap.data() : null;
+        const active = data?.active === true;
+
+        clearTimeout(_broadcastDismissTimer);
+
+        if (!active) {
+          broadcastEl.style.display = 'none';
+          return;
+        }
+
+        // Set colors
+        const bg    = data.color || '#dc2626';
+        const light = ['#ffffff', '#f59e0b', '#eab308'].includes(bg);
+        broadcastEl.style.background = bg;
+        broadcastEl.style.color      = light ? '#000' : '#fff';
+        broadcastEl.style.display    = 'flex';
+        broadcastMsg.textContent     = data.message || '';
+
+        // Auto-dismiss
+        const secs = parseInt(data.autoDismiss, 10);
+        if (secs > 0) {
+          _broadcastDismissTimer = setTimeout(() => {
+            broadcastEl.style.display = 'none';
+          }, secs * 1000);
+        }
+      }, () => {}); // ignore permission errors (unauthenticated display)
+    }
+
     // Emit analytics online event once we know orgId; offline on page unload
     function emitOnline(orgId) {
       if (!orgId || analyticsOrgId) return;
@@ -1731,6 +1768,7 @@
           // NOTE: do NOT call heartbeat() here — it writes to screenRef which
           // re-fires this snapshot callback, causing an infinite write loop.
           emitOnline(newOrgId);
+          _subscribeBroadcast(newOrgId);
           baseShowId = newBaseId;
           screenTimezone = data.timezone || null;
           _setWorkingHours(data.workingHours || null);
@@ -1880,6 +1918,21 @@
   #stageClosed   { z-index: 100; background: #000; opacity: 0; display: flex;
     align-items: center; justify-content: center; color: #555;
     font-family: 'Segoe UI', Arial, sans-serif; font-size: 28px; letter-spacing: 0.5px; }
+
+  #stageBroadcast {
+    position: fixed; inset: 0; z-index: 200;
+    display: none; flex-direction: column;
+    align-items: center; justify-content: center;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    text-align: center; padding: 60px;
+  }
+  #stageBroadcast .bc-icon {
+    font-size: 5vw; margin-bottom: 3vw;
+  }
+  #stageBroadcast .bc-msg {
+    font-size: 6vw; font-weight: 700;
+    line-height: 1.2; max-width: 80vw;
+  }
   #clockEl {
     position: absolute; inset: 0;
     display: flex; flex-direction: column;
@@ -2189,6 +2242,12 @@
 <div id="stageSheets" class="stage"></div>
 
 <div id="stageClosed" class="stage">Outside working hours</div>
+
+<!-- Emergency broadcast overlay (z-index 200, above everything) -->
+<div id="stageBroadcast">
+  <div class="bc-icon">⚠</div>
+  <div class="bc-msg" id="broadcastMsgEl"></div>
+</div>
 
 <!-- Ticker overlay (above all stages) -->
 <div id="tickerWrap" class="ticker-bottom">

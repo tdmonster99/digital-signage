@@ -154,7 +154,7 @@ Gap analysis against Yodeck, ScreenCloud, Rise Vision, OptiSigns, Screenly, and 
 | 7 | Content templates library | Medium | High | 5/6 |
 | 8 | Proof of play reporting | Low | High | 5/6 | ✓ |
 | 9 | Google Sheets live data widget | Low | High | 6/6 | ✓ |
-| 10 | Emergency broadcast override | Low | Medium | 3/6 |
+| 10 | Emergency broadcast override | Low | Medium | 3/6 | ✓ |
 | 11 | Content approval workflow | Medium | Medium | 4/6 |
 
 ---
@@ -169,6 +169,7 @@ All items below are shipped and in production as of April 2026.
 | 12 | Offline content caching | 4 | ✓ 2026-04-16 |
 | 13 | Canva integration — removed (Button SDK deprecated, revisit with Connect APIs) | 4 | — |
 | 14 | Google Sheets live data widget | 4 | ✓ 2026-04-16 |
+| 15 | Emergency broadcast override | 4 | ✓ 2026-04-16 |
 | 1 | Schedule display-side enforcement | 1 | ✓ 2026-04-14 |
 | 2 | QR code widget | 1 | ✓ 2026-04-14 |
 | 3 | Weather widget | 1 | ✓ 2026-04-14 |

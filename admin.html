@@ -2674,6 +2674,21 @@ section.content {
   width: 100%; max-width: 500px; padding: 28px 24px; overflow-y: auto; max-height: 90vh;
 }
 
+/* ── Broadcast modal ─────────────────────────────────────────────────── */
+#broadcastModal {
+  display: none; position: fixed; inset: 0; z-index: 400;
+  background: rgba(0,0,0,.5); align-items: center; justify-content: center;
+  backdrop-filter: blur(4px); padding: 20px;
+}
+.broadcast-color-btn {
+  width: 32px; height: 32px; border-radius: 8px; border: 2px solid transparent;
+  cursor: pointer; transition: transform .15s, box-shadow .15s;
+}
+.broadcast-color-btn.active { box-shadow: 0 0 0 3px var(--accent); transform: scale(1.1); }
+@keyframes broadcastPulse {
+  0%, 100% { opacity: 1; } 50% { opacity: 0.3; }
+}
+
 /* ── Google Sheets modal ─────────────────────────────────────────────── */
 #googleSheetsModal {
   display: none; position: fixed; inset: 0; z-index: 400;
@@ -4056,10 +4071,29 @@ body.role-editor .admin-action {
         <h1>Screens</h1>
         <p>Manage your registered display devices</p>
       </div>
-      <button class="btn btn-primary" onclick="openAddScreenModal()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        Add Screen
-      </button>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn admin-action" id="broadcastBtn" onclick="openBroadcastModal()"
+          style="background:#dc2626;color:#fff;border-color:#dc2626;display:flex;align-items:center;gap:6px">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.6a16 16 0 0 0 5.93 5.93l.96-.96a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.46 16"/>
+            <line x1="23" y1="1" x2="17" y2="7"/><line x1="17" y1="1" x2="23" y2="7"/>
+          </svg>
+          Broadcast
+        </button>
+        <button class="btn btn-primary" onclick="openAddScreenModal()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add Screen
+        </button>
+      </div>
+    </div>
+    <!-- Active broadcast banner -->
+    <div id="activeBroadcastBanner" style="display:none;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:12px 16px;display:none;align-items:center;gap:12px;flex-shrink:0">
+      <div style="width:8px;height:8px;border-radius:50%;background:#dc2626;flex-shrink:0;animation:broadcastPulse 1.5s ease-in-out infinite"></div>
+      <div style="flex:1;min-width:0">
+        <span style="font-size:12px;font-weight:700;color:#dc2626;text-transform:uppercase;letter-spacing:.05em">Broadcast Active</span>
+        <span id="activeBroadcastMsg" style="font-size:13px;color:#7f1d1d;margin-left:8px"></span>
+      </div>
+      <button class="btn btn-secondary admin-action" onclick="clearBroadcast()" style="font-size:12px;padding:5px 12px;flex-shrink:0">Clear</button>
     </div>
     <div id="screensList">
       <div class="empty" style="padding:80px 0" id="screensEmptyState">
@@ -4070,6 +4104,52 @@ body.role-editor .admin-action {
         </svg>
         <p style="margin-bottom:16px">No screens registered yet.</p>
         <button class="btn btn-primary" onclick="openAddScreenModal()">Add Your First Screen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Broadcast modal -->
+  <div id="broadcastModal">
+    <div class="countdown-modal-box" style="max-width:440px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
+        <div style="width:36px;height:36px;border-radius:9px;background:#dc2626;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round">
+            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.6a16 16 0 0 0 5.93 5.93l.96-.96a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.46 16"/>
+          </svg>
+        </div>
+        <div>
+          <div style="font-size:16px;font-weight:700;color:var(--text)">Emergency Broadcast</div>
+          <div style="font-size:12px;color:var(--muted)">Instantly overrides all screens</div>
+        </div>
+      </div>
+
+      <div class="clock-field">
+        <label>Message</label>
+        <textarea id="broadcastMessage" rows="3" placeholder="Fire drill — please evacuate now"
+          style="width:100%;padding:10px 12px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-size:14px;resize:vertical;font-family:inherit"></textarea>
+      </div>
+      <div class="clock-field">
+        <label>Background</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="broadcast-color-btn active" data-color="#dc2626" onclick="selectBroadcastColor(this,'#dc2626')" style="background:#dc2626" title="Red"></button>
+          <button class="broadcast-color-btn" data-color="#d97706" onclick="selectBroadcastColor(this,'#d97706')" style="background:#d97706" title="Amber"></button>
+          <button class="broadcast-color-btn" data-color="#1e40af" onclick="selectBroadcastColor(this,'#1e40af')" style="background:#1e40af" title="Blue"></button>
+          <button class="broadcast-color-btn" data-color="#111827" onclick="selectBroadcastColor(this,'#111827')" style="background:#111827;border:1.5px solid var(--border)" title="Dark"></button>
+          <button class="broadcast-color-btn" data-color="#ffffff" onclick="selectBroadcastColor(this,'#ffffff')" style="background:#ffffff;border:1.5px solid var(--border)" title="White"></button>
+        </div>
+      </div>
+      <div class="clock-field">
+        <label>Auto-dismiss</label>
+        <select id="broadcastDismiss">
+          <option value="0">Manual (stays until cleared)</option>
+          <option value="30">After 30 seconds</option>
+          <option value="60">After 1 minute</option>
+          <option value="300">After 5 minutes</option>
+        </select>
+      </div>
+      <div class="clock-modal-footer" style="margin-top:8px">
+        <button class="btn btn-secondary" onclick="closeBroadcastModal()">Cancel</button>
+        <button class="btn" onclick="sendBroadcast()" style="background:#dc2626;color:#fff;border-color:#dc2626">Broadcast to All Screens</button>
       </div>
     </div>
   </div>
@@ -7955,6 +8035,7 @@ async function initUserAndOrg(user) {
   await loadShowsFromOrg();
   await loadSchedulesFromOrg();
   loadBrandKit();
+  _subscribeBroadcast();
 
   // Show billing success toast if returning from Stripe
   if (window._pendingBillingSuccess) {
@@ -15198,6 +15279,68 @@ window.deleteMediaRecord = async function(id) {
 };
 
 // ── Add Screen / Pairing ──────────────────────────────────────────────────
+// ── Emergency Broadcast ───────────────────────────────────────────────────
+let _broadcastUnsub = null;
+
+function _subscribeBroadcast() {
+  if (!currentOrgId || _broadcastUnsub) return;
+  _broadcastUnsub = onSnapshot(doc(db, 'broadcasts', currentOrgId), snap => {
+    const data = snap.exists() ? snap.data() : null;
+    const active = data?.active === true;
+    const banner = document.getElementById('activeBroadcastBanner');
+    const msgEl  = document.getElementById('activeBroadcastMsg');
+    if (banner) {
+      banner.style.display = active ? 'flex' : 'none';
+      if (msgEl && active) msgEl.textContent = '"' + (data.message || '') + '"';
+    }
+  });
+}
+
+window.openBroadcastModal = function() {
+  document.getElementById('broadcastMessage').value = '';
+  document.getElementById('broadcastDismiss').value = '0';
+  document.querySelectorAll('.broadcast-color-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector('.broadcast-color-btn[data-color="#dc2626"]').classList.add('active');
+  document.getElementById('broadcastModal').style.display = 'flex';
+};
+
+window.closeBroadcastModal = function() {
+  document.getElementById('broadcastModal').style.display = 'none';
+};
+
+window.selectBroadcastColor = function(btn, color) {
+  document.querySelectorAll('.broadcast-color-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+};
+
+window.sendBroadcast = async function() {
+  const message = document.getElementById('broadcastMessage').value.trim();
+  if (!message) { toast('Please enter a broadcast message', true); return; }
+  const color      = document.querySelector('.broadcast-color-btn.active')?.dataset.color || '#dc2626';
+  const autoDismiss = parseInt(document.getElementById('broadcastDismiss').value, 10) || 0;
+  closeBroadcastModal();
+  try {
+    await setDoc(doc(db, 'broadcasts', currentOrgId), {
+      active: true, message, color, autoDismiss,
+      createdAt: new Date().toISOString(),
+      createdBy: currentUser?.email || '',
+    });
+    toast('Broadcast sent to all screens ✓');
+  } catch(e) {
+    toast('Broadcast failed: ' + e.message, true);
+  }
+};
+
+window.clearBroadcast = async function() {
+  if (!currentOrgId) return;
+  try {
+    await setDoc(doc(db, 'broadcasts', currentOrgId), { active: false });
+    toast('Broadcast cleared ✓');
+  } catch(e) {
+    toast('Could not clear broadcast: ' + e.message, true);
+  }
+};
+
 window.openAddScreenModal = function() {
   if (!canAddScreen()) {
     showUpgradePrompt(
