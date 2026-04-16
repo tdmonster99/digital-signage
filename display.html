@@ -781,10 +781,11 @@
       inner.style.transform = `translate(${tx}px,${ty}px) scale(${scale})`;
       zoneEl.appendChild(inner);
 
-      if      (type === 'clock')     _mzRenderClock(inner, c);
-      else if (type === 'weather')   _mzRenderWeather(inner, c);
-      else if (type === 'qr')        _mzRenderQr(inner, c);
-      else if (type === 'countdown') _mzRenderCountdown(inner, c);
+      if      (type === 'clock')        _mzRenderClock(inner, c);
+      else if (type === 'weather')      _mzRenderWeather(inner, c);
+      else if (type === 'qr')           _mzRenderQr(inner, c);
+      else if (type === 'countdown')    _mzRenderCountdown(inner, c);
+      else if (type === 'googlesheets') _mzRenderGoogleSheet(inner, c);
     }
   }
 
@@ -1046,6 +1047,111 @@
     mzTimers.push({ type: 'interval', id });
   }
 
+  // ── Google Sheets widget ──────────────────────────────────────────────────
+  const stageSheets = document.getElementById('stageSheets');
+  let sheetsInterval = null;
+
+  function stopSheets() {
+    clearInterval(sheetsInterval);
+    sheetsInterval = null;
+    stageSheets.innerHTML = '';
+  }
+
+  function _sheetsTableHtml(values, headerRow, isDark, accent) {
+    if (!values || !values.length) return '<div style="color:rgba(255,255,255,.5);font-size:2vw;text-align:center;padding:4vw">No data</div>';
+    const textColor  = isDark ? '#fff' : '#111';
+    const mutedColor = isDark ? 'rgba(255,255,255,.5)' : 'rgba(0,0,0,.45)';
+    const borderColor = isDark ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.1)';
+    const maxCols = Math.max(...values.map(r => r.length));
+    let html = `<table style="width:100%;border-collapse:collapse;font-size:1.8vw;color:${textColor}">`;
+    values.forEach((row, ri) => {
+      const isHeader = headerRow && ri === 0;
+      const tag = isHeader ? 'th' : 'td';
+      html += '<tr>';
+      for (let ci = 0; ci < maxCols; ci++) {
+        const cell = row[ci] ?? '';
+        const style = isHeader
+          ? `padding:.7vw 1vw;border-bottom:2px solid ${accent};font-weight:700;font-size:1.6vw;color:${accent};text-transform:uppercase;letter-spacing:.05em;text-align:left`
+          : `padding:.6vw 1vw;border-bottom:1px solid ${borderColor};text-align:left`;
+        html += `<${tag} style="${style}">${cell}</${tag}>`;
+      }
+      html += '</tr>';
+    });
+    html += '</table>';
+    return html;
+  }
+
+  function _sheetsBigNumHtml(values, isDark, accent) {
+    const value = values?.[0]?.[0] ?? '—';
+    const label = values?.[0]?.[1] ?? '';
+    const textColor = isDark ? '#fff' : '#111';
+    return `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:1.5vw">
+      ${label ? `<div style="font-size:2.4vw;font-weight:600;color:${accent};text-transform:uppercase;letter-spacing:.06em">${label}</div>` : ''}
+      <div style="font-size:15vw;font-weight:800;line-height:1;color:${textColor}">${value}</div>
+    </div>`;
+  }
+
+  async function _fetchSheetsData(sheetId, range) {
+    const url = `/api/sheets-proxy?sheetId=${encodeURIComponent(sheetId)}&range=${encodeURIComponent(range)}`;
+    const res = await fetch(url);
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Sheets fetch failed');
+    return json.values || [];
+  }
+
+  async function renderGoogleSheet(slide) {
+    stopSheets();
+    const isDark  = (slide.theme || 'dark') === 'dark';
+    const accent  = '#22c55e';
+    const bgColor = isDark ? '#0f172a' : '#f5f5f5';
+    stageSheets.style.background = bgColor;
+    stageSheets.style.padding    = '3vw';
+    stageSheets.style.overflowY  = 'auto';
+    stageSheets.style.display    = 'flex';
+    stageSheets.style.flexDirection = 'column';
+
+    async function load() {
+      try {
+        stageSheets.innerHTML = `<div style="color:${isDark?'rgba(255,255,255,.35)':'rgba(0,0,0,.35)'};font-size:1.8vw;text-align:center;margin:auto">Loading…</div>`;
+        const values = await _fetchSheetsData(slide.sheetId, slide.range);
+        if (slide.displayStyle === 'bignum') {
+          stageSheets.innerHTML = _sheetsBigNumHtml(values, isDark, accent);
+        } else {
+          stageSheets.innerHTML = _sheetsTableHtml(values, slide.headerRow !== false, isDark, accent);
+        }
+      } catch (e) {
+        stageSheets.innerHTML = `<div style="color:#ef4444;font-size:1.8vw;text-align:center;margin:auto">⚠ ${e.message}</div>`;
+      }
+    }
+
+    await load();
+    const interval = (slide.refreshInterval || 300) * 1000;
+    sheetsInterval = setInterval(load, interval);
+  }
+
+  // Zone renderer for multi-zone Google Sheets
+  async function _mzRenderGoogleSheet(el, config) {
+    const isDark  = (config.theme || 'dark') === 'dark';
+    const accent  = '#22c55e';
+    el.style.cssText += `background:${isDark?'#0f172a':'#f5f5f5'};padding:2%;overflow:hidden;display:flex;flex-direction:column;`;
+
+    async function load() {
+      try {
+        const values = await _fetchSheetsData(config.sheetId, config.range);
+        if (config.displayStyle === 'bignum') {
+          el.innerHTML = _sheetsBigNumHtml(values, isDark, accent);
+        } else {
+          el.innerHTML = _sheetsTableHtml(values, config.headerRow !== false, isDark, accent);
+        }
+      } catch(e) {
+        el.innerHTML = `<div style="color:#ef4444;font-size:2vw;text-align:center;padding:2vw">⚠ ${e.message}</div>`;
+      }
+    }
+    await load();
+    const id = setInterval(load, (config.refreshInterval || 300) * 1000);
+    mzTimers.push({ type: 'interval', id });
+  }
+
   // ── Offline indicator ─────────────────────────────────────────────────────
   function setOffline(offline) {
     isOffline = offline;
@@ -1166,6 +1272,7 @@
     stageWeather.style.opacity   = "0";
     stageCountdown.style.opacity = "0";
     stageMultizone.style.opacity = "0"; stopMultizone();
+    stageSheets.style.opacity    = "0"; stopSheets();
     stopClock();    stageClock.style.opacity   = "0";
     stopWeather();
     stopCountdown();
@@ -1241,6 +1348,11 @@
       _hideAllStages();
       renderMultizone(slide);
       stageMultizone.style.opacity = "1";
+
+    } else if (slide.type === "googlesheets") {
+      _hideAllStages();
+      await renderGoogleSheet(slide);
+      stageSheets.style.opacity = "1";
 
     } else {
       stopTicker();
@@ -1356,7 +1468,7 @@
     const incoming = expanded.filter(s =>
       s.url || s.canvasJson ||
       s.type === 'clock' || s.type === 'weather' || s.type === 'youtube' ||
-      s.type === 'countdown' || s.type === 'multizone'
+      s.type === 'countdown' || s.type === 'multizone' || s.type === 'googlesheets'
     );
 
     if (!incoming.length) {
@@ -1761,6 +1873,7 @@
     text-transform: uppercase; opacity: 0.7; margin-top: 0.8vh; }
   #stageCountdown .cd-end   { font-size: 9vw; font-weight: 800; letter-spacing: -0.01em; }
   #stageMultizone { z-index: 9; background: #000; }
+  #stageSheets    { z-index: 9; background: #0f172a; }
   .mz-zone { position: absolute; box-sizing: border-box; }
   .mz-zone-inner { position: absolute; width: 1920px; height: 1080px; transform-origin: top left; }
 
@@ -2071,6 +2184,9 @@
 
 <!-- Multi-Zone Layout stage -->
 <div id="stageMultizone" class="stage"></div>
+
+<!-- Google Sheets stage -->
+<div id="stageSheets" class="stage"></div>
 
 <div id="stageClosed" class="stage">Outside working hours</div>
 

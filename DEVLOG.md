@@ -4,6 +4,13 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-04-16 (cont.) — Claude
+- **Canva integration** (Phase 4 #5): "Canva" button added to Add Media modal's Upload From grid. Lazy-loads Canva Button SDK v2. `importFromCanva()` opens design picker → on publish fetches export PNG → uploads to S3 via `s3UploadBlob` → adds as image slide. `CANVA_API_KEY` constant in admin.html; register `app.zigns.io` in Canva developer portal.
+- **Proof of play** already fully implemented (slide_view events + analytics dashboard) — marked done.
+- **Google Sheets widget** (Phase 4 #9): new `api/sheets-proxy.js` proxies Google Sheets v4 API (requires `GOOGLE_SHEETS_API_KEY` env var). New `googlesheets` slide type in admin (app card + modal) and display (`stageSheets`, `renderGoogleSheet`, `_mzRenderGoogleSheet`). Supports table and big-number display styles, configurable refresh interval, dark/light theme. Works as standalone slide and as a multizone zone.
+
+---
+
 ## 2026-04-16 — Claude
 - **Multizone black bars fixed**: switched widget zone scaling from `Math.min` (fit/letterbox) to `Math.max` (cover/fill) in `display.html:775`. Eliminates top/bottom black bars in left-right split layouts.
 - **Offline media caching** (Phase 4 #2): created `display-sw.js` — dedicated service worker for `display.html` that caches the display shell (network-first) and all CloudFront media assets (`*.cloudfront.net`, cache-first). Registered via inline `<script>` at bottom of `display.html`. Also wired `window.online/offline` browser events to the existing `setOffline()` indicator. Slideshow JSON was already cached in localStorage; this adds the missing media layer so slides play fully offline.
