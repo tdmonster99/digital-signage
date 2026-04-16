@@ -1025,6 +1025,7 @@ section.content {
 .ge-filmstrip::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
 .gf-item { position:relative; flex-shrink:0; width:148px; background:var(--surface2); border:2px solid var(--border); border-radius:8px; overflow:hidden; cursor:pointer; transition:border-color .12s; }
 .gf-item:hover { border-color:var(--accent); }
+.gf-item.selected { border-color:var(--accent); box-shadow:0 0 0 2px var(--accent); }
 .gf-thumb { width:100%; aspect-ratio:16/9; object-fit:cover; display:block; background:var(--surface); }
 .gf-thumb-ph { width:100%; aspect-ratio:16/9; display:flex; align-items:center; justify-content:center; background:var(--surface2); }
 .gf-idx { position:absolute; top:4px; left:4px; background:rgba(0,0,0,.5); color:#fff; font-size:8px; font-weight:700; padding:1px 5px; border-radius:3px; }
@@ -6093,11 +6094,15 @@ body.role-editor .admin-action {
       </svg>
       <p><strong style="color:var(--text)">No slides in this group yet.</strong><br>Add slides using the filmstrip below.</p>
     </div>
-    <div class="ge-hint" id="geHasSlides" style="display:none">
-      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
-        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
-      </svg>
-      <p>Click the <strong style="color:var(--text)">edit button</strong> on any slide below to open it in the designer.<br>Slides play in order from left to right.</p>
+    <div id="geHasSlides" style="display:none; width:100%; height:100%; position:relative; align-items:center; justify-content:center;">
+      <!-- Preview of the selected slide — shown when user clicks a filmstrip card -->
+      <img id="gePreviewImg" style="display:none; max-width:90%; max-height:90%; border-radius:6px; box-shadow:0 4px 24px rgba(0,0,0,.18); object-fit:contain;">
+      <div id="gePreviewHint" class="ge-hint">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+        </svg>
+        <p>Click a slide below to preview it.<br>Slides play in order from left to right.</p>
+      </div>
     </div>
   </div>
   <div class="ge-filmstrip-wrap">
@@ -10597,18 +10602,46 @@ function renderGroupFilmstrip() {
       Add Slide
     </div>` : '');
 
-  // Drag-to-reorder within filmstrip
+  // Click to preview — show selected slide image in the ge-body area
+  const previewImg  = document.getElementById('gePreviewImg');
+  const previewHint = document.getElementById('gePreviewHint');
   strip.querySelectorAll('.gf-item').forEach(card => {
-    let dragFrom = null;
-    card.addEventListener('dragstart', e => { dragFrom = +card.dataset.gidx; card.style.opacity = '.4'; });
-    card.addEventListener('dragend',   () => card.style.opacity = '');
-    card.addEventListener('dragover',  e => e.preventDefault());
+    card.addEventListener('click', e => {
+      // Ignore clicks on buttons inside the card
+      if (e.target.closest('button')) return;
+      const idx   = +card.dataset.gidx;
+      const slide = slides[editingGroupIdx]?.slides?.[idx];
+      if (!slide) return;
+      const imgSrc = slide.thumbnailUrl || slide.url || '';
+      // Highlight selected card
+      strip.querySelectorAll('.gf-item').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      if (imgSrc) {
+        previewImg.src = imgSrc;
+        previewImg.style.display = 'block';
+        previewHint.style.display = 'none';
+      }
+    });
+  });
+
+  // Drag-to-reorder — use a strip-level variable so dragstart/drop share it
+  let _gfDragFrom = null;
+  strip.querySelectorAll('.gf-item').forEach(card => {
+    card.addEventListener('dragstart', e => {
+      _gfDragFrom = +card.dataset.gidx;
+      card.style.opacity = '.4';
+    });
+    card.addEventListener('dragend', () => {
+      card.style.opacity = '';
+      _gfDragFrom = null;
+    });
+    card.addEventListener('dragover', e => e.preventDefault());
     card.addEventListener('drop', async e => {
       e.preventDefault();
       const dragTo = +card.dataset.gidx;
-      if (dragFrom === null || dragFrom === dragTo) return;
+      if (_gfDragFrom === null || _gfDragFrom === dragTo) return;
       const group = slides[editingGroupIdx];
-      const moved = group.slides.splice(dragFrom, 1)[0];
+      const moved = group.slides.splice(_gfDragFrom, 1)[0];
       group.slides.splice(dragTo, 0, moved);
       renderGroupFilmstrip();
       renderGrid();
