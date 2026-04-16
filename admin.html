@@ -9107,7 +9107,7 @@ async function handlePdfFile(file, { bar, pct, label }) {
     const { url, key } = await s3UploadBlob(blob, pageName, `signage/${currentShowId}`);
     saveMediaRecord(url, pageName, 'image', key);
 
-    pageSlides.push({ id: crypto.randomUUID(), url, name: pageName, active: true });
+    pageSlides.push({ id: crypto.randomUUID(), url, thumbnailUrl: url, name: pageName, active: true });
 
     const progressPct = Math.round((pageNum / total) * 100);
     bar.style.width = progressPct + '%';
@@ -9201,7 +9201,7 @@ async function handlePptxFile(file, { bar, pct, label }) {
   const pageSlides = urls.map((url, i) => {
     const pageName = `${baseName}-slide${i + 1}.png`;
     saveMediaRecord(url, pageName, 'image', null);
-    return { id: crypto.randomUUID(), url, name: pageName, active: true };
+    return { id: crypto.randomUUID(), url, thumbnailUrl: url, name: pageName, active: true };
   });
 
   if (pageSlides.length === 1) {
