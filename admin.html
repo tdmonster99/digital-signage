@@ -11050,6 +11050,7 @@ window.openDesigner = function(existingSlide = null, slideIdx = null) {
   } else {
     // New slide — show template picker first
     document.getElementById('templateGallery').style.display = 'flex';
+    setTimeout(generateTemplateThumbnails, 80);
   }
 };
 
@@ -13512,7 +13513,7 @@ bgColorInput.addEventListener('input', () => {
 function applyBgSolid() {
   if (!fabricCanvas) return;
   const color = propsBgColor.value;
-  fabricCanvas.backgroundColor = color;
+  (_tmplCanvas||fabricCanvas).backgroundColor =color;
   fabricCanvas.renderAll();
   historySave();
 }
@@ -13647,23 +13648,29 @@ window.applyBgImage = function() {
 };
 
 // ── Template System ───────────────────────────────────────────────────────
+let _tmplCanvas = null;    // offscreen canvas for thumbnail rendering (null = use fabricCanvas)
+let _tmplThumbnails = {}; // cache: templateName → jpeg dataUrl
+
 function tmplText(text, left, top, opts = {}) {
+  const cv = _tmplCanvas || fabricCanvas;
   const obj = new fabric.IText(text, {
     left, top, originX: 'center', originY: 'center',
     fontFamily: 'Arial', fontSize: 72, fill: '#ffffff',
     editable: true, ...opts,
   });
-  fabricCanvas.add(obj);
+  cv.add(obj);
   return obj;
 }
 
 function tmplRect(left, top, width, height, opts = {}) {
+  const cv = _tmplCanvas || fabricCanvas;
   const obj = new fabric.Rect({ left, top, width, height, selectable: true, ...opts });
-  fabricCanvas.add(obj);
+  cv.add(obj);
   return obj;
 }
 
 function tmplBgPhoto(photoId, overlayRgba) {
+  if (_tmplCanvas) return; // skip async photo load during thumbnail generation
   if (!UNSPLASH_ACCESS_KEY || !fabricCanvas) return;
   fetch(`${UNSPLASH_BASE}/photos/${photoId}?client_id=${UNSPLASH_ACCESS_KEY}`)
     .then(r => r.json())
@@ -14590,12 +14597,12 @@ window.showPage = function(name) {
 };
 
 function applyTemplate(name) {
-  if (!fabricCanvas) return;
+  if (!_tmplCanvas && !fabricCanvas) return;
   const W = 1920, H = 1080;
 
   // ── 1. Corporate Announcement ────────────────────────────────────────────
   if (name === 'corporateannouncement') {
-    fabricCanvas.backgroundColor = '#1a2744';
+    (_tmplCanvas||fabricCanvas).backgroundColor ='#1a2744';
     loadGoogleFont('Montserrat');
     loadGoogleFont('Open Sans');
     tmplRect(W*0.08, H*0.082, W*0.84, 5, { fill:'#C9A84C', rx:3 });
@@ -14615,7 +14622,7 @@ function applyTemplate(name) {
 
   // ── 2. Employee of the Month ──────────────────────────────────────────────
   else if (name === 'employeeofmonth') {
-    fabricCanvas.backgroundColor = '#ffffff';
+    (_tmplCanvas||fabricCanvas).backgroundColor ='#ffffff';
     loadGoogleFont('Playfair Display');
     tmplRect(0, 0, W*0.40, H, { fill:'#1a56a0', rx:0 });
     const circR = 200, circCx = W*0.20, circCy = H*0.38;
@@ -14624,7 +14631,7 @@ function applyTemplate(name) {
       radius: circR, fill:'rgba(255,255,255,0.16)',
       stroke:'rgba(255,255,255,0.45)', strokeWidth:5
     });
-    fabricCanvas.add(empCircle);
+    (_tmplCanvas||fabricCanvas).add(empCircle);
     tmplText('PHOTO', circCx, circCy, { fontSize:48, fill:'rgba(255,255,255,0.5)', textAlign:'center' });
     tmplRect(W*0.05, H*0.76, W*0.30, H*0.13, { fill:'#0d3d7a', rx:12 });
     tmplText('EMPLOYEE OF\nTHE MONTH', W*0.20, H*0.825, {
@@ -14647,7 +14654,7 @@ function applyTemplate(name) {
 
   // ── 3. Now Hiring ────────────────────────────────────────────────────────
   else if (name === 'nowhiring') {
-    fabricCanvas.backgroundColor = '#FF6B35';
+    (_tmplCanvas||fabricCanvas).backgroundColor ='#FF6B35';
     loadGoogleFont('Anton');
     [[0,0],[W-160,0],[0,H-160],[W-160,H-160]].forEach(([x,y]) =>
       tmplRect(x, y, 160, 160, { fill:'rgba(255,255,255,0.12)', rx:0 })
@@ -14668,7 +14675,7 @@ function applyTemplate(name) {
 
   // ── 4. KPI Dashboard ──────────────────────────────────────────────────────
   else if (name === 'kpidashboard') {
-    fabricCanvas.backgroundColor = '#1e2433';
+    (_tmplCanvas||fabricCanvas).backgroundColor ='#1e2433';
     tmplRect(0, 0, W, H*0.14, { fill:'#2563eb', rx:0 });
     tmplText('PERFORMANCE DASHBOARD', W*0.44, H*0.07, {
       fontSize:52, fontWeight:'bold', fill:'#ffffff', textAlign:'center', charSpacing:60
@@ -14693,7 +14700,7 @@ function applyTemplate(name) {
 
   // ── 5. Daily Special ──────────────────────────────────────────────────────
   else if (name === 'dailyspecial') {
-    fabricCanvas.backgroundColor = '#1a0a00';
+    (_tmplCanvas||fabricCanvas).backgroundColor ='#1a0a00';
     loadGoogleFont('Anton');
     loadGoogleFont('Open Sans');
     // Right dark panel (text area)
@@ -14721,7 +14728,7 @@ function applyTemplate(name) {
 
   // ── 6. Menu Board ────────────────────────────────────────────────────────
   else if (name === 'menuboard') {
-    fabricCanvas.backgroundColor = '#2C2C2C';
+    (_tmplCanvas||fabricCanvas).backgroundColor ='#2C2C2C';
     loadGoogleFont('Playfair Display');
     loadGoogleFont('Open Sans');
     tmplRect(0, 0, W, H*0.195, { fill:'#1a1a1a', rx:0 });
@@ -14754,7 +14761,7 @@ function applyTemplate(name) {
 
   // ── 7. Happy Hour ─────────────────────────────────────────────────────────
   else if (name === 'happyhour') {
-    fabricCanvas.backgroundColor = '#0d0d0d';
+    (_tmplCanvas||fabricCanvas).backgroundColor ='#0d0d0d';
     loadGoogleFont('Bebas Neue');
     loadGoogleFont('Open Sans');
     tmplRect(0, H*0.77, W, H*0.23, { fill:'rgba(0,0,0,0.85)', rx:0 });
@@ -14778,7 +14785,7 @@ function applyTemplate(name) {
 
   // ── 8. Sale Event ────────────────────────────────────────────────────────
   else if (name === 'saleevent') {
-    fabricCanvas.backgroundColor = '#e0000a';
+    (_tmplCanvas||fabricCanvas).backgroundColor ='#e0000a';
     loadGoogleFont('Anton');
     tmplRect(0, 0, W*0.28, H*0.28, { fill:'rgba(255,255,255,0.06)', rx:0 });
     tmplRect(W*0.72, H*0.72, W*0.28, H*0.28, { fill:'rgba(255,255,255,0.06)', rx:0 });
@@ -14797,7 +14804,7 @@ function applyTemplate(name) {
 
   // ── 9. New Arrival ────────────────────────────────────────────────────────
   else if (name === 'newarrival') {
-    fabricCanvas.backgroundColor = '#ffffff';
+    (_tmplCanvas||fabricCanvas).backgroundColor ='#ffffff';
     loadGoogleFont('Raleway');
     tmplRect(0, 0, W, 8, { fill:'#000000', rx:0 });
     tmplRect(0, H-8, W, 8, { fill:'#000000', rx:0 });
@@ -14815,7 +14822,7 @@ function applyTemplate(name) {
 
   // ── 10. Event Promo ───────────────────────────────────────────────────────
   else if (name === 'eventpromo') {
-    fabricCanvas.backgroundColor = '#05060f';
+    (_tmplCanvas||fabricCanvas).backgroundColor ='#05060f';
     loadGoogleFont('Anton');
     loadGoogleFont('Raleway');
     tmplRect(0, H*0.60, W, H*0.40, { fill:'rgba(5,6,15,0.90)', rx:0 });
@@ -14841,7 +14848,7 @@ function applyTemplate(name) {
 
   // ── 11. Countdown ─────────────────────────────────────────────────────────
   else if (name === 'countdown') {
-    fabricCanvas.backgroundColor = '#ffffff';
+    (_tmplCanvas||fabricCanvas).backgroundColor ='#ffffff';
     loadGoogleFont('Montserrat');
     tmplRect(W*0.08, H*0.07, W*0.84, 5, { fill:'#4f8ef7', rx:3 });
     tmplText('DAYS UNTIL', W/2, H*0.175, {
@@ -14862,7 +14869,7 @@ function applyTemplate(name) {
 
   // ── 12. Waiting Room Welcome ───────────────────────────────────────────────
   else if (name === 'waitingroomwelcome') {
-    fabricCanvas.backgroundColor = '#e6f7f5';
+    (_tmplCanvas||fabricCanvas).backgroundColor ='#e6f7f5';
     loadGoogleFont('Nunito');
     loadGoogleFont('Open Sans');
     tmplRect(0, 0, W, H*0.155, { fill:'#00897b', rx:0 });
@@ -14892,7 +14899,7 @@ function applyTemplate(name) {
 
   // ── 13. Health Tip ────────────────────────────────────────────────────────
   else if (name === 'healthtip') {
-    fabricCanvas.backgroundColor = '#ffffff';
+    (_tmplCanvas||fabricCanvas).backgroundColor ='#ffffff';
     loadGoogleFont('Open Sans');
     tmplRect(0, 0, 18, H, { fill:'#16a34a', rx:0 });
     const htR = 70, htCx = W*0.10, htCy = H*0.13;
@@ -14900,7 +14907,7 @@ function applyTemplate(name) {
       left: htCx-htR, top: htCy-htR,
       radius: htR, fill:'#dcfce7', stroke:'#16a34a', strokeWidth:5
     });
-    fabricCanvas.add(htCircle);
+    (_tmplCanvas||fabricCanvas).add(htCircle);
     tmplText('+', htCx, htCy, { fontSize:80, fontWeight:'bold', fill:'#16a34a', textAlign:'center' });
     tmplText('HEALTH TIP OF THE DAY', W*0.60, H*0.13, {
       fontSize:46, fontWeight:'bold', fill:'#16a34a', textAlign:'center', charSpacing:80, fontFamily:'Open Sans'
@@ -14920,7 +14927,7 @@ function applyTemplate(name) {
 
   // ── 14. Season's Greetings ───────────────────────────────────────────────
   else if (name === 'seasonsgreetings') {
-    fabricCanvas.backgroundColor = '#0a1a0e';
+    (_tmplCanvas||fabricCanvas).backgroundColor ='#0a1a0e';
     loadGoogleFont('Playfair Display');
     loadGoogleFont('Open Sans');
     tmplRect(0, 0, W, H*0.012, { fill:'#C9A84C', rx:0 });
@@ -14947,7 +14954,7 @@ function applyTemplate(name) {
 
   // ── 15. New Year ─────────────────────────────────────────────────────────
   else if (name === 'newyear') {
-    fabricCanvas.backgroundColor = '#000000';
+    (_tmplCanvas||fabricCanvas).backgroundColor ='#000000';
     loadGoogleFont('Anton');
     tmplRect(0, H*0.62, W, H*0.38, { fill:'rgba(0,0,0,0.82)', rx:0 });
     tmplRect(W*0.08, H*0.625, W*0.84, 4, { fill:'#C9A84C', rx:2 });
@@ -14970,7 +14977,7 @@ function applyTemplate(name) {
 
   // ── 16. Instagram Wall ───────────────────────────────────────────────────
   else if (name === 'instagramwall') {
-    fabricCanvas.backgroundColor = '#ffffff';
+    (_tmplCanvas||fabricCanvas).backgroundColor ='#ffffff';
     loadGoogleFont('Montserrat');
     tmplText('Follow Us on Instagram', W/2, H*0.07, {
       fontSize:72, fontWeight:'bold', fill:'#111827', textAlign:'center', fontFamily:'Montserrat'
@@ -14993,7 +15000,7 @@ function applyTemplate(name) {
 
   // ── 17. School Events ────────────────────────────────────────────────────
   else if (name === 'schoolevents') {
-    fabricCanvas.backgroundColor = '#0f1f3d';
+    (_tmplCanvas||fabricCanvas).backgroundColor ='#0f1f3d';
     loadGoogleFont('Anton');
     loadGoogleFont('Open Sans');
     tmplRect(0, 0, W, H*0.155, { fill:'#1a3a6b', rx:0 });
@@ -15022,7 +15029,7 @@ function applyTemplate(name) {
 
   // ── 18. Classroom Announcement ───────────────────────────────────────────
   else if (name === 'classroomannouncement') {
-    fabricCanvas.backgroundColor = '#1a3a6b';
+    (_tmplCanvas||fabricCanvas).backgroundColor ='#1a3a6b';
     loadGoogleFont('Anton');
     loadGoogleFont('Open Sans');
     tmplRect(0, 0, W, H*0.18, { fill:'#f6c90e', rx:0 });
@@ -15050,7 +15057,7 @@ function applyTemplate(name) {
 
   // ── 19. Social Media Promo ───────────────────────────────────────────────
   else if (name === 'socialpromo') {
-    fabricCanvas.backgroundColor = '#0d0d1a';
+    (_tmplCanvas||fabricCanvas).backgroundColor ='#0d0d1a';
     loadGoogleFont('Anton');
     tmplRect(0, H*0.52, W, H*0.48, { fill:'rgba(10,10,26,0.90)', rx:0 });
     tmplRect(W*0.05, H*0.523, W*0.90, 5, { fill:'#e91e8c', rx:3 });
@@ -15120,19 +15127,73 @@ function applyTemplate(name) {
     tmplText('Job Title \u00B7 Department', W*0.05, H*0.94, { originX:'left', originY:'center', fontSize:44, fill:'#bbbbbb' });
   }
   else if (name === 'twocolumn') {
-    fabricCanvas.backgroundColor = '#ffffff';
+    (_tmplCanvas||fabricCanvas).backgroundColor ='#ffffff';
     tmplRect(0, 0, W*0.48, H, { fill:'#90a4ae', rx:0 });
     tmplText('Headline Text', W*0.74, H*0.32, { fontSize:80, fontWeight:'bold', fill:'#212121', textAlign:'center' });
     tmplText('Your supporting body copy goes here.\nAdd more details below.', W*0.74, H*0.52, { fontSize:44, fill:'#555555', textAlign:'center', lineHeight:1.4 });
   }
 
   // Apply brand kit fonts if configured
-  applyBrandKitToTemplate();
+  if (!_tmplCanvas) applyBrandKitToTemplate();
 
-  fabricCanvas.renderAll();
-  historyStack = []; histIdx = -1;
-  historySave();
-  updatePropsPanel();
+  (_tmplCanvas || fabricCanvas).renderAll();
+  if (!_tmplCanvas) { historyStack = []; histIdx = -1; historySave(); updatePropsPanel(); }
+}
+
+// ── Template Thumbnail Generator ─────────────────────────────────────────
+const TMPL_THUMB_NAMES = [
+  'corporateannouncement','employeeofmonth','nowhiring','kpidashboard',
+  'dailyspecial','menuboard','happyhour','saleevent','newarrival',
+  'eventpromo','countdown','waitingroomwelcome','healthtip',
+  'seasonsgreetings','newyear','instagramwall',
+  'schoolevents','classroomannouncement','socialpromo'
+];
+
+function applyTmplThumb(name, dataUrl) {
+  const btn = document.querySelector(`#galleryGrid button[onclick="selectTemplate('${name}')"]`);
+  if (!btn) return;
+  const p = btn.querySelector('.tmpl-preview');
+  if (!p) return;
+  p.style.backgroundImage = `url("${dataUrl}")`;
+  p.style.backgroundSize = 'cover';
+  p.style.backgroundPosition = 'center';
+  [...p.children].forEach(c => c.style.display = 'none');
+}
+
+async function generateTemplateThumbnails() {
+  if (typeof fabric === 'undefined') return;
+
+  // Restore cached thumbnails immediately (subsequent gallery opens)
+  Object.entries(_tmplThumbnails).forEach(([n, url]) => applyTmplThumb(n, url));
+
+  const pending = TMPL_THUMB_NAMES.filter(n => !_tmplThumbnails[n]);
+  if (!pending.length) return;
+
+  // Create hidden offscreen Fabric canvas at full 1920×1080
+  const el = document.createElement('canvas');
+  el.width = 1920; el.height = 1080;
+  el.style.cssText = 'position:fixed;left:-9999px;top:0;pointer-events:none;opacity:0';
+  document.body.appendChild(el);
+  _tmplCanvas = new fabric.StaticCanvas(el, { width: 1920, height: 1080 });
+
+  for (const name of pending) {
+    _tmplCanvas.clear();
+    (_tmplCanvas||fabricCanvas).backgroundColor = '#ffffff';
+    applyTemplate(name);
+    _tmplCanvas.renderAll();
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    _tmplCanvas.renderAll();
+    try {
+      const url = _tmplCanvas.toDataURL({ format: 'jpeg', quality: 0.80, multiplier: 0.167 });
+      _tmplThumbnails[name] = url;
+      applyTmplThumb(name, url);
+    } catch(e) { console.warn('Thumbnail failed:', name, e); }
+    await new Promise(r => setTimeout(r, 15));
+  }
+
+  // Clean up offscreen canvas
+  el.remove();
+  _tmplCanvas = null;
 }
 
 function sanitizeCanvasJson(jsonString) {
