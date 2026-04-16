@@ -527,14 +527,25 @@
     async function load() {
       const cacheKey = `${slide.location || 'New York'}|${slide.units || 'imperial'}`;
       const cached   = _weatherCache[cacheKey];
-      if (cached && (Date.now() - cached.ts) < WEATHER_TTL) {
-        _renderWeatherDOM(el, cached.data, slide);
-        return;
+      if (cached) {
+        const age = Date.now() - cached.ts;
+        if (cached.error) {
+          if (age < WEATHER_TTL) {
+            el.innerHTML = `<div class="wx-error">Weather unavailable<br><small>${cached.errorMsg}</small></div>`;
+            return;
+          }
+        } else if (age < WEATHER_TTL) {
+          _renderWeatherDOM(el, cached.data, slide);
+          return;
+        }
       }
       el.innerHTML = '<div class="wx-loading">Loading weather…</div>';
       try {
         const params = new URLSearchParams({ location: slide.location || 'New York', units: slide.units || 'imperial' });
-        const r      = await fetch('/api/weather?' + params);
+        const ctrl   = new AbortController();
+        const tmo    = setTimeout(() => ctrl.abort(), 15000);
+        const r      = await fetch('/api/weather?' + params, { signal: ctrl.signal });
+        clearTimeout(tmo);
         if (!r.ok) {
           const body = await r.json().catch(() => ({}));
           throw new Error(body.error || 'HTTP ' + r.status);
@@ -544,11 +555,12 @@
         _weatherCache[cacheKey] = { data, ts: Date.now() };
         _renderWeatherDOM(el, data, slide);
       } catch(e) {
+        _weatherCache[cacheKey] = { error: true, errorMsg: e.message, ts: Date.now() };
         el.innerHTML = `<div class="wx-error">Weather unavailable<br><small>${e.message}</small></div>`;
       }
     }
     await load();
-    weatherRefreshTimer = setInterval(load, WEATHER_TTL); // refresh every 30 min
+    weatherRefreshTimer = setInterval(load, WEATHER_TTL);
   }
 
   function _renderWeatherDOM(el, data, slide) {
@@ -832,9 +844,21 @@
     async function load() {
       // Re-read cache each call so interval refreshes benefit from prior fetches
       const nowCached = _weatherCache[cacheKey];
-      if (nowCached && (Date.now() - nowCached.ts) < WEATHER_TTL) {
-        _renderWeatherDOMInEl(inner, nowCached.data, fakeSlide);
-        return;
+      if (nowCached) {
+        const age = Date.now() - nowCached.ts;
+        if (nowCached.error) {
+          if (age < WEATHER_TTL) {
+            // Show cached error — don't hit the API again until TTL expires
+            inner.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;flex-direction:column;height:100%;gap:1vh;text-align:center;padding:2vw;">
+              <div style="font-size:1.8vw;opacity:0.6">Weather unavailable</div>
+              <div style="font-size:1.2vw;opacity:0.4">${nowCached.errorMsg}</div>
+            </div>`;
+            return;
+          }
+        } else if (age < WEATHER_TTL) {
+          _renderWeatherDOMInEl(inner, nowCached.data, fakeSlide);
+          return;
+        }
       }
       inner.innerHTML = '<div class="wx-loading" style="display:flex;align-items:center;justify-content:center;height:100%;font-size:1.8vw;opacity:0.5">Loading weather…</div>';
       try {
@@ -850,6 +874,7 @@
         _renderWeatherDOMInEl(inner, data, fakeSlide);
       } catch(e) {
         console.warn('[MZ Weather] fetch failed:', e.message);
+        _weatherCache[cacheKey] = { error: true, errorMsg: e.message, ts: Date.now() };
         inner.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;flex-direction:column;height:100%;gap:1vh;text-align:center;padding:2vw;">
           <div style="font-size:1.8vw;opacity:0.6">Weather unavailable</div>
           <div style="font-size:1.2vw;opacity:0.4">${e.message}</div>
