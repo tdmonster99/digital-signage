@@ -7,7 +7,7 @@
 //   CLOUDFRONT_BASE_URL
 //
 // POST /api/import-pptx
-//   Body: { cfUrl, basename, orgId }
+//   Body: { s3Key, basename, orgId }   ← s3Key is the S3 object key of the uploaded .pptx
 //   → { jobId, batchId }
 //
 // GET  /api/import-pptx?jobId=&batchId=&orgId=
@@ -33,8 +33,8 @@ module.exports = async function handler(req, res) {
 
 // ── POST: Create conversion job ───────────────────────────────────────────────
 async function createJob(req, res, apiKey) {
-  const { cfUrl, basename, orgId } = req.body || {};
-  if (!cfUrl)   return res.status(400).json({ error: 'cfUrl is required' });
+  const { s3Key, basename, orgId } = req.body || {};
+  if (!s3Key)   return res.status(400).json({ error: 's3Key is required' });
   if (!orgId)   return res.status(400).json({ error: 'orgId is required' });
 
   const bucket          = process.env.AWS_S3_BUCKET;
@@ -53,10 +53,15 @@ async function createJob(req, res, apiKey) {
 
   const jobBody = {
     tasks: {
+      // Import directly from S3 using IAM credentials — more reliable than
+      // importing via a CloudFront URL which may not be publicly accessible.
       'import-file': {
-        operation: 'import/url',
-        url: cfUrl,
-        filename: (basename || 'presentation') + '.pptx',
+        operation: 'import/s3',
+        bucket,
+        region,
+        key: s3Key,
+        access_key_id: accessKeyId,
+        secret_access_key: secretAccessKey,
       },
       'convert-slides': {
         operation: 'convert',
@@ -72,7 +77,7 @@ async function createJob(req, res, apiKey) {
         access_key_id: accessKeyId,
         secret_access_key: secretAccessKey,
         key: `${keyPrefix}/{{filename}}`,
-        acl: 'private',
+        // No acl field — modern S3 buckets have ACLs disabled (BucketOwnerEnforced)
       },
     },
   };
@@ -140,10 +145,10 @@ async function checkJob(req, res, apiKey) {
     // Sort numerically so slides appear in deck order (LibreOffice outputs 0001.png, 0002.png …)
     files.sort((a, b) => a.filename.localeCompare(b.filename, undefined, { numeric: true, sensitivity: 'base' }));
 
-    const cfBase = (process.env.CLOUDFRONT_BASE_URL || '').replace(/\/$/, '');
-    // encodeURIComponent the filename — LibreOffice preserves the original name
-    // (e.g. "My Deck-0001.png") so spaces and special chars must be encoded for
-    // the URL to work in browsers and <img> tags.
+    // CLOUDFRONT_URL is the env var used by upload-url.js (e.g. https://dXXX.cloudfront.net)
+    const cfBase = (process.env.CLOUDFRONT_URL || '').replace(/\/$/, '');
+    // encodeURIComponent the filename — LibreOffice preserves the original PPTX name
+    // (e.g. "My Deck-0001.png") so spaces must be encoded for the URL to work.
     const urls   = files.map(f => `${cfBase}/pptx-imports/${orgId}/${batchId}/${encodeURIComponent(f.filename)}`);
 
     return res.status(200).json({ status: 'finished', urls, count: urls.length });

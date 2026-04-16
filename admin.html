@@ -9145,14 +9145,14 @@ async function handlePptxFile(file, { bar, pct, label }) {
   // ── Step 1: Upload PPTX to S3 (maps to 0–30% on the progress bar) ────────
   label.textContent = `Uploading ${file.name}…`;
   bar.style.width = '0%'; pct.textContent = '0%';
-  let cfUrl;
+  let s3Key;
   try {
     const result = await s3UploadWithProgress(
       file,
       `pptx-imports/${currentOrgId}`,
       p => { bar.style.width = Math.round(p * 0.3) + '%'; pct.textContent = Math.round(p * 0.3) + '%'; }
     );
-    cfUrl = result.url;
+    s3Key = result.key;
   } catch (e) {
     throw new Error(`Upload failed: ${e.message}`);
   }
@@ -9164,7 +9164,7 @@ async function handlePptxFile(file, { bar, pct, label }) {
   const jobRes = await fetch('/api/import-pptx', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ cfUrl, basename: baseName, orgId: currentOrgId }),
+    body: JSON.stringify({ s3Key, basename: baseName, orgId: currentOrgId }),
   });
   if (!jobRes.ok) {
     const err = await jobRes.json().catch(() => ({}));
