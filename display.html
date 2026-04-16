@@ -825,6 +825,11 @@
     inner.className = 'wx-wrap';
     el.appendChild(inner);
 
+    // Pre-set background synchronously so loading/error states are visible
+    const isDarkWx = (config.theme || 'dark') !== 'light';
+    el.style.background = isDarkWx ? '#0f172a' : '#f0f9ff';
+    inner.style.color   = isDarkWx ? '#ffffff'  : '#1a1a1a';
+
     async function load() {
       if (cached && (Date.now() - cached.ts) < WEATHER_TTL) {
         _renderWeatherDOMInEl(inner, cached.data, fakeSlide);
@@ -955,12 +960,13 @@
     const labelEl = document.createElement('div');
     labelEl.className = 'cd-label';
     labelEl.textContent = config.label || '';
-    labelEl.style.display = config.label ? '' : 'none';
+    labelEl.style.cssText = `font-size:3.2vw;font-weight:500;letter-spacing:0.04em;opacity:0.85;margin-bottom:3vh;${config.label ? '' : 'display:none'}`;
     const timerEl = document.createElement('div');
     timerEl.className = 'cd-timer';
+    timerEl.style.cssText = 'display:flex;gap:2.5vw;justify-content:center;align-items:flex-end;';
     const endEl = document.createElement('div');
     endEl.className = 'cd-end';
-    endEl.style.display = 'none';
+    endEl.style.cssText = 'display:none;font-size:4vw;font-weight:700;';
     el.append(labelEl, timerEl, endEl);
 
     const targetMs = config.target ? new Date(config.target).getTime() : NaN;
@@ -995,7 +1001,10 @@
       const pad = n => String(n).padStart(2,'0');
       const vals = { d: String(d), h: pad(h), m: pad(m), s: pad(s) };
       timerEl.innerHTML = parts.map(p =>
-        `<div class="cd-unit"><div class="cd-num" style="color:${accent}">${vals[p.key]}</div><div class="cd-name">${p.name}</div></div>`
+        `<div style="display:flex;flex-direction:column;align-items:center;min-width:11vw;">
+           <div style="font-size:12vw;font-weight:800;line-height:1;color:${accent}">${vals[p.key]}</div>
+           <div style="font-size:1.6vw;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;opacity:0.7;margin-top:0.8vh">${p.name}</div>
+         </div>`
       ).join('');
     }
     tick();
