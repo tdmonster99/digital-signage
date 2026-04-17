@@ -8358,7 +8358,7 @@ window.startCheckout = async function(plan) {
   if (!currentOrgId || !currentUser) { toast('Sign in first.', true); return; }
   try {
     const sub = getSubscription();
-    const res = await fetch('/api/stripe-checkout', {
+    const res = await fetch('/api/stripe-sessions?type=checkout', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
@@ -8380,7 +8380,7 @@ window.openBillingPortal = async function() {
   const sub = getSubscription();
   if (!sub.stripeCustomerId) { toast('No billing account found. Upgrade to a paid plan first.', true); return; }
   try {
-    const res  = await fetch('/api/stripe-portal', {
+    const res  = await fetch('/api/stripe-sessions?type=portal', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ stripeCustomerId: sub.stripeCustomerId }),
