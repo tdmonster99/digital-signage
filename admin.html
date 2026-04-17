@@ -7837,7 +7837,7 @@ import { getFirestore, doc, collection, setDoc, onSnapshot, getDoc, deleteDoc,
                                        from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, GoogleAuthProvider, OAuthProvider,
          signInWithPopup, signInWithRedirect, getRedirectResult,
-         onAuthStateChanged, signOut, updateProfile,
+         onAuthStateChanged, signOut, updateProfile, linkWithCredential,
          createUserWithEmailAndPassword, signInWithEmailAndPassword,
          sendPasswordResetEmail, EmailAuthProvider,
          reauthenticateWithCredential, updatePassword }
@@ -7960,8 +7960,41 @@ window.signInWithGoogle = async () => {
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({ prompt: 'select_account' });
   try { await signInWithPopup(auth, provider); closeSignInModal(); }
-  catch(e) { document.getElementById('authError').textContent = e.message; }
+  catch(e) {
+    if (e.code === 'auth/account-exists-with-different-credential') {
+      showAdminProviderConflict(e.customData?.email, GoogleAuthProvider.credentialFromError(e));
+    } else {
+      document.getElementById('authError').textContent = e.message;
+    }
+  }
 };
+
+function showAdminProviderConflict(email, pendingCred) {
+  const errEl = document.getElementById('authError');
+  errEl.innerHTML = `
+    <p style="font-size:13px;font-weight:600;color:var(--text);margin:0 0 6px">Link your Google account</p>
+    <p style="font-size:12px;color:var(--text2);margin:0 0 10px;line-height:1.5">
+      <strong>${email || 'This email'}</strong> already has a password account.
+      Enter your password once to link Google sign-in permanently.
+    </p>
+    <input id="linkPwInput" type="password" placeholder="Your password"
+      style="width:100%;margin-bottom:8px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--surface2);color:var(--text);box-sizing:border-box">
+    <button id="linkPwBtn" style="width:100%;padding:9px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer">Link &amp; Sign In</button>
+    <p id="linkPwErr" style="font-size:12px;color:#dc2626;margin:6px 0 0"></p>`;
+  errEl.style.display = 'block';
+  document.getElementById('linkPwBtn').onclick = async () => {
+    const pw = document.getElementById('linkPwInput').value;
+    const linkErr = document.getElementById('linkPwErr');
+    linkErr.textContent = '';
+    try {
+      const result = await signInWithEmailAndPassword(auth, email, pw);
+      if (pendingCred) await linkWithCredential(result.user, pendingCred);
+      closeSignInModal();
+    } catch(e2) {
+      linkErr.textContent = e2.code === 'auth/invalid-credential' ? 'Incorrect password.' : e2.message;
+    }
+  };
+}
 
 window.signInWithMicrosoft = async () => {
   const provider = new OAuthProvider('microsoft.com');
@@ -8077,11 +8110,11 @@ async function initUserAndOrg(user) {
     } else if (inviteId) {
       await acceptInvitation(inviteId, user);
     } else {
-      await createOrg(user);
+      const merged = await tryMergeAccount(user);
+      if (!merged) await createOrg(user);
     }
   } catch(e) {
     console.warn('Org init error:', e.message);
-    // Fall back to guest-mode: create org
     await createOrg(user);
   }
 
@@ -8102,6 +8135,32 @@ async function initUserAndOrg(user) {
     const planName = window._pendingBillingSuccess;
     window._pendingBillingSuccess = null;
     setTimeout(() => toast(`You're now on the ${planName.charAt(0).toUpperCase() + planName.slice(1)} plan! 🎉`), 800);
+  }
+}
+
+async function tryMergeAccount(user) {
+  try {
+    const idToken = await user.getIdToken();
+    const resp = await fetch('/api/link-account', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idToken }),
+    });
+    const result = await resp.json();
+    if (!result.merged) return false;
+
+    const userSnap = await getDoc(doc(db, 'users', user.uid));
+    if (!userSnap.exists()) return false;
+
+    const userData  = userSnap.data();
+    currentOrgId    = userData.orgId;
+    currentRole     = userData.role || 'admin';
+    const orgSnap   = await getDoc(doc(db, 'organizations', currentOrgId));
+    currentOrg      = orgSnap.exists() ? { id: currentOrgId, ...orgSnap.data() } : null;
+    return true;
+  } catch (e) {
+    console.warn('Account merge failed:', e.message);
+    return false;
   }
 }
 
