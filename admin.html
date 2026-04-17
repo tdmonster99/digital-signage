@@ -10833,7 +10833,7 @@ function updateCount() {
 window.newShowPrompt = async () => {
   const name = prompt("Slideshow name:");
   if (!name) return;
-  const id   = name.toLowerCase().replace(/\s+/g,"-");
+  const id   = (currentOrgId || '') + '_' + crypto.randomUUID().slice(0, 8);
   const list = document.getElementById("showList");
   const item = makeShowItem({ id, name });
   list.appendChild(item);
