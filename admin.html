@@ -15809,9 +15809,10 @@ window.confirmPairingCode = async function() {
     const newScreenId = crypto.randomUUID();
     const shortId     = newScreenId.slice(0, 6).toUpperCase();
     const screenName  = 'Screen ' + shortId;
+    const defaultShowId = currentOrg?.slideshows?.[0]?.id || currentShowId || 'main';
     await setDoc(doc(db, 'screens', newScreenId), {
       name:         screenName,
-      slideshowId:  'main',
+      slideshowId:  defaultShowId,
       registeredAt: new Date().toISOString(),
       lastSeen:     new Date().toISOString(),
       ...(currentOrgId && { orgId: currentOrgId }),
