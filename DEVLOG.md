@@ -4,6 +4,19 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-04-18 — Claude (session 2)
+- **Menu Board bug fixes**: three bugs in the newly-added `menuboard` slide type.
+  - `openMenuboardModal`: replaced undefined `allSlideshows` loop with `_populateShowSelect('mbShowTarget')`.
+  - `saveMenuboardSlide` edit path: replaced non-existent `saveDraft()` / `renderSlideList()` with `pushToFirestore()` / `renderGrid()`.
+  - `saveMenuboardSlide` add path: was always going through `_addSlideToShow` (writes to Firestore but never updates local `slides[]` or refreshes the UI). Now uses direct `slides.push()` + `renderGrid()` + `pushToFirestore()` when targeting the current show — same pattern as QR, Clock, Countdown, etc.
+
+---
+
+## 2026-04-18 — Claude
+- **Canva PKCE fix**: eliminated `FIREBASE_SERVICE_ACCOUNT_JSON` dependency from OAuth flow. Instead of storing the PKCE `code_verifier` in Firestore, it's now base64url-encoded into the `state` parameter alongside the `uid`. Callback decodes state to retrieve both. No server-side storage needed; Firestore and Firebase Admin removed from `api/canva.js` entirely.
+
+---
+
 ## 2026-04-17 — Claude
 - **Canva Integration** (Phase 4 #5): full OAuth 2.0 + design import via Canva Connect API.
   - `api/canva.js`: single serverless function (merged to stay at 12-function Hobby limit) handling 4 routes: OAuth initiation (redirect to Canva authorize), OAuth callback (exchange code → return tokens via postMessage), list designs (GET action=designs), export design as PNG + upload to S3 (POST action=export). Polls export job up to 7s to fit within Vercel 10s timeout.
