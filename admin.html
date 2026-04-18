@@ -17904,14 +17904,7 @@ window.openMenuboardModal = function(slideIdx) {
     targetWrap.style.display = 'none';
   } else {
     targetWrap.style.display = '';
-    const sel = document.getElementById('mbShowTarget');
-    sel.innerHTML = '';
-    (allSlideshows || []).forEach(sh => {
-      const o = document.createElement('option');
-      o.value = sh.id; o.textContent = sh.name || sh.id;
-      if (sh.id === currentShowId) o.selected = true;
-      sel.appendChild(o);
-    });
+    _populateShowSelect('mbShowTarget');
   }
 
   renderMbEditor();
@@ -18067,17 +18060,21 @@ window.saveMenuboardSlide = async function() {
     id: mbEditIdx !== null ? slides[mbEditIdx].id : crypto.randomUUID(),
   };
 
+  const targetId = mbEditIdx !== null
+    ? currentShowId
+    : (document.getElementById('mbShowTarget').value || currentShowId);
+
+  closeMenuboardModal();
+
   try {
-    if (mbEditIdx !== null) {
-      slides[mbEditIdx] = { ...slides[mbEditIdx], ...slide };
-      await saveDraft();
-      renderSlideList();
-      closeMenuboardModal();
-      toast('Menu Board updated ✓');
+    if (targetId === currentShowId) {
+      if (mbEditIdx !== null) slides[mbEditIdx] = { ...slides[mbEditIdx], ...slide };
+      else                    slides.push(slide);
+      renderGrid();
+      await pushToFirestore();
+      toast(mbEditIdx !== null ? 'Menu Board updated ✓' : 'Menu Board added ✓');
     } else {
-      const targetId = document.getElementById('mbShowTarget').value || currentShowId;
       await _addSlideToShow(targetId, slide);
-      closeMenuboardModal();
       const targetName = (currentOrg?.slideshows || []).find(s => s.id === targetId)?.name || targetId;
       toast(`Menu Board added to "${targetName}" ✓`);
     }
