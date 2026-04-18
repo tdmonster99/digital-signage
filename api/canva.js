@@ -5,7 +5,7 @@
 // GET  /api/canva?action=designs&accessToken=T → list user's designs
 // POST /api/canva  { action:'export', accessToken, designId, orgId } → export PNG → S3 → CF URL
 //
-// Required env vars: CANVA_CLIENT_ID, CANVA_CLIENT_SECRET, FIREBASE_SERVICE_ACCOUNT_JSON
+// Required env vars: CANVA_CLIENT_ID, CANVA_CLIENT_SECRET
 //   (shared) AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION, AWS_S3_BUCKET, CLOUDFRONT_URL
 
 const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
@@ -19,18 +19,6 @@ const SCOPES          = ['design:content:read', 'design:meta:read'];
 function getRedirectUri(req) {
   const proto = req.headers['x-forwarded-proto'] || 'https';
   return `${proto}://${req.headers.host}/api/canva`;
-}
-
-// Firebase Admin — lazy init
-let _db = null;
-function getDb() {
-  if (_db) return _db;
-  const admin = require('firebase-admin');
-  if (!admin.apps.length) {
-    admin.initializeApp({ credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON)) });
-  }
-  _db = admin.firestore();
-  return _db;
 }
 
 module.exports = async function handler(req, res) {
@@ -56,20 +44,15 @@ module.exports = async function handler(req, res) {
       const codeVerifier  = crypto.randomBytes(32).toString('base64url');
       const codeChallenge = crypto.createHash('sha256').update(codeVerifier).digest('base64url');
 
-      // Persist code_verifier in Firestore keyed by uid (retrieved at callback)
-      try {
-        const db = getDb();
-        await db.collection('users').doc(uid).update({ canvaCodeVerifier: codeVerifier });
-      } catch (e) {
-        return res.status(500).send(`<p style="font-family:sans-serif;padding:40px">Failed to store PKCE verifier: ${e.message}</p>`);
-      }
+      // Encode uid + verifier into state (no server-side storage needed)
+      const stateParam = Buffer.from(JSON.stringify({ uid, v: codeVerifier })).toString('base64url');
 
       const redirectUri = getRedirectUri(req);
       const authUrl = `${CANVA_AUTH_URL}?response_type=code`
         + `&client_id=${encodeURIComponent(clientId)}`
         + `&redirect_uri=${encodeURIComponent(redirectUri)}`
         + `&scope=${SCOPES.map(encodeURIComponent).join('%20')}`
-        + `&state=${encodeURIComponent(uid)}`
+        + `&state=${encodeURIComponent(stateParam)}`
         + `&code_challenge=${codeChallenge}`
         + `&code_challenge_method=S256`;
       return res.redirect(302, authUrl);
@@ -81,31 +64,30 @@ module.exports = async function handler(req, res) {
         return res.status(500).send('<p style="font-family:sans-serif;padding:40px">Canva integration not configured.</p>');
       }
 
-      // Retrieve PKCE code_verifier stored during initiation
-      let codeVerifier;
+      // Decode uid + code_verifier from state parameter
+      let uid, codeVerifier;
       try {
-        const db      = getDb();
-        const snap    = await db.collection('users').doc(state).get();
-        codeVerifier  = snap.data()?.canvaCodeVerifier;
-        if (!codeVerifier) throw new Error('code_verifier not found — please try connecting again');
-        // Clean up immediately
-        await db.collection('users').doc(state).update({ canvaCodeVerifier: null });
+        const decoded = JSON.parse(Buffer.from(state, 'base64url').toString('utf8'));
+        uid          = decoded.uid;
+        codeVerifier = decoded.v;
+        if (!uid || !codeVerifier) throw new Error('invalid state');
       } catch (e) {
-        return res.status(400).send(`<p style="font-family:sans-serif;padding:40px">PKCE error: ${e.message}</p>`);
+        return res.status(400).send(`<p style="font-family:sans-serif;padding:40px">PKCE error: ${e.message} — please try connecting again</p>`);
       }
 
       const basic = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
       let tokens;
       try {
+        const body = new URLSearchParams({
+          grant_type:    'authorization_code',
+          code,
+          redirect_uri:  getRedirectUri(req),
+          code_verifier: codeVerifier,
+        });
         const r = await fetch(CANVA_TOKEN_URL, {
           method:  'POST',
           headers: { Authorization: `Basic ${basic}`, 'Content-Type': 'application/x-www-form-urlencoded' },
-          body:    new URLSearchParams({
-            grant_type:    'authorization_code',
-            code,
-            redirect_uri:  getRedirectUri(req),
-            code_verifier: codeVerifier,
-          }),
+          body,
         });
         if (!r.ok) {
           const text = await r.text();
