@@ -2805,6 +2805,101 @@ section.content {
   backdrop-filter: blur(4px); padding: 20px;
 }
 
+/* ── Menu Board modal ─────────────────────────────────────────────── */
+#menuboardModal {
+  display: none; position: fixed; inset: 0; z-index: 400;
+  background: rgba(0,0,0,.65); align-items: center; justify-content: center;
+  backdrop-filter: blur(8px); padding: 20px;
+}
+.mb-modal-box {
+  background: #141422; border: 1px solid rgba(255,255,255,.1); border-radius: 16px;
+  width: min(920px, 96vw); max-height: 88vh;
+  display: flex; overflow: hidden; box-shadow: 0 24px 60px rgba(0,0,0,.55);
+}
+.mb-modal-left {
+  width: 264px; flex-shrink: 0; padding: 24px;
+  border-right: 1px solid rgba(255,255,255,.08);
+  overflow-y: auto; display: flex; flex-direction: column; gap: 14px;
+}
+.mb-modal-right {
+  flex: 1; padding: 20px; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 10px;
+  background: rgba(0,0,0,.18);
+}
+.mb-field label {
+  display: block; font-size: 10px; font-weight: 700; color: rgba(255,255,255,.4);
+  text-transform: uppercase; letter-spacing: .09em; margin-bottom: 5px;
+}
+.mb-field input[type="text"], .mb-field input[type="number"], .mb-field select {
+  width: 100%; padding: 8px 10px; border-radius: 7px;
+  background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.12);
+  color: #fff; font-size: 13px; outline: none;
+}
+.mb-field input[type="text"]:focus, .mb-field input[type="number"]:focus {
+  border-color: rgba(255,255,255,.3);
+}
+.mb-theme-swatches { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.mb-theme-swatch {
+  height: 42px; border-radius: 8px; cursor: pointer;
+  border: 2px solid transparent;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 800; letter-spacing: .07em;
+  transition: border-color .15s; user-select: none;
+}
+.mb-theme-swatch.active { border-color: rgba(255,255,255,.9); }
+.mb-pair-btns { display: flex; gap: 7px; }
+.mb-pair-btn {
+  flex: 1; padding: 7px 4px; border-radius: 7px; cursor: pointer;
+  background: rgba(255,255,255,.07); border: 1.5px solid rgba(255,255,255,.12);
+  color: rgba(255,255,255,.5); font-size: 11px; font-weight: 700;
+  text-align: center; transition: border-color .15s, color .15s;
+}
+.mb-pair-btn.active { border-color: rgba(255,255,255,.8); color: #fff; }
+.mb-cat-block {
+  background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.09);
+  border-radius: 10px; padding: 12px;
+}
+.mb-cat-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.mb-cat-name-input {
+  flex: 1; padding: 6px 10px; border-radius: 6px;
+  background: rgba(255,255,255,.09); border: 1px solid rgba(255,255,255,.15);
+  color: #fff; font-size: 13px; font-weight: 700; outline: none;
+}
+.mb-item-input {
+  padding: 5px 8px; border-radius: 5px; box-sizing: border-box;
+  background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1);
+  color: #fff; font-size: 12px; width: 100%; outline: none;
+}
+.mb-badge-check {
+  display: flex; align-items: center; gap: 3px; cursor: pointer;
+  font-size: 10px; font-weight: 700; color: rgba(255,255,255,.55);
+}
+.mb-badge-check input { width: 12px; height: 12px; cursor: pointer; }
+.mb-del-btn {
+  background: none; border: none; cursor: pointer; padding: 3px 5px;
+  color: rgba(255,255,255,.25); font-size: 16px; line-height: 1;
+  transition: color .15s; border-radius: 4px;
+}
+.mb-del-btn:hover { color: #ef4444; background: rgba(239,68,68,.1); }
+.mb-add-item-btn {
+  background: rgba(255,255,255,.05); border: 1px dashed rgba(255,255,255,.18);
+  border-radius: 6px; padding: 5px 10px; color: rgba(255,255,255,.4);
+  font-size: 11px; cursor: pointer; width: 100%; margin-top: 6px;
+  transition: background .15s, color .15s;
+}
+.mb-add-item-btn:hover { background: rgba(255,255,255,.1); color: #fff; }
+.mb-add-cat-btn {
+  background: rgba(255,255,255,.05); border: 1px dashed rgba(255,255,255,.2);
+  border-radius: 10px; padding: 10px; color: rgba(255,255,255,.4);
+  font-size: 12px; cursor: pointer; width: 100%; flex-shrink: 0;
+  transition: background .15s, color .15s;
+}
+.mb-add-cat-btn:hover { background: rgba(255,255,255,.1); color: #fff; }
+.mb-modal-footer {
+  display: flex; gap: 10px; padding-top: 10px;
+  border-top: 1px solid rgba(255,255,255,.08); flex-shrink: 0;
+}
+
 /* ── Multi-Zone modal ──────────────────────────────────────────────── */
 #multiZoneModal {
   display: none; position: fixed; inset: 0; z-index: 400;
@@ -3997,6 +4092,20 @@ body.role-editor .admin-action {
         <div class="app-card-name">Google Sheets</div>
         <div class="app-card-desc">Display live spreadsheet data — tables, numbers, leaderboards</div>
         <button class="app-card-add" onclick="event.stopPropagation();openGoogleSheetsModal(null)">Add →</button>
+      </div>
+
+      <!-- Menu Board -->
+      <div class="app-card" data-category="widgets" data-name="menu board food drink restaurant" onclick="openMenuboardModal(null)">
+        <div class="app-card-icon" style="background:rgba(212,175,55,.15)">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" stroke-width="1.8" stroke-linecap="round">
+            <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
+            <rect x="9" y="3" width="6" height="4" rx="1"/>
+            <line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="12" y2="16"/>
+          </svg>
+        </div>
+        <div class="app-card-name">Menu Board</div>
+        <div class="app-card-desc">Structured food &amp; drink menus with categories, prices, and badges</div>
+        <button class="app-card-add" onclick="event.stopPropagation();openMenuboardModal(null)">Add →</button>
       </div>
 
       <!-- Multi-Zone Layout -->
@@ -7923,6 +8032,88 @@ body.role-editor .admin-action {
   </div>
 </div>
 
+<!-- ── Menu Board modal ─────────────────────────────────────────────── -->
+<div id="menuboardModal">
+  <div class="mb-modal-box">
+
+    <!-- Left: settings -->
+    <div class="mb-modal-left">
+      <div style="display:flex;align-items:center;gap:12px;flex-shrink:0">
+        <div style="width:42px;height:42px;background:linear-gradient(135deg,#b8860b,#f5c842);border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1a1100" stroke-width="2.2" stroke-linecap="round">
+            <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
+            <rect x="9" y="3" width="6" height="4" rx="1"/>
+            <line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="12" y2="16"/>
+          </svg>
+        </div>
+        <div>
+          <div id="mbModalTitle" style="font-size:15px;font-weight:700;color:#fff;line-height:1.2">Add Menu Board</div>
+          <div style="font-size:10px;color:rgba(255,255,255,.4);margin-top:2px">Food &amp; drink menus</div>
+        </div>
+      </div>
+
+      <div class="mb-field">
+        <label>Slide Name</label>
+        <input id="mbName" type="text" placeholder="Lunch Menu" />
+      </div>
+      <div class="mb-field">
+        <label>Duration (seconds)</label>
+        <input id="mbDwell" type="number" min="5" max="3600" value="20" />
+      </div>
+      <div class="mb-field">
+        <label>Header Text</label>
+        <input id="mbHeaderText" type="text" placeholder="OUR MENU" />
+      </div>
+      <div class="mb-field">
+        <label>Layout</label>
+        <div class="mb-pair-btns">
+          <button class="mb-pair-btn active" data-mblayout="1col" onclick="selectMbLayout(this,'1col')">1 Column</button>
+          <button class="mb-pair-btn"        data-mblayout="2col" onclick="selectMbLayout(this,'2col')">2 Columns</button>
+        </div>
+      </div>
+      <div class="mb-field">
+        <label>Font Style</label>
+        <div class="mb-pair-btns">
+          <button class="mb-pair-btn active" data-mbfont="sans"  onclick="selectMbFont(this,'sans')">Sans</button>
+          <button class="mb-pair-btn"        data-mbfont="serif" onclick="selectMbFont(this,'serif')">Serif</button>
+        </div>
+      </div>
+      <div class="mb-field">
+        <label>Theme</label>
+        <div class="mb-theme-swatches">
+          <div class="mb-theme-swatch active" data-mbtheme="dark"  style="background:#1C1C1C;color:#D4AF37" onclick="selectMbTheme(this,'dark')">DARK</div>
+          <div class="mb-theme-swatch"        data-mbtheme="light" style="background:#F5F5E8;color:#c0392b" onclick="selectMbTheme(this,'light')">LIGHT</div>
+          <div class="mb-theme-swatch"        data-mbtheme="warm"  style="background:#2D1B00;color:#FF8C00" onclick="selectMbTheme(this,'warm')">WARM</div>
+          <div class="mb-theme-swatch"        data-mbtheme="cool"  style="background:#0A1628;color:#4FACFE" onclick="selectMbTheme(this,'cool')">COOL</div>
+        </div>
+      </div>
+      <div class="mb-field">
+        <label>Accent Color</label>
+        <input id="mbAccentColor" type="color" value="#D4AF37" style="height:36px;padding:2px 4px;cursor:pointer;width:100%;border-radius:7px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12)" />
+      </div>
+      <div class="clock-field" id="mbShowTargetWrap">
+        <label>Add to Slideshow</label>
+        <select id="mbShowTarget"></select>
+      </div>
+      <div class="mb-modal-footer">
+        <button class="btn btn-secondary" onclick="closeMenuboardModal()">Cancel</button>
+        <button class="btn btn-primary"   onclick="saveMenuboardSlide()" id="mbSaveBtn">Add to Slideshow</button>
+      </div>
+    </div>
+
+    <!-- Right: category / item editor -->
+    <div class="mb-modal-right">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-shrink:0;margin-bottom:2px">
+        <div style="font-size:13px;font-weight:700;color:rgba(255,255,255,.85)">Categories &amp; Items</div>
+        <div style="font-size:10px;color:rgba(255,255,255,.3)"><b>V</b>=Veg &nbsp;<b>VE</b>=Vegan &nbsp;<b>GF</b>=Gluten-Free &nbsp;<b>DF</b>=Dairy-Free &nbsp;<b>S</b>=Spicy</div>
+      </div>
+      <div id="mbCategoryList"></div>
+      <button class="mb-add-cat-btn" onclick="addMbCategory()">+ Add Category</button>
+    </div>
+
+  </div>
+</div>
+
 <!-- ── Multi-Zone Layout modal ──────────────────────────────────────── -->
 <div id="multiZoneModal">
   <div class="mz-modal-box">
@@ -10646,9 +10837,10 @@ function renderGrid() {
     const isCountdown    = s.type === 'countdown';
     const isMultizone    = s.type === 'multizone';
     const isGoogleSheets = s.type === 'googlesheets';
+    const isMenuboard    = s.type === 'menuboard';
     const thumbUrl   = isDesigned ? s.thumbnailUrl
                      : isYoutube  ? `https://img.youtube.com/vi/${s.videoId}/mqdefault.jpg`
-                     : (isWebpage || isVideo || isClock || isQr || isWeather || isCountdown || isMultizone || isGoogleSheets) ? null
+                     : (isWebpage || isVideo || isClock || isQr || isWeather || isCountdown || isMultizone || isGoogleSheets || isMenuboard) ? null
                      : s.url;
     const editSvg    = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
     const placeholder = isClock
@@ -10678,6 +10870,12 @@ function renderGrid() {
            <line x1="9" y1="8" x2="9" y2="22" stroke="#22c55e" stroke-width="1.2"/>
            <line x1="15" y1="8" x2="15" y2="22" stroke="#22c55e" stroke-width="1.2"/>
          </svg>`
+      : isMenuboard
+      ? `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" stroke-width="1.5" stroke-linecap="round">
+           <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
+           <rect x="9" y="3" width="6" height="4" rx="1"/>
+           <line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="12" y2="16"/>
+         </svg>`
       : isWebpage
       ? `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="1.5">
            <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>
@@ -10704,6 +10902,7 @@ function renderGrid() {
                 : isCountdown  ? `<div class="designed-badge" style="background:#f07c00cc">Countdown</div>`
                 : isMultizone     ? `<div class="designed-badge" style="background:#059669cc">Zones</div>`
                 : isGoogleSheets  ? `<div class="designed-badge" style="background:#22c55ecc">Sheets</div>`
+                : isMenuboard     ? `<div class="designed-badge" style="background:#b8860bcc">Menu</div>`
                 : '';
     const editBtn    = isDesigned
       ? `<button class="icon-btn toggle" title="Edit in Designer" onclick="editDesignedSlide(${i})">${editSvg}</button>`
@@ -10719,6 +10918,8 @@ function renderGrid() {
       ? `<button class="icon-btn toggle" title="Edit Zone Layout" onclick="openMultiZoneModal(${i})">${editSvg}</button>`
       : isGoogleSheets
       ? `<button class="icon-btn toggle" title="Edit Sheets Slide" onclick="openGoogleSheetsModal(${i})">${editSvg}</button>`
+      : isMenuboard
+      ? `<button class="icon-btn toggle" title="Edit Menu Board" onclick="openMenuboardModal(${i})">${editSvg}</button>`
       : `<button class="icon-btn toggle" title="${s.active === false ? 'Show' : 'Hide'}" onclick="toggleSlide(${i})">
            ${s.active === false
              ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`
@@ -17651,6 +17852,239 @@ window.saveGoogleSheetsSlide = async function() {
     updateDashboard();
   } catch(e) {
     console.error('saveGoogleSheetsSlide:', e);
+    toast('Could not save slide: ' + e.message, true);
+  }
+};
+
+// ── Menu Board ────────────────────────────────────────────────────────────
+const MB_THEMES = {
+  dark:  { bg: '#1C1C1C', text: '#FFFFFF', accent: '#D4AF37' },
+  light: { bg: '#F5F5E8', text: '#1a1a1a', accent: '#c0392b' },
+  warm:  { bg: '#2D1B00', text: '#FFF8EE', accent: '#FF8C00' },
+  cool:  { bg: '#0A1628', text: '#E8F4FD', accent: '#4FACFE' },
+};
+const MB_BADGES = ['V', 'VE', 'GF', 'DF', 'S'];
+
+let mbEditIdx = null;
+let _mbTheme    = 'dark';
+let _mbLayout   = '1col';
+let _mbFont     = 'sans';
+let _mbCategories = [];
+
+function _mbEsc(s) {
+  return (s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+window.openMenuboardModal = function(slideIdx) {
+  mbEditIdx = (typeof slideIdx === 'number') ? slideIdx : null;
+  const isEdit = mbEditIdx !== null;
+  const s = isEdit ? slides[mbEditIdx] : null;
+
+  _mbTheme  = s?.theme    || 'dark';
+  _mbLayout = s?.layout   || '1col';
+  _mbFont   = s?.fontStyle || 'sans';
+  _mbCategories = s?.categories
+    ? JSON.parse(JSON.stringify(s.categories))
+    : [{ id: crypto.randomUUID(), name: 'Category 1',
+         items: [{ id: crypto.randomUUID(), name: 'Item Name', price: '', description: '', badges: [] }] }];
+
+  document.getElementById('mbModalTitle').textContent = isEdit ? 'Edit Menu Board' : 'Add Menu Board';
+  document.getElementById('mbSaveBtn').textContent    = isEdit ? 'Save Changes' : 'Add to Slideshow';
+  document.getElementById('mbName').value       = s?.name       || '';
+  document.getElementById('mbDwell').value      = s?.dwell      || 20;
+  document.getElementById('mbHeaderText').value = s?.headerText || '';
+  document.getElementById('mbAccentColor').value = s?.accentColor || MB_THEMES[_mbTheme].accent;
+
+  document.querySelectorAll('.mb-theme-swatch').forEach(el => el.classList.toggle('active', el.dataset.mbtheme === _mbTheme));
+  document.querySelectorAll('.mb-pair-btn[data-mblayout]').forEach(el => el.classList.toggle('active', el.dataset.mblayout === _mbLayout));
+  document.querySelectorAll('.mb-pair-btn[data-mbfont]').forEach(el => el.classList.toggle('active', el.dataset.mbfont === _mbFont));
+
+  const targetWrap = document.getElementById('mbShowTargetWrap');
+  if (isEdit) {
+    targetWrap.style.display = 'none';
+  } else {
+    targetWrap.style.display = '';
+    const sel = document.getElementById('mbShowTarget');
+    sel.innerHTML = '';
+    (allSlideshows || []).forEach(sh => {
+      const o = document.createElement('option');
+      o.value = sh.id; o.textContent = sh.name || sh.id;
+      if (sh.id === currentShowId) o.selected = true;
+      sel.appendChild(o);
+    });
+  }
+
+  renderMbEditor();
+  document.getElementById('menuboardModal').style.display = 'flex';
+};
+
+window.closeMenuboardModal = function() {
+  document.getElementById('menuboardModal').style.display = 'none';
+  mbEditIdx = null;
+};
+
+window.selectMbTheme = function(el, theme) {
+  _mbTheme = theme;
+  document.querySelectorAll('.mb-theme-swatch').forEach(e => e.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('mbAccentColor').value = MB_THEMES[theme].accent;
+};
+
+window.selectMbLayout = function(el, layout) {
+  _mbLayout = layout;
+  document.querySelectorAll('.mb-pair-btn[data-mblayout]').forEach(e => e.classList.remove('active'));
+  el.classList.add('active');
+};
+
+window.selectMbFont = function(el, font) {
+  _mbFont = font;
+  document.querySelectorAll('.mb-pair-btn[data-mbfont]').forEach(e => e.classList.remove('active'));
+  el.classList.add('active');
+};
+
+function renderMbEditor() {
+  const list = document.getElementById('mbCategoryList');
+  if (!_mbCategories.length) {
+    list.innerHTML = '<div style="text-align:center;padding:32px;color:rgba(255,255,255,.3);font-size:13px">No categories yet — click "+ Add Category" below.</div>';
+    return;
+  }
+  list.innerHTML = '';
+  _mbCategories.forEach(cat => {
+    const catEl = document.createElement('div');
+    catEl.className = 'mb-cat-block';
+    catEl.style.marginBottom = '10px';
+
+    const hdr = document.createElement('div');
+    hdr.className = 'mb-cat-header';
+    const catInput = document.createElement('input');
+    catInput.className = 'mb-cat-name-input';
+    catInput.type = 'text';
+    catInput.placeholder = 'Category name';
+    catInput.value = cat.name || '';
+    catInput.oninput = e => { cat.name = e.target.value; };
+    const delCatBtn = document.createElement('button');
+    delCatBtn.className = 'mb-del-btn';
+    delCatBtn.title = 'Remove category';
+    delCatBtn.textContent = '×';
+    delCatBtn.onclick = () => removeMbCategory(cat.id);
+    hdr.appendChild(catInput);
+    hdr.appendChild(delCatBtn);
+    catEl.appendChild(hdr);
+
+    const itemsWrap = document.createElement('div');
+    (cat.items || []).forEach(item => {
+      const row = document.createElement('div');
+      row.style.cssText = 'margin-bottom:8px;padding:8px;background:rgba(255,255,255,.03);border-radius:7px';
+
+      const topRow = document.createElement('div');
+      topRow.style.cssText = 'display:grid;grid-template-columns:1fr 90px;gap:6px;margin-bottom:5px';
+      const nameIn = document.createElement('input');
+      nameIn.className = 'mb-item-input'; nameIn.type = 'text'; nameIn.placeholder = 'Item name'; nameIn.value = item.name || '';
+      nameIn.oninput = e => { item.name = e.target.value; };
+      const priceIn = document.createElement('input');
+      priceIn.className = 'mb-item-input'; priceIn.type = 'text'; priceIn.placeholder = '$0.00'; priceIn.value = item.price || '';
+      priceIn.oninput = e => { item.price = e.target.value; };
+      topRow.appendChild(nameIn); topRow.appendChild(priceIn);
+
+      const descIn = document.createElement('input');
+      descIn.className = 'mb-item-input'; descIn.type = 'text'; descIn.placeholder = 'Description (optional)';
+      descIn.value = item.description || ''; descIn.style.cssText = 'width:100%;margin-bottom:6px;box-sizing:border-box';
+      descIn.oninput = e => { item.description = e.target.value; };
+
+      const badgeRow = document.createElement('div');
+      badgeRow.style.cssText = 'display:flex;align-items:center;gap:10px;flex-wrap:wrap';
+      MB_BADGES.forEach(b => {
+        const lbl = document.createElement('label');
+        lbl.className = 'mb-badge-check';
+        const cb = document.createElement('input');
+        cb.type = 'checkbox'; cb.value = b;
+        cb.checked = (item.badges || []).includes(b);
+        cb.onchange = e => {
+          item.badges = item.badges || [];
+          if (e.target.checked) { if (!item.badges.includes(b)) item.badges.push(b); }
+          else item.badges = item.badges.filter(x => x !== b);
+        };
+        lbl.appendChild(cb);
+        lbl.appendChild(document.createTextNode(' ' + b));
+        badgeRow.appendChild(lbl);
+      });
+      const delItemBtn = document.createElement('button');
+      delItemBtn.className = 'mb-del-btn'; delItemBtn.title = 'Remove item';
+      delItemBtn.textContent = '×'; delItemBtn.style.marginLeft = 'auto';
+      delItemBtn.onclick = () => removeMbItem(cat.id, item.id);
+      badgeRow.appendChild(delItemBtn);
+
+      row.appendChild(topRow); row.appendChild(descIn); row.appendChild(badgeRow);
+      itemsWrap.appendChild(row);
+    });
+    catEl.appendChild(itemsWrap);
+
+    const addItemBtn = document.createElement('button');
+    addItemBtn.className = 'mb-add-item-btn';
+    addItemBtn.textContent = '+ Add Item';
+    addItemBtn.onclick = () => addMbItem(cat.id);
+    catEl.appendChild(addItemBtn);
+
+    list.appendChild(catEl);
+  });
+}
+
+window.addMbCategory = function() {
+  _mbCategories.push({ id: crypto.randomUUID(), name: 'New Category', items: [] });
+  renderMbEditor();
+};
+
+window.removeMbCategory = function(id) {
+  _mbCategories = _mbCategories.filter(c => c.id !== id);
+  renderMbEditor();
+};
+
+window.addMbItem = function(catId) {
+  const cat = _mbCategories.find(c => c.id === catId);
+  if (cat) {
+    cat.items.push({ id: crypto.randomUUID(), name: '', price: '', description: '', badges: [] });
+    renderMbEditor();
+  }
+};
+
+window.removeMbItem = function(catId, itemId) {
+  const cat = _mbCategories.find(c => c.id === catId);
+  if (cat) { cat.items = cat.items.filter(i => i.id !== itemId); renderMbEditor(); }
+};
+
+window.saveMenuboardSlide = async function() {
+  const name        = document.getElementById('mbName').value.trim() || 'Menu Board';
+  const dwell       = parseInt(document.getElementById('mbDwell').value) || 20;
+  const headerText  = document.getElementById('mbHeaderText').value.trim();
+  const accentColor = document.getElementById('mbAccentColor').value;
+
+  const slide = {
+    type: 'menuboard', name, dwell,
+    theme: _mbTheme, layout: _mbLayout, fontStyle: _mbFont,
+    headerText, accentColor,
+    bgColor: MB_THEMES[_mbTheme]?.bg || '#1C1C1C',
+    categories: JSON.parse(JSON.stringify(_mbCategories)),
+    id: mbEditIdx !== null ? slides[mbEditIdx].id : crypto.randomUUID(),
+  };
+
+  try {
+    if (mbEditIdx !== null) {
+      slides[mbEditIdx] = { ...slides[mbEditIdx], ...slide };
+      await saveDraft();
+      renderSlideList();
+      closeMenuboardModal();
+      toast('Menu Board updated ✓');
+    } else {
+      const targetId = document.getElementById('mbShowTarget').value || currentShowId;
+      await _addSlideToShow(targetId, slide);
+      closeMenuboardModal();
+      const targetName = (currentOrg?.slideshows || []).find(s => s.id === targetId)?.name || targetId;
+      toast(`Menu Board added to "${targetName}" ✓`);
+    }
+    logActivity(mbEditIdx !== null ? 'Edited Menu Board slide' : 'Added Menu Board slide');
+    updateDashboard();
+  } catch(e) {
+    console.error('saveMenuboardSlide:', e);
     toast('Could not save slide: ' + e.message, true);
   }
 };
