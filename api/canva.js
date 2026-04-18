@@ -1,23 +1,36 @@
 // Canva Connect API — all Canva integration routes in one function
 //
-// GET  /api/canva?uid=UID&init=1               → redirect popup to Canva OAuth
+// GET  /api/canva?uid=UID&init=1               → redirect popup to Canva OAuth (PKCE)
 // GET  /api/canva?code=CODE&state=UID          → OAuth callback → postMessage tokens to opener
 // GET  /api/canva?action=designs&accessToken=T → list user's designs
 // POST /api/canva  { action:'export', accessToken, designId, orgId } → export PNG → S3 → CF URL
 //
-// Required env vars: CANVA_CLIENT_ID, CANVA_CLIENT_SECRET
+// Required env vars: CANVA_CLIENT_ID, CANVA_CLIENT_SECRET, FIREBASE_SERVICE_ACCOUNT_JSON
 //   (shared) AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION, AWS_S3_BUCKET, CLOUDFRONT_URL
 
 const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
+const crypto = require('crypto');
 
 const CANVA_AUTH_URL  = 'https://www.canva.com/api/oauth/authorize';
 const CANVA_TOKEN_URL = 'https://api.canva.com/rest/v1/oauth/token';
 const CANVA_API       = 'https://api.canva.com/rest/v1';
-const SCOPES = ['design:content:read', 'design:meta:read'];
+const SCOPES          = ['design:content:read', 'design:meta:read'];
 
 function getRedirectUri(req) {
   const proto = req.headers['x-forwarded-proto'] || 'https';
   return `${proto}://${req.headers.host}/api/canva`;
+}
+
+// Firebase Admin — lazy init
+let _db = null;
+function getDb() {
+  if (_db) return _db;
+  const admin = require('firebase-admin');
+  if (!admin.apps.length) {
+    admin.initializeApp({ credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON)) });
+  }
+  _db = admin.firestore();
+  return _db;
 }
 
 module.exports = async function handler(req, res) {
@@ -32,19 +45,33 @@ module.exports = async function handler(req, res) {
   if (req.method === 'GET') {
     const { action, uid, code, state, init, accessToken, continuation } = req.query;
 
-    // ── OAuth initiation ───────────────────────────────────────────────────
+    // ── OAuth initiation (PKCE) ────────────────────────────────────────────
     if (init === '1') {
       if (!clientId || !clientSecret) {
         return res.status(500).send('<p style="font-family:sans-serif;padding:40px">Canva integration not configured — add CANVA_CLIENT_ID and CANVA_CLIENT_SECRET to Vercel env vars.</p>');
       }
       if (!uid) return res.status(400).send('uid required');
-      // Build URL manually to use %20 (not +) between scopes — some OAuth servers are strict
+
+      // Generate PKCE code verifier + challenge
+      const codeVerifier  = crypto.randomBytes(32).toString('base64url');
+      const codeChallenge = crypto.createHash('sha256').update(codeVerifier).digest('base64url');
+
+      // Persist code_verifier in Firestore keyed by uid (retrieved at callback)
+      try {
+        const db = getDb();
+        await db.collection('users').doc(uid).update({ canvaCodeVerifier: codeVerifier });
+      } catch (e) {
+        return res.status(500).send(`<p style="font-family:sans-serif;padding:40px">Failed to store PKCE verifier: ${e.message}</p>`);
+      }
+
       const redirectUri = getRedirectUri(req);
       const authUrl = `${CANVA_AUTH_URL}?response_type=code`
         + `&client_id=${encodeURIComponent(clientId)}`
         + `&redirect_uri=${encodeURIComponent(redirectUri)}`
         + `&scope=${SCOPES.map(encodeURIComponent).join('%20')}`
-        + `&state=${encodeURIComponent(uid)}`;
+        + `&state=${encodeURIComponent(uid)}`
+        + `&code_challenge=${codeChallenge}`
+        + `&code_challenge_method=S256`;
       return res.redirect(302, authUrl);
     }
 
@@ -53,13 +80,32 @@ module.exports = async function handler(req, res) {
       if (!clientId || !clientSecret) {
         return res.status(500).send('<p style="font-family:sans-serif;padding:40px">Canva integration not configured.</p>');
       }
+
+      // Retrieve PKCE code_verifier stored during initiation
+      let codeVerifier;
+      try {
+        const db      = getDb();
+        const snap    = await db.collection('users').doc(state).get();
+        codeVerifier  = snap.data()?.canvaCodeVerifier;
+        if (!codeVerifier) throw new Error('code_verifier not found — please try connecting again');
+        // Clean up immediately
+        await db.collection('users').doc(state).update({ canvaCodeVerifier: null });
+      } catch (e) {
+        return res.status(400).send(`<p style="font-family:sans-serif;padding:40px">PKCE error: ${e.message}</p>`);
+      }
+
       const basic = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
       let tokens;
       try {
         const r = await fetch(CANVA_TOKEN_URL, {
           method:  'POST',
           headers: { Authorization: `Basic ${basic}`, 'Content-Type': 'application/x-www-form-urlencoded' },
-          body:    new URLSearchParams({ grant_type: 'authorization_code', code, redirect_uri: getRedirectUri(req) }),
+          body:    new URLSearchParams({
+            grant_type:    'authorization_code',
+            code,
+            redirect_uri:  getRedirectUri(req),
+            code_verifier: codeVerifier,
+          }),
         });
         if (!r.ok) {
           const text = await r.text();
@@ -184,8 +230,7 @@ module.exports = async function handler(req, res) {
     }
 
     // ── Upload to S3 ───────────────────────────────────────────────────────
-    const { randomUUID } = await import('crypto');
-    const key = `canva-imports/${orgId}/${randomUUID()}.png`;
+    const key = `canva-imports/${orgId}/${crypto.randomUUID()}.png`;
     try {
       const s3 = new S3Client({
         region, credentials: { accessKeyId, secretAccessKey },
