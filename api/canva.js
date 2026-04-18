@@ -13,7 +13,7 @@ const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 const CANVA_AUTH_URL  = 'https://www.canva.com/api/oauth/authorize';
 const CANVA_TOKEN_URL = 'https://api.canva.com/rest/v1/oauth/token';
 const CANVA_API       = 'https://api.canva.com/rest/v1';
-const SCOPE           = 'design:content:read design:meta:read';
+const SCOPES = ['design:content:read', 'design:meta:read'];
 
 function getRedirectUri(req) {
   const proto = req.headers['x-forwarded-proto'] || 'https';
@@ -38,14 +38,14 @@ module.exports = async function handler(req, res) {
         return res.status(500).send('<p style="font-family:sans-serif;padding:40px">Canva integration not configured — add CANVA_CLIENT_ID and CANVA_CLIENT_SECRET to Vercel env vars.</p>');
       }
       if (!uid) return res.status(400).send('uid required');
-      const params = new URLSearchParams({
-        response_type: 'code',
-        client_id:     clientId,
-        redirect_uri:  getRedirectUri(req),
-        scope:         SCOPE,
-        state:         uid,
-      });
-      return res.redirect(302, `${CANVA_AUTH_URL}?${params}`);
+      // Build URL manually to use %20 (not +) between scopes — some OAuth servers are strict
+      const redirectUri = getRedirectUri(req);
+      const authUrl = `${CANVA_AUTH_URL}?response_type=code`
+        + `&client_id=${encodeURIComponent(clientId)}`
+        + `&redirect_uri=${encodeURIComponent(redirectUri)}`
+        + `&scope=${SCOPES.map(encodeURIComponent).join('%20')}`
+        + `&state=${encodeURIComponent(uid)}`;
+      return res.redirect(302, authUrl);
     }
 
     // ── OAuth callback ─────────────────────────────────────────────────────
