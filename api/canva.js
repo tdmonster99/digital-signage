@@ -13,7 +13,7 @@ const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 const CANVA_AUTH_URL  = 'https://www.canva.com/api/oauth/authorize';
 const CANVA_TOKEN_URL = 'https://api.canva.com/rest/v1/oauth/token';
 const CANVA_API       = 'https://api.canva.com/rest/v1';
-const SCOPE           = 'design:content:read';
+const SCOPE           = 'design:content:read design:meta:read';
 
 function getRedirectUri(req) {
   const proto = req.headers['x-forwarded-proto'] || 'https';
