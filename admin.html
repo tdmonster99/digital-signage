@@ -18645,7 +18645,7 @@ let _canvaShown       = [];     // filtered subset currently rendered
 let _canvaSelected    = new Set();
 let _canvaContinuation = null;
 
-async function openCanvaModal() {
+window.openCanvaModal = async function openCanvaModal() {
   document.getElementById('canvaModal').classList.add('open');
 
   // Try loading stored token from Firestore
@@ -18666,7 +18666,7 @@ async function openCanvaModal() {
   }
 }
 
-function canvaClose() {
+window.canvaClose = function canvaClose() {
   document.getElementById('canvaModal').classList.remove('open');
 }
 
@@ -18676,7 +18676,7 @@ function _canvaShowConnect() {
   document.getElementById('canvaFoot').style.display = 'none';
 }
 
-function canvaStartAuth() {
+window.canvaStartAuth = function canvaStartAuth() {
   const uid = currentUser.uid;
   const popup = window.open(
     `/api/canva?uid=${encodeURIComponent(uid)}&init=1`,
@@ -18709,7 +18709,7 @@ function canvaStartAuth() {
   }, 1000);
 }
 
-async function canvaLoadDesigns(reset = false) {
+window.canvaLoadDesigns = async function canvaLoadDesigns(reset = false) {
   const body    = document.getElementById('canvaBody');
   const toolbar = document.getElementById('canvaToolbar');
   const foot    = document.getElementById('canvaFoot');
@@ -18793,7 +18793,7 @@ function canvaRenderDesigns() {
   canvaUpdateFooter();
 }
 
-function canvaToggleSelect(id) {
+window.canvaToggleSelect = function canvaToggleSelect(id) {
   if (_canvaSelected.has(id)) {
     _canvaSelected.delete(id);
   } else {
@@ -18820,11 +18820,11 @@ function canvaUpdateFooter() {
   importBtn.disabled    = count === 0;
 }
 
-function canvaSearchFilter() {
+window.canvaSearchFilter = function canvaSearchFilter() {
   canvaRenderDesigns();
 }
 
-async function canvaImport() {
+window.canvaImport = async function canvaImport() {
   const btn = document.getElementById('canvaImportBtn');
   if (_canvaSelected.size === 0) return;
 
