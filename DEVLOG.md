@@ -4,6 +4,15 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-04-17 — Claude
+- **Canva Integration** (Phase 4 #5): full OAuth 2.0 + design import via Canva Connect API.
+  - `api/canva.js`: single serverless function (merged to stay at 12-function Hobby limit) handling 4 routes: OAuth initiation (redirect to Canva authorize), OAuth callback (exchange code → return tokens via postMessage), list designs (GET action=designs), export design as PNG + upload to S3 (POST action=export). Polls export job up to 7s to fit within Vercel 10s timeout.
+  - `api/proxy.js`: merged `rss-proxy.js` + `weather.js` into one file to free up a slot for canva.js. Routes: `?type=rss&url=...` and `?type=weather&location=...`. Updated `display.html` (RSS + weather) and `admin.html` (weather) to use `/api/proxy?type=...`.
+  - admin.html: "Canva" button in Add Media modal "Other sources" row. `#canvaModal` (purple `#7d2ae8` theme): connect screen (Connect Canva button opens OAuth popup), design grid with thumbnails + multi-select checkboxes, search/filter, load-more pagination, Import button. Token stored in Firestore `users/{uid}.canvaToken` for persistence across sessions; auto-cleared on 401. Each selected design exports as PNG and becomes an image slide.
+  - **Setup required (user):** Register app at canva.com/developers → Connect APIs. Set redirect URI to `https://app.zigns.io/api/canva`. Add `CANVA_CLIENT_ID` and `CANVA_CLIENT_SECRET` to Vercel env vars.
+
+---
+
 ## 2026-04-16 (cont.) — Claude
 - **Group editor UX**: click-to-preview (click filmstrip card → full image appears in main area with accent-border highlight); drag-to-reorder fixed (dragFrom was per-card closure var, hoisted to strip-level so drop target can see it); thumbnailUrl set on PPTX and PDF page slides so filmstrip shows actual images.
 - **PPTX import fixes** (3 rounds): (1) set thumbnailUrl on page slides; (2) URL-encode filenames with spaces; (3) switch from import/url to import/s3 + fix CLOUDFRONT_URL env var name + remove acl:'private'.

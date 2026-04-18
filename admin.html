@@ -920,6 +920,114 @@ section.content {
 .gdrive-btn-select:hover:not(:disabled) { background: #1557b0; }
 .gdrive-btn-select:disabled { opacity: 0.4; cursor: not-allowed; }
 
+/* ── Canva import modal ──────────────────────────────────────────────────── */
+#canvaModal {
+  display: none; position: fixed; inset: 0; z-index: 600;
+  background: rgba(0,0,0,0.55); backdrop-filter: blur(4px);
+  align-items: center; justify-content: center; padding: 20px;
+}
+#canvaModal.open { display: flex; }
+.canva-box {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+  width: min(860px, 96vw); max-height: 86vh; display: flex; flex-direction: column;
+  box-shadow: 0 8px 48px rgba(0,0,0,0.22); overflow: hidden;
+}
+.canva-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 20px 24px 16px; flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+}
+.canva-head h3 { font-size: 16px; font-weight: 700; flex: 1; margin: 0; color: var(--text); }
+.canva-head-close {
+  background: none; border: none; cursor: pointer; color: var(--muted);
+  padding: 4px; border-radius: 6px; display: flex; align-items: center;
+}
+.canva-head-close:hover { color: var(--text); background: var(--surface2); }
+.canva-toolbar { padding: 12px 24px 4px; flex-shrink: 0; }
+.canva-search {
+  width: 100%; padding: 8px 14px; border-radius: 24px;
+  border: 1px solid var(--border); background: var(--surface2);
+  font-size: 13px; color: var(--text); outline: none; box-sizing: border-box;
+}
+.canva-search:focus { border-color: #7d2ae8; box-shadow: 0 0 0 3px rgba(125,42,232,0.12); }
+.canva-body { flex: 1; overflow-y: auto; padding: 8px 24px 16px; }
+.canva-design-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px;
+  margin-top: 8px;
+}
+.canva-design-card {
+  display: flex; flex-direction: column; border-radius: 10px;
+  border: 2px solid transparent; cursor: pointer; overflow: hidden;
+  background: var(--surface2); position: relative;
+  transition: border-color 0.12s;
+}
+.canva-design-card:hover { border-color: rgba(125,42,232,0.35); }
+.canva-design-card.cv-sel { border-color: #7d2ae8; }
+.canva-thumb-wrap {
+  width: 100%; aspect-ratio: 4/3; position: relative;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--surface2); overflow: hidden;
+}
+.canva-thumb-wrap img {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; opacity: 0; transition: opacity 0.2s;
+}
+.canva-thumb-wrap img.cv-loaded { opacity: 1; }
+.canva-thumb-placeholder {
+  width: 36px; height: 36px; opacity: 0.2;
+}
+.canva-cb {
+  position: absolute; top: 6px; left: 6px; width: 20px; height: 20px;
+  border-radius: 50%; border: 2px solid rgba(255,255,255,0.85);
+  background: rgba(0,0,0,0.28); display: flex; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity 0.12s, background 0.12s, border-color 0.12s;
+}
+.canva-design-card:hover .canva-cb,
+.canva-design-card.cv-sel .canva-cb { opacity: 1; }
+.canva-design-card.cv-sel .canva-cb { background: #7d2ae8; border-color: #7d2ae8; }
+.canva-design-name {
+  font-size: 11px; color: var(--text); padding: 6px 8px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.canva-design-date {
+  font-size: 10px; color: var(--muted); padding: 0 8px 6px;
+}
+.canva-msg {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 14px; padding: 60px 20px; color: var(--muted); font-size: 14px; text-align: center;
+}
+.canva-spin {
+  width: 30px; height: 30px; border: 3px solid var(--border);
+  border-top-color: #7d2ae8; border-radius: 50%;
+  animation: cvSpin 0.7s linear infinite;
+}
+@keyframes cvSpin { to { transform: rotate(360deg); } }
+.canva-connect-btn {
+  background: #7d2ae8; color: #fff; border: none; border-radius: 8px;
+  padding: 10px 22px; font-size: 14px; font-weight: 600; cursor: pointer;
+  transition: background 0.12s; display: inline-flex; align-items: center; gap: 8px;
+}
+.canva-connect-btn:hover { background: #6a1fd1; }
+.canva-load-more {
+  display: block; width: 100%; margin-top: 16px;
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+  padding: 9px; font-size: 13px; color: var(--muted); cursor: pointer;
+  transition: background 0.1s;
+}
+.canva-load-more:hover { background: var(--border); color: var(--text); }
+.canva-foot {
+  display: flex; align-items: center; gap: 10px; padding: 14px 24px;
+  border-top: 1px solid var(--border); flex-shrink: 0;
+}
+.canva-foot-count { flex: 1; font-size: 13px; color: var(--muted); }
+.canva-btn-import {
+  background: #7d2ae8; color: #fff; border: none; border-radius: 8px;
+  padding: 8px 20px; font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: background 0.12s;
+}
+.canva-btn-import:hover:not(:disabled) { background: #6a1fd1; }
+.canva-btn-import:disabled { opacity: 0.4; cursor: not-allowed; }
+
 /* Upload drop zone */
 .dropzone {
   border: 2px dashed var(--border);
@@ -5345,6 +5453,14 @@ body.role-editor .admin-action {
           </svg>
           PowerPoint
         </button>
+        <button class="add-media-row-btn" onclick="closeAddMediaModal();openCanvaModal()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="flex-shrink:0">
+            <circle cx="12" cy="12" r="11" fill="#7d2ae8"/>
+            <path d="M12 6.5a5.5 5.5 0 1 0 3.18 9.97l1.2 1.2a7 7 0 1 1 0-9.34l-1.2 1.2A5.49 5.49 0 0 0 12 6.5z" fill="#fff"/>
+            <circle cx="16.5" cy="12" r="2" fill="#fff"/>
+          </svg>
+          Canva
+        </button>
         <button class="add-media-row-btn" onclick="closeAddMediaModal();addByUrl()">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0">
             <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
@@ -5391,6 +5507,51 @@ body.role-editor .admin-action {
         <span class="gdrive-foot-count" id="gdriveCount">No files selected</span>
         <button class="btn btn-secondary" onclick="gdriveClose()">Cancel</button>
         <button class="gdrive-btn-select" id="gdriveSelectBtn" onclick="gdriveImport()" disabled>Select</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Canva import modal ───────────────────────────────────────────────── -->
+  <div id="canvaModal" onclick="if(event.target===this)canvaClose()">
+    <div class="canva-box">
+      <div class="canva-head">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="12" fill="#7d2ae8"/>
+          <path d="M12 5.5a6.5 6.5 0 1 0 3.76 11.8l1.44 1.44a8.5 8.5 0 1 1 0-10.48l-1.44 1.44A6.48 6.48 0 0 0 12 5.5z" fill="#fff"/>
+          <circle cx="17.5" cy="12" r="2.5" fill="#fff"/>
+        </svg>
+        <h3>Import from Canva</h3>
+        <button class="canva-head-close" onclick="canvaClose()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="canva-toolbar" id="canvaToolbar" style="display:none">
+        <input class="canva-search" id="canvaSearch" type="search" placeholder="Filter designs…" oninput="canvaSearchFilter()">
+      </div>
+      <div class="canva-body" id="canvaBody">
+        <div class="canva-msg" id="canvaConnectMsg">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="12" fill="#7d2ae8" opacity=".12"/>
+            <circle cx="12" cy="12" r="12" fill="none" stroke="#7d2ae8" stroke-width="1.5"/>
+            <path d="M12 6.5a5.5 5.5 0 1 0 3.18 9.97l1.2 1.2a7 7 0 1 1 0-9.34l-1.2 1.2A5.49 5.49 0 0 0 12 6.5z" fill="#7d2ae8"/>
+            <circle cx="16.5" cy="12" r="2" fill="#7d2ae8"/>
+          </svg>
+          <div>
+            <div style="font-weight:600;color:var(--text);margin-bottom:6px">Connect your Canva account</div>
+            <div style="font-size:13px">Authorize Zigns to access your Canva designs</div>
+          </div>
+          <button class="canva-connect-btn" onclick="canvaStartAuth()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="12" fill="#fff" opacity=".2"/><path d="M12 5.5a6.5 6.5 0 1 0 3.76 11.8l1.44 1.44a8.5 8.5 0 1 1 0-10.48l-1.44 1.44A6.48 6.48 0 0 0 12 5.5z" fill="#fff"/><circle cx="17.5" cy="12" r="2.5" fill="#fff"/></svg>
+            Connect Canva
+          </button>
+        </div>
+      </div>
+      <div class="canva-foot" id="canvaFoot" style="display:none">
+        <span class="canva-foot-count" id="canvaCount">No designs selected</span>
+        <button class="btn btn-secondary" onclick="canvaClose()">Cancel</button>
+        <button class="canva-btn-import" id="canvaImportBtn" onclick="canvaImport()" disabled>Import</button>
       </div>
     </div>
   </div>
@@ -17068,7 +17229,7 @@ window.previewWeather = async function() {
 
   try {
     const params = new URLSearchParams({ location, units });
-    const r      = await fetch('/api/weather?' + params);
+    const r      = await fetch('/api/proxy?type=weather&' + params);
     if (!r.ok) {
       const body = await r.json().catch(() => ({}));
       throw new Error(body.error || 'HTTP ' + r.status);
@@ -18475,6 +18636,242 @@ window.saveMultiZoneSlide = async function() {
     toast('Could not save zone layout: ' + e.message, true);
   }
 };
+
+// ── Canva integration ─────────────────────────────────────────────────────
+
+let _canvaToken       = null;   // { accessToken, refreshToken, expiresAt }
+let _canvaAllDesigns  = [];     // all loaded design objects
+let _canvaShown       = [];     // filtered subset currently rendered
+let _canvaSelected    = new Set();
+let _canvaContinuation = null;
+
+async function openCanvaModal() {
+  document.getElementById('canvaModal').classList.add('open');
+
+  // Try loading stored token from Firestore
+  if (!_canvaToken || _canvaToken.expiresAt < Date.now() + 60_000) {
+    try {
+      const snap = await getDoc(doc(db, 'users', currentUser.uid));
+      const stored = snap.data()?.canvaToken;
+      if (stored && stored.expiresAt > Date.now() + 60_000) {
+        _canvaToken = stored;
+      }
+    } catch (_) {}
+  }
+
+  if (_canvaToken) {
+    await canvaLoadDesigns(true);
+  } else {
+    _canvaShowConnect();
+  }
+}
+
+function canvaClose() {
+  document.getElementById('canvaModal').classList.remove('open');
+}
+
+function _canvaShowConnect() {
+  document.getElementById('canvaConnectMsg').style.display = '';
+  document.getElementById('canvaToolbar').style.display = 'none';
+  document.getElementById('canvaFoot').style.display = 'none';
+}
+
+function canvaStartAuth() {
+  const uid = currentUser.uid;
+  const popup = window.open(
+    `/api/canva?uid=${encodeURIComponent(uid)}&init=1`,
+    'canva-auth',
+    'width=520,height=640,left=200,top=100'
+  );
+
+  const onMsg = async (e) => {
+    if (!e.data || e.data.type !== 'canva-auth-success') return;
+    window.removeEventListener('message', onMsg);
+    try { popup?.close(); } catch (_) {}
+
+    _canvaToken = { accessToken: e.data.accessToken, refreshToken: e.data.refreshToken, expiresAt: e.data.expiresAt };
+
+    // Persist token to Firestore so it survives page reloads
+    try {
+      await updateDoc(doc(db, 'users', currentUser.uid), { canvaToken: _canvaToken });
+    } catch (_) {}
+
+    await canvaLoadDesigns(true);
+  };
+  window.addEventListener('message', onMsg);
+
+  // Clean up listener if popup is closed without completing auth
+  const checkClosed = setInterval(() => {
+    if (popup?.closed) {
+      clearInterval(checkClosed);
+      window.removeEventListener('message', onMsg);
+    }
+  }, 1000);
+}
+
+async function canvaLoadDesigns(reset = false) {
+  const body    = document.getElementById('canvaBody');
+  const toolbar = document.getElementById('canvaToolbar');
+  const foot    = document.getElementById('canvaFoot');
+
+  if (reset) {
+    _canvaAllDesigns  = [];
+    _canvaShown       = [];
+    _canvaSelected    = new Set();
+    _canvaContinuation = null;
+    body.innerHTML = '<div class="canva-msg"><div class="canva-spin"></div><div>Loading your designs…</div></div>';
+    toolbar.style.display = 'none';
+    foot.style.display    = 'none';
+  }
+
+  let designs = [], continuation = null;
+  try {
+    const params = new URLSearchParams({ accessToken: _canvaToken.accessToken });
+    if (_canvaContinuation) params.set('continuation', _canvaContinuation);
+    const r = await fetch(`/api/canva?action=designs&${params}`);
+    if (r.status === 401) {
+      _canvaToken = null;
+      try { await updateDoc(doc(db, 'users', currentUser.uid), { canvaToken: null }); } catch (_) {}
+      _canvaShowConnect();
+      return;
+    }
+    if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || `HTTP ${r.status}`);
+    const data    = await r.json();
+    designs       = data.designs || [];
+    continuation  = data.continuation || null;
+  } catch (e) {
+    body.innerHTML = `<div class="canva-msg"><div style="color:var(--danger)">Failed to load designs: ${e.message}</div><button class="btn btn-secondary" onclick="canvaLoadDesigns(true)">Retry</button></div>`;
+    return;
+  }
+
+  _canvaAllDesigns  = [..._canvaAllDesigns, ...designs];
+  _canvaContinuation = continuation;
+  _canvaShown        = [..._canvaAllDesigns];
+
+  toolbar.style.display = '';
+  foot.style.display    = 'flex';
+  canvaRenderDesigns();
+}
+
+function canvaRenderDesigns() {
+  const body  = document.getElementById('canvaBody');
+  const query = (document.getElementById('canvaSearch')?.value || '').toLowerCase().trim();
+  _canvaShown = query
+    ? _canvaAllDesigns.filter(d => d.title.toLowerCase().includes(query))
+    : [..._canvaAllDesigns];
+
+  if (!_canvaShown.length) {
+    body.innerHTML = '<div class="canva-msg"><div>No designs found.</div></div>';
+    return;
+  }
+
+  const checkSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+  const placeholder = `<svg class="canva-thumb-placeholder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`;
+
+  let html = '<div class="canva-design-grid">';
+  for (const d of _canvaShown) {
+    const sel   = _canvaSelected.has(d.id) ? 'cv-sel' : '';
+    const date  = d.updatedAt ? new Date(d.updatedAt * 1000).toLocaleDateString() : '';
+    html += `<div class="canva-design-card ${sel}" onclick="canvaToggleSelect('${d.id}')" data-id="${d.id}">
+      <div class="canva-thumb-wrap">
+        ${d.thumbnail
+          ? `<img src="${d.thumbnail}" alt="${d.title}" onload="this.classList.add('cv-loaded')" onerror="this.style.display='none'">`
+          : placeholder}
+        <div class="canva-cb">${sel ? checkSvg : ''}</div>
+      </div>
+      <div class="canva-design-name" title="${d.title}">${d.title}</div>
+      ${date ? `<div class="canva-design-date">${date}</div>` : ''}
+    </div>`;
+  }
+  html += '</div>';
+
+  if (_canvaContinuation) {
+    html += `<button class="canva-load-more" onclick="canvaLoadDesigns(false)">Load more designs…</button>`;
+  }
+
+  body.innerHTML = html;
+  canvaUpdateFooter();
+}
+
+function canvaToggleSelect(id) {
+  if (_canvaSelected.has(id)) {
+    _canvaSelected.delete(id);
+  } else {
+    _canvaSelected.add(id);
+  }
+  // Re-render just the affected card
+  const card = document.querySelector(`#canvaBody .canva-design-card[data-id="${id}"]`);
+  if (card) {
+    const isSel = _canvaSelected.has(id);
+    card.classList.toggle('cv-sel', isSel);
+    const cb = card.querySelector('.canva-cb');
+    if (cb) cb.innerHTML = isSel
+      ? `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`
+      : '';
+  }
+  canvaUpdateFooter();
+}
+
+function canvaUpdateFooter() {
+  const count   = _canvaSelected.size;
+  const countEl = document.getElementById('canvaCount');
+  const importBtn = document.getElementById('canvaImportBtn');
+  countEl.textContent   = count === 0 ? 'No designs selected' : `${count} design${count !== 1 ? 's' : ''} selected`;
+  importBtn.disabled    = count === 0;
+}
+
+function canvaSearchFilter() {
+  canvaRenderDesigns();
+}
+
+async function canvaImport() {
+  const btn = document.getElementById('canvaImportBtn');
+  if (_canvaSelected.size === 0) return;
+
+  const ids    = [..._canvaSelected];
+  const total  = ids.length;
+  btn.disabled = true;
+  btn.textContent = `Exporting…`;
+
+  let imported = 0, failed = 0;
+  for (const designId of ids) {
+    const design = _canvaAllDesigns.find(d => d.id === designId);
+    try {
+      const r = await fetch('/api/canva', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'export', accessToken: _canvaToken.accessToken, designId, orgId: currentOrgId }),
+      });
+      if (r.status === 401) {
+        _canvaToken = null;
+        try { await updateDoc(doc(db, 'users', currentUser.uid), { canvaToken: null }); } catch (_) {}
+        toast('Canva session expired — please reconnect', true);
+        break;
+      }
+      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || `HTTP ${r.status}`);
+      const { url } = await r.json();
+      const name = (design?.title || 'Canva Design') + '.png';
+      saveMediaRecord(url, name, 'image', null);
+      slides.push({ id: crypto.randomUUID(), url, thumbnailUrl: url, name, active: true });
+      imported++;
+      btn.textContent = `Exporting ${imported}/${total}…`;
+    } catch (e) {
+      console.error('canvaImport:', designId, e);
+      failed++;
+    }
+  }
+
+  renderGrid(); updateCount(); await pushToFirestore();
+  canvaClose();
+  logActivity(`Imported ${imported} design${imported !== 1 ? 's' : ''} from Canva`);
+  updateDashboard();
+
+  if (failed > 0) {
+    toast(`${imported} imported, ${failed} failed — see console for details`, true);
+  } else {
+    toast(`${imported} Canva design${imported !== 1 ? 's' : ''} imported`);
+  }
+}
 
 // ── Pull-to-refresh (on the app-main scroll area) ─────────────────────────
 (function setupPullToRefresh() {

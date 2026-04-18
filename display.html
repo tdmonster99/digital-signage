@@ -323,7 +323,7 @@
 
       async function loadRss() {
         try {
-          const r = await fetch('/api/rss-proxy?url=' + encodeURIComponent(cfg.rssUrl));
+          const r = await fetch('/api/proxy?type=rss&url=' + encodeURIComponent(cfg.rssUrl));
           if (!r.ok) { _applyTickerText(cfg, cfg.tickerText || ''); return; }
           const data = await r.json();
           const text = data.headlines && data.headlines.length
@@ -544,7 +544,7 @@
         const params = new URLSearchParams({ location: slide.location || 'New York', units: slide.units || 'imperial' });
         const ctrl   = new AbortController();
         const tmo    = setTimeout(() => ctrl.abort(), 15000);
-        const r      = await fetch('/api/weather?' + params, { signal: ctrl.signal });
+        const r      = await fetch('/api/proxy?type=weather&' + params, { signal: ctrl.signal });
         clearTimeout(tmo);
         if (!r.ok) {
           const body = await r.json().catch(() => ({}));
@@ -866,7 +866,7 @@
         const params = new URLSearchParams({ location: loc, units });
         const ctrl   = new AbortController();
         const tmo    = setTimeout(() => ctrl.abort(), 15000);
-        const r      = await fetch('/api/weather?' + params, { signal: ctrl.signal });
+        const r      = await fetch('/api/proxy?type=weather&' + params, { signal: ctrl.signal });
         clearTimeout(tmo);
         if (!r.ok) { const b = await r.json().catch(()=>({})); throw new Error(b.error||'HTTP '+r.status); }
         const data = await r.json();
