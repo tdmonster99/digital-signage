@@ -4,6 +4,13 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-04-19 — Codex (session 12)
+- **Template library UX simplification**: removed the redundant Templates toolbar button and the confusing Design/Use gallery toggle.
+  - `admin.html`: Design a Slide remains the single entry point; choosing a template now opens a preview with clear Customize and Use Template actions.
+  - `ROADMAP.md`: updated the template-library status to reflect the unified Design a Slide gallery flow.
+
+---
+
 ## 2026-04-19 — Codex (session 11)
 - **Content Templates Library initial implementation**: reused the existing designer template catalog as a library flow.
   - `admin.html`: added a Templates toolbar entry, Design/Use gallery modes, template preview via the high-quality slide preview lightbox, and "Use Template" insertion into the current slideshow draft.

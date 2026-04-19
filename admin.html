@@ -1881,19 +1881,6 @@ body > canvas[width="1920"][height="1080"] {
 }
 .gallery-header h2 { font-size: 22px; font-weight: 700; color: var(--text); }
 .gallery-header p  { font-size: 13px; color: var(--muted); margin-top: 3px; }
-.gallery-header-actions { display: flex; align-items: flex-start; gap: 10px; }
-.gallery-mode {
-  display: flex; gap: 2px; padding: 3px;
-  background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
-}
-.gallery-mode button {
-  border: 0; background: transparent; color: var(--muted);
-  font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 700;
-  padding: 7px 12px; border-radius: 7px; cursor: pointer;
-  transition: background .14s, color .14s;
-}
-.gallery-mode button:hover { color: var(--text); }
-.gallery-mode button.active { background: var(--accent); color: #fff; }
 .gallery-close {
   width: 34px; height: 34px; border-radius: 8px; flex-shrink: 0;
   border: 1px solid var(--border); background: var(--surface2);
@@ -1949,7 +1936,6 @@ body > canvas[width="1920"][height="1080"] {
 }
 @media (max-width: 720px) {
   .gallery-header { flex-direction: column; gap: 12px; }
-  .gallery-header-actions { width: 100%; justify-content: space-between; }
 }
 
 /* ── AI Generate ─────────────────────────────────────────────────────────── */
@@ -3919,13 +3905,6 @@ body.role-editor .admin-action {
             </svg>
             Design a Slide
           </button>
-          <button class="btn btn-secondary" onclick="openTemplateLibrary()">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-              <rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/>
-              <rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>
-            </svg>
-            Templates
-          </button>
           <button class="btn btn-secondary" onclick="addSlideGroup()">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
               <rect x="2" y="7" width="20" height="14" rx="2"/>
@@ -3959,13 +3938,6 @@ body.role-editor .admin-action {
                   <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
                 </svg>
                 Design a Slide
-              </button>
-              <button class="toolbar-overflow-item" onclick="closeToolbarOverflow();openTemplateLibrary()">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                  <rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/>
-                  <rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>
-                </svg>
-                Templates
               </button>
               <button class="toolbar-overflow-item" onclick="closeToolbarOverflow();addSlideGroup()">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
@@ -5895,13 +5867,7 @@ body.role-editor .admin-action {
         <h2 id="galleryTitle">Choose a template or start blank</h2>
         <p id="gallerySubtitle">Select a starting point for your slide design</p>
       </div>
-      <div class="gallery-header-actions">
-        <div class="gallery-mode" aria-label="Template mode">
-          <button type="button" data-gallery-mode="design" class="active" onclick="setGalleryMode('design')">Design</button>
-          <button type="button" data-gallery-mode="insert" onclick="setGalleryMode('insert')">Use</button>
-        </div>
-        <button class="gallery-close" onclick="closeTemplateGallery()">✕</button>
-      </div>
+      <button class="gallery-close" onclick="closeTemplateGallery()">✕</button>
     </div>
     <div class="gallery-search-wrap">
       <input id="gallerySearch" type="text" placeholder="Search templates…" oninput="filterGallery()">
@@ -11994,21 +11960,11 @@ window.openDesigner = function(existingSlide = null, slideIdx = null) {
     launchDesigner(existingSlide);
   } else {
     // New slide — show template picker first
-    openTemplateGallery('design');
+    openTemplateGallery();
   }
 };
 
-window.openTemplateLibrary = function() {
-  if (typeof fabric === 'undefined') {
-    toast('Fabric.js failed to load — check your internet connection and refresh.', true);
-    return;
-  }
-  removeOffscreenFabricArtifacts();
-  openTemplateGallery('insert');
-};
-
-function openTemplateGallery(mode = 'design') {
-  setGalleryMode(mode);
+function openTemplateGallery() {
   document.getElementById('templateGallery').style.display = 'flex';
   filterGallery();
   setTimeout(generateTemplateThumbnails, 80);
@@ -12019,19 +11975,6 @@ window.closeTemplateGallery = function() {
 };
 
 let _galleryCat = 'all';
-let _galleryMode = 'design';
-window.setGalleryMode = function(mode) {
-  _galleryMode = mode === 'insert' ? 'insert' : 'design';
-  document.querySelectorAll('[data-gallery-mode]').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.galleryMode === _galleryMode);
-  });
-  const title = document.getElementById('galleryTitle');
-  const sub   = document.getElementById('gallerySubtitle');
-  if (title) title.textContent = _galleryMode === 'insert' ? 'Content Templates' : 'Choose a template or start blank';
-  if (sub)   sub.textContent   = _galleryMode === 'insert'
-    ? 'Preview a template, then add it to this slideshow'
-    : 'Select a starting point for your slide design';
-};
 window.setGalleryCat = function(btn, cat) {
   _galleryCat = cat;
   document.querySelectorAll('.gallery-cat').forEach(b => b.classList.toggle('active', b === btn));
@@ -12051,11 +11994,11 @@ window.filterGallery = function() {
 };
 
 window.selectTemplate = function(name) {
-  if (_galleryMode === 'insert') {
+  if (name && name !== 'blank') {
     openTemplatePreview(name);
     return;
   }
-  pendingTemplate = name;
+  pendingTemplate = 'blank';
   closeTemplateGallery();
   launchDesigner(null);
 };
