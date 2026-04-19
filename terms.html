@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Terms of Service – Zigns</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --accent: #0043ce;
+      --radius: 10px;
+      --bg: #f5f6fa;
+      --surface: #ffffff;
+      --border: #e2e5ed;
+      --text: #111827;
+      --text-sub: #6b7280;
+      --link: #0043ce;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f1117;
+        --surface: #1a1d27;
+        --border: #2a2d3a;
+        --text: #f0f2f8;
+        --text-sub: #9ca3af;
+        --accent: #4d8bff;
+        --link: #4d8bff;
+      }
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      font-size: 16px;
+    }
+
+    a { color: var(--link); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ── Header ── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .logo {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.02em;
+    }
+
+    .logo span { color: var(--accent); }
+
+    header nav a {
+      font-size: 0.875rem;
+      color: var(--text-sub);
+      margin-left: 1.5rem;
+    }
+
+    /* ── Layout ── */
+    .page-wrap {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 3rem 2rem 5rem;
+    }
+
+    .doc-header {
+      margin-bottom: 2.5rem;
+      padding-bottom: 2rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .doc-header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      margin-bottom: 0.5rem;
+    }
+
+    .doc-meta {
+      font-size: 0.875rem;
+      color: var(--text-sub);
+    }
+
+    /* ── TOC ── */
+    .toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem 2rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .toc h2 {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-sub);
+      margin-bottom: 0.75rem;
+    }
+
+    .toc ol {
+      padding-left: 1.2rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.2rem 2rem;
+    }
+
+    .toc li { font-size: 0.875rem; }
+
+    @media (max-width: 600px) { .toc ol { grid-template-columns: 1fr; } }
+
+    /* ── Preamble callout ── */
+    .preamble {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--accent);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 2.5rem;
+      font-size: 0.9375rem;
+    }
+
+    /* ── Content sections ── */
+    .section {
+      margin-bottom: 2.5rem;
+    }
+
+    .section h2 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.85rem;
+      padding-top: 0.5rem;
+    }
+
+    .section h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin: 1.25rem 0 0.5rem;
+    }
+
+    .section p {
+      margin-bottom: 0.85rem;
+    }
+
+    .section ul, .section ol {
+      padding-left: 1.4rem;
+      margin-bottom: 0.85rem;
+    }
+
+    .section li {
+      margin-bottom: 0.35rem;
+    }
+
+    .section li strong {
+      color: var(--text);
+    }
+
+    /* ── Caps block ── */
+    .caps {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text-sub);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem 1.25rem;
+      margin-bottom: 0.85rem;
+      line-height: 1.6;
+    }
+
+    /* ── Footer ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2rem;
+      text-align: center;
+      font-size: 0.875rem;
+      color: var(--text-sub);
+    }
+
+    footer a { margin: 0 0.75rem; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">z<span>i</span>gns</div>
+  <nav>
+    <a href="https://app.zigns.io">Back to App</a>
+    <a href="/privacy.html">Privacy Policy</a>
+  </nav>
+</header>
+
+<div class="page-wrap">
+
+  <div class="doc-header">
+    <h1>Terms of Service</h1>
+    <p class="doc-meta">Last updated: April 19, 2026</p>
+  </div>
+
+  <div class="preamble">
+    <strong>Please read these Terms of Service carefully before using the Zigns Platform.</strong> By creating an account or accessing the Services, you agree to be bound by these Terms on behalf of yourself or your organization. If you do not agree, you may not use the Services.
+  </div>
+
+  <div class="toc">
+    <h2>Contents</h2>
+    <ol>
+      <li><a href="#definitions">Definitions</a></li>
+      <li><a href="#grant">License Grant</a></li>
+      <li><a href="#restrictions">Restrictions</a></li>
+      <li><a href="#obligations">Customer Obligations</a></li>
+      <li><a href="#payment">Payment and Billing</a></li>
+      <li><a href="#ip">Intellectual Property</a></li>
+      <li><a href="#content">Customer Content</a></li>
+      <li><a href="#dmca">Copyright (DMCA)</a></li>
+      <li><a href="#third-party">Third-Party Services</a></li>
+      <li><a href="#personal-data">Personal Data</a></li>
+      <li><a href="#warranty">Warranty Disclaimer</a></li>
+      <li><a href="#liability">Limitation of Liability</a></li>
+      <li><a href="#indemnification">Indemnification</a></li>
+      <li><a href="#termination">Term and Termination</a></li>
+      <li><a href="#modifications">Modifications</a></li>
+      <li><a href="#governing-law">Governing Law</a></li>
+      <li><a href="#misc">Miscellaneous</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ol>
+  </div>
+
+  <!-- 1 -->
+  <div class="section" id="definitions">
+    <h2>1. Definitions</h2>
+    <ul>
+      <li><strong>"Agreement"</strong> means these Terms of Service and any Order or addendum incorporated herein.</li>
+      <li><strong>"Zigns," "we," "us," or "our"</strong> refers to the company operating the Zigns Platform.</li>
+      <li><strong>"Customer," "you," or "your"</strong> means the individual or legal entity that has registered for or is using the Services.</li>
+      <li><strong>"Services"</strong> means the Zigns cloud-based digital signage management platform accessible at <a href="https://app.zigns.io">https://app.zigns.io</a> and any related websites, APIs, or features.</li>
+      <li><strong>"Effective Date"</strong> means the date you first access or register for the Services.</li>
+      <li><strong>"Authorized User"</strong> means any employee, contractor, or agent you authorize to access the Services under your account.</li>
+      <li><strong>"Screen"</strong> means a display device or browser running the Zigns display software that you register and manage through the Services.</li>
+      <li><strong>"Customer Content"</strong> means any images, videos, text, data, or other material you upload to or create within the Services.</li>
+      <li><strong>"Subscription Term"</strong> means the period during which you have an active paid plan, as specified in your Order or at time of purchase.</li>
+      <li><strong>"Free Plan"</strong> means the no-cost tier of the Services, limited to one Screen and basic features, available indefinitely subject to the activity requirements in Section 14.</li>
+      <li><strong>"Documentation"</strong> means any user guides, help articles, and related materials we make available about the Services.</li>
+    </ul>
+  </div>
+
+  <!-- 2 -->
+  <div class="section" id="grant">
+    <h2>2. License Grant</h2>
+    <p>Subject to your compliance with this Agreement, Zigns grants you a non-exclusive, non-transferable, limited right to access and use the Services solely for your internal business operations, up to the number of Screens authorized by your plan, during the Subscription Term (or, for the Free Plan, during the period it remains active).</p>
+    <p>Zigns will use commercially reasonable efforts to provide the Services in a manner consistent with industry best practices and in material conformance with its Documentation.</p>
+    <p>You may register unlimited Authorized Users at no additional cost. Each Authorized User must have their own login credentials; sharing credentials between users is not permitted. Each Authorized User is responsible for maintaining the security of their account and password.</p>
+  </div>
+
+  <!-- 3 -->
+  <div class="section" id="restrictions">
+    <h2>3. Restrictions</h2>
+    <p>You shall not, and shall not permit any Authorized User or third party to:</p>
+    <ul>
+      <li><strong>(a)</strong> Modify, adapt, copy, translate, perform, display, or create derivative works based on the Services or Software, or commit copyright infringement.</li>
+      <li><strong>(b)</strong> Decompile, reverse engineer, disassemble, or attempt to obtain the source code of the Services or any component thereof.</li>
+      <li><strong>(c)</strong> Sell, sublicense, resell, lease, distribute, transfer, or make the Services available to any third party except as expressly permitted herein.</li>
+      <li><strong>(d)</strong> Duplicate, copy, or reuse the visual design elements, HTML, CSS, or conceptual elements of the Services interface.</li>
+      <li><strong>(e)</strong> Access, store, distribute, or transmit viruses or any material that is unlawful, defamatory, harassing, obscene, sexually explicit, or otherwise harmful through the Services.</li>
+      <li><strong>(f)</strong> Use the Services for any purpose or in any manner that violates applicable law or regulation.</li>
+      <li><strong>(g)</strong> Attempt to gain unauthorized access to the Services, other accounts, or any related systems or networks.</li>
+      <li><strong>(h)</strong> Use automated scripts, bots, or scrapers to access the Services in a manner that exceeds normal use or degrades performance for other users.</li>
+      <li><strong>(i)</strong> On the Free Plan, create or maintain more than one free account.</li>
+    </ul>
+    <p>Zigns reserves the right to suspend or terminate your access to any content or feature that violates these restrictions, without liability to you.</p>
+  </div>
+
+  <!-- 4 -->
+  <div class="section" id="obligations">
+    <h2>4. Customer Obligations</h2>
+    <p>You agree to:</p>
+    <ul>
+      <li>Provide accurate, current, and complete account and billing information and keep it updated.</li>
+      <li>Comply with all applicable laws and regulations in your use of the Services, including laws governing the content you display on your Screens.</li>
+      <li>Notify Zigns promptly at <a href="mailto:support@zigns.io">support@zigns.io</a> if you become aware of any unauthorized access to your account.</li>
+      <li>Designate a qualified administrator responsible for managing your organization's account, users, and Screens.</li>
+      <li>Ensure that Authorized Users are aware of and comply with this Agreement.</li>
+      <li>Use compatible hardware and network infrastructure to run the Zigns display software on your Screens.</li>
+    </ul>
+    <p>You are solely responsible for the content you choose to display on your Screens and for ensuring that such content complies with all applicable laws and does not infringe on the rights of third parties.</p>
+  </div>
+
+  <!-- 5 -->
+  <div class="section" id="payment">
+    <h2>5. Payment and Billing</h2>
+
+    <h3>5.1 Pricing</h3>
+    <p>Subscription pricing is published at <a href="https://app.zigns.io">https://app.zigns.io</a>. We may update fees with reasonable advance notice. Promotional pricing offered to other customers does not automatically apply to your account unless expressly stated.</p>
+
+    <h3>5.2 Payment Terms</h3>
+    <p>Subscription fees are charged at the beginning of each billing period via the payment method you provide. All fees are non-refundable except as expressly stated in this Agreement. By subscribing, you authorize Zigns or our payment processor (Stripe) to charge your payment method on a recurring basis until you cancel.</p>
+
+    <h3>5.3 Taxes</h3>
+    <p>Fees do not include any applicable federal, state, municipal, or other taxes. You are responsible for paying all such taxes, excluding taxes on Zigns's net income.</p>
+
+    <h3>5.4 Cancellation</h3>
+    <p>You may cancel your subscription at any time through the Billing section of your account Settings. Cancellation takes effect at the end of the current billing period. You will retain access to paid features until the end of the period for which you have already paid. After cancellation, your account reverts to the Free Plan.</p>
+
+    <h3>5.5 Non-Renewal</h3>
+    <p>If your subscription is not renewed, your account will be downgraded to the Free Plan. You acknowledge that this may result in certain content or features becoming inaccessible. Screens beyond the Free Plan limit will be deactivated.</p>
+
+    <h3>5.6 Refunds</h3>
+    <p>All subscription fees are non-refundable unless otherwise required by applicable law. If you believe you have been charged in error, contact us at <a href="mailto:hello@zigns.io">hello@zigns.io</a> within 30 days of the charge.</p>
+  </div>
+
+  <!-- 6 -->
+  <div class="section" id="ip">
+    <h2>6. Intellectual Property</h2>
+    <p>Zigns and its licensors retain all intellectual property rights in and to the Services, including the software, platform interface, pre-built slide templates, and Documentation. All rights not expressly granted to you in this Agreement are reserved by Zigns.</p>
+    <p>Nothing in this Agreement transfers ownership of the Services or any component thereof to you. You receive only the limited right to use the Services as described herein.</p>
+
+    <h3>6.1 Feedback</h3>
+    <p>If you provide Zigns with suggestions, ideas, or feedback relating to the Services ("Feedback"), Zigns may use that Feedback without restriction or obligation to you. By submitting Feedback, you grant Zigns a perpetual, irrevocable, royalty-free license to use and incorporate that Feedback into the Services.</p>
+
+    <h3>6.2 Third-Party IP Claims</h3>
+    <p>You agree to promptly notify Zigns of any third-party claim relating to intellectual property rights in the Services that comes to your attention.</p>
+  </div>
+
+  <!-- 7 -->
+  <div class="section" id="content">
+    <h2>7. Customer Content</h2>
+
+    <h3>7.1 Your Ownership</h3>
+    <p>You retain all copyright and other proprietary rights in Customer Content that you upload or create within the Services.</p>
+
+    <h3>7.2 License to Zigns</h3>
+    <p>By uploading Customer Content, you grant Zigns a worldwide, non-exclusive, royalty-free license to host, store, transfer, display, and reproduce your Customer Content solely for the purpose of providing the Services to you.</p>
+
+    <h3>7.3 Your Representations</h3>
+    <p>By uploading Customer Content, you represent and warrant that:</p>
+    <ul>
+      <li><strong>(a)</strong> You own or have obtained all necessary rights, licenses, and permissions to upload and display the content through the Services.</li>
+      <li><strong>(b)</strong> Your Customer Content does not infringe any third-party intellectual property rights, violate any person's privacy or publicity rights, or violate any applicable law.</li>
+      <li><strong>(c)</strong> Your Customer Content is not defamatory, harassing, obscene, pornographic, hateful, or otherwise objectionable.</li>
+    </ul>
+
+    <h3>7.4 Zigns's Rights Regarding Content</h3>
+    <p>Zigns is not obligated to monitor Customer Content, but reserves the right to review, remove, or block any Customer Content that violates this Agreement or that we determine in our sole discretion to be objectionable, without prior notice. We are not responsible for any Customer Content and will not be liable for it.</p>
+  </div>
+
+  <!-- 8 -->
+  <div class="section" id="dmca">
+    <h2>8. Copyright (DMCA)</h2>
+    <p>Zigns respects intellectual property rights and complies with the Digital Millennium Copyright Act (17 U.S.C. § 512). If you believe that material available through the Services infringes your copyright, please send a written notification to our Designated Agent:</p>
+    <ul>
+      <li><strong>Email:</strong> <a href="mailto:hello@zigns.io">hello@zigns.io</a></li>
+    </ul>
+    <p>Your notification must include:</p>
+    <ul>
+      <li><strong>(a)</strong> An electronic or physical signature of the person authorized to act on behalf of the copyright owner</li>
+      <li><strong>(b)</strong> Identification of the copyrighted work you claim has been infringed</li>
+      <li><strong>(c)</strong> Identification of the material you claim is infringing, with sufficient information to locate it</li>
+      <li><strong>(d)</strong> Your contact information (address, telephone, and email)</li>
+      <li><strong>(e)</strong> A statement that you have a good faith belief that the use is not authorized by the copyright owner, its agent, or the law</li>
+      <li><strong>(f)</strong> A statement, under penalty of perjury, that the information in your notification is accurate and that you are the copyright owner or authorized to act on their behalf</li>
+    </ul>
+    <p>Zigns will terminate the accounts of users determined to be repeat infringers.</p>
+  </div>
+
+  <!-- 9 -->
+  <div class="section" id="third-party">
+    <h2>9. Third-Party Services</h2>
+    <p>The Services may integrate with or link to third-party services, websites, or content (such as weather data providers, RSS feeds, or YouTube). These third-party services are not under Zigns's control, and Zigns is not responsible for their content, terms, or privacy practices. Your use of third-party services is at your own risk and subject to their respective terms and policies.</p>
+    <p>Zigns uses certain third-party service providers to operate the Platform, including Firebase (Google), Amazon Web Services, Stripe, Resend, and Vercel. Our use of these providers is governed by our Privacy Policy.</p>
+  </div>
+
+  <!-- 10 -->
+  <div class="section" id="personal-data">
+    <h2>10. Personal Data</h2>
+    <p>Zigns processes personal data in connection with your use of the Services as described in our <a href="/privacy.html">Privacy Policy</a>, which is incorporated into this Agreement by reference.</p>
+    <p>To the extent you use the Services to display content that includes personal data of your audience or end users, you are the data controller for that personal data and are solely responsible for ensuring its lawful collection, use, and display in compliance with applicable privacy laws.</p>
+  </div>
+
+  <!-- 11 -->
+  <div class="section" id="warranty">
+    <h2>11. Warranty Disclaimer</h2>
+    <p>Zigns warrants that during the Subscription Term, the Services will be provided in a manner consistent with industry best practices and will operate in material conformance with the Documentation under normal use conditions.</p>
+    <div class="caps">
+      EXCEPT AS SET FORTH ABOVE, THE SERVICES ARE PROVIDED "AS IS" AND "AS AVAILABLE." ZIGNS AND ITS AFFILIATES, OFFICERS, EMPLOYEES, AND LICENSORS EXPRESSLY DISCLAIM ALL WARRANTIES OF ANY KIND, WHETHER EXPRESS, IMPLIED, OR STATUTORY, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND NON-INFRINGEMENT. ZIGNS DOES NOT WARRANT THAT THE SERVICES WILL BE UNINTERRUPTED, ERROR-FREE, OR FREE OF VIRUSES OR OTHER HARMFUL COMPONENTS.
+    </div>
+    <p>During any free trial period, all Services are provided "AS IS" without support or warranty of any kind.</p>
+  </div>
+
+  <!-- 12 -->
+  <div class="section" id="liability">
+    <h2>12. Limitation of Liability</h2>
+    <div class="caps">
+      TO THE FULLEST EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT WILL ZIGNS OR ITS AFFILIATES BE LIABLE TO YOU FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING BUT NOT LIMITED TO LOSS OF PROFITS, LOSS OF DATA, LOSS OF GOODWILL, OR BUSINESS INTERRUPTION, ARISING OUT OF OR IN CONNECTION WITH THIS AGREEMENT OR YOUR USE OF THE SERVICES, EVEN IF ZIGNS HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+    </div>
+    <div class="caps">
+      TO THE FULLEST EXTENT PERMITTED BY APPLICABLE LAW, ZIGNS'S AGGREGATE LIABILITY TO YOU FOR ALL CLAIMS ARISING OUT OF OR RELATING TO THIS AGREEMENT OR THE SERVICES IS LIMITED TO THE GREATER OF: (A) THE TOTAL AMOUNT YOU PAID TO ZIGNS IN THE TWELVE (12) MONTHS PRECEDING THE EVENT GIVING RISE TO THE CLAIM, OR (B) ONE HUNDRED U.S. DOLLARS ($100).
+    </div>
+    <p>Some jurisdictions do not allow the exclusion or limitation of incidental or consequential damages, so the above limitations may not apply to you.</p>
+  </div>
+
+  <!-- 13 -->
+  <div class="section" id="indemnification">
+    <h2>13. Indemnification</h2>
+    <p>You agree to defend, indemnify, and hold harmless Zigns and its officers, directors, employees, and agents from and against any and all third-party claims, damages, losses, liabilities, costs, and expenses (including reasonable attorneys' fees) arising out of or related to:</p>
+    <ul>
+      <li><strong>(a)</strong> Your breach of this Agreement or any applicable law or regulation</li>
+      <li><strong>(b)</strong> Your or any Authorized User's use of the Services</li>
+      <li><strong>(c)</strong> Your Customer Content, including any claim that it infringes a third party's intellectual property or other rights</li>
+      <li><strong>(d)</strong> Your violation of any third party's rights</li>
+    </ul>
+  </div>
+
+  <!-- 14 -->
+  <div class="section" id="termination">
+    <h2>14. Term and Termination</h2>
+
+    <h3>14.1 Term</h3>
+    <p>This Agreement commences on the Effective Date and continues until terminated as set forth herein.</p>
+
+    <h3>14.2 Termination for Cause</h3>
+    <p>Either party may terminate this Agreement by written notice if:</p>
+    <ul>
+      <li><strong>(a)</strong> The other party materially breaches this Agreement and fails to cure such breach within thirty (30) days of written notice; or</li>
+      <li><strong>(b)</strong> The other party becomes insolvent, makes an assignment for the benefit of creditors, or has a receiver or administrator appointed; or</li>
+      <li><strong>(c)</strong> You engage in illegal activities through the Services.</li>
+    </ul>
+
+    <h3>14.3 Termination for Convenience</h3>
+    <p>You may terminate this Agreement at any time by canceling your subscription through the account Settings or by providing thirty (30) days' written notice. Pre-paid fees for any unused portion of the Subscription Term are non-refundable except as required by applicable law.</p>
+
+    <h3>14.4 Effects of Termination</h3>
+    <p>Upon expiration or termination for any reason:</p>
+    <ul>
+      <li>All licenses granted under this Agreement immediately terminate</li>
+      <li>You must cease all use of the Services</li>
+      <li>Zigns may delete or dispose of your Customer Content and account data in accordance with our Privacy Policy and data retention practices</li>
+      <li>Sections 3, 6, 7.3, 11, 12, 13, 14.3, 16, and 17 will survive termination</li>
+    </ul>
+
+    <h3>14.5 Inactive Free Accounts</h3>
+    <p>Free Plan accounts that have been inactive (no login) for 365 consecutive days will be permanently deleted. Zigns will send email reminders at 60-day intervals beginning 6 months before deletion.</p>
+
+    <h3>14.6 Service Modifications</h3>
+    <p>Zigns reserves the right to modify, suspend, or discontinue any aspect of the Services at any time with reasonable notice where practicable. Zigns will not be liable for any modification, suspension, or discontinuation of the Services.</p>
+  </div>
+
+  <!-- 15 -->
+  <div class="section" id="modifications">
+    <h2>15. Modifications to this Agreement</h2>
+    <p>Zigns reserves the right to modify this Agreement at any time upon at least seven (7) days' notice. We will notify you of material changes by posting an updated version of this Agreement on this page and, where appropriate, by emailing you at your account email address.</p>
+    <p>Your continued use of the Services after the effective date of any modification constitutes your acceptance of the modified Agreement. If you object to a material modification, your sole remedy is to stop using the Services and, if applicable, terminate your subscription as described in Section 14.3.</p>
+  </div>
+
+  <!-- 16 -->
+  <div class="section" id="governing-law">
+    <h2>16. Governing Law and Jurisdiction</h2>
+    <p>This Agreement is governed by and construed in accordance with the laws of the State of Delaware, without regard to its conflict-of-law principles. You consent to the exclusive personal jurisdiction and venue of the state and federal courts located in Delaware for the resolution of any dispute arising from or related to this Agreement.</p>
+    <p>The English language text of this Agreement is the only authentic text. Any translation is provided for convenience only.</p>
+  </div>
+
+  <!-- 17 -->
+  <div class="section" id="misc">
+    <h2>17. Miscellaneous</h2>
+
+    <h3>17.1 Entire Agreement</h3>
+    <p>This Agreement, together with any applicable Order and our Privacy Policy, constitutes the entire agreement between you and Zigns with respect to the Services and supersedes all prior and contemporaneous understandings.</p>
+
+    <h3>17.2 Severability</h3>
+    <p>If any provision of this Agreement is held to be invalid or unenforceable, that provision will be modified to the minimum extent necessary to make it enforceable, and the remaining provisions will continue in full force and effect.</p>
+
+    <h3>17.3 Waiver</h3>
+    <p>No waiver by either party of any breach or default shall be deemed a waiver of any prior or subsequent breach or default. Failure to enforce any provision of this Agreement does not constitute a waiver of the right to enforce it in the future.</p>
+
+    <h3>17.4 Assignment</h3>
+    <p>You may not assign or transfer this Agreement or any rights hereunder without Zigns's prior written consent. Zigns may assign this Agreement in connection with a merger, acquisition, or sale of all or substantially all of its assets, without your consent, provided your rights under this Agreement are not materially diminished.</p>
+
+    <h3>17.5 Force Majeure</h3>
+    <p>Neither party will be liable for delays or failures in performance resulting from causes beyond its reasonable control, including acts of God, fire, flood, natural disasters, war, riots, government actions, power outages, internet disruptions, or other similar events. Financial inability to perform is not a force majeure event.</p>
+
+    <h3>17.6 Export Compliance</h3>
+    <p>You agree to comply with all applicable U.S. and international export control and sanctions laws and regulations in your use of the Services. You represent that you are not located in, or a national of, any country subject to U.S. trade sanctions or embargoes.</p>
+
+    <h3>17.7 Notices</h3>
+    <p>Notices from Zigns to you will be delivered to the email address associated with your account. Notices from you to Zigns must be sent to <a href="mailto:hello@zigns.io">hello@zigns.io</a> or to our address of record.</p>
+
+    <h3>17.8 Marketing</h3>
+    <p>During the Term, Zigns may identify you as a customer in marketing materials, case studies, or website listings. Upon your request, Zigns will promptly cease such use, except in already-existing materials that cannot reasonably be recalled.</p>
+  </div>
+
+  <!-- 18 -->
+  <div class="section" id="contact">
+    <h2>18. Contact</h2>
+    <p>For questions about these Terms, please contact us:</p>
+    <ul>
+      <li><strong>Email:</strong> <a href="mailto:hello@zigns.io">hello@zigns.io</a></li>
+      <li><strong>Website:</strong> <a href="https://app.zigns.io">https://app.zigns.io</a></li>
+    </ul>
+  </div>
+
+</div>
+
+<footer>
+  <p>&copy; 2026 Zigns. All rights reserved.</p>
+  <p style="margin-top: 0.5rem;">
+    <a href="/privacy.html">Privacy Policy</a>
+    <a href="/terms.html">Terms of Service</a>
+    <a href="https://app.zigns.io">Back to App</a>
+  </p>
+</footer>
+
+</body>
+</html>

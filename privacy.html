@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privacy Policy – Zigns</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --accent: #0043ce;
+      --radius: 10px;
+      --bg: #f5f6fa;
+      --surface: #ffffff;
+      --border: #e2e5ed;
+      --text: #111827;
+      --text-sub: #6b7280;
+      --link: #0043ce;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f1117;
+        --surface: #1a1d27;
+        --border: #2a2d3a;
+        --text: #f0f2f8;
+        --text-sub: #9ca3af;
+        --accent: #4d8bff;
+        --link: #4d8bff;
+      }
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      font-size: 16px;
+    }
+
+    a { color: var(--link); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ── Header ── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .logo {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.02em;
+    }
+
+    .logo span { color: var(--accent); }
+
+    header nav a {
+      font-size: 0.875rem;
+      color: var(--text-sub);
+      margin-left: 1.5rem;
+    }
+
+    /* ── Layout ── */
+    .page-wrap {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 3rem 2rem 5rem;
+    }
+
+    .doc-header {
+      margin-bottom: 2.5rem;
+      padding-bottom: 2rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .doc-header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      margin-bottom: 0.5rem;
+    }
+
+    .doc-meta {
+      font-size: 0.875rem;
+      color: var(--text-sub);
+    }
+
+    /* ── TOC ── */
+    .toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem 2rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .toc h2 {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-sub);
+      margin-bottom: 0.75rem;
+    }
+
+    .toc ol {
+      padding-left: 1.2rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.2rem 2rem;
+    }
+
+    .toc li { font-size: 0.875rem; }
+
+    @media (max-width: 600px) { .toc ol { grid-template-columns: 1fr; } }
+
+    /* ── Content sections ── */
+    .section {
+      margin-bottom: 2.5rem;
+    }
+
+    .section h2 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.85rem;
+      padding-top: 0.5rem;
+      color: var(--text);
+    }
+
+    .section h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin: 1.25rem 0 0.5rem;
+    }
+
+    .section p {
+      margin-bottom: 0.85rem;
+      color: var(--text);
+    }
+
+    .section ul, .section ol {
+      padding-left: 1.4rem;
+      margin-bottom: 0.85rem;
+    }
+
+    .section li {
+      margin-bottom: 0.35rem;
+    }
+
+    .section li strong {
+      color: var(--text);
+    }
+
+    /* ── Processor table ── */
+    .processor-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+      margin-bottom: 0.85rem;
+    }
+
+    .processor-table th {
+      text-align: left;
+      padding: 0.5rem 0.75rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      font-weight: 600;
+      color: var(--text-sub);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .processor-table td {
+      padding: 0.6rem 0.75rem;
+      border: 1px solid var(--border);
+      vertical-align: top;
+    }
+
+    /* ── Footer ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2rem;
+      text-align: center;
+      font-size: 0.875rem;
+      color: var(--text-sub);
+    }
+
+    footer a { margin: 0 0.75rem; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">z<span>i</span>gns</div>
+  <nav>
+    <a href="https://app.zigns.io">Back to App</a>
+    <a href="/terms.html">Terms of Service</a>
+  </nav>
+</header>
+
+<div class="page-wrap">
+
+  <div class="doc-header">
+    <h1>Privacy Policy</h1>
+    <p class="doc-meta">Last updated: April 19, 2026</p>
+  </div>
+
+  <div class="toc">
+    <h2>Contents</h2>
+    <ol>
+      <li><a href="#intro">Introduction</a></li>
+      <li><a href="#who">Who We Are</a></li>
+      <li><a href="#collect">Information We Collect</a></li>
+      <li><a href="#use">How We Use Your Information</a></li>
+      <li><a href="#share">How We Share Your Information</a></li>
+      <li><a href="#retention">Data Retention</a></li>
+      <li><a href="#security">Security</a></li>
+      <li><a href="#rights">Your Privacy Rights</a></li>
+      <li><a href="#children">Children's Privacy</a></li>
+      <li><a href="#international">International Users</a></li>
+      <li><a href="#changes">Changes to This Policy</a></li>
+      <li><a href="#contact">Contact Us</a></li>
+    </ol>
+  </div>
+
+  <!-- 1 -->
+  <div class="section" id="intro">
+    <h2>1. Introduction</h2>
+    <p>The website <a href="https://app.zigns.io">https://app.zigns.io</a> (the "Platform") is provided by Zigns ("Zigns," "we," "us," or "our"). Zigns offers a cloud-based digital signage platform that enables businesses to create, manage, and display visual content on connected screens.</p>
+    <p>This Privacy Policy explains how we collect, use, disclose, and protect personal information when you visit our website or use our Services. By accessing the Platform, you confirm that you have read and understood this Policy and consent to the collection and use of your information as described herein.</p>
+    <p>We are committed to respecting your privacy and complying with applicable data protection laws, including the California Consumer Privacy Act (CCPA).</p>
+  </div>
+
+  <!-- 2 -->
+  <div class="section" id="who">
+    <h2>2. Who We Are</h2>
+    <p>Zigns LLC is a digital signage software company. For questions about this Policy, contact us at <a href="mailto:hello@zigns.io">hello@zigns.io</a>.</p>
+  </div>
+
+  <!-- 3 -->
+  <div class="section" id="collect">
+    <h2>3. Information We Collect</h2>
+
+    <h3>3.1 Account Information</h3>
+    <p>When you register for a Zigns account, we collect:</p>
+    <ul>
+      <li><strong>Email address and password</strong> — used for account authentication and login. Passwords are encrypted and never stored in plain text.</li>
+      <li><strong>First and last name</strong> (optional) — used to personalize your experience and identify users within your organization's account.</li>
+      <li><strong>Profile preferences</strong> — timezone, date/time format, language preference, and notification settings, stored to personalize your experience.</li>
+    </ul>
+
+    <h3>3.2 Billing and Payment Information</h3>
+    <p>If you purchase a paid subscription, we collect your billing address and payment method details. Credit card transactions are processed exclusively by Stripe, our payment processor. We do not store your full credit card number on our servers. Stripe processes and secures card data on PCI-compliant infrastructure.</p>
+
+    <h3>3.3 Usage and Log Data</h3>
+    <p>We automatically collect certain information when you use the Platform, including:</p>
+    <ul>
+      <li>IP address and approximate location (city/country)</li>
+      <li>Browser type and device information</li>
+      <li>Pages visited, features used, and time spent on the Platform</li>
+      <li>Screen activity and content playback data associated with your organization</li>
+    </ul>
+    <p>This data is used to operate, improve, and secure the Platform.</p>
+
+    <h3>3.4 Content You Upload</h3>
+    <p>The Platform allows you to upload images, videos, and other media files ("Customer Content"). This content is stored on our behalf by Amazon Web Services (AWS S3) and served via Amazon CloudFront. You retain ownership of all content you upload. See Section 5 for details on how content is shared with service providers.</p>
+
+    <h3>3.5 Cookies and Tracking Technologies</h3>
+    <p>We use cookies and similar technologies to operate the Platform and understand how it is used. Categories of cookies we use include:</p>
+    <ul>
+      <li><strong>Strictly necessary cookies</strong> — required for authentication, session management, and core Platform functionality. These cannot be disabled.</li>
+      <li><strong>Analytics cookies</strong> — help us understand how visitors interact with the Platform so we can improve it. These are aggregated and do not identify you personally.</li>
+    </ul>
+    <p>You may disable analytics cookies via your browser settings. Disabling strictly necessary cookies will prevent the Platform from functioning.</p>
+  </div>
+
+  <!-- 4 -->
+  <div class="section" id="use">
+    <h2>4. How We Use Your Information</h2>
+    <p>We use the information we collect for the following purposes:</p>
+    <ul>
+      <li><strong>Providing and operating the Services</strong> — account authentication, content delivery to your screens, and all core Platform features.</li>
+      <li><strong>Communications</strong> — sending transactional and onboarding emails to help you get started, and billing-related communications for paid subscribers. We will only send marketing communications with your explicit consent, and you may unsubscribe at any time.</li>
+      <li><strong>Security and fraud prevention</strong> — using IP address and login data to detect unauthorized access or abuse, including enforcement of our one-account-per-free-plan policy.</li>
+      <li><strong>Platform improvement</strong> — analyzing aggregated, anonymized usage data to understand feature adoption, identify usability issues, and guide product development.</li>
+      <li><strong>Legal compliance</strong> — retaining billing records as required by applicable tax and accounting laws, and responding to lawful requests from authorities.</li>
+    </ul>
+    <p>We do not sell your personal information to third parties. We do not use your personal information for automated decision-making or profiling that produces legal or similarly significant effects.</p>
+  </div>
+
+  <!-- 5 -->
+  <div class="section" id="share">
+    <h2>5. How We Share Your Information</h2>
+
+    <h3>5.1 Service Providers</h3>
+    <p>We share personal information with trusted third-party service providers solely to operate and deliver the Platform. Each provider is bound by contractual data protection obligations and may not use your data for their own purposes.</p>
+
+    <table class="processor-table">
+      <thead>
+        <tr>
+          <th>Provider</th>
+          <th>Purpose</th>
+          <th>Location</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Google Firebase / Firestore</td>
+          <td>Authentication, real-time database, user and organization data storage</td>
+          <td>United States</td>
+        </tr>
+        <tr>
+          <td>Amazon Web Services (S3 + CloudFront)</td>
+          <td>Media file storage and content delivery</td>
+          <td>United States</td>
+        </tr>
+        <tr>
+          <td>Stripe</td>
+          <td>Payment processing and billing management</td>
+          <td>United States</td>
+        </tr>
+        <tr>
+          <td>Resend</td>
+          <td>Transactional and notification email delivery</td>
+          <td>United States</td>
+        </tr>
+        <tr>
+          <td>Vercel</td>
+          <td>Platform hosting and serverless functions</td>
+          <td>United States</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>5.2 Legal Requirements</h3>
+    <p>We may disclose your information if required to do so by law, court order, or governmental authority, or if we believe in good faith that such disclosure is necessary to protect the rights, property, or safety of Zigns, our users, or the public. We will notify you of such requests where legally permitted to do so.</p>
+
+    <h3>5.3 Business Transfers</h3>
+    <p>In the event of a merger, acquisition, or sale of all or substantially all of our assets, your personal information may be transferred as part of that transaction. We will notify you before your information is transferred and becomes subject to a different privacy policy.</p>
+
+    <h3>5.4 No Sale of Personal Information</h3>
+    <p>We do not sell, rent, or trade your personal information to any third party for their own marketing or commercial purposes.</p>
+  </div>
+
+  <!-- 6 -->
+  <div class="section" id="retention">
+    <h2>6. Data Retention</h2>
+    <p>We retain your personal information for as long as your account is active or as necessary to provide you with the Services. Specifically:</p>
+    <ul>
+      <li><strong>Account data</strong> is retained through the duration of your account. Upon account deletion, we initiate removal of your data from our database and cloud storage within a reasonable period.</li>
+      <li><strong>Billing records</strong> are retained as required by applicable tax and accounting law, even after account deletion.</li>
+      <li><strong>Inactive accounts</strong> on the free plan that have not logged in for 365 consecutive days are permanently deleted. We will send reminder notifications at 60-day intervals beginning 6 months before deletion.</li>
+      <li><strong>Uploaded media</strong> is marked for deletion upon account deletion and removed from storage promptly thereafter.</li>
+    </ul>
+    <p>You may request deletion of your account and associated data at any time through the Settings page within the Platform or by emailing <a href="mailto:hello@zigns.io">hello@zigns.io</a>.</p>
+  </div>
+
+  <!-- 7 -->
+  <div class="section" id="security">
+    <h2>7. Security</h2>
+    <p>We take appropriate technical and organizational measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction. These measures include:</p>
+    <ul>
+      <li>Encrypted data transmission (HTTPS/TLS) for all Platform communications</li>
+      <li>Password hashing and secure credential storage via Firebase Authentication</li>
+      <li>Access controls restricting data access to authorized personnel only</li>
+      <li>PCI-compliant payment processing through Stripe (we never store raw card data)</li>
+      <li>Regular review of security practices and third-party integrations</li>
+    </ul>
+    <p>No method of transmission over the Internet or electronic storage is 100% secure. While we strive to use commercially acceptable means to protect your personal information, we cannot guarantee its absolute security. If you become aware of any security vulnerability or breach, please contact us immediately at <a href="mailto:hello@zigns.io">hello@zigns.io</a>.</p>
+  </div>
+
+  <!-- 8 -->
+  <div class="section" id="rights">
+    <h2>8. Your Privacy Rights</h2>
+
+    <h3>8.1 All Users</h3>
+    <p>Regardless of where you are located, you have the right to:</p>
+    <ul>
+      <li><strong>Access</strong> — request a copy of the personal information we hold about you.</li>
+      <li><strong>Rectification</strong> — update or correct inaccurate or incomplete personal information through your Profile settings or by contacting us.</li>
+      <li><strong>Deletion</strong> — request deletion of your personal information and account. You may do this through Settings → Data &amp; Privacy within the Platform, or by emailing <a href="mailto:hello@zigns.io">hello@zigns.io</a>.</li>
+      <li><strong>Opt-out of marketing</strong> — unsubscribe from marketing emails at any time using the unsubscribe link in any email we send.</li>
+    </ul>
+
+    <h3>8.2 California Residents (CCPA)</h3>
+    <p>If you are a California resident, you have additional rights under the California Consumer Privacy Act (CCPA):</p>
+    <ul>
+      <li><strong>Right to Know</strong> — you may request disclosure of the categories and specific pieces of personal information we have collected about you, the sources, purposes, and third parties with whom it has been shared.</li>
+      <li><strong>Right to Delete</strong> — you may request deletion of personal information we have collected, subject to certain exceptions.</li>
+      <li><strong>Right to Opt Out of Sale</strong> — we do not sell personal information. No opt-out is required, but you have this right.</li>
+      <li><strong>Right to Non-Discrimination</strong> — we will not discriminate against you for exercising your CCPA rights.</li>
+    </ul>
+    <p>To exercise your CCPA rights, contact us at <a href="mailto:hello@zigns.io">hello@zigns.io</a>. We will respond to verified requests within 45 days.</p>
+
+    <h3>8.3 How to Submit a Request</h3>
+    <p>To exercise any privacy right, email us at <a href="mailto:hello@zigns.io">hello@zigns.io</a> with "Privacy Request" in the subject line. We will respond within 30 days of receipt and may ask you to verify your identity before fulfilling the request.</p>
+  </div>
+
+  <!-- 9 -->
+  <div class="section" id="children">
+    <h2>9. Children's Privacy</h2>
+    <p>The Zigns Platform is not directed to children under the age of 13, and we do not knowingly collect personal information from children. If we become aware that a child under 13 has provided us with personal information, we will promptly delete it. If you believe a child has provided us with their information, please contact us at <a href="mailto:hello@zigns.io">hello@zigns.io</a>.</p>
+  </div>
+
+  <!-- 10 -->
+  <div class="section" id="international">
+    <h2>10. International Users</h2>
+    <p>Zigns is currently operated from the United States and our Services are directed at users in the United States. All data we collect is processed and stored in the United States. By using the Platform from outside the United States, you consent to the transfer of your information to the United States, which may have different data protection rules than those in your country.</p>
+    <p>We plan to expand our Services to Canada and Mexico in the future. As we do so, we will update this Policy to reflect applicable data protection requirements in those jurisdictions.</p>
+  </div>
+
+  <!-- 11 -->
+  <div class="section" id="changes">
+    <h2>11. Changes to This Policy</h2>
+    <p>We may update this Privacy Policy periodically. When we make material changes, we will notify you by posting the updated Policy on this page with a new "Last Updated" date and, where appropriate, by sending an email notification. We encourage you to review this Policy periodically.</p>
+    <p>Your continued use of the Platform after any changes constitutes your acceptance of the revised Policy.</p>
+  </div>
+
+  <!-- 12 -->
+  <div class="section" id="contact">
+    <h2>12. Contact Us</h2>
+    <p>If you have any questions, concerns, or requests regarding this Privacy Policy or our data practices, please contact us:</p>
+    <ul>
+      <li><strong>Email:</strong> <a href="mailto:hello@zigns.io">hello@zigns.io</a></li>
+      <li><strong>Website:</strong> <a href="https://app.zigns.io">https://app.zigns.io</a></li>
+    </ul>
+    <p>We aim to respond to all privacy inquiries within 30 days.</p>
+  </div>
+
+</div>
+
+<footer>
+  <p>&copy; 2026 Zigns. All rights reserved.</p>
+  <p style="margin-top: 0.5rem;">
+    <a href="/privacy.html">Privacy Policy</a>
+    <a href="/terms.html">Terms of Service</a>
+    <a href="https://app.zigns.io">Back to App</a>
+  </p>
+</footer>
+
+</body>
+</html>
