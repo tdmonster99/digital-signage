@@ -4,6 +4,12 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-04-19 — Codex (session 15)
+- **Apps duplicate cleanup**: removed the obsolete Google Sheets Coming Soon card so the Apps page only shows the active Google Sheets integration.
+  - `admin.html`: kept the working Google Sheets card that opens `openGoogleSheetsModal(null)`.
+
+---
+
 ## 2026-04-19 — Codex (session 14)
 - **Screen notification opt-out clarity**: made screen status emails point directly to notification preferences.
   - `api/screen-monitor.js`: added a "Manage notification settings" button and footer opt-out link to screen offline/online emails.
