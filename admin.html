@@ -11574,8 +11574,8 @@ function renderAiPreview(canvasJson) {
   // Give fonts ~600 ms to start loading, then render off-screen
   setTimeout(() => {
     removeOffscreenFabricArtifacts();
-    const { host, canvas: el } = createOffscreenFabricCanvasHost('ai-preview');
-    const tmp = new fabric.Canvas(el, { width: 1920, height: 1080, selection: false, renderOnAddRemove: false });
+    const el = createDetachedFabricCanvas();
+    const tmp = new fabric.StaticCanvas(el, { width: 1920, height: 1080, renderOnAddRemove: false });
     tmp.loadFromJSON(canvasJson, () => {
       try {
         tmp.renderAll();
@@ -11592,7 +11592,7 @@ function renderAiPreview(canvasJson) {
         wrap.appendChild(img);
       } finally {
         tmp.dispose();
-        host.remove();
+        el.remove();
         removeOffscreenFabricArtifacts();
       }
     });
@@ -15794,19 +15794,11 @@ async function prefetchTmplPhotoUrls() {
   }));
 }
 
-function createOffscreenFabricCanvasHost(kind = 'render') {
-  const host = document.createElement('div');
-  host.className = 'offscreen-fabric-host';
-  host.dataset.offscreenFabric = kind;
-  host.setAttribute('aria-hidden', 'true');
-
+function createDetachedFabricCanvas() {
   const canvas = document.createElement('canvas');
   canvas.width = 1920;
   canvas.height = 1080;
-  host.appendChild(canvas);
-  document.body.appendChild(host);
-
-  return { host, canvas };
+  return canvas;
 }
 
 function removeOffscreenFabricArtifacts() {
@@ -15830,7 +15822,19 @@ function applyTmplThumb(name, dataUrl) {
   [...p.children].forEach(c => c.style.display = 'none');
 }
 
+let _tmplThumbJob = null;
+
 async function generateTemplateThumbnails() {
+  if (_tmplThumbJob) return _tmplThumbJob;
+  _tmplThumbJob = generateTemplateThumbnailsImpl();
+  try {
+    await _tmplThumbJob;
+  } finally {
+    _tmplThumbJob = null;
+  }
+}
+
+async function generateTemplateThumbnailsImpl() {
   if (typeof fabric === 'undefined') return;
   removeOffscreenFabricArtifacts();
 
@@ -15850,7 +15854,7 @@ async function generateTemplateThumbnails() {
     ])
   ]);
 
-  const { host, canvas: el } = createOffscreenFabricCanvasHost('template-thumbs');
+  const el = createDetachedFabricCanvas();
   try {
     _tmplCanvas = new fabric.StaticCanvas(el, { width: 1920, height: 1080 });
 
@@ -15883,7 +15887,7 @@ async function generateTemplateThumbnails() {
   } finally {
     if (_tmplCanvas) _tmplCanvas.dispose();
     _tmplCanvas = null;
-    host.remove();
+    el.remove();
     removeOffscreenFabricArtifacts();
   }
 }

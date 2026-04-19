@@ -4,6 +4,11 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-04-19 — Codex (session 6)
+- **Template gallery canvas leak fix**: changed template thumbnail and AI preview rendering to use detached Fabric `StaticCanvas` instances that never attach to the document, preventing the green healthcare-template render from appearing above the gallery in Edge.
+
+---
+
 ## 2026-04-19 — Codex (session 5)
 - **Template gallery green bar follow-up**: added explicit offscreen Fabric render hosts, cleanup for orphan full-size Fabric canvases, and service worker cache bump/no-cache shell fetches so stale admin shells do not preserve the escaped template thumbnail canvas.
 
