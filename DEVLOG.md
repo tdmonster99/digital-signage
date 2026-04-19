@@ -4,6 +4,12 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-04-19 — Codex (session 17)
+- **YouTube app activation**: promoted YouTube from a Coming Soon app tile to a working slideshow app.
+  - `admin.html`: wired the Apps YouTube card into the existing YouTube slide flow, added add/edit modal support with slideshow targeting, duration, and thumbnail preview, and added slide-card editing for YouTube slides.
+
+---
+
 ## 2026-04-19 — Codex (session 16)
 - **YouTube display fallback**: hardened YouTube media slides so they do not render as a silent blank screen.
   - `admin.html`: improved YouTube URL parsing, saved the original URL alongside the parsed video ID, and made thumbnails work from either saved shape.

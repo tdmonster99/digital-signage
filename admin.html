@@ -4072,8 +4072,8 @@ body.role-editor .admin-action {
         <span class="app-card-soon-badge">Coming Soon</span>
       </div>
 
-      <!-- YouTube — coming soon -->
-      <div class="app-card app-coming-soon" data-category="social" data-name="youtube" onclick="appsComingSoon()">
+      <!-- YouTube -->
+      <div class="app-card" data-category="social" data-name="youtube video embed playlist" onclick="openYoutubeModal(null)">
         <div class="app-card-icon" style="background:rgba(239,68,68,.15)">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="1.8" stroke-linecap="round">
             <path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46a2.78 2.78 0 0 0-1.95 1.96A29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58A2.78 2.78 0 0 0 3.41 19.54C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.96A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z"/>
@@ -4081,8 +4081,8 @@ body.role-editor .admin-action {
           </svg>
         </div>
         <div class="app-card-name">YouTube</div>
-        <div class="app-card-desc">Play YouTube videos as a fullscreen slide</div>
-        <span class="app-card-soon-badge">Coming Soon</span>
+        <div class="app-card-desc">Play a muted YouTube video as a fullscreen slide</div>
+        <button class="app-card-add" onclick="event.stopPropagation();openYoutubeModal(null)">Add →</button>
       </div>
 
       <!-- Google Slides — coming soon -->
@@ -5598,7 +5598,7 @@ body.role-editor .admin-action {
       </div>
       <div class="add-media-section-label">Other sources</div>
       <div class="add-media-row">
-        <button class="add-media-row-btn" onclick="closeAddMediaModal();openYoutubeModal()">
+        <button class="add-media-row-btn" onclick="closeAddMediaModal();openYoutubeModal(null)">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="color:#ff0000;flex-shrink:0">
             <path d="M23 7s-.3-2-1.2-2.8c-1.1-1.2-2.4-1.2-3-1.3C16.6 2.8 12 2.8 12 2.8s-4.6 0-6.8.1c-.6.1-1.9.1-3 1.3C1.3 5 1 7 1 7S.7 9.1.7 11.3v2c0 2.1.3 4.3.3 4.3s.3 2 1.2 2.8c1.1 1.2 2.6 1.1 3.3 1.2C7.3 21.8 12 21.8 12 21.8s4.6 0 6.8-.2c.6-.1 1.9-.1 3-1.3.9-.8 1.2-2.8 1.2-2.8s.3-2.1.3-4.3v-2C23.3 9.1 23 7 23 7zM9.7 15.5V8.4l8.1 3.6-8.1 3.5z"/>
           </svg>
@@ -6311,23 +6311,42 @@ body.role-editor .admin-action {
 </div>
 
 <!-- ── YouTube Slide Modal ────────────────────────────────────────────────── -->
-<div id="youtubeModal" style="display:none;position:fixed;inset:0;z-index:300;align-items:center;justify-content:center;background:#00000088;backdrop-filter:blur(6px)">
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;width:min(460px,92vw);box-shadow:0 8px 48px rgba(0,0,0,0.16)">
+<div id="youtubeModal" style="display:none;position:fixed;inset:0;z-index:300;align-items:center;justify-content:center;background:#00000088;backdrop-filter:blur(6px);padding:20px">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;width:min(560px,92vw);box-shadow:0 8px 48px rgba(0,0,0,0.16)">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
-      <h2 style="font-size:18px;font-weight:600;color:var(--text)">Add YouTube Slide</h2>
+      <h2 id="youtubeModalTitle" style="font-size:18px;font-weight:600;color:var(--text)">Add YouTube Slide</h2>
       <button class="gallery-close" onclick="closeYoutubeModal()">✕</button>
+    </div>
+    <div style="aspect-ratio:16/9;background:var(--bg);border:1px solid var(--border);border-radius:10px;display:flex;align-items:center;justify-content:center;overflow:hidden;margin-bottom:16px">
+      <img id="youtubePreviewThumb" alt="" style="display:none;width:100%;height:100%;object-fit:cover">
+      <div id="youtubePreviewPlaceholder" style="color:var(--muted);display:flex;align-items:center;justify-content:center">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="1.7" stroke-linecap="round">
+          <path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46a2.78 2.78 0 0 0-1.95 1.96A29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58A2.78 2.78 0 0 0 3.41 19.54C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.96A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z"/>
+          <polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02" fill="#ef4444" stroke="none"/>
+        </svg>
+      </div>
+    </div>
+    <div class="field" id="youtubeShowTargetWrap" style="margin-bottom:14px">
+      <label>Add to slideshow</label>
+      <select id="youtubeShowTarget"></select>
     </div>
     <div class="field" style="margin-bottom:14px">
       <label>YouTube URL or Video ID</label>
       <input type="text" id="youtubeInput" placeholder="https://youtube.com/watch?v=… or video ID" autocomplete="off">
     </div>
-    <div class="field" style="margin-bottom:22px">
-      <label>Slide Name</label>
-      <input type="text" id="youtubeName" placeholder="My YouTube Video">
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) 140px;gap:12px;margin-bottom:22px">
+      <div class="field">
+        <label>Slide name</label>
+        <input type="text" id="youtubeName" placeholder="YouTube Video">
+      </div>
+      <div class="field">
+        <label>Duration (sec)</label>
+        <input type="number" id="youtubeDwell" min="5" max="3600" step="1" value="30">
+      </div>
     </div>
     <div style="display:flex;gap:10px;justify-content:flex-end">
       <button class="btn btn-secondary" onclick="closeYoutubeModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="saveYoutubeSlide()">Add Slide</button>
+      <button class="btn btn-primary" id="youtubeSaveBtn" onclick="saveYoutubeSlide()">Add Slide</button>
     </div>
   </div>
 </div>
@@ -6528,7 +6547,7 @@ body.role-editor .admin-action {
     </div>
 
     <div class="designer-topbar-actions">
-      <button class="btn btn-secondary" title="Add YouTube slide" onclick="openYoutubeModal()" style="padding:7px 10px">
+      <button class="btn btn-secondary" title="Add YouTube slide" onclick="openYoutubeModal(null)" style="padding:7px 10px">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
           <path d="M23 7s-.3-2-1.2-2.8c-1.1-1.2-2.4-1.2-3-1.3C16.6 2.8 12 2.8 12 2.8s-4.6 0-6.8.1c-.6.1-1.9.1-3 1.3C1.3 5 1 7 1 7S.7 9.1.7 11.3v2c0 2.1.3 4.3.3 4.3s.3 2 1.2 2.8c1.1 1.2 2.6 1.1 3.3 1.2C7.3 21.8 12 21.8 12 21.8s4.6 0 6.8-.2c.6-.1 1.9-.1 3-1.3.9-.8 1.2-2.8 1.2-2.8s.3-2.1.3-4.3v-2C23.3 9.1 23 7 23 7zM9.7 15.5V8.4l8.1 3.6-8.1 3.5z"/>
         </svg>
@@ -9952,29 +9971,113 @@ function getYoutubeThumbUrl(input, quality = 'mqdefault') {
   return videoId ? `https://i.ytimg.com/vi/${videoId}/${quality}.jpg` : null;
 }
 
-window.openYoutubeModal = function() {
-  document.getElementById('youtubeInput').value = '';
-  document.getElementById('youtubeName').value  = '';
+let youtubeEditIdx = null;
+
+function updateYoutubePreview() {
+  const inputEl = document.getElementById('youtubeInput');
+  const img = document.getElementById('youtubePreviewThumb');
+  const placeholder = document.getElementById('youtubePreviewPlaceholder');
+  if (!inputEl || !img || !placeholder) return;
+  const videoId = parseYoutubeId(inputEl.value);
+  const thumb = videoId ? getYoutubeThumbUrl(videoId, 'hqdefault') : null;
+  if (thumb) {
+    img.onerror = () => {
+      const fallback = getYoutubeThumbUrl(videoId, 'mqdefault');
+      if (fallback && img.src !== fallback) img.src = fallback;
+      else {
+        img.removeAttribute('src');
+        img.style.display = 'none';
+        placeholder.style.display = 'flex';
+      }
+    };
+    img.src = thumb;
+    img.style.display = 'block';
+    placeholder.style.display = 'none';
+  } else {
+    img.removeAttribute('src');
+    img.style.display = 'none';
+    placeholder.style.display = 'flex';
+  }
+}
+
+window.openYoutubeModal = function(editIdx = null) {
+  const isEdit = editIdx !== null && editIdx !== undefined;
+  const slide = isEdit ? slides[editIdx] : null;
+  youtubeEditIdx = slide ? editIdx : null;
+
+  document.getElementById('youtubeModalTitle').textContent = youtubeEditIdx === null ? 'Add YouTube Slide' : 'Edit YouTube Slide';
+  document.getElementById('youtubeSaveBtn').textContent = youtubeEditIdx === null ? 'Add Slide' : 'Save Changes';
+  document.getElementById('youtubeShowTargetWrap').style.display = youtubeEditIdx === null ? 'block' : 'none';
+  if (youtubeEditIdx === null) _populateShowSelect('youtubeShowTarget');
+
+  document.getElementById('youtubeInput').value = slide?.url || slide?.videoId || slide?.youtubeId || '';
+  document.getElementById('youtubeName').value  = slide?.name || '';
+  document.getElementById('youtubeDwell').value = slide?.dwell || 30;
+  updateYoutubePreview();
   document.getElementById('youtubeModal').style.display = 'flex';
   setTimeout(() => document.getElementById('youtubeInput').focus(), 50);
 };
 
 window.closeYoutubeModal = function() {
   document.getElementById('youtubeModal').style.display = 'none';
+  youtubeEditIdx = null;
 };
 
 window.saveYoutubeSlide = async function() {
-  const raw     = document.getElementById('youtubeInput').value.trim();
-  const name    = document.getElementById('youtubeName').value.trim() || 'YouTube Video';
+  const raw = document.getElementById('youtubeInput').value.trim();
+  const name = document.getElementById('youtubeName').value.trim() || 'YouTube Video';
   const videoId = parseYoutubeId(raw);
   if (!videoId) { toast('Could not find a YouTube video ID — paste the full URL or just the ID.', true); return; }
-  slides.push({ id: crypto.randomUUID(), type: 'youtube', videoId, url: raw, name, active: true });
-  renderGrid();
-  updateCount();
-  await pushToFirestore();
-  closeYoutubeModal();
-  toast('YouTube slide added ✓');
+
+  const editIdx = youtubeEditIdx;
+  const dwell = Math.min(3600, Math.max(5, parseInt(document.getElementById('youtubeDwell').value, 10) || 30));
+  const existing = editIdx !== null ? slides[editIdx] : null;
+  const slide = {
+    ...(existing || {}),
+    id: existing?.id || crypto.randomUUID(),
+    type: 'youtube',
+    videoId,
+    url: raw,
+    name,
+    dwell,
+    active: existing?.active !== false
+  };
+
+  try {
+    if (editIdx !== null) {
+      slides[editIdx] = slide;
+      await pushToFirestore();
+      renderGrid();
+      updateCount();
+      closeYoutubeModal();
+      logActivity('Edited YouTube slide');
+      toast('YouTube slide updated ✓');
+      return;
+    }
+
+    const targetShowId = document.getElementById('youtubeShowTarget')?.value || currentShowId;
+    if (!targetShowId) { toast('Choose a slideshow first.', true); return; }
+
+    if (targetShowId === currentShowId) {
+      slides.push(slide);
+      await pushToFirestore();
+      renderGrid();
+      updateCount();
+    } else {
+      await _addSlideToShow(targetShowId, slide);
+    }
+
+    closeYoutubeModal();
+    logActivity('Added YouTube slide');
+    updateDashboard();
+    toast('YouTube slide added ✓');
+  } catch (err) {
+    console.error('save youtube slide failed', err);
+    toast('Could not save YouTube slide.', true);
+  }
 };
+
+document.getElementById('youtubeInput')?.addEventListener('input', updateYoutubePreview);
 
 // ── Web Page slides ───────────────────────────────────────────────────────
 window.openWebpageModal = function() {
@@ -11387,6 +11490,8 @@ function renderGrid() {
                 : '';
     const editBtn    = isDesigned
       ? `<button class="icon-btn toggle" title="Edit in Designer" onclick="editDesignedSlide(${i})">${editSvg}</button>`
+      : isYoutube
+      ? `<button class="icon-btn toggle" title="Edit YouTube Slide" onclick="openYoutubeModal(${i})">${editSvg}</button>`
       : isClock
       ? `<button class="icon-btn toggle" title="Edit Clock"   onclick="openClockModal(${i})">${editSvg}</button>`
       : isQr
