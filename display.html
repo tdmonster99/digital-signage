@@ -104,6 +104,10 @@
   const videoEl       = document.getElementById("videoEl");
   const stageYoutube  = document.getElementById("stageYoutube");
   const iframeYoutube = document.getElementById("iframeYoutube");
+  const youtubeFallback = document.getElementById("youtubeFallback");
+  const youtubeFallbackBg = document.getElementById("youtubeFallbackBg");
+  const youtubeFallbackTitle = document.getElementById("youtubeFallbackTitle");
+  const youtubeFallbackStatus = document.getElementById("youtubeFallbackStatus");
   const stageWebpage  = document.getElementById("stageWebpage");
   const iframeWebpage = document.getElementById("iframeWebpage");
   const stageClock    = document.getElementById("stageClock");
@@ -433,6 +437,56 @@
     });
   }
 
+  function parseYoutubeVideoId(input) {
+    input = String(input || '').trim();
+    if (/^[A-Za-z0-9_-]{11}$/.test(input)) return input;
+    try {
+      const url = new URL(input.includes('://') ? input : `https://${input}`);
+      const host = url.hostname.replace(/^www\./, '').replace(/^m\./, '');
+      if (host === 'youtu.be') {
+        const id = url.pathname.slice(1).split('/')[0];
+        return /^[A-Za-z0-9_-]{11}$/.test(id) ? id : null;
+      }
+      const v = url.searchParams.get('v');
+      if (/^[A-Za-z0-9_-]{11}$/.test(v || '')) return v;
+      const m = url.pathname.match(/\/(?:embed|shorts|live|v)\/([A-Za-z0-9_-]{11})/);
+      if (m) return m[1];
+    } catch {}
+    const m = input.match(/(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:embed|shorts|live|v)\/|[?&]v=)([A-Za-z0-9_-]{11})/);
+    return m ? m[1] : null;
+  }
+
+  function getYoutubeSlideId(slide) {
+    return parseYoutubeVideoId(slide?.videoId || slide?.youtubeId || slide?.url || '');
+  }
+
+  function youtubeThumbUrl(videoId) {
+    return `https://i.ytimg.com/vi/${encodeURIComponent(videoId)}/hqdefault.jpg`;
+  }
+
+  function youtubeEmbedUrl(videoId) {
+    const params = new URLSearchParams({
+      autoplay: '1',
+      mute: '1',
+      controls: '0',
+      loop: '1',
+      modestbranding: '1',
+      rel: '0',
+      playsinline: '1',
+      playlist: videoId,
+      origin: window.location.origin,
+    });
+    return `https://www.youtube-nocookie.com/embed/${encodeURIComponent(videoId)}?${params.toString()}`;
+  }
+
+  function showYoutubeFallback(slide, videoId, status = 'Loading YouTube video...') {
+    if (youtubeFallbackBg) youtubeFallbackBg.style.backgroundImage = `url("${youtubeThumbUrl(videoId)}")`;
+    if (youtubeFallbackTitle) youtubeFallbackTitle.textContent = slide?.name || 'YouTube Video';
+    if (youtubeFallbackStatus) youtubeFallbackStatus.textContent = status;
+  }
+
+  let youtubeRenderSeq = 0;
+
   // ── Clock slide ───────────────────────────────────────────────────────────
   const CLOCK_FONTS = {
     minimal: { ff: "'Courier New', monospace",            fw: '200', ls: '0.05em'  },
@@ -755,11 +809,16 @@
       zoneEl.appendChild(v);
 
     } else if (type === 'youtube') {
-      const id  = c.videoId || c.url || '';
+      const id  = parseYoutubeVideoId(c.videoId || c.url || '');
+      if (!id) {
+        zoneEl.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#09090b;color:#fff;font:600 18px Segoe UI,Arial,sans-serif;text-align:center;padding:24px">YouTube video unavailable</div>';
+        return;
+      }
       const ifr = document.createElement('iframe');
-      ifr.src = `https://www.youtube.com/embed/${id}?autoplay=1&mute=1&controls=0&loop=1&playlist=${id}`;
+      ifr.src = youtubeEmbedUrl(id);
       ifr.style.cssText = 'width:100%;height:100%;border:none;';
       ifr.allow = 'autoplay; encrypted-media';
+      ifr.referrerPolicy = 'strict-origin-when-cross-origin';
       zoneEl.appendChild(ifr);
 
     } else if (type === 'webpage') {
@@ -1572,6 +1631,10 @@
     active.style.opacity         = "0";
     stageDesigned.style.opacity  = "0";
     stageVideo.style.opacity     = "0"; videoEl.pause(); videoEl.src = "";
+    youtubeRenderSeq += 1;
+    stageYoutube.classList.remove("youtube-pending", "youtube-error");
+    iframeYoutube.onload = null;
+    iframeYoutube.onerror = null;
     stageYoutube.style.opacity   = "0"; iframeYoutube.src = "about:blank";
     stageWebpage.style.opacity   = "0"; iframeWebpage.src = "about:blank";
     stageQr.style.opacity        = "0";
@@ -1599,6 +1662,9 @@
       stageDesigned.style.opacity = "1";
       active.style.opacity        = "0";
       stageVideo.style.opacity    = "0"; videoEl.pause(); videoEl.src = "";
+      stageYoutube.classList.remove("youtube-pending", "youtube-error");
+      iframeYoutube.onload = null;
+      iframeYoutube.onerror = null;
       stageYoutube.style.opacity  = "0"; iframeYoutube.src = "about:blank";
       stageWebpage.style.opacity  = "0"; iframeWebpage.src = "about:blank";
       stageQr.style.opacity       = "0";
@@ -1629,9 +1695,36 @@
       stageVideo.style.opacity = "1";
 
     } else if (slide.type === "youtube") {
+      const videoId = getYoutubeSlideId(slide);
+      if (!videoId) {
+        console.error('[Skip] YouTube slide is missing a valid video ID:', slide);
+        return false;
+      }
       _hideAllStages();
-      const params  = "autoplay=1&mute=1&controls=0&loop=1&modestbranding=1&rel=0&playlist=" + slide.videoId;
-      iframeYoutube.src          = `https://www.youtube.com/embed/${slide.videoId}?${params}`;
+      const youtubeSeq = ++youtubeRenderSeq;
+      stageYoutube.classList.add("youtube-pending");
+      showYoutubeFallback(slide, videoId);
+      let youtubeLoaded = false;
+      const youtubeTimer = setTimeout(() => {
+        if (youtubeSeq !== youtubeRenderSeq || youtubeLoaded || stageYoutube.style.opacity !== "1") return;
+        stageYoutube.classList.remove("youtube-pending");
+        stageYoutube.classList.add("youtube-error");
+        showYoutubeFallback(slide, videoId, 'Could not load the YouTube embed. Check video privacy, embedding permissions, or network blocking.');
+      }, 6500);
+      iframeYoutube.onload = () => {
+        if (youtubeSeq !== youtubeRenderSeq) return;
+        youtubeLoaded = true;
+        clearTimeout(youtubeTimer);
+        stageYoutube.classList.remove("youtube-pending");
+      };
+      iframeYoutube.onerror = () => {
+        if (youtubeSeq !== youtubeRenderSeq) return;
+        clearTimeout(youtubeTimer);
+        stageYoutube.classList.remove("youtube-pending");
+        stageYoutube.classList.add("youtube-error");
+        showYoutubeFallback(slide, videoId, 'Could not load the YouTube embed. Check video privacy, embedding permissions, or network blocking.');
+      };
+      iframeYoutube.src          = youtubeEmbedUrl(videoId);
       stageYoutube.style.opacity = "1";
 
     } else if (slide.type === "webpage") {
@@ -1707,6 +1800,9 @@
       active.style.opacity        = "0";
       stageDesigned.style.opacity = "0";
       stageVideo.style.opacity    = "0"; videoEl.pause(); videoEl.src = "";
+      stageYoutube.classList.remove("youtube-pending", "youtube-error");
+      iframeYoutube.onload = null;
+      iframeYoutube.onerror = null;
       stageYoutube.style.opacity  = "0"; iframeYoutube.src = "about:blank";
       stageWebpage.style.opacity  = "0"; iframeWebpage.src = "about:blank";
       stageQr.style.opacity       = "0";
@@ -1801,12 +1897,13 @@
         expanded.push(s);
       }
     }
-    const incoming = expanded.filter(s =>
-      s.url || s.canvasJson ||
-      s.type === 'clock' || s.type === 'weather' || s.type === 'youtube' ||
-      s.type === 'countdown' || s.type === 'multizone' || s.type === 'googlesheets' ||
-      s.type === 'googlereviews' || s.type === 'instagram' || s.type === 'menuboard'
-    );
+    const incoming = expanded.filter(s => {
+      if (s.type === 'youtube') return Boolean(getYoutubeSlideId(s));
+      return s.url || s.canvasJson ||
+        s.type === 'clock' || s.type === 'weather' ||
+        s.type === 'countdown' || s.type === 'multizone' || s.type === 'googlesheets' ||
+        s.type === 'googlereviews' || s.type === 'instagram' || s.type === 'menuboard';
+    });
 
     if (!incoming.length) {
       showError("No active slides. Enable some slides in the Admin Panel.");
@@ -2229,7 +2326,7 @@
   #stageB        { z-index: 2; }
   #stageDesigned { z-index: 3; background: #000; }
   #stageVideo    { z-index: 4; background: #000; }
-  #stageYoutube  { z-index: 5; background: #000; }
+  #stageYoutube  { z-index: 5; background: #000; overflow: hidden; }
   #stageWebpage  { z-index: 6; background: #000; }
   #stageClock    { z-index: 7; background: #000; }
   #stageQr       { z-index: 8; background: #fff; }
@@ -2293,6 +2390,59 @@
     position: absolute; inset: 0;
     width: 100%; height: 100%;
     border: none;
+  }
+  .youtube-fallback {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; background: #050506;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.25s ease;
+    overflow: hidden;
+  }
+  #stageYoutube.youtube-pending .youtube-fallback,
+  #stageYoutube.youtube-error .youtube-fallback { opacity: 1; }
+  .youtube-fallback-bg {
+    position: absolute; inset: -24px;
+    background-position: center; background-size: cover;
+    filter: blur(22px) saturate(0.9);
+    opacity: 0.32; transform: scale(1.08);
+  }
+  .youtube-fallback-panel {
+    position: relative; z-index: 1;
+    width: min(78vw, 980px);
+    min-height: 34vh;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 20px; text-align: center;
+    background: rgba(0,0,0,0.52);
+    border: 1px solid rgba(255,255,255,0.14);
+    border-radius: 18px;
+    padding: 56px 64px;
+    box-shadow: 0 28px 90px rgba(0,0,0,0.45);
+  }
+  .youtube-fallback-play {
+    width: 92px; height: 64px; border-radius: 18px;
+    display: flex; align-items: center; justify-content: center;
+    background: #ff0033;
+    box-shadow: 0 18px 36px rgba(255,0,51,0.28);
+  }
+  .youtube-fallback-play::before {
+    content: "";
+    width: 0; height: 0;
+    border-top: 15px solid transparent;
+    border-bottom: 15px solid transparent;
+    border-left: 24px solid #fff;
+    margin-left: 6px;
+  }
+  .youtube-fallback-title {
+    font-size: clamp(28px, 4.5vw, 64px);
+    font-weight: 800;
+    line-height: 1.05;
+  }
+  .youtube-fallback-status {
+    max-width: 820px;
+    color: rgba(255,255,255,0.72);
+    font-size: clamp(16px, 1.5vw, 24px);
+    line-height: 1.45;
   }
   #videoEl {
     position: absolute; inset: 0;
@@ -2540,7 +2690,15 @@
 
 <!-- YouTube slide stage -->
 <div id="stageYoutube" class="stage">
-  <iframe id="iframeYoutube" src="about:blank" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+  <iframe id="iframeYoutube" src="about:blank" allow="autoplay; encrypted-media" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
+  <div id="youtubeFallback" class="youtube-fallback">
+    <div id="youtubeFallbackBg" class="youtube-fallback-bg"></div>
+    <div class="youtube-fallback-panel">
+      <div class="youtube-fallback-play"></div>
+      <div id="youtubeFallbackTitle" class="youtube-fallback-title">YouTube Video</div>
+      <div id="youtubeFallbackStatus" class="youtube-fallback-status">Loading YouTube video...</div>
+    </div>
+  </div>
 </div>
 
 <!-- Web page slide stage -->

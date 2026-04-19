@@ -4,6 +4,13 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-04-19 — Codex (session 16)
+- **YouTube display fallback**: hardened YouTube media slides so they do not render as a silent blank screen.
+  - `admin.html`: improved YouTube URL parsing, saved the original URL alongside the parsed video ID, and made thumbnails work from either saved shape.
+  - `display.html`: normalized YouTube slides from `videoId`, legacy `youtubeId`, or URL, switched embeds to `youtube-nocookie.com`, and added a visible loading/error fallback.
+
+---
+
 ## 2026-04-19 — Codex (session 15)
 - **Apps duplicate cleanup**: removed the obsolete Google Sheets Coming Soon card so the Apps page only shows the active Google Sheets integration.
   - `admin.html`: kept the working Google Sheets card that opens `openGoogleSheetsModal(null)`.

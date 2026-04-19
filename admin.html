@@ -9928,16 +9928,28 @@ window.addByUrl = async () => {
 
 // ── YouTube slides ────────────────────────────────────────────────────────
 function parseYoutubeId(input) {
-  input = input.trim();
+  input = String(input || '').trim();
   if (/^[A-Za-z0-9_-]{11}$/.test(input)) return input; // bare video ID
   try {
-    const url = new URL(input);
-    if (url.hostname === 'youtu.be')              return url.pathname.slice(1).split('/')[0];
-    if (url.searchParams.has('v'))                return url.searchParams.get('v');
-    const m = url.pathname.match(/\/embed\/([A-Za-z0-9_-]{11})/);
+    const url = new URL(input.includes('://') ? input : `https://${input}`);
+    const host = url.hostname.replace(/^www\./, '').replace(/^m\./, '');
+    if (host === 'youtu.be') {
+      const id = url.pathname.slice(1).split('/')[0];
+      return /^[A-Za-z0-9_-]{11}$/.test(id) ? id : null;
+    }
+    const v = url.searchParams.get('v');
+    if (/^[A-Za-z0-9_-]{11}$/.test(v || '')) return v;
+    const m = url.pathname.match(/\/(?:embed|shorts|live|v)\/([A-Za-z0-9_-]{11})/);
     if (m) return m[1];
   } catch {}
+  const m = input.match(/(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:embed|shorts|live|v)\/|[?&]v=)([A-Za-z0-9_-]{11})/);
+  if (m) return m[1];
   return null;
+}
+
+function getYoutubeThumbUrl(input, quality = 'mqdefault') {
+  const videoId = parseYoutubeId(input);
+  return videoId ? `https://i.ytimg.com/vi/${videoId}/${quality}.jpg` : null;
 }
 
 window.openYoutubeModal = function() {
@@ -9956,7 +9968,7 @@ window.saveYoutubeSlide = async function() {
   const name    = document.getElementById('youtubeName').value.trim() || 'YouTube Video';
   const videoId = parseYoutubeId(raw);
   if (!videoId) { toast('Could not find a YouTube video ID — paste the full URL or just the ID.', true); return; }
-  slides.push({ id: crypto.randomUUID(), type: 'youtube', videoId, name, active: true });
+  slides.push({ id: crypto.randomUUID(), type: 'youtube', videoId, url: raw, name, active: true });
   renderGrid();
   updateCount();
   await pushToFirestore();
@@ -10015,7 +10027,7 @@ window.openSlidePreview = async function(idx) {
     url = await getDesignedSlidePreviewUrl(s);
     if (requestId !== slidePreviewRequestId) return;
   } else {
-    url = s.type === 'youtube' ? `https://img.youtube.com/vi/${s.videoId}/maxresdefault.jpg`
+    url = s.type === 'youtube' ? getYoutubeThumbUrl(s.videoId || s.youtubeId || s.url || '', 'hqdefault')
         : (s.type === 'webpage' || s.type === 'video' || s.type === 'clock') ? null
         : s.url;
   }
@@ -11293,8 +11305,9 @@ function renderGrid() {
     const isGoogleReviews = s.type === 'googlereviews';
     const isInstagram     = s.type === 'instagram';
     const isMenuboard    = s.type === 'menuboard';
+    const youtubeId      = isYoutube ? parseYoutubeId(s.videoId || s.youtubeId || s.url || '') : null;
     const thumbUrl   = isDesigned ? getDesignedSlideThumbUrl(s)
-                     : isYoutube  ? `https://img.youtube.com/vi/${s.videoId}/mqdefault.jpg`
+                     : isYoutube  ? getYoutubeThumbUrl(youtubeId, 'mqdefault')
                      : (isWebpage || isVideo || isClock || isQr || isWeather || isCountdown || isMultizone || isGoogleSheets || isGoogleReviews || isInstagram || isMenuboard) ? null
                      : s.url;
     const hasPreview = Boolean(thumbUrl || (isDesigned && s.canvasJson));
