@@ -4,6 +4,13 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-04-19 — Codex (session 13)
+- **AI slide generation paused in UI**: removed the active AI generation entry points while keeping the dormant implementation in place for a future return.
+  - `admin.html`: changed the AI Create template-gallery card to a Coming Soon tile.
+  - `admin.html`: removed the AI Generate button from the slide designer toolbar so users cannot open the generation modal from the designer.
+
+---
+
 ## 2026-04-19 — Codex (session 12)
 - **Template library UX simplification**: removed the redundant Templates toolbar button and the confusing Design/Use gallery toggle.
   - `admin.html`: Design a Slide remains the single entry point; choosing a template now opens a preview with clear Customize and Use Template actions.

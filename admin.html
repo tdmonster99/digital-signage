@@ -5886,18 +5886,14 @@ body.role-editor .admin-action {
     <div class="gallery-grid" id="galleryGrid">
 
       <!-- AI Create -->
-      <button class="tmpl-card tmpl-card-ai" data-category="all" data-name="ai create generate intelligence claude" onclick="closeTemplateGallery();openAiModal()">
+      <button class="tmpl-card tmpl-card-ai tmpl-card-soon" type="button" data-category="all" data-name="ai create generate intelligence claude coming soon" onclick="toast('AI slide generation is coming soon.')">
         <div class="tmpl-preview tmpl-preview-ai">
-          <div style="display:flex;gap:10px">
-            <span style="font-size:28px;color:#c084fc;animation:aiSparkle 1.4s ease-in-out infinite">✦</span>
-            <span style="font-size:28px;color:#f472b6;animation:aiSparkle 1.4s 0.35s ease-in-out infinite">✦</span>
-            <span style="font-size:28px;color:#a78bfa;animation:aiSparkle 1.4s 0.7s ease-in-out infinite">✦</span>
-          </div>
-          <div style="font-size:11px;color:rgba(255,255,255,0.55);font-weight:600;letter-spacing:0.08em;text-transform:uppercase;margin-top:4px">Powered by Claude</div>
+          <div style="font-size:18px;color:#fff;font-weight:800;letter-spacing:0.08em;text-transform:uppercase">Coming Soon</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.60);font-weight:600;letter-spacing:0.08em;text-transform:uppercase;margin-top:8px">AI slide generation</div>
         </div>
         <div class="tmpl-info">
           <span class="tmpl-name">AI Create</span>
-          <span class="tmpl-desc">Describe it, Claude designs it</span>
+          <span class="tmpl-desc">Coming Soon</span>
           <span class="tmpl-cat-tag-ai">AI</span>
         </div>
       </button>
@@ -6575,13 +6571,6 @@ body.role-editor .admin-action {
           <line x1="12" y1="17" x2="12" y2="21"/>
         </svg>
         Preview
-      </button>
-      <div style="width:1px;height:22px;background:var(--border);margin:0 2px;align-self:center"></div>
-      <button class="btn btn-ai" onclick="openAiModal()" title="Generate a slide with AI">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 2l2.09 6.26L20 10l-5.91 1.74L12 18l-2.09-6.26L4 10l5.91-1.74z"/>
-        </svg>
-        AI Generate
       </button>
       <div style="width:1px;height:22px;background:var(--border);margin:0 2px;align-self:center"></div>
       <button class="btn btn-secondary" id="btnHistory" title="Version History" onclick="toggleHistoryPanel()" style="display:flex;align-items:center;gap:6px">
