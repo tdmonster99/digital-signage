@@ -4,6 +4,11 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-04-19 — Codex (session 4)
+- **Template gallery visual bug fix**: hid the offscreen Fabric canvas host used for template thumbnail generation so its generated `.canvas-container` wrapper can no longer appear as a green bar above the template picker.
+
+---
+
 ## 2026-04-19 — Codex (session 3)
 - **App modal close controls**: added a consistent top-right `X` close button to app/widget modals so users can dismiss them without scrolling to the footer Cancel button.
   - Covered Clock, QR Code, Weather, Countdown, Google Sheets, Google Reviews, Menu Board, and Multi-Zone Layout modals.

@@ -15802,10 +15802,14 @@ async function generateTemplateThumbnails() {
   ]);
 
   // Step 2: Create hidden offscreen Fabric canvas at full 1920×1080
+  // Fabric wraps canvases in a .canvas-container, so hide a parent host too.
+  const host = document.createElement('div');
+  host.setAttribute('aria-hidden', 'true');
+  host.style.cssText = 'position:fixed;left:-10000px;top:-10000px;width:1920px;height:1080px;overflow:hidden;pointer-events:none;opacity:0';
   const el = document.createElement('canvas');
   el.width = 1920; el.height = 1080;
-  el.style.cssText = 'position:fixed;left:-9999px;top:0;pointer-events:none;opacity:0';
-  document.body.appendChild(el);
+  host.appendChild(el);
+  document.body.appendChild(host);
   _tmplCanvas = new fabric.StaticCanvas(el, { width: 1920, height: 1080 });
 
   // Step 3: Render each template
@@ -15835,8 +15839,9 @@ async function generateTemplateThumbnails() {
     await new Promise(r => setTimeout(r, 10));
   }
 
-  el.remove();
+  _tmplCanvas.dispose();
   _tmplCanvas = null;
+  host.remove();
 }
 
 function sanitizeCanvasJson(jsonString) {
