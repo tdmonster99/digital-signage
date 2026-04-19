@@ -4,6 +4,13 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-04-19 — Codex (session 14)
+- **Screen notification opt-out clarity**: made screen status emails point directly to notification preferences.
+  - `api/screen-monitor.js`: added a "Manage notification settings" button and footer opt-out link to screen offline/online emails.
+  - `admin.html`: added `admin.html?profile=notifications` deep-link handling so notification emails open the My Profile → Notifications tab directly.
+
+---
+
 ## 2026-04-19 — Codex (session 13)
 - **AI slide generation paused in UI**: removed the active AI generation entry points while keeping the dormant implementation in place for a future return.
   - `admin.html`: changed the AI Create template-gallery card to a Coming Soon tile.

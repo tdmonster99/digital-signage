@@ -5135,11 +5135,11 @@ body.role-editor .admin-action {
 
         <!-- Tabs -->
         <div class="profile-tabs">
-          <button class="profile-tab active" onclick="switchProfileTab('basic',this)">Basic Info</button>
-          <button class="profile-tab" onclick="switchProfileTab('notifications',this)">Notifications</button>
-          <button class="profile-tab" onclick="switchProfileTab('password',this)">Password</button>
-          <button class="profile-tab" onclick="switchProfileTab('twofactor',this)">Two Factor</button>
-          <button class="profile-tab" onclick="switchProfileTab('theme',this)">Theme</button>
+          <button class="profile-tab active" data-profile-tab="basic" onclick="switchProfileTab('basic',this)">Basic Info</button>
+          <button class="profile-tab" data-profile-tab="notifications" onclick="switchProfileTab('notifications',this)">Notifications</button>
+          <button class="profile-tab" data-profile-tab="password" onclick="switchProfileTab('password',this)">Password</button>
+          <button class="profile-tab" data-profile-tab="twofactor" onclick="switchProfileTab('twofactor',this)">Two Factor</button>
+          <button class="profile-tab" data-profile-tab="theme" onclick="switchProfileTab('theme',this)">Theme</button>
         </div>
 
         <!-- Basic Info pane -->
@@ -8733,6 +8733,7 @@ async function initUserAndOrg(user) {
   await loadSchedulesFromOrg();
   loadBrandKit();
   _subscribeBroadcast();
+  handleInitialDeepLink();
 
   // Show billing success toast if returning from Stripe
   if (window._pendingBillingSuccess) {
@@ -11213,6 +11214,14 @@ async function getDesignedSlidePreviewUrl(slide) {
   } finally {
     if (tmp) tmp.dispose();
     el.remove();
+  }
+}
+
+function handleInitialDeepLink() {
+  const params = new URLSearchParams(window.location.search);
+  const profileTab = params.get('profile') || (params.get('page') === 'profile' ? params.get('tab') : null);
+  if (profileTab) {
+    setTimeout(() => window.openProfileTab(profileTab), 120);
   }
 }
 
@@ -17589,6 +17598,14 @@ window.switchProfileTab = function(tabName, btn) {
   if (pane) pane.classList.add('active');
   // Sync theme options when switching to theme tab
   if (tabName === 'theme') syncThemeOpts();
+};
+
+window.openProfileTab = function(tabName) {
+  const validTabs = ['basic', 'notifications', 'password', 'twofactor', 'theme'];
+  const tab = validTabs.includes(tabName) ? tabName : 'basic';
+  window.showPage('profile');
+  const btn = document.querySelector(`.profile-tab[data-profile-tab="${tab}"]`);
+  if (btn) window.switchProfileTab(tab, btn);
 };
 
 // ── Load profile data from Firebase ───────────────────────────────────────

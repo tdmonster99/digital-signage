@@ -126,6 +126,7 @@ function buildHtml(screenName, event) {
     ? `Your screen <strong>${esc(screenName)}</strong> hasn't checked in for over 10 minutes and may be offline.`
     : `Your screen <strong>${esc(screenName)}</strong> is back online and running normally.`;
   const accent = isOffline ? '#e05252' : '#16a34a';
+  const notificationsUrl = 'https://app.zigns.io/admin.html?profile=notifications';
 
   return `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f5f5f5;font-family:'Segoe UI',Arial,sans-serif">
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:40px 0">
@@ -137,12 +138,15 @@ function buildHtml(screenName, event) {
 <tr><td style="padding:36px 40px;border-left:4px solid ${accent}">
   <p style="margin:0 0 12px;font-size:20px;font-weight:700;color:#111">${headline}</p>
   <p style="margin:0 0 24px;font-size:15px;color:#555;line-height:1.6">${msg}</p>
-  <p style="margin:0;font-size:13px;color:#888">Manage your screens at
+  <p style="margin:0 0 18px;font-size:13px;color:#888">Manage your screens at
     <a href="https://app.zigns.io" style="color:#0043ce;text-decoration:none">app.zigns.io</a>
+  </p>
+  <p style="margin:0">
+    <a href="${notificationsUrl}" style="display:inline-block;background:#0043ce;color:#fff;text-decoration:none;font-size:13px;font-weight:700;padding:10px 14px;border-radius:8px">Manage notification settings</a>
   </p>
 </td></tr>
 <tr><td style="padding:20px 40px;border-top:1px solid #eee">
-  <p style="margin:0;font-size:12px;color:#aaa">You received this because you have screen status notifications enabled in your Zigns account settings.</p>
+  <p style="margin:0;font-size:12px;color:#aaa">You received this because you have screen status notifications enabled in your Zigns account settings. <a href="${notificationsUrl}" style="color:#777;text-decoration:underline">Turn these emails off</a>.</p>
 </td></tr>
 </table></td></tr></table></body></html>`;
 }
