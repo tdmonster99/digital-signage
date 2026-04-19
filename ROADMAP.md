@@ -75,11 +75,12 @@ Gap analysis against Yodeck, ScreenCloud, Rise Vision, OptiSigns, Screenly, and 
 
 ### 6. Social Media Feeds (Instagram + Google Reviews)
 **Why:** Instagram is on 6/6 competitors; Google Reviews on 4/6. High demand in restaurants and retail — live social proof with zero content-creation effort for operators.
+**Status:** Google Reviews widget implemented 2026-04-19. Instagram remains.
 **What to build:**
 - **Instagram:** New widget slide type `instagram`. Admin modal: access token + username, display style (grid 2×3 or single post), refresh interval. Backend proxy `api/instagram-feed.js` fetches latest posts via Instagram Basic Display API. `display.html`: cycles through posts.
 - **Google Reviews:** New widget slide type `googlereviews`. Admin modal: Google Place ID input, min star filter, max reviews to show. Backend proxy `api/reviews-proxy.js` fetches via Google Places API. `display.html`: renders star rating + review text + reviewer name.
 
-**Files:** `admin.html`, `display.html`, `api/instagram-feed.js`, `api/reviews-proxy.js`
+**Files:** `admin.html`, `display.html`, `api/proxy.js` (merged to stay within 12 Vercel functions)
 
 ---
 

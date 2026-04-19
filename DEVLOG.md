@@ -4,6 +4,16 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-04-19 — Codex (session 2)
+- **Google Reviews widget** (Phase 4 #6 partial): added `googlereviews` as a new social slide type.
+  - `admin.html`: Social app card, add/edit modal, slide save flow, slide-grid thumbnail/badge/edit button.
+  - `display.html`: new `stageReviews`, Google Reviews renderer, refresh interval, stage cleanup, and `applyPlaylist` recognition.
+  - `api/proxy.js`: added `type=googlereviews` route using Google Places Place Details reviews, merged into the existing proxy to stay at the 12-function Vercel Hobby limit.
+  - `ROADMAP.md`: marked Google Reviews implemented while Instagram remains.
+  - **Setup required:** add `GOOGLE_PLACES_API_KEY` or `GOOGLE_MAPS_API_KEY` in Vercel with Places API enabled.
+
+---
+
 ## 2026-04-19 — Codex
 - **Menu Board modal theme normalization**: updated the `menuboard` app modal to use the app's standard modal theme tokens (`--surface`, `--surface2`, `--border`, `--text`, `--muted`, `--accent`) instead of hard-coded dark colors. Form controls, category/item editor rows, badges, buttons, empty state, and inline modal header text now adapt with the rest of the app theme.
 

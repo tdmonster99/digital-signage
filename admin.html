@@ -2805,6 +2805,13 @@ section.content {
   backdrop-filter: blur(4px); padding: 20px;
 }
 
+/* ── Google Reviews modal ───────────────────────────────────────────── */
+#googleReviewsModal {
+  display: none; position: fixed; inset: 0; z-index: 400;
+  background: rgba(0,0,0,.5); align-items: center; justify-content: center;
+  backdrop-filter: blur(4px); padding: 20px;
+}
+
 /* ── Menu Board modal ─────────────────────────────────────────────── */
 #menuboardModal {
   display: none; position: fixed; inset: 0; z-index: 400;
@@ -4060,6 +4067,18 @@ body.role-editor .admin-action {
         <div class="app-card-name">Instagram</div>
         <div class="app-card-desc">Show your latest Instagram posts on screen</div>
         <span class="app-card-soon-badge">Coming Soon</span>
+      </div>
+
+      <!-- Google Reviews -->
+      <div class="app-card" data-category="social" data-name="google reviews ratings testimonials social proof" onclick="openGoogleReviewsModal(null)">
+        <div class="app-card-icon" style="background:rgba(250,204,21,.16)">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#eab308" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m12 3 2.7 5.47 6.03.88-4.36 4.25 1.03 6-5.4-2.84-5.4 2.84 1.03-6-4.36-4.25 6.03-.88L12 3z"/>
+          </svg>
+        </div>
+        <div class="app-card-name">Google Reviews</div>
+        <div class="app-card-desc">Show recent Google reviews with star ratings and customer quotes</div>
+        <button class="app-card-add" onclick="event.stopPropagation();openGoogleReviewsModal(null)">Add →</button>
       </div>
 
       <!-- Google Sheets — coming soon -->
@@ -8044,6 +8063,81 @@ body.role-editor .admin-action {
   </div>
 </div>
 
+<!-- ── Google Reviews Modal ─────────────────────────────────────────── -->
+<div id="googleReviewsModal">
+  <div class="countdown-modal-box">
+    <h2 style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:20px" id="greviewsModalTitle">Add Google Reviews Slide</h2>
+
+    <div class="clock-field">
+      <label>Slide Name</label>
+      <input type="text" id="greviewsName" placeholder="Customer Reviews" />
+    </div>
+    <div class="clock-field">
+      <label>Duration (seconds)</label>
+      <input type="number" id="greviewsDwell" min="5" max="3600" value="20" />
+    </div>
+    <div class="clock-field">
+      <label>Google Place ID <span style="font-size:11px;color:var(--muted);font-weight:400">from Google Place ID Finder</span></label>
+      <input type="text" id="greviewsPlaceId" placeholder="ChIJ..." />
+    </div>
+    <div class="clock-field">
+      <label>Minimum Rating</label>
+      <select id="greviewsMinRating">
+        <option value="5">5 stars only</option>
+        <option value="4" selected>4 stars and up</option>
+        <option value="3">3 stars and up</option>
+        <option value="1">All reviews</option>
+      </select>
+    </div>
+    <div class="clock-field">
+      <label>Max Reviews</label>
+      <select id="greviewsMaxReviews">
+        <option value="1">1 review</option>
+        <option value="3" selected>Up to 3 reviews</option>
+        <option value="5">Up to 5 reviews</option>
+      </select>
+    </div>
+    <div class="clock-field">
+      <label>Display Style</label>
+      <select id="greviewsStyle">
+        <option value="carousel">Single review carousel</option>
+        <option value="grid">Review grid</option>
+      </select>
+    </div>
+    <div class="clock-field">
+      <label>Sort Order</label>
+      <select id="greviewsSort">
+        <option value="newest" selected>Newest</option>
+        <option value="relevant">Most relevant</option>
+      </select>
+    </div>
+    <div class="clock-field">
+      <label>Refresh Interval</label>
+      <select id="greviewsRefresh">
+        <option value="900">Every 15 minutes</option>
+        <option value="1800" selected>Every 30 minutes</option>
+        <option value="3600">Every hour</option>
+        <option value="21600">Every 6 hours</option>
+      </select>
+    </div>
+    <div class="clock-field">
+      <label>Theme</label>
+      <div class="font-style-btns">
+        <button class="font-style-btn active" data-grtheme="dark"  onclick="selectGoogleReviewsTheme(this,'dark')">Dark</button>
+        <button class="font-style-btn"        data-grtheme="light" onclick="selectGoogleReviewsTheme(this,'light')">Light</button>
+      </div>
+    </div>
+    <div class="clock-field" id="greviewsShowTargetWrap">
+      <label>Add to Slideshow</label>
+      <select id="greviewsShowTarget"></select>
+    </div>
+    <div class="clock-modal-footer">
+      <button class="btn btn-secondary" onclick="closeGoogleReviewsModal()">Cancel</button>
+      <button class="btn btn-primary"   onclick="saveGoogleReviewsSlide()" id="greviewsSaveBtn">Add to Slideshow</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── Menu Board modal ─────────────────────────────────────────────── -->
 <div id="menuboardModal">
   <div class="mb-modal-box">
@@ -10849,10 +10943,11 @@ function renderGrid() {
     const isCountdown    = s.type === 'countdown';
     const isMultizone    = s.type === 'multizone';
     const isGoogleSheets = s.type === 'googlesheets';
+    const isGoogleReviews = s.type === 'googlereviews';
     const isMenuboard    = s.type === 'menuboard';
     const thumbUrl   = isDesigned ? s.thumbnailUrl
                      : isYoutube  ? `https://img.youtube.com/vi/${s.videoId}/mqdefault.jpg`
-                     : (isWebpage || isVideo || isClock || isQr || isWeather || isCountdown || isMultizone || isGoogleSheets || isMenuboard) ? null
+                     : (isWebpage || isVideo || isClock || isQr || isWeather || isCountdown || isMultizone || isGoogleSheets || isGoogleReviews || isMenuboard) ? null
                      : s.url;
     const editSvg    = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
     const placeholder = isClock
@@ -10881,6 +10976,10 @@ function renderGrid() {
            <line x1="3" y1="18" x2="21" y2="18" stroke="#22c55e" stroke-width="1.2"/>
            <line x1="9" y1="8" x2="9" y2="22" stroke="#22c55e" stroke-width="1.2"/>
            <line x1="15" y1="8" x2="15" y2="22" stroke="#22c55e" stroke-width="1.2"/>
+         </svg>`
+      : isGoogleReviews
+      ? `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#eab308" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+           <path d="m12 3 2.7 5.47 6.03.88-4.36 4.25 1.03 6-5.4-2.84-5.4 2.84 1.03-6-4.36-4.25 6.03-.88L12 3z"/>
          </svg>`
       : isMenuboard
       ? `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" stroke-width="1.5" stroke-linecap="round">
@@ -10914,6 +11013,7 @@ function renderGrid() {
                 : isCountdown  ? `<div class="designed-badge" style="background:#f07c00cc">Countdown</div>`
                 : isMultizone     ? `<div class="designed-badge" style="background:#059669cc">Zones</div>`
                 : isGoogleSheets  ? `<div class="designed-badge" style="background:#22c55ecc">Sheets</div>`
+                : isGoogleReviews ? `<div class="designed-badge" style="background:#eab308cc">Reviews</div>`
                 : isMenuboard     ? `<div class="designed-badge" style="background:#b8860bcc">Menu</div>`
                 : '';
     const editBtn    = isDesigned
@@ -10930,6 +11030,8 @@ function renderGrid() {
       ? `<button class="icon-btn toggle" title="Edit Zone Layout" onclick="openMultiZoneModal(${i})">${editSvg}</button>`
       : isGoogleSheets
       ? `<button class="icon-btn toggle" title="Edit Sheets Slide" onclick="openGoogleSheetsModal(${i})">${editSvg}</button>`
+      : isGoogleReviews
+      ? `<button class="icon-btn toggle" title="Edit Google Reviews" onclick="openGoogleReviewsModal(${i})">${editSvg}</button>`
       : isMenuboard
       ? `<button class="icon-btn toggle" title="Edit Menu Board" onclick="openMenuboardModal(${i})">${editSvg}</button>`
       : `<button class="icon-btn toggle" title="${s.active === false ? 'Show' : 'Hide'}" onclick="toggleSlide(${i})">
@@ -17864,6 +17966,94 @@ window.saveGoogleSheetsSlide = async function() {
     updateDashboard();
   } catch(e) {
     console.error('saveGoogleSheetsSlide:', e);
+    toast('Could not save slide: ' + e.message, true);
+  }
+};
+
+// ── Google Reviews widget ─────────────────────────────────────────────────
+let greviewsEditIdx = null;
+
+function _parsePlaceId(value) {
+  return (value || '').trim().replace(/^places\//, '');
+}
+
+window.openGoogleReviewsModal = function(editIdx) {
+  greviewsEditIdx = (editIdx !== null && editIdx !== undefined) ? editIdx : null;
+  const isEdit = greviewsEditIdx !== null;
+  const s = isEdit ? slides[greviewsEditIdx] : null;
+
+  document.getElementById('greviewsModalTitle').textContent = isEdit ? 'Edit Google Reviews Slide' : 'Add Google Reviews Slide';
+  document.getElementById('greviewsSaveBtn').textContent    = isEdit ? 'Save Changes' : 'Add to Slideshow';
+  document.getElementById('greviewsName').value       = s?.name || '';
+  document.getElementById('greviewsDwell').value      = s?.dwell || 20;
+  document.getElementById('greviewsPlaceId').value    = s?.placeId || '';
+  document.getElementById('greviewsMinRating').value  = s?.minRating || 4;
+  document.getElementById('greviewsMaxReviews').value = s?.maxReviews || 3;
+  document.getElementById('greviewsStyle').value      = s?.displayStyle || 'carousel';
+  document.getElementById('greviewsSort').value       = s?.sort || 'newest';
+  document.getElementById('greviewsRefresh').value    = s?.refreshInterval || 1800;
+  document.querySelectorAll('[data-grtheme]').forEach(b =>
+    b.classList.toggle('active', b.dataset.grtheme === (s?.theme || 'dark')));
+
+  document.getElementById('greviewsShowTargetWrap').style.display = isEdit ? 'none' : '';
+  if (!isEdit) _populateShowSelect('greviewsShowTarget');
+  document.getElementById('googleReviewsModal').style.display = 'flex';
+};
+
+window.closeGoogleReviewsModal = function() {
+  document.getElementById('googleReviewsModal').style.display = 'none';
+  greviewsEditIdx = null;
+};
+
+window.selectGoogleReviewsTheme = function(btn, theme) {
+  document.querySelectorAll('[data-grtheme]').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+};
+
+window.saveGoogleReviewsSlide = async function() {
+  const placeId = _parsePlaceId(document.getElementById('greviewsPlaceId').value);
+  if (!placeId) { toast('Please enter a Google Place ID', true); return; }
+
+  const editIdx = greviewsEditIdx;
+  const slide = {
+    id:              editIdx !== null ? slides[editIdx].id : crypto.randomUUID(),
+    type:            'googlereviews',
+    name:            document.getElementById('greviewsName').value.trim() || 'Google Reviews',
+    dwell:           parseInt(document.getElementById('greviewsDwell').value, 10) || 20,
+    placeId,
+    minRating:       parseInt(document.getElementById('greviewsMinRating').value, 10) || 4,
+    maxReviews:      parseInt(document.getElementById('greviewsMaxReviews').value, 10) || 3,
+    displayStyle:    document.getElementById('greviewsStyle').value,
+    sort:            document.getElementById('greviewsSort').value,
+    refreshInterval: parseInt(document.getElementById('greviewsRefresh').value, 10) || 1800,
+    theme:           document.querySelector('[data-grtheme].active')?.dataset.grtheme || 'dark',
+    active:          true,
+  };
+
+  const targetShowId = editIdx === null
+    ? document.getElementById('greviewsShowTarget').value
+    : currentShowId;
+
+  if (!targetShowId) { toast('Please select a slideshow', true); return; }
+
+  closeGoogleReviewsModal();
+
+  try {
+    if (targetShowId === currentShowId) {
+      if (editIdx !== null) slides[editIdx] = slide;
+      else                  slides.push(slide);
+      await pushToFirestore();
+      renderGrid();
+      toast(editIdx !== null ? 'Google Reviews slide updated ✓' : 'Google Reviews slide added ✓');
+    } else {
+      await _addSlideToShow(targetShowId, slide);
+      const targetName = (currentOrg?.slideshows || []).find(s => s.id === targetShowId)?.name || targetShowId;
+      toast(`Google Reviews slide added to "${targetName}" ✓`);
+    }
+    logActivity(editIdx !== null ? 'Edited Google Reviews slide' : 'Added Google Reviews slide');
+    updateDashboard();
+  } catch(e) {
+    console.error('saveGoogleReviewsSlide:', e);
     toast('Could not save slide: ' + e.message, true);
   }
 };

@@ -6,6 +6,10 @@
 // GET /api/proxy?type=weather&location=LOCATION&units=imperial|metric
 //   → proxies OpenWeatherMap current + 3-day forecast
 //   → Required env var: OPENWEATHER_API_KEY
+//
+// GET /api/proxy?type=googlereviews&placeId=PLACE_ID&minRating=4&maxReviews=3&sort=newest|relevant
+//   → proxies Google Places reviews for a Place ID
+//   → Required env var: GOOGLE_PLACES_API_KEY or GOOGLE_MAPS_API_KEY
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -113,7 +117,63 @@ module.exports = async function handler(req, res) {
     }
   }
 
-  return res.status(400).json({ error: 'type must be "rss" or "weather"' });
+  // ── Google Reviews proxy ─────────────────────────────────────────────────
+  if (type === 'googlereviews') {
+    const { placeId, minRating = '1', maxReviews = '3', sort = 'newest' } = req.query;
+    if (!placeId) return res.status(400).json({ error: 'placeId is required' });
+
+    const apiKey = process.env.GOOGLE_PLACES_API_KEY || process.env.GOOGLE_MAPS_API_KEY;
+    if (!apiKey) return res.status(500).json({ error: 'Google Places service not configured' });
+
+    const cleanPlaceId = String(placeId).trim().replace(/^places\//, '');
+    if (!/^[A-Za-z0-9_-]+$/.test(cleanPlaceId)) {
+      return res.status(400).json({ error: 'Invalid Place ID' });
+    }
+
+    const ratingFloor = Math.max(1, Math.min(5, parseInt(minRating, 10) || 1));
+    const reviewLimit = Math.max(1, Math.min(5, parseInt(maxReviews, 10) || 3));
+    const sortBy = sort === 'relevant' ? 'most_relevant' : 'newest';
+    const endpoint = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${encodeURIComponent(cleanPlaceId)}&fields=name,rating,user_ratings_total,reviews&reviews_sort=${sortBy}&key=${apiKey}`;
+
+    try {
+      const upstream = await fetch(endpoint, { signal: AbortSignal.timeout(10000) });
+      const data = await upstream.json().catch(() => ({}));
+      if (!upstream.ok || data.status !== 'OK') {
+        const message = data.error_message || data.status || `Places API error ${upstream.status}`;
+        const status = data.status === 'NOT_FOUND' || data.status === 'INVALID_REQUEST' ? 422 : 502;
+        return res.status(status).json({ error: message });
+      }
+
+      const result = data.result || {};
+      const reviews = (result.reviews || [])
+        .filter(r => (r.rating || 0) >= ratingFloor && (r.text || '').trim())
+        .slice(0, reviewLimit)
+        .map(r => ({
+          author: r.author_name || 'Google user',
+          rating: r.rating || 0,
+          text: stripHtml(r.text || ''),
+          relativeTime: r.relative_time_description || '',
+          time: r.time || null,
+          profilePhotoUrl: r.profile_photo_url || '',
+          authorUrl: r.author_url || '',
+        }));
+
+      res.setHeader('Cache-Control', 's-maxage=1800, stale-while-revalidate=300');
+      return res.status(200).json({
+        ok: true,
+        placeId: cleanPlaceId,
+        placeName: result.name || '',
+        rating: result.rating || null,
+        totalRatings: result.user_ratings_total || null,
+        sort: sortBy,
+        reviews,
+      });
+    } catch (e) {
+      return res.status(502).json({ error: e.message });
+    }
+  }
+
+  return res.status(400).json({ error: 'type must be "rss", "weather", or "googlereviews"' });
 };
 
 function parseRss(xml) {
@@ -136,4 +196,8 @@ function decodeEntities(s) {
     .replace(/&gt;/g,   '>')
     .replace(/&quot;/g, '"')
     .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(parseInt(n, 10)));
+}
+
+function stripHtml(s) {
+  return decodeEntities(String(s).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim());
 }

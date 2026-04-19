@@ -1049,13 +1049,21 @@
 
   // ── Google Sheets widget ──────────────────────────────────────────────────
   const stageSheets    = document.getElementById('stageSheets');
+  const stageReviews   = document.getElementById('stageReviews');
   const stageMenuboard = document.getElementById('stageMenuboard');
   let sheetsInterval = null;
+  let reviewsInterval = null;
 
   function stopSheets() {
     clearInterval(sheetsInterval);
     sheetsInterval = null;
     stageSheets.innerHTML = '';
+  }
+
+  function stopGoogleReviews() {
+    clearInterval(reviewsInterval);
+    reviewsInterval = null;
+    stageReviews.innerHTML = '';
   }
 
   function _sheetsTableHtml(values, headerRow, isDark, accent) {
@@ -1151,6 +1159,105 @@
     await load();
     const id = setInterval(load, (config.refreshInterval || 300) * 1000);
     mzTimers.push({ type: 'interval', id });
+  }
+
+  // ── Google Reviews widget ────────────────────────────────────────────────
+  async function _fetchGoogleReviews(slide) {
+    const params = new URLSearchParams({
+      type: 'googlereviews',
+      placeId: slide.placeId || '',
+      minRating: slide.minRating || 4,
+      maxReviews: slide.maxReviews || 3,
+      sort: slide.sort || 'newest',
+    });
+    const res = await fetch('/api/proxy?' + params);
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || !json.ok) throw new Error(json.error || 'Reviews fetch failed');
+    return json;
+  }
+
+  function _reviewStars(rating, accent) {
+    const n = Math.max(0, Math.min(5, Math.round(rating || 0)));
+    return `<span style="color:${accent};letter-spacing:.08em">${'★'.repeat(n)}${'☆'.repeat(5 - n)}</span>`;
+  }
+
+  function _reviewsHtml(data, slide) {
+    const isDark = (slide.theme || 'dark') === 'dark';
+    const accent = '#eab308';
+    const fg = isDark ? '#fff' : '#111827';
+    const muted = isDark ? 'rgba(255,255,255,.58)' : 'rgba(17,24,39,.58)';
+    const cardBg = isDark ? 'rgba(255,255,255,.08)' : 'rgba(255,255,255,.88)';
+    const border = isDark ? 'rgba(255,255,255,.12)' : 'rgba(17,24,39,.1)';
+    const reviews = data.reviews || [];
+    const title = esc(data.placeName || slide.name || 'Google Reviews');
+    const summary = data.rating ? `${Number(data.rating).toFixed(1)} average${data.totalRatings ? ` · ${data.totalRatings} ratings` : ''}` : 'Recent customer reviews';
+
+    if (!reviews.length) {
+      return `<div style="margin:auto;text-align:center;color:${fg};font-family:'DM Sans',sans-serif">
+        <div style="font-size:4vw;font-weight:800;margin-bottom:1vw">No matching reviews</div>
+        <div style="font-size:1.6vw;color:${muted}">Try lowering the minimum rating or checking the Place ID.</div>
+      </div>`;
+    }
+
+    const header = `<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:3vw;margin-bottom:3vw">
+      <div>
+        <div style="font-size:1.4vw;font-weight:800;color:${accent};letter-spacing:.12em;text-transform:uppercase;margin-bottom:.7vw">Google Reviews</div>
+        <div style="font-size:4.2vw;font-weight:850;line-height:1;color:${fg};letter-spacing:-.04em">${title}</div>
+      </div>
+      <div style="text-align:right;color:${fg}">
+        <div style="font-size:2vw;font-weight:800">${_reviewStars(data.rating || 5, accent)}</div>
+        <div style="font-size:1.25vw;color:${muted};margin-top:.4vw">${esc(summary)}</div>
+      </div>
+    </div>`;
+
+    if (slide.displayStyle === 'grid') {
+      return `${header}<div style="display:grid;grid-template-columns:repeat(${Math.min(3, reviews.length)},1fr);gap:1.4vw">
+        ${reviews.slice(0, 5).map(r => `<article style="background:${cardBg};border:1px solid ${border};border-radius:1.4vw;padding:1.8vw;min-height:19vw;display:flex;flex-direction:column">
+          <div style="font-size:1.3vw;font-weight:800;color:${fg};margin-bottom:.45vw">${esc(r.author)}</div>
+          <div style="font-size:1.15vw;margin-bottom:1.1vw">${_reviewStars(r.rating, accent)}</div>
+          <div style="font-size:1.45vw;line-height:1.38;color:${fg};flex:1">“${esc(r.text)}”</div>
+          <div style="font-size:1vw;color:${muted};margin-top:1.3vw">${esc(r.relativeTime || '')}</div>
+        </article>`).join('')}
+      </div>`;
+    }
+
+    const r = reviews[0];
+    return `${header}<article style="background:${cardBg};border:1px solid ${border};border-radius:2vw;padding:3vw;min-height:28vw;display:flex;flex-direction:column;justify-content:center">
+      <div style="font-size:2vw;margin-bottom:1.4vw">${_reviewStars(r.rating, accent)}</div>
+      <div style="font-size:3.15vw;line-height:1.2;font-weight:700;color:${fg};letter-spacing:-.03em">“${esc(r.text)}”</div>
+      <div style="display:flex;align-items:center;gap:1vw;margin-top:2.2vw">
+        <div style="width:3.6vw;height:3.6vw;border-radius:50%;background:${accent};color:#111;display:flex;align-items:center;justify-content:center;font-size:1.4vw;font-weight:900">${esc((r.author || 'G').charAt(0))}</div>
+        <div>
+          <div style="font-size:1.45vw;font-weight:800;color:${fg}">${esc(r.author)}</div>
+          <div style="font-size:1.05vw;color:${muted}">${esc(r.relativeTime || '')}</div>
+        </div>
+      </div>
+    </article>`;
+  }
+
+  async function renderGoogleReviews(slide) {
+    stopGoogleReviews();
+    const isDark = (slide.theme || 'dark') === 'dark';
+    stageReviews.style.background = isDark
+      ? 'radial-gradient(circle at 15% 10%, rgba(234,179,8,.22), transparent 34%), #101217'
+      : 'linear-gradient(135deg, #fff7d6 0%, #f8fafc 54%, #ffffff 100%)';
+    stageReviews.style.padding = '4vw';
+    stageReviews.style.overflow = 'hidden';
+    stageReviews.style.display = 'flex';
+    stageReviews.style.flexDirection = 'column';
+
+    async function load() {
+      try {
+        stageReviews.innerHTML = `<div style="color:${isDark?'rgba(255,255,255,.45)':'rgba(0,0,0,.45)'};font-size:1.8vw;text-align:center;margin:auto">Loading reviews…</div>`;
+        const data = await _fetchGoogleReviews(slide);
+        stageReviews.innerHTML = _reviewsHtml(data, slide);
+      } catch (e) {
+        stageReviews.innerHTML = `<div style="color:#ef4444;font-size:1.8vw;text-align:center;margin:auto">⚠ ${esc(e.message)}</div>`;
+      }
+    }
+
+    await load();
+    reviewsInterval = setInterval(load, (slide.refreshInterval || 1800) * 1000);
   }
 
   // ── Offline indicator ─────────────────────────────────────────────────────
@@ -1336,6 +1443,7 @@
     stageCountdown.style.opacity = "0";
     stageMultizone.style.opacity = "0"; stopMultizone();
     stageSheets.style.opacity    = "0"; stopSheets();
+    stageReviews.style.opacity   = "0"; stopGoogleReviews();
     stageMenuboard.style.opacity = "0";
     stopClock();    stageClock.style.opacity   = "0";
     stopWeather();
@@ -1358,6 +1466,11 @@
       stageWebpage.style.opacity  = "0"; iframeWebpage.src = "about:blank";
       stageQr.style.opacity       = "0";
       stageWeather.style.opacity  = "0";
+      stageCountdown.style.opacity = "0";
+      stageMultizone.style.opacity = "0"; stopMultizone();
+      stageSheets.style.opacity    = "0"; stopSheets();
+      stageReviews.style.opacity   = "0"; stopGoogleReviews();
+      stageMenuboard.style.opacity = "0";
       stopClock();    stageClock.style.opacity   = "0";
       stopWeather();
       // Fire entrance animations after crossfade transition (1.2s CSS)
@@ -1418,6 +1531,11 @@
       await renderGoogleSheet(slide);
       stageSheets.style.opacity = "1";
 
+    } else if (slide.type === "googlereviews") {
+      _hideAllStages();
+      await renderGoogleReviews(slide);
+      stageReviews.style.opacity = "1";
+
     } else if (slide.type === "menuboard") {
       _hideAllStages();
       renderMenuboard(slide);
@@ -1450,6 +1568,11 @@
       stageWebpage.style.opacity  = "0"; iframeWebpage.src = "about:blank";
       stageQr.style.opacity       = "0";
       stageWeather.style.opacity  = "0";
+      stageCountdown.style.opacity = "0";
+      stageMultizone.style.opacity = "0"; stopMultizone();
+      stageSheets.style.opacity    = "0"; stopSheets();
+      stageReviews.style.opacity   = "0"; stopGoogleReviews();
+      stageMenuboard.style.opacity = "0";
       stopClock(); stageClock.style.opacity = "0";
 
       const tmp = active;
@@ -1538,7 +1661,7 @@
       s.url || s.canvasJson ||
       s.type === 'clock' || s.type === 'weather' || s.type === 'youtube' ||
       s.type === 'countdown' || s.type === 'multizone' || s.type === 'googlesheets' ||
-      s.type === 'menuboard'
+      s.type === 'googlereviews' || s.type === 'menuboard'
     );
 
     if (!incoming.length) {
@@ -1982,6 +2105,7 @@
   #stageCountdown .cd-end   { font-size: 9vw; font-weight: 800; letter-spacing: -0.01em; }
   #stageMultizone { z-index: 9; background: #000; }
   #stageSheets    { z-index: 9; background: #0f172a; }
+  #stageReviews   { z-index: 9; background: #101217; }
   .mz-zone { position: absolute; box-sizing: border-box; }
   .mz-zone-inner { position: absolute; width: 1920px; height: 1080px; transform-origin: top left; }
 
@@ -2310,6 +2434,9 @@
 
 <!-- Google Sheets stage -->
 <div id="stageSheets" class="stage"></div>
+
+<!-- Google Reviews stage -->
+<div id="stageReviews" class="stage"></div>
 
 <!-- Menu Board stage -->
 <div id="stageMenuboard" class="stage"></div>
