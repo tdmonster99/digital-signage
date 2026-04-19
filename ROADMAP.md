@@ -75,10 +75,10 @@ Gap analysis against Yodeck, ScreenCloud, Rise Vision, OptiSigns, Screenly, and 
 
 ### 6. Social Media Feeds (Instagram + Google Reviews)
 **Why:** Instagram is on 6/6 competitors; Google Reviews on 4/6. High demand in restaurants and retail — live social proof with zero content-creation effort for operators.
-**Status:** Google Reviews widget implemented 2026-04-19. Instagram remains.
+**Status:** Implemented 2026-04-19. Google Reviews and Instagram feed slides are available.
 **What to build:**
-- **Instagram:** New widget slide type `instagram`. Admin modal: access token + username, display style (grid 2×3 or single post), refresh interval. Backend proxy `api/instagram-feed.js` fetches latest posts via Instagram Basic Display API. `display.html`: cycles through posts.
-- **Google Reviews:** New widget slide type `googlereviews`. Admin modal: Google Place ID input, min star filter, max reviews to show. Backend proxy `api/reviews-proxy.js` fetches via Google Places API. `display.html`: renders star rating + review text + reviewer name.
+- **Instagram:** New widget slide type `instagram`. Admin modal: access token, optional professional account ID, username, display style, max posts, refresh interval, and theme. Backend proxy route in `api/proxy.js` fetches latest posts via the current Instagram API and `display.html` renders grid, spotlight, and carousel layouts.
+- **Google Reviews:** New widget slide type `googlereviews`. Admin modal: Google Place ID input, min star filter, max reviews to show. Backend proxy route in `api/proxy.js` fetches via Google Places API. `display.html`: renders star rating + review text + reviewer name.
 
 **Files:** `admin.html`, `display.html`, `api/proxy.js` (merged to stay within 12 Vercel functions)
 
@@ -151,7 +151,7 @@ Gap analysis against Yodeck, ScreenCloud, Rise Vision, OptiSigns, Screenly, and 
 | 3 | Digital menu board | Medium | High | 5/6 | ✓ |
 | 4 | PowerPoint integration | Medium | High | 4/6 | ✓ |
 | 5 | Canva integration (Connect APIs) | Medium | High | 6/6 | ✓ |
-| 6 | Social media feeds (Instagram + Reviews) | Medium | High | 6/6 / 4/6 |
+| 6 | Social media feeds (Instagram + Reviews) | Medium | High | 6/6 / 4/6 | ✓ |
 | 7 | Content templates library | Medium | High | 5/6 |
 | 8 | Proof of play reporting | Low | High | 5/6 | ✓ |
 | 9 | Google Sheets live data widget | Low | High | 6/6 | ✓ |
@@ -173,6 +173,7 @@ All items below are shipped and in production as of April 2026.
 | 15 | Emergency broadcast override | 4 | ✓ 2026-04-16 |
 | 16 | PowerPoint integration | 4 | ✓ 2026-04-16 |
 | 17 | Digital menu board | 4 | ✓ 2026-04-18 |
+| 18 | Social media feeds (Instagram + Reviews) | 4 | ✓ 2026-04-19 |
 | 1 | Schedule display-side enforcement | 1 | ✓ 2026-04-14 |
 | 2 | QR code widget | 1 | ✓ 2026-04-14 |
 | 3 | Weather widget | 1 | ✓ 2026-04-14 |

@@ -10,14 +10,22 @@
 // GET /api/proxy?type=googlereviews&placeId=PLACE_ID&minRating=4&maxReviews=3&sort=newest|relevant
 //   → proxies Google Places reviews for a Place ID
 //   → Required env var: GOOGLE_PLACES_API_KEY or GOOGLE_MAPS_API_KEY
+//
+// POST /api/proxy?type=instagram
+//   body: { accessToken, accountId?, maxPosts? }
+//   → proxies Instagram API media for a professional account or Instagram Login token
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'GET')    return res.status(405).json({ error: 'Method not allowed' });
+  if (!['GET', 'POST'].includes(req.method)) return res.status(405).json({ error: 'Method not allowed' });
 
   const { type } = req.query;
+  if (req.method === 'POST' && type !== 'instagram') {
+    return res.status(405).json({ error: 'POST is only supported for Instagram' });
+  }
 
   // ── RSS proxy ─────────────────────────────────────────────────────────────
   if (type === 'rss') {
@@ -173,8 +181,102 @@ module.exports = async function handler(req, res) {
     }
   }
 
-  return res.status(400).json({ error: 'type must be "rss", "weather", or "googlereviews"' });
+  // ── Instagram proxy ──────────────────────────────────────────────────────
+  if (type === 'instagram') {
+    let body = {};
+    try {
+      body = req.method === 'POST' ? await readJsonBody(req) : req.query;
+    } catch {
+      return res.status(400).json({ error: 'Invalid JSON body' });
+    }
+
+    const accessToken = String(body.accessToken || '').trim();
+    if (!accessToken) return res.status(400).json({ error: 'accessToken is required' });
+
+    const accountId = String(body.accountId || '').trim();
+    if (accountId && !/^\d+$/.test(accountId)) {
+      return res.status(400).json({ error: 'Invalid Instagram account ID' });
+    }
+
+    const limit = Math.max(1, Math.min(12, parseInt(body.maxPosts, 10) || 6));
+    const graphVersion = process.env.META_GRAPH_VERSION || 'v22.0';
+    const graphHost = accountId ? 'https://graph.facebook.com' : 'https://graph.instagram.com';
+    const pathId = accountId || 'me';
+    const endpoint = new URL(`${graphHost}/${graphVersion}/${pathId}/media`);
+    endpoint.searchParams.set('fields', [
+      'id',
+      'caption',
+      'media_type',
+      'media_url',
+      'thumbnail_url',
+      'permalink',
+      'timestamp',
+      'username',
+      'children{media_type,media_url,thumbnail_url,permalink}',
+    ].join(','));
+    endpoint.searchParams.set('limit', String(limit));
+    endpoint.searchParams.set('access_token', accessToken);
+
+    try {
+      const upstream = await fetch(endpoint, { signal: AbortSignal.timeout(10000) });
+      const data = await upstream.json().catch(() => ({}));
+      if (!upstream.ok || data.error) {
+        const message = data.error?.message || `Instagram API error ${upstream.status}`;
+        const status = upstream.status === 400 ? 422 : 502;
+        return res.status(status).json({ error: message });
+      }
+
+      const posts = (data.data || [])
+        .map(normalizeInstagramPost)
+        .filter(p => p.mediaUrl || p.videoUrl)
+        .slice(0, limit);
+
+      res.setHeader('Cache-Control', 'no-store');
+      return res.status(200).json({
+        ok: true,
+        accountId: accountId || 'me',
+        username: posts.find(p => p.username)?.username || '',
+        posts,
+      });
+    } catch (e) {
+      return res.status(502).json({ error: e.message });
+    }
+  }
+
+  return res.status(400).json({ error: 'type must be "rss", "weather", "googlereviews", or "instagram"' });
 };
+
+async function readJsonBody(req) {
+  if (Buffer.isBuffer(req.body)) return req.body.length ? JSON.parse(req.body.toString('utf8')) : {};
+  if (req.body && typeof req.body === 'object') return req.body;
+  if (typeof req.body === 'string') return req.body ? JSON.parse(req.body) : {};
+
+  let raw = '';
+  for await (const chunk of req) raw += Buffer.isBuffer(chunk) ? chunk.toString('utf8') : chunk;
+  return raw ? JSON.parse(raw) : {};
+}
+
+function normalizeInstagramPost(item) {
+  const children = Array.isArray(item?.children?.data) ? item.children.data : [];
+  const child = children.find(c => c.media_url || c.thumbnail_url) || {};
+  const rawType = item.media_type || child.media_type || 'IMAGE';
+  const mediaType = rawType === 'CAROUSEL_ALBUM' ? 'CAROUSEL' : rawType;
+  const imageUrl = rawType === 'VIDEO'
+    ? (item.thumbnail_url || child.thumbnail_url || item.media_url || child.media_url || '')
+    : (item.media_url || item.thumbnail_url || child.media_url || child.thumbnail_url || '');
+
+  return {
+    id: item.id || '',
+    caption: stripHtml(item.caption || ''),
+    mediaType,
+    mediaUrl: imageUrl,
+    thumbnailUrl: item.thumbnail_url || child.thumbnail_url || '',
+    videoUrl: rawType === 'VIDEO' ? (item.media_url || child.media_url || '') : '',
+    permalink: item.permalink || child.permalink || '',
+    timestamp: item.timestamp || '',
+    username: item.username || '',
+  };
+}
 
 function parseRss(xml) {
   const headlines = [];

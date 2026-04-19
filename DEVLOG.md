@@ -4,6 +4,15 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-04-19 — Codex (session 10)
+- **Instagram feed widget**: shipped the Phase 4 social-feed gap for Instagram.
+  - `admin.html`: enabled the Instagram app card, added an Instagram slide modal, slide save/edit flow, slide-card badge/icon, and slideshow targeting.
+  - `display.html`: added a dedicated Instagram stage with grid, spotlight, and rotating carousel layouts plus refresh/cycle cleanup.
+  - `api/proxy.js`: added a POST `type=instagram` route that proxies Instagram API media without putting the access token in the URL.
+  - `ROADMAP.md`: marked Social Media Feeds complete; Content Templates Library is next.
+
+---
+
 ## 2026-04-19 — Codex (session 9)
 - **Slide preview quality fix**: hover Preview now renders designed slides from the saved Fabric canvas JSON at a larger preview resolution instead of reusing the small card thumbnail.
   - Enlarged the preview lightbox image stage so slide previews display closer to screen-preview size while staying within the viewport.
