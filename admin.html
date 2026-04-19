@@ -1195,6 +1195,11 @@ section.content {
 #slidePreviewName {
   color: rgba(255,255,255,0.75); font-size: 14px; font-weight: 500;
 }
+#slidePreviewActions {
+  display: none; align-items: center; justify-content: center; gap: 10px;
+}
+#slidePreviewModal.template-preview #slidePreviewActions { display: flex; }
+#slidePreviewActions .btn { min-width: 132px; justify-content: center; }
 #slidePreviewClose {
   position: fixed; top: 20px; right: 24px;
   background: rgba(255,255,255,0.12); border: none; border-radius: 50%;
@@ -1876,6 +1881,19 @@ body > canvas[width="1920"][height="1080"] {
 }
 .gallery-header h2 { font-size: 22px; font-weight: 700; color: var(--text); }
 .gallery-header p  { font-size: 13px; color: var(--muted); margin-top: 3px; }
+.gallery-header-actions { display: flex; align-items: flex-start; gap: 10px; }
+.gallery-mode {
+  display: flex; gap: 2px; padding: 3px;
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
+}
+.gallery-mode button {
+  border: 0; background: transparent; color: var(--muted);
+  font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 700;
+  padding: 7px 12px; border-radius: 7px; cursor: pointer;
+  transition: background .14s, color .14s;
+}
+.gallery-mode button:hover { color: var(--text); }
+.gallery-mode button.active { background: var(--accent); color: #fff; }
 .gallery-close {
   width: 34px; height: 34px; border-radius: 8px; flex-shrink: 0;
   border: 1px solid var(--border); background: var(--surface2);
@@ -1928,6 +1946,10 @@ body > canvas[width="1920"][height="1080"] {
   display: inline-block; padding: 2px 8px; border-radius: 10px;
   font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;
   background: var(--accent-bg); color: var(--accent); margin-top: 4px;
+}
+@media (max-width: 720px) {
+  .gallery-header { flex-direction: column; gap: 12px; }
+  .gallery-header-actions { width: 100%; justify-content: space-between; }
 }
 
 /* ── AI Generate ─────────────────────────────────────────────────────────── */
@@ -3897,6 +3919,13 @@ body.role-editor .admin-action {
             </svg>
             Design a Slide
           </button>
+          <button class="btn btn-secondary" onclick="openTemplateLibrary()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/>
+              <rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>
+            </svg>
+            Templates
+          </button>
           <button class="btn btn-secondary" onclick="addSlideGroup()">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
               <rect x="2" y="7" width="20" height="14" rx="2"/>
@@ -3930,6 +3959,13 @@ body.role-editor .admin-action {
                   <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
                 </svg>
                 Design a Slide
+              </button>
+              <button class="toolbar-overflow-item" onclick="closeToolbarOverflow();openTemplateLibrary()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/>
+                  <rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>
+                </svg>
+                Templates
               </button>
               <button class="toolbar-overflow-item" onclick="closeToolbarOverflow();addSlideGroup()">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
@@ -5856,10 +5892,16 @@ body.role-editor .admin-action {
   <div class="gallery-modal">
     <div class="gallery-header">
       <div>
-        <h2>Choose a template or start blank</h2>
-        <p>Select a starting point for your slide design</p>
+        <h2 id="galleryTitle">Choose a template or start blank</h2>
+        <p id="gallerySubtitle">Select a starting point for your slide design</p>
       </div>
-      <button class="gallery-close" onclick="closeTemplateGallery()">✕</button>
+      <div class="gallery-header-actions">
+        <div class="gallery-mode" aria-label="Template mode">
+          <button type="button" data-gallery-mode="design" class="active" onclick="setGalleryMode('design')">Design</button>
+          <button type="button" data-gallery-mode="insert" onclick="setGalleryMode('insert')">Use</button>
+        </div>
+        <button class="gallery-close" onclick="closeTemplateGallery()">✕</button>
+      </div>
     </div>
     <div class="gallery-search-wrap">
       <input id="gallerySearch" type="text" placeholder="Search templates…" oninput="filterGallery()">
@@ -6445,6 +6487,10 @@ body.role-editor .admin-action {
   <button id="slidePreviewClose" onclick="closeSlidePreview()" aria-label="Close preview">✕</button>
   <img id="slidePreviewImg" src="" alt="">
   <div id="slidePreviewName"></div>
+  <div id="slidePreviewActions">
+    <button class="btn btn-secondary" id="slidePreviewCustomizeTemplate" onclick="customizeTemplatePreview()">Customize</button>
+    <button class="btn btn-primary" id="slidePreviewUseTemplate" onclick="useTemplatePreview()">Use Template</button>
+  </div>
 </div>
 
 <!-- ── TV Preview Overlay ──────────────────────────────────────────────────── -->
@@ -10003,6 +10049,8 @@ window.saveWebpageSlide = async function() {
 
 // ── Slide preview lightbox ───────────────────────────────────────────────
 let slidePreviewRequestId = 0;
+let templatePreviewName = null;
+let templateInsertBusy = false;
 
 window.openSlidePreview = async function(idx) {
   const s = slides[idx];
@@ -10012,6 +10060,8 @@ window.openSlidePreview = async function(idx) {
   const img = document.getElementById('slidePreviewImg');
   const name = document.getElementById('slidePreviewName');
   const requestId = ++slidePreviewRequestId;
+  templatePreviewName = null;
+  modal.classList.remove('template-preview');
 
   let url = null;
   if (s.type === 'designed') {
@@ -10042,10 +10092,105 @@ window.openSlidePreview = async function(idx) {
 
 window.closeSlidePreview = function() {
   slidePreviewRequestId += 1;
-  document.getElementById('slidePreviewModal').classList.remove('open');
+  const modal = document.getElementById('slidePreviewModal');
+  modal.classList.remove('open', 'template-preview');
   const img = document.getElementById('slidePreviewImg');
   img.removeAttribute('src');
   img.classList.remove('is-loading');
+  templatePreviewName = null;
+  const useBtn = document.getElementById('slidePreviewUseTemplate');
+  if (useBtn) {
+    useBtn.disabled = false;
+    useBtn.textContent = 'Use Template';
+  }
+};
+
+window.openTemplatePreview = async function(templateName) {
+  if (typeof fabric === 'undefined') {
+    toast('Fabric.js failed to load — check your internet connection and refresh.', true);
+    return;
+  }
+  const modal = document.getElementById('slidePreviewModal');
+  const img = document.getElementById('slidePreviewImg');
+  const name = document.getElementById('slidePreviewName');
+  const useBtn = document.getElementById('slidePreviewUseTemplate');
+  const requestId = ++slidePreviewRequestId;
+
+  templatePreviewName = templateName;
+  img.removeAttribute('src');
+  img.classList.add('is-loading');
+  img.alt = `${getTemplateTitle(templateName)} preview`;
+  name.textContent = getTemplateTitle(templateName);
+  if (useBtn) {
+    useBtn.disabled = true;
+    useBtn.textContent = 'Preparing...';
+  }
+  modal.classList.add('open', 'template-preview');
+
+  try {
+    const slide = await buildTemplateSlideFromName(templateName, { uploadThumbnail: false });
+    if (requestId !== slidePreviewRequestId) return;
+    const url = await getDesignedSlidePreviewUrl(slide);
+    if (requestId !== slidePreviewRequestId) return;
+    if (url) img.src = url;
+    img.classList.remove('is-loading');
+    if (useBtn) {
+      useBtn.disabled = false;
+      useBtn.textContent = 'Use Template';
+    }
+  } catch(e) {
+    console.error('Template preview failed:', e);
+    if (requestId !== slidePreviewRequestId) return;
+    img.classList.remove('is-loading');
+    name.textContent = 'Preview failed';
+    if (useBtn) {
+      useBtn.disabled = true;
+      useBtn.textContent = 'Use Template';
+    }
+    toast('Template preview failed: ' + e.message, true);
+  }
+};
+
+window.customizeTemplatePreview = function() {
+  const name = templatePreviewName;
+  if (!name) return;
+  closeSlidePreview();
+  pendingTemplate = name;
+  closeTemplateGallery();
+  launchDesigner(null);
+};
+
+window.useTemplatePreview = async function() {
+  const name = templatePreviewName;
+  if (!name || templateInsertBusy) return;
+  if (!auth.currentUser) { toast('Sign in first to use templates.', true); return; }
+
+  const useBtn = document.getElementById('slidePreviewUseTemplate');
+  templateInsertBusy = true;
+  if (useBtn) {
+    useBtn.disabled = true;
+    useBtn.textContent = 'Adding...';
+  }
+
+  try {
+    const slide = await buildTemplateSlideFromName(name, { uploadThumbnail: true });
+    slides.push(slide);
+    renderGrid();
+    updateCount();
+    await pushToFirestore();
+    closeSlidePreview();
+    closeTemplateGallery();
+    toast(`${slide.name} added ✓`);
+  } catch(e) {
+    console.error('Template insert failed:', e);
+    toast('Template insert failed: ' + e.message, true);
+  } finally {
+    templateInsertBusy = false;
+    if (useBtn) {
+      useBtn.disabled = false;
+      useBtn.textContent = 'Use Template';
+    }
+  }
 };
 
 document.addEventListener('keydown', e => {
@@ -11849,16 +11994,44 @@ window.openDesigner = function(existingSlide = null, slideIdx = null) {
     launchDesigner(existingSlide);
   } else {
     // New slide — show template picker first
-    document.getElementById('templateGallery').style.display = 'flex';
-    setTimeout(generateTemplateThumbnails, 80);
+    openTemplateGallery('design');
   }
 };
+
+window.openTemplateLibrary = function() {
+  if (typeof fabric === 'undefined') {
+    toast('Fabric.js failed to load — check your internet connection and refresh.', true);
+    return;
+  }
+  removeOffscreenFabricArtifacts();
+  openTemplateGallery('insert');
+};
+
+function openTemplateGallery(mode = 'design') {
+  setGalleryMode(mode);
+  document.getElementById('templateGallery').style.display = 'flex';
+  filterGallery();
+  setTimeout(generateTemplateThumbnails, 80);
+}
 
 window.closeTemplateGallery = function() {
   document.getElementById('templateGallery').style.display = 'none';
 };
 
 let _galleryCat = 'all';
+let _galleryMode = 'design';
+window.setGalleryMode = function(mode) {
+  _galleryMode = mode === 'insert' ? 'insert' : 'design';
+  document.querySelectorAll('[data-gallery-mode]').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.galleryMode === _galleryMode);
+  });
+  const title = document.getElementById('galleryTitle');
+  const sub   = document.getElementById('gallerySubtitle');
+  if (title) title.textContent = _galleryMode === 'insert' ? 'Content Templates' : 'Choose a template or start blank';
+  if (sub)   sub.textContent   = _galleryMode === 'insert'
+    ? 'Preview a template, then add it to this slideshow'
+    : 'Select a starting point for your slide design';
+};
 window.setGalleryCat = function(btn, cat) {
   _galleryCat = cat;
   document.querySelectorAll('.gallery-cat').forEach(b => b.classList.toggle('active', b === btn));
@@ -11878,6 +12051,10 @@ window.filterGallery = function() {
 };
 
 window.selectTemplate = function(name) {
+  if (_galleryMode === 'insert') {
+    openTemplatePreview(name);
+    return;
+  }
   pendingTemplate = name;
   closeTemplateGallery();
   launchDesigner(null);
@@ -15971,6 +16148,36 @@ const TMPL_THUMB_NAMES = [
   'schoolevents','classroomannouncement','socialpromo'
 ];
 
+const TEMPLATE_LIBRARY_NAMES = {
+  blank: 'New Slide',
+  corporateannouncement: 'Corporate Announcement',
+  employeeofmonth: 'Employee of the Month',
+  nowhiring: 'Now Hiring',
+  kpidashboard: 'KPI Dashboard',
+  dailyspecial: 'Daily Special',
+  menuboard: 'Menu Board',
+  happyhour: 'Happy Hour',
+  saleevent: 'Sale Event',
+  newarrival: 'New Arrival',
+  eventpromo: 'Event Promo',
+  countdown: 'Countdown',
+  waitingroomwelcome: 'Waiting Room Welcome',
+  healthtip: 'Health Tip',
+  seasonsgreetings: "Season's Greetings",
+  newyear: 'New Year',
+  instagramwall: 'Instagram Wall',
+  schoolevents: 'School Events',
+  classroomannouncement: 'Classroom Announcement',
+  socialpromo: 'Social Media Promo',
+};
+
+function getTemplateTitle(name) {
+  const card = document.querySelector(`#galleryGrid button[onclick="selectTemplate('${name}')"]`);
+  return card?.querySelector('.tmpl-name')?.textContent?.trim()
+    || TEMPLATE_LIBRARY_NAMES[name]
+    || 'New Slide';
+}
+
 // Photo templates: map photoId → small CDN url (populated by prefetch)
 let _tmplPhotoUrls = {};
 let _tmplPhotoPending = 0; // count of in-flight image loads on _tmplCanvas
@@ -15984,6 +16191,8 @@ const TMPL_PHOTO_TEMPLATES = new Set([
   'seasonsgreetings','newyear','schoolevents','socialpromo'
 ]);
 
+const TMPL_FONTS = ['Anton','Bebas Neue','Montserrat','Open Sans','Playfair Display','Raleway','Nunito'];
+
 async function prefetchTmplPhotoUrls() {
   await Promise.allSettled(TMPL_PHOTO_IDS.map(async id => {
     if (_tmplPhotoUrls[id]) return;
@@ -15993,6 +16202,29 @@ async function prefetchTmplPhotoUrls() {
       if (p?.urls?.small) _tmplPhotoUrls[id] = p.urls.small;
     } catch(e) {}
   }));
+}
+
+async function prepareTemplateAssets() {
+  TMPL_FONTS.forEach(loadGoogleFont);
+  await Promise.allSettled([
+    prefetchTmplPhotoUrls(),
+    Promise.race([
+      Promise.allSettled(TMPL_FONTS.map(f => document.fonts.load(`bold 72px "${f}"`))),
+      new Promise(r => setTimeout(r, 4000))
+    ])
+  ]);
+}
+
+async function waitForTemplatePhotos(name, timeoutMs = 2000) {
+  if (TMPL_PHOTO_TEMPLATES.has(name) && Object.keys(_tmplPhotoUrls).length > 0) {
+    const deadline = Date.now() + timeoutMs;
+    while (_tmplPhotoPending > 0 && Date.now() < deadline) {
+      await new Promise(r => setTimeout(r, 40));
+    }
+    await new Promise(r => setTimeout(r, 80));
+  } else {
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+  }
 }
 
 function createDetachedFabricCanvas() {
@@ -16024,10 +16256,17 @@ function applyTmplThumb(name, dataUrl) {
 }
 
 let _tmplThumbJob = null;
+let _tmplRenderQueue = Promise.resolve();
+
+function queueTemplateRender(task) {
+  const run = _tmplRenderQueue.catch(() => {}).then(task);
+  _tmplRenderQueue = run.catch(() => {});
+  return run;
+}
 
 async function generateTemplateThumbnails() {
   if (_tmplThumbJob) return _tmplThumbJob;
-  _tmplThumbJob = generateTemplateThumbnailsImpl();
+  _tmplThumbJob = queueTemplateRender(generateTemplateThumbnailsImpl);
   try {
     await _tmplThumbJob;
   } finally {
@@ -16045,15 +16284,7 @@ async function generateTemplateThumbnailsImpl() {
   if (!pending.length) return;
 
   // Step 1: Pre-load all template fonts + pre-fetch photo URLs in parallel
-  const TMPL_FONTS = ['Anton','Bebas Neue','Montserrat','Open Sans','Playfair Display','Raleway','Nunito'];
-  TMPL_FONTS.forEach(loadGoogleFont);
-  await Promise.allSettled([
-    prefetchTmplPhotoUrls(),
-    Promise.race([
-      Promise.allSettled(TMPL_FONTS.map(f => document.fonts.load(`bold 72px "${f}"`))),
-      new Promise(r => setTimeout(r, 4000))
-    ])
-  ]);
+  await prepareTemplateAssets();
 
   const el = createDetachedFabricCanvas();
   try {
@@ -16067,15 +16298,7 @@ async function generateTemplateThumbnailsImpl() {
       applyTemplate(name);
 
       // Wait for photos to finish loading (up to 2s), then a short settle
-      if (TMPL_PHOTO_TEMPLATES.has(name) && Object.keys(_tmplPhotoUrls).length > 0) {
-        const deadline = Date.now() + 2000;
-        while (_tmplPhotoPending > 0 && Date.now() < deadline) {
-          await new Promise(r => setTimeout(r, 40));
-        }
-        await new Promise(r => setTimeout(r, 80));
-      } else {
-        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-      }
+      await waitForTemplatePhotos(name, 2000);
 
       _tmplCanvas.renderAll();
       try {
@@ -16088,6 +16311,76 @@ async function generateTemplateThumbnailsImpl() {
   } finally {
     if (_tmplCanvas) _tmplCanvas.dispose();
     _tmplCanvas = null;
+    el.remove();
+    removeOffscreenFabricArtifacts();
+  }
+}
+
+async function buildTemplateSlideFromName(name, options = {}) {
+  return queueTemplateRender(() => buildTemplateSlideFromNameImpl(name, options));
+}
+
+async function buildTemplateSlideFromNameImpl(name, { uploadThumbnail = false } = {}) {
+  if (typeof fabric === 'undefined') throw new Error('Fabric.js is not loaded.');
+  await prepareTemplateAssets();
+
+  const el = createDetachedFabricCanvas();
+  let tmp = null;
+  const prevCanvas = _tmplCanvas;
+  const prevPending = _tmplPhotoPending;
+
+  try {
+    tmp = new fabric.StaticCanvas(el, { width: 1920, height: 1080, renderOnAddRemove: false });
+    _tmplCanvas = tmp;
+    _tmplPhotoPending = 0;
+    tmp.clear();
+    tmp.backgroundColor = '#ffffff';
+    if (name && name !== 'blank') applyTemplate(name);
+    await waitForTemplatePhotos(name, 2500);
+    tmp.renderAll();
+
+    const canvasJson = sanitizeCanvasJson(JSON.stringify(tmp.toJSON(CANVAS_EXTRA_PROPS)));
+    let thumbnailUrl = null;
+    let previewDataUrl = null;
+
+    try {
+      previewDataUrl = tmp.toDataURL({ format: 'jpeg', quality: 0.72, multiplier: 0.25 });
+      if (name !== 'blank' && previewDataUrl && !_tmplThumbnails[name]) {
+        _tmplThumbnails[name] = previewDataUrl;
+        applyTmplThumb(name, previewDataUrl);
+      }
+    } catch(e) {
+      console.warn('Template thumbnail render failed:', name, e);
+    }
+
+    if (uploadThumbnail && previewDataUrl) {
+      try {
+        const blob = dataURLtoBlob(previewDataUrl);
+        const uploaded = await s3UploadBlob(blob, 'thumbnail.jpg', 'signage/thumbnails');
+        thumbnailUrl = uploaded.url;
+      } catch(e) {
+        console.warn('Template thumbnail upload skipped:', e.message);
+      }
+    }
+
+    if (!thumbnailUrl) {
+      thumbnailUrl = previewDataUrl
+        || (name !== 'blank' ? _tmplThumbnails[name] : null)
+        || firstImageSrcFromCanvasJson(canvasJson);
+    }
+
+    return {
+      id: crypto.randomUUID(),
+      type: 'designed',
+      name: getTemplateTitle(name),
+      active: true,
+      canvasJson,
+      thumbnailUrl,
+    };
+  } finally {
+    if (tmp) tmp.dispose();
+    _tmplCanvas = prevCanvas;
+    _tmplPhotoPending = prevPending;
     el.remove();
     removeOffscreenFabricArtifacts();
   }

@@ -86,12 +86,13 @@ Gap analysis against Yodeck, ScreenCloud, Rise Vision, OptiSigns, Screenly, and 
 
 ### 7. Content Templates Library
 **Why:** Present in 5/6 competitors (500–1,000+ templates each). A blank canvas is a barrier for non-designers. Even 30–50 quality templates dramatically reduce onboarding drop-off — operators can pick a template and swap in their content in minutes.
+**Status:** Initial implementation 2026-04-19. The existing designer template gallery now also works as a Content Templates Library with a Templates toolbar entry, category filters, high-quality preview, and "Use Template" insertion into the current slideshow draft. Catalog expansion remains.
 **What to build:**
-- `templates.js`: a static array of template objects, each with a name, category tag, thumbnail URL (S3), and a `slides[]` payload matching the existing slide schema
-- Template gallery modal in admin: filter by category (Restaurant, Retail, Office, Event, Holiday), click to preview, "Use Template" inserts slides into the current slideshow
-- Initial set: 40–60 templates covering primary verticals; thumbnails generated from designed slides
+- Keep the static template catalog inside `admin.html` per the no-split frontend rule; each template generates a designed-slide payload matching the existing slide schema.
+- Template gallery modal in admin: filter by category (Restaurant, Retail, Office, Event, Holiday), click to preview, "Use Template" inserts slides into the current slideshow.
+- Expand the initial set from the current 19 designed templates to 40–60 templates covering primary verticals; thumbnails generated from designed slides.
 
-**Files:** `admin.html`, `templates.js`
+**Files:** `admin.html`
 
 ---
 

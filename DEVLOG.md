@@ -4,6 +4,14 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-04-19 — Codex (session 11)
+- **Content Templates Library initial implementation**: reused the existing designer template catalog as a library flow.
+  - `admin.html`: added a Templates toolbar entry, Design/Use gallery modes, template preview via the high-quality slide preview lightbox, and "Use Template" insertion into the current slideshow draft.
+  - `admin.html`: added queued offscreen Fabric rendering for template thumbnails/previews so library insertion does not collide with background thumbnail generation.
+  - `ROADMAP.md`: updated the Content Templates Library item to reflect the initial in-file implementation and remaining catalog expansion work.
+
+---
+
 ## 2026-04-19 — Codex (session 10)
 - **Instagram feed widget**: shipped the Phase 4 social-feed gap for Instagram.
   - `admin.html`: enabled the Instagram app card, added an Instagram slide modal, slide save/edit flow, slide-card badge/icon, and slideshow targeting.
