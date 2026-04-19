@@ -4,6 +4,12 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-04-19 — Codex (session 9)
+- **Slide preview quality fix**: hover Preview now renders designed slides from the saved Fabric canvas JSON at a larger preview resolution instead of reusing the small card thumbnail.
+  - Enlarged the preview lightbox image stage so slide previews display closer to screen-preview size while staying within the viewport.
+
+---
+
 ## 2026-04-19 — Codex (session 8)
 - **Designed slide image thumbnail fallback**: when Fabric thumbnail export fails because an inserted image taints the canvas, designed slide cards now fall back to the first image URL in the saved canvas JSON instead of showing the generic image placeholder.
   - Applied the fallback to standalone designed slides, slide preview, and group thumbnails.

@@ -1183,10 +1183,15 @@ section.content {
 }
 #slidePreviewModal.open { display: flex; }
 #slidePreviewImg {
-  max-width: 92vw; max-height: 82vh;
+  width: min(92vw, 1280px);
+  max-height: 78vh;
+  aspect-ratio: 16 / 9;
+  display: block;
+  background: #fff;
   border-radius: 10px; box-shadow: 0 8px 48px rgba(0,0,0,0.5);
   object-fit: contain;
 }
+#slidePreviewImg.is-loading { background: rgba(255,255,255,0.10); }
 #slidePreviewName {
   color: rgba(255,255,255,0.75); font-size: 14px; font-weight: 500;
 }
@@ -9919,22 +9924,50 @@ window.saveWebpageSlide = async function() {
 };
 
 // ── Slide preview lightbox ───────────────────────────────────────────────
-window.openSlidePreview = function(idx) {
+let slidePreviewRequestId = 0;
+
+window.openSlidePreview = async function(idx) {
   const s = slides[idx];
   if (!s) return;
-  const url = s.type === 'designed' ? getDesignedSlideThumbUrl(s)
-            : s.type === 'youtube'  ? `https://img.youtube.com/vi/${s.videoId}/maxresdefault.jpg`
-            : (s.type === 'webpage' || s.type === 'video' || s.type === 'clock') ? null
-            : s.url;
-  if (!url) return;
-  document.getElementById('slidePreviewImg').src = url;
-  document.getElementById('slidePreviewName').textContent = s.name || '';
-  document.getElementById('slidePreviewModal').classList.add('open');
+
+  const modal = document.getElementById('slidePreviewModal');
+  const img = document.getElementById('slidePreviewImg');
+  const name = document.getElementById('slidePreviewName');
+  const requestId = ++slidePreviewRequestId;
+
+  let url = null;
+  if (s.type === 'designed') {
+    img.removeAttribute('src');
+    img.classList.add('is-loading');
+    img.alt = s.name ? `${s.name} preview` : 'Slide preview';
+    name.textContent = s.name || '';
+    modal.classList.add('open');
+    url = await getDesignedSlidePreviewUrl(s);
+    if (requestId !== slidePreviewRequestId) return;
+  } else {
+    url = s.type === 'youtube' ? `https://img.youtube.com/vi/${s.videoId}/maxresdefault.jpg`
+        : (s.type === 'webpage' || s.type === 'video' || s.type === 'clock') ? null
+        : s.url;
+  }
+
+  if (!url) {
+    img.classList.remove('is-loading');
+    if (s.type === 'designed') modal.classList.remove('open');
+    return;
+  }
+  img.src = url;
+  img.classList.remove('is-loading');
+  img.alt = s.name ? `${s.name} preview` : 'Slide preview';
+  name.textContent = s.name || '';
+  modal.classList.add('open');
 };
 
 window.closeSlidePreview = function() {
+  slidePreviewRequestId += 1;
   document.getElementById('slidePreviewModal').classList.remove('open');
-  document.getElementById('slidePreviewImg').src = '';
+  const img = document.getElementById('slidePreviewImg');
+  img.removeAttribute('src');
+  img.classList.remove('is-loading');
 };
 
 document.addEventListener('keydown', e => {
@@ -10949,6 +10982,62 @@ function getDesignedSlideThumbUrl(slide) {
   return slide?.thumbnailUrl || firstImageSrcFromCanvasJson(slide?.canvasJson);
 }
 
+function collectCanvasFontFamilies(canvasJson) {
+  const fonts = new Set();
+  if (!canvasJson) return fonts;
+  try {
+    const data = typeof canvasJson === 'string' ? JSON.parse(canvasJson) : canvasJson;
+    const stack = Array.isArray(data?.objects) ? [...data.objects] : [];
+    while (stack.length) {
+      const obj = stack.shift();
+      if (!obj || typeof obj !== 'object') continue;
+      if (typeof obj.fontFamily === 'string' && obj.fontFamily.trim()) fonts.add(obj.fontFamily);
+      if (Array.isArray(obj.objects)) stack.push(...obj.objects);
+    }
+  } catch (_) {}
+  return fonts;
+}
+
+async function getDesignedSlidePreviewUrl(slide) {
+  const fallback = firstImageSrcFromCanvasJson(slide?.canvasJson) || slide?.thumbnailUrl || null;
+  if (!slide?.canvasJson || typeof fabric === 'undefined') return fallback;
+
+  let data;
+  try {
+    data = typeof slide.canvasJson === 'string' ? JSON.parse(slide.canvasJson) : slide.canvasJson;
+  } catch (err) {
+    console.warn('Designed slide preview JSON parse failed:', err);
+    return fallback;
+  }
+
+  collectCanvasFontFamilies(data).forEach(loadGoogleFont);
+  const el = createDetachedFabricCanvas();
+  let tmp = null;
+
+  try {
+    tmp = new fabric.StaticCanvas(el, { width: 1920, height: 1080, renderOnAddRemove: false });
+    await new Promise(resolve => {
+      tmp.loadFromJSON(data, () => {
+        if (!tmp.backgroundColor) tmp.backgroundColor = '#ffffff';
+        tmp.renderAll();
+        resolve();
+      });
+    });
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    try {
+      return tmp.toDataURL({ format: 'jpeg', quality: 0.92, multiplier: 0.75 });
+    } catch (_) {
+      return tmp.toDataURL({ format: 'png', multiplier: 0.75 });
+    }
+  } catch (err) {
+    console.warn('Designed slide preview render failed:', err);
+    return fallback;
+  } finally {
+    if (tmp) tmp.dispose();
+    el.remove();
+  }
+}
+
 // ── Render grid ───────────────────────────────────────────────────────────
 function renderGrid() {
   const grid   = document.getElementById("slideGrid");
@@ -11034,6 +11123,7 @@ function renderGrid() {
                      : isYoutube  ? `https://img.youtube.com/vi/${s.videoId}/mqdefault.jpg`
                      : (isWebpage || isVideo || isClock || isQr || isWeather || isCountdown || isMultizone || isGoogleSheets || isGoogleReviews || isMenuboard) ? null
                      : s.url;
+    const hasPreview = Boolean(thumbUrl || (isDesigned && s.canvasJson));
     const editSvg    = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
     const placeholder = isClock
       ? clockThumbHTML(s)
@@ -11145,7 +11235,7 @@ function renderGrid() {
           </svg>
         </button>
         ${editBtn}
-        ${thumbUrl ? `<button class="icon-btn preview" title="Preview" onclick="openSlidePreview(${i})">
+        ${hasPreview ? `<button class="icon-btn preview" title="Preview" onclick="openSlidePreview(${i})">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round">
             <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
           </svg>
