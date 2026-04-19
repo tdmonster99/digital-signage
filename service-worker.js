@@ -1,7 +1,7 @@
 // Service Worker — Signage Admin PWA
 // Handles: offline shell caching + FCM background push notifications
 
-const CACHE_NAME = 'signage-admin-v3';
+const CACHE_NAME = 'signage-admin-v4';
 const SHELL_URLS = ['/admin.html', '/manifest.json', '/icons/icon.svg'];
 
 // ── Firebase Messaging (background push) ──────────────────────────────────
@@ -72,7 +72,7 @@ self.addEventListener('fetch', e => {
   if (!isShell) return;
 
   e.respondWith(
-    fetch(e.request)
+    fetch(new Request(e.request, { cache: 'reload' }))
       .then(res => {
         const clone = res.clone();
         caches.open(CACHE_NAME).then(c => c.put(e.request, clone));

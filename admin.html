@@ -1835,6 +1835,27 @@ section.content {
   background: #000000cc; backdrop-filter: blur(8px);
   padding: 24px 16px; overflow-y: auto;
 }
+.offscreen-fabric-host {
+  position: fixed !important;
+  left: -100000px !important;
+  top: -100000px !important;
+  width: 1920px !important;
+  height: 1080px !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  z-index: -1 !important;
+}
+.offscreen-fabric-host .canvas-container,
+.offscreen-fabric-host canvas {
+  position: absolute !important;
+  inset: 0 !important;
+}
+body > .canvas-container,
+body > canvas[width="1920"][height="1080"] {
+  display: none !important;
+}
 .gallery-modal {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -11552,27 +11573,28 @@ function renderAiPreview(canvasJson) {
 
   // Give fonts ~600 ms to start loading, then render off-screen
   setTimeout(() => {
-    const el = document.createElement('canvas');
-    el.width  = 1920;
-    el.height = 1080;
-    document.body.appendChild(el); // must be in DOM for Fabric
-
+    removeOffscreenFabricArtifacts();
+    const { host, canvas: el } = createOffscreenFabricCanvasHost('ai-preview');
     const tmp = new fabric.Canvas(el, { width: 1920, height: 1080, selection: false, renderOnAddRemove: false });
     tmp.loadFromJSON(canvasJson, () => {
-      tmp.renderAll();
-      let dataUrl;
-      try { dataUrl = tmp.toDataURL({ format: 'jpeg', quality: 0.88 }); }
-      catch(e) { dataUrl = tmp.toDataURL({ format: 'png' }); }
-      tmp.dispose();
-      document.body.removeChild(el);
+      try {
+        tmp.renderAll();
+        let dataUrl;
+        try { dataUrl = tmp.toDataURL({ format: 'jpeg', quality: 0.88 }); }
+        catch(e) { dataUrl = tmp.toDataURL({ format: 'png' }); }
 
-      const wrap = document.getElementById('aiPreviewCanvasWrap');
-      if (!wrap) return;
-      wrap.innerHTML = '';
-      const img = document.createElement('img');
-      img.src = dataUrl;
-      img.style.cssText = 'width:100%;display:block;border-radius:8px;';
-      wrap.appendChild(img);
+        const wrap = document.getElementById('aiPreviewCanvasWrap');
+        if (!wrap) return;
+        wrap.innerHTML = '';
+        const img = document.createElement('img');
+        img.src = dataUrl;
+        img.style.cssText = 'width:100%;display:block;border-radius:8px;';
+        wrap.appendChild(img);
+      } finally {
+        tmp.dispose();
+        host.remove();
+        removeOffscreenFabricArtifacts();
+      }
     });
   }, 650);
 }
@@ -11619,6 +11641,7 @@ window.openDesigner = function(existingSlide = null, slideIdx = null) {
     toast('Fabric.js failed to load — check your internet connection and refresh.', true);
     return;
   }
+  removeOffscreenFabricArtifacts();
   editingSlideIdx = slideIdx;
   if (existingSlide) {
     // Editing an existing slide — skip template gallery
@@ -15771,6 +15794,31 @@ async function prefetchTmplPhotoUrls() {
   }));
 }
 
+function createOffscreenFabricCanvasHost(kind = 'render') {
+  const host = document.createElement('div');
+  host.className = 'offscreen-fabric-host';
+  host.dataset.offscreenFabric = kind;
+  host.setAttribute('aria-hidden', 'true');
+
+  const canvas = document.createElement('canvas');
+  canvas.width = 1920;
+  canvas.height = 1080;
+  host.appendChild(canvas);
+  document.body.appendChild(host);
+
+  return { host, canvas };
+}
+
+function removeOffscreenFabricArtifacts() {
+  document.querySelectorAll('.offscreen-fabric-host').forEach(el => el.remove());
+  document.querySelectorAll('body > .canvas-container, body > canvas').forEach(el => {
+    const canvas = el.matches('canvas') ? el : el.querySelector('canvas');
+    const width  = Number(canvas?.width || canvas?.getAttribute('width') || 0);
+    const height = Number(canvas?.height || canvas?.getAttribute('height') || 0);
+    if (width === 1920 && height === 1080) el.remove();
+  });
+}
+
 function applyTmplThumb(name, dataUrl) {
   const btn = document.querySelector(`#galleryGrid button[onclick="selectTemplate('${name}')"]`);
   if (!btn) return;
@@ -15784,6 +15832,7 @@ function applyTmplThumb(name, dataUrl) {
 
 async function generateTemplateThumbnails() {
   if (typeof fabric === 'undefined') return;
+  removeOffscreenFabricArtifacts();
 
   // Restore cached thumbnails immediately on subsequent gallery opens
   Object.entries(_tmplThumbnails).forEach(([n, url]) => applyTmplThumb(n, url));
@@ -15801,47 +15850,42 @@ async function generateTemplateThumbnails() {
     ])
   ]);
 
-  // Step 2: Create hidden offscreen Fabric canvas at full 1920×1080
-  // Fabric wraps canvases in a .canvas-container, so hide a parent host too.
-  const host = document.createElement('div');
-  host.setAttribute('aria-hidden', 'true');
-  host.style.cssText = 'position:fixed;left:-10000px;top:-10000px;width:1920px;height:1080px;overflow:hidden;pointer-events:none;opacity:0';
-  const el = document.createElement('canvas');
-  el.width = 1920; el.height = 1080;
-  host.appendChild(el);
-  document.body.appendChild(host);
-  _tmplCanvas = new fabric.StaticCanvas(el, { width: 1920, height: 1080 });
+  const { host, canvas: el } = createOffscreenFabricCanvasHost('template-thumbs');
+  try {
+    _tmplCanvas = new fabric.StaticCanvas(el, { width: 1920, height: 1080 });
 
-  // Step 3: Render each template
-  for (const name of pending) {
-    _tmplCanvas.clear();
-    _tmplCanvas.backgroundColor = '#ffffff';
-    _tmplPhotoPending = 0;
-    applyTemplate(name);
+    // Step 3: Render each template
+    for (const name of pending) {
+      _tmplCanvas.clear();
+      _tmplCanvas.backgroundColor = '#ffffff';
+      _tmplPhotoPending = 0;
+      applyTemplate(name);
 
-    // Wait for photos to finish loading (up to 2s), then a short settle
-    if (TMPL_PHOTO_TEMPLATES.has(name) && Object.keys(_tmplPhotoUrls).length > 0) {
-      const deadline = Date.now() + 2000;
-      while (_tmplPhotoPending > 0 && Date.now() < deadline) {
-        await new Promise(r => setTimeout(r, 40));
+      // Wait for photos to finish loading (up to 2s), then a short settle
+      if (TMPL_PHOTO_TEMPLATES.has(name) && Object.keys(_tmplPhotoUrls).length > 0) {
+        const deadline = Date.now() + 2000;
+        while (_tmplPhotoPending > 0 && Date.now() < deadline) {
+          await new Promise(r => setTimeout(r, 40));
+        }
+        await new Promise(r => setTimeout(r, 80));
+      } else {
+        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
       }
-      await new Promise(r => setTimeout(r, 80));
-    } else {
-      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+      _tmplCanvas.renderAll();
+      try {
+        const url = _tmplCanvas.toDataURL({ format: 'jpeg', quality: 0.82, multiplier: 0.167 });
+        _tmplThumbnails[name] = url;
+        applyTmplThumb(name, url);
+      } catch(e) { console.warn('Thumbnail failed:', name, e); }
+      await new Promise(r => setTimeout(r, 10));
     }
-
-    _tmplCanvas.renderAll();
-    try {
-      const url = _tmplCanvas.toDataURL({ format: 'jpeg', quality: 0.82, multiplier: 0.167 });
-      _tmplThumbnails[name] = url;
-      applyTmplThumb(name, url);
-    } catch(e) { console.warn('Thumbnail failed:', name, e); }
-    await new Promise(r => setTimeout(r, 10));
+  } finally {
+    if (_tmplCanvas) _tmplCanvas.dispose();
+    _tmplCanvas = null;
+    host.remove();
+    removeOffscreenFabricArtifacts();
   }
-
-  _tmplCanvas.dispose();
-  _tmplCanvas = null;
-  host.remove();
 }
 
 function sanitizeCanvasJson(jsonString) {

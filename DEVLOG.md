@@ -4,6 +4,11 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-04-19 — Codex (session 5)
+- **Template gallery green bar follow-up**: added explicit offscreen Fabric render hosts, cleanup for orphan full-size Fabric canvases, and service worker cache bump/no-cache shell fetches so stale admin shells do not preserve the escaped template thumbnail canvas.
+
+---
+
 ## 2026-04-19 — Codex (session 4)
 - **Template gallery visual bug fix**: hid the offscreen Fabric canvas host used for template thumbnail generation so its generated `.canvas-container` wrapper can no longer appear as a green bar above the template picker.
 
