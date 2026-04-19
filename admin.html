@@ -11761,12 +11761,7 @@ let aiLastStyle     = 'Professional';
 let aiLastColor     = 'Brand Colors';
 
 window.openAiModal = function() {
-  document.getElementById('aiModal').style.display = 'flex';
-  document.getElementById('aiInputSection').style.display  = 'block';
-  document.getElementById('aiLoadingSection').style.display = 'none';
-  document.getElementById('aiPreviewSection').style.display = 'none';
-  document.getElementById('aiErrorMsg').style.display       = 'none';
-  setTimeout(() => document.getElementById('aiPrompt').focus(), 80);
+  toast('AI slide generation is coming soon.');
 };
 
 window.closeAiModal = function() {

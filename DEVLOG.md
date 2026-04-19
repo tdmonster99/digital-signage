@@ -8,6 +8,7 @@ Running log of changes by session. Append a new entry at the top after each sess
 - **AI slide generation paused in UI**: removed the active AI generation entry points while keeping the dormant implementation in place for a future return.
   - `admin.html`: changed the AI Create template-gallery card to a Coming Soon tile.
   - `admin.html`: removed the AI Generate button from the slide designer toolbar so users cannot open the generation modal from the designer.
+  - `admin.html`: changed `openAiModal()` to a Coming Soon guard to prevent any stale caller from opening the generator.
 
 ---
 
