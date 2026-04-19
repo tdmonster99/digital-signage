@@ -4,6 +4,11 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-04-19 — Codex
+- **Menu Board modal theme normalization**: updated the `menuboard` app modal to use the app's standard modal theme tokens (`--surface`, `--surface2`, `--border`, `--text`, `--muted`, `--accent`) instead of hard-coded dark colors. Form controls, category/item editor rows, badges, buttons, empty state, and inline modal header text now adapt with the rest of the app theme.
+
+---
+
 ## 2026-04-18 — Claude (session 2)
 - **Menu Board bug fixes**: three bugs in the newly-added `menuboard` slide type.
   - `openMenuboardModal`: replaced undefined `allSlideshows` loop with `_populateShowSelect('mbShowTarget')`.

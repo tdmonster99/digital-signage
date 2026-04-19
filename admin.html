@@ -2808,97 +2808,109 @@ section.content {
 /* ── Menu Board modal ─────────────────────────────────────────────── */
 #menuboardModal {
   display: none; position: fixed; inset: 0; z-index: 400;
-  background: rgba(0,0,0,.65); align-items: center; justify-content: center;
-  backdrop-filter: blur(8px); padding: 20px;
+  background: rgba(0,0,0,.55); align-items: center; justify-content: center;
+  backdrop-filter: blur(4px); padding: 20px;
 }
 .mb-modal-box {
-  background: #141422; border: 1px solid rgba(255,255,255,.1); border-radius: 16px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
   width: min(920px, 96vw); max-height: 88vh;
-  display: flex; overflow: hidden; box-shadow: 0 24px 60px rgba(0,0,0,.55);
+  display: flex; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,.35);
 }
 .mb-modal-left {
   width: 264px; flex-shrink: 0; padding: 24px;
-  border-right: 1px solid rgba(255,255,255,.08);
+  border-right: 1px solid var(--border);
   overflow-y: auto; display: flex; flex-direction: column; gap: 14px;
 }
 .mb-modal-right {
   flex: 1; padding: 20px; overflow-y: auto;
   display: flex; flex-direction: column; gap: 10px;
-  background: rgba(0,0,0,.18);
+  background: var(--surface2);
 }
 .mb-field label {
-  display: block; font-size: 10px; font-weight: 700; color: rgba(255,255,255,.4);
+  display: block; font-size: 12px; font-weight: 500; color: var(--muted);
   text-transform: uppercase; letter-spacing: .09em; margin-bottom: 5px;
 }
 .mb-field input[type="text"], .mb-field input[type="number"], .mb-field select {
   width: 100%; padding: 8px 10px; border-radius: 7px;
-  background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.12);
-  color: #fff; font-size: 13px; outline: none;
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text); font-size: 13px; outline: none;
 }
-.mb-field input[type="text"]:focus, .mb-field input[type="number"]:focus {
-  border-color: rgba(255,255,255,.3);
+.mb-field input[type="text"]:focus, .mb-field input[type="number"]:focus, .mb-field select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0,67,206,.12);
 }
 .mb-theme-swatches { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
 .mb-theme-swatch {
   height: 42px; border-radius: 8px; cursor: pointer;
-  border: 2px solid transparent;
+  border: 2px solid var(--border);
   display: flex; align-items: center; justify-content: center;
   font-size: 10px; font-weight: 800; letter-spacing: .07em;
-  transition: border-color .15s; user-select: none;
+  transition: border-color .15s, box-shadow .15s, transform .15s; user-select: none;
 }
-.mb-theme-swatch.active { border-color: rgba(255,255,255,.9); }
+.mb-theme-swatch:hover { transform: translateY(-1px); }
+.mb-theme-swatch.active { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg); }
 .mb-pair-btns { display: flex; gap: 7px; }
 .mb-pair-btn {
   flex: 1; padding: 7px 4px; border-radius: 7px; cursor: pointer;
-  background: rgba(255,255,255,.07); border: 1.5px solid rgba(255,255,255,.12);
-  color: rgba(255,255,255,.5); font-size: 11px; font-weight: 700;
+  background: var(--surface2); border: 1.5px solid var(--border);
+  color: var(--muted); font-size: 11px; font-weight: 700;
   text-align: center; transition: border-color .15s, color .15s;
 }
-.mb-pair-btn.active { border-color: rgba(255,255,255,.8); color: #fff; }
+.mb-pair-btn:hover { border-color: var(--muted); color: var(--text); }
+.mb-pair-btn.active { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); }
 .mb-cat-block {
-  background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.09);
+  background: var(--surface); border: 1px solid var(--border);
   border-radius: 10px; padding: 12px;
 }
 .mb-cat-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
 .mb-cat-name-input {
   flex: 1; padding: 6px 10px; border-radius: 6px;
-  background: rgba(255,255,255,.09); border: 1px solid rgba(255,255,255,.15);
-  color: #fff; font-size: 13px; font-weight: 700; outline: none;
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text); font-size: 13px; font-weight: 700; outline: none;
+}
+.mb-cat-name-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,67,206,.12); }
+.mb-item-row {
+  margin-bottom: 8px; padding: 8px; background: var(--surface2);
+  border: 1px solid var(--border); border-radius: 7px;
 }
 .mb-item-input {
   padding: 5px 8px; border-radius: 5px; box-sizing: border-box;
-  background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1);
-  color: #fff; font-size: 12px; width: 100%; outline: none;
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--text); font-size: 12px; width: 100%; outline: none;
 }
+.mb-item-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,67,206,.12); }
 .mb-badge-check {
   display: flex; align-items: center; gap: 3px; cursor: pointer;
-  font-size: 10px; font-weight: 700; color: rgba(255,255,255,.55);
+  font-size: 10px; font-weight: 700; color: var(--muted);
 }
 .mb-badge-check input { width: 12px; height: 12px; cursor: pointer; }
 .mb-del-btn {
   background: none; border: none; cursor: pointer; padding: 3px 5px;
-  color: rgba(255,255,255,.25); font-size: 16px; line-height: 1;
+  color: var(--muted); font-size: 16px; line-height: 1;
   transition: color .15s; border-radius: 4px;
 }
 .mb-del-btn:hover { color: #ef4444; background: rgba(239,68,68,.1); }
 .mb-add-item-btn {
-  background: rgba(255,255,255,.05); border: 1px dashed rgba(255,255,255,.18);
-  border-radius: 6px; padding: 5px 10px; color: rgba(255,255,255,.4);
+  background: var(--surface2); border: 1px dashed var(--border);
+  border-radius: 6px; padding: 5px 10px; color: var(--muted);
   font-size: 11px; cursor: pointer; width: 100%; margin-top: 6px;
-  transition: background .15s, color .15s;
+  transition: background .15s, color .15s, border-color .15s;
 }
-.mb-add-item-btn:hover { background: rgba(255,255,255,.1); color: #fff; }
+.mb-add-item-btn:hover { background: var(--surface); color: var(--text); border-color: var(--muted); }
 .mb-add-cat-btn {
-  background: rgba(255,255,255,.05); border: 1px dashed rgba(255,255,255,.2);
-  border-radius: 10px; padding: 10px; color: rgba(255,255,255,.4);
+  background: var(--surface); border: 1px dashed var(--border);
+  border-radius: 10px; padding: 10px; color: var(--muted);
   font-size: 12px; cursor: pointer; width: 100%; flex-shrink: 0;
-  transition: background .15s, color .15s;
+  transition: background .15s, color .15s, border-color .15s;
 }
-.mb-add-cat-btn:hover { background: rgba(255,255,255,.1); color: #fff; }
+.mb-add-cat-btn:hover { background: var(--surface2); color: var(--text); border-color: var(--muted); }
 .mb-modal-footer {
   display: flex; gap: 10px; padding-top: 10px;
-  border-top: 1px solid rgba(255,255,255,.08); flex-shrink: 0;
+  border-top: 1px solid var(--border); flex-shrink: 0;
 }
+.mb-editor-title { font-size: 13px; font-weight: 700; color: var(--text); }
+.mb-badge-legend { font-size: 10px; color: var(--muted); }
+.mb-empty-state { text-align: center; padding: 32px; color: var(--muted); font-size: 13px; }
 
 /* ── Multi-Zone modal ──────────────────────────────────────────────── */
 #multiZoneModal {
@@ -8047,8 +8059,8 @@ body.role-editor .admin-action {
           </svg>
         </div>
         <div>
-          <div id="mbModalTitle" style="font-size:15px;font-weight:700;color:#fff;line-height:1.2">Add Menu Board</div>
-          <div style="font-size:10px;color:rgba(255,255,255,.4);margin-top:2px">Food &amp; drink menus</div>
+          <div id="mbModalTitle" style="font-size:15px;font-weight:700;color:var(--text);line-height:1.2">Add Menu Board</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px">Food &amp; drink menus</div>
         </div>
       </div>
 
@@ -8089,7 +8101,7 @@ body.role-editor .admin-action {
       </div>
       <div class="mb-field">
         <label>Accent Color</label>
-        <input id="mbAccentColor" type="color" value="#D4AF37" style="height:36px;padding:2px 4px;cursor:pointer;width:100%;border-radius:7px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12)" />
+        <input id="mbAccentColor" type="color" value="#D4AF37" style="height:36px;padding:2px 4px;cursor:pointer;width:100%;border-radius:7px;background:var(--surface2);border:1px solid var(--border)" />
       </div>
       <div class="clock-field" id="mbShowTargetWrap">
         <label>Add to Slideshow</label>
@@ -8104,8 +8116,8 @@ body.role-editor .admin-action {
     <!-- Right: category / item editor -->
     <div class="mb-modal-right">
       <div style="display:flex;align-items:center;justify-content:space-between;flex-shrink:0;margin-bottom:2px">
-        <div style="font-size:13px;font-weight:700;color:rgba(255,255,255,.85)">Categories &amp; Items</div>
-        <div style="font-size:10px;color:rgba(255,255,255,.3)"><b>V</b>=Veg &nbsp;<b>VE</b>=Vegan &nbsp;<b>GF</b>=Gluten-Free &nbsp;<b>DF</b>=Dairy-Free &nbsp;<b>S</b>=Spicy</div>
+        <div class="mb-editor-title">Categories &amp; Items</div>
+        <div class="mb-badge-legend"><b>V</b>=Veg &nbsp;<b>VE</b>=Vegan &nbsp;<b>GF</b>=Gluten-Free &nbsp;<b>DF</b>=Dairy-Free &nbsp;<b>S</b>=Spicy</div>
       </div>
       <div id="mbCategoryList"></div>
       <button class="mb-add-cat-btn" onclick="addMbCategory()">+ Add Category</button>
@@ -17938,7 +17950,7 @@ window.selectMbFont = function(el, font) {
 function renderMbEditor() {
   const list = document.getElementById('mbCategoryList');
   if (!_mbCategories.length) {
-    list.innerHTML = '<div style="text-align:center;padding:32px;color:rgba(255,255,255,.3);font-size:13px">No categories yet — click "+ Add Category" below.</div>';
+    list.innerHTML = '<div class="mb-empty-state">No categories yet — click "+ Add Category" below.</div>';
     return;
   }
   list.innerHTML = '';
@@ -17967,7 +17979,7 @@ function renderMbEditor() {
     const itemsWrap = document.createElement('div');
     (cat.items || []).forEach(item => {
       const row = document.createElement('div');
-      row.style.cssText = 'margin-bottom:8px;padding:8px;background:rgba(255,255,255,.03);border-radius:7px';
+      row.className = 'mb-item-row';
 
       const topRow = document.createElement('div');
       topRow.style.cssText = 'display:grid;grid-template-columns:1fr 90px;gap:6px;margin-bottom:5px';
