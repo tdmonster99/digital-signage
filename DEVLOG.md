@@ -4,6 +4,13 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-04-19 — Codex (session 3)
+- **App modal close controls**: added a consistent top-right `X` close button to app/widget modals so users can dismiss them without scrolling to the footer Cancel button.
+  - Covered Clock, QR Code, Weather, Countdown, Google Sheets, Google Reviews, Menu Board, and Multi-Zone Layout modals.
+  - Added shared `.app-modal-close` styling with hover/focus states and kept existing Cancel buttons.
+
+---
+
 ## 2026-04-19 — Codex (session 2)
 - **Google Reviews widget** (Phase 4 #6 partial): added `googlereviews` as a new social slide type.
   - `admin.html`: Social app card, add/edit modal, slide save flow, slide-grid thumbnail/badge/edit button.

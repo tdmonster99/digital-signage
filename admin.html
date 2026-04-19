@@ -2562,7 +2562,22 @@ section.content {
   overflow: hidden;
   box-shadow: 0 20px 60px rgba(0,0,0,0.35);
   max-height: 90vh;
+  position: relative;
 }
+.app-modal-close {
+  position: absolute; top: 12px; right: 12px; z-index: 12;
+  width: 32px; height: 32px; border: 1px solid var(--border); border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  color: var(--muted); cursor: pointer; padding: 0;
+  transition: color .15s, background .15s, border-color .15s, transform .15s;
+}
+.app-modal-close:hover {
+  color: var(--text); background: var(--surface2); border-color: var(--muted);
+  transform: translateY(-1px);
+}
+.app-modal-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.app-modal-close svg { width: 17px; height: 17px; }
 .clock-modal-left {
   flex: 1; padding: 28px 24px;
   overflow-y: auto;
@@ -2656,7 +2671,7 @@ section.content {
 }
 .qr-modal-box {
   background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
-  width: 100%; max-width: 760px; display: flex; overflow: hidden; max-height: 90vh;
+  width: 100%; max-width: 760px; display: flex; overflow: hidden; max-height: 90vh; position: relative;
 }
 .qr-modal-left  { flex: 1; padding: 28px 24px; overflow-y: auto; border-right: 1px solid var(--border); }
 .qr-modal-right { width: 260px; flex-shrink: 0; background: var(--surface2); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 24px; }
@@ -2675,6 +2690,7 @@ section.content {
   display: grid;
   grid-template: "left form" 1fr "left foot" auto / 300px 1fr;
   box-shadow: 0 32px 96px rgba(0,0,0,.45);
+  position: relative;
 }
 .wx-modal-left {
   grid-area: left;
@@ -2780,7 +2796,7 @@ section.content {
 }
 .countdown-modal-box {
   background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
-  width: 100%; max-width: 500px; padding: 28px 24px; overflow-y: auto; max-height: 90vh;
+  width: 100%; max-width: 500px; padding: 28px 24px; overflow-y: auto; max-height: 90vh; position: relative;
 }
 
 /* ── Broadcast modal ─────────────────────────────────────────────────── */
@@ -2821,7 +2837,7 @@ section.content {
 .mb-modal-box {
   background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
   width: min(920px, 96vw); max-height: 88vh;
-  display: flex; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,.35);
+  display: flex; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,.35); position: relative;
 }
 .mb-modal-left {
   width: 264px; flex-shrink: 0; padding: 24px;
@@ -2932,6 +2948,7 @@ section.content {
   display: grid;
   grid-template: "left form" 1fr "left foot" auto / 272px 1fr;
   box-shadow: 0 32px 96px rgba(0,0,0,.45);
+  position: relative;
 }
 .mz-modal-left {
   grid-area: left;
@@ -7626,6 +7643,9 @@ body.role-editor .admin-action {
 <!-- Clock App Modal -->
 <div id="clockModal">
   <div class="clock-modal-box">
+    <button class="app-modal-close" type="button" aria-label="Close Clock modal" title="Close" onclick="closeClockModal()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
     <!-- Left: config form -->
     <div class="clock-modal-left">
       <h2 style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:20px" id="clockModalTitle">Add Clock Slide</h2>
@@ -7744,6 +7764,9 @@ body.role-editor .admin-action {
 <!-- QR Code Modal -->
 <div id="qrModal">
   <div class="qr-modal-box">
+    <button class="app-modal-close" type="button" aria-label="Close QR Code modal" title="Close" onclick="closeQrModal()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
     <div class="qr-modal-left">
       <h2 style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:20px" id="qrModalTitle">Add QR Code Slide</h2>
 
@@ -7803,6 +7826,9 @@ body.role-editor .admin-action {
 <!-- Weather Modal -->
 <div id="weatherModal">
   <div class="wx-modal-box">
+    <button class="app-modal-close" type="button" aria-label="Close Weather modal" title="Close" onclick="closeWeatherModal()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
 
     <!-- ── Left: preview panel ─────────────────────────────────────── -->
     <div class="wx-modal-left">
@@ -7946,6 +7972,9 @@ body.role-editor .admin-action {
 <!-- Countdown Modal -->
 <div id="countdownModal">
   <div class="countdown-modal-box">
+    <button class="app-modal-close" type="button" aria-label="Close Countdown modal" title="Close" onclick="closeCountdownModal()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
     <h2 style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:20px" id="countdownModalTitle">Add Countdown Slide</h2>
 
     <div class="clock-field">
@@ -8005,6 +8034,9 @@ body.role-editor .admin-action {
 <!-- ── Google Sheets Modal ───────────────────────────────────────────── -->
 <div id="googleSheetsModal">
   <div class="countdown-modal-box">
+    <button class="app-modal-close" type="button" aria-label="Close Google Sheets modal" title="Close" onclick="closeGoogleSheetsModal()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
     <h2 style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:20px" id="gsheetsModalTitle">Add Google Sheets Slide</h2>
 
     <div class="clock-field">
@@ -8066,6 +8098,9 @@ body.role-editor .admin-action {
 <!-- ── Google Reviews Modal ─────────────────────────────────────────── -->
 <div id="googleReviewsModal">
   <div class="countdown-modal-box">
+    <button class="app-modal-close" type="button" aria-label="Close Google Reviews modal" title="Close" onclick="closeGoogleReviewsModal()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
     <h2 style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:20px" id="greviewsModalTitle">Add Google Reviews Slide</h2>
 
     <div class="clock-field">
@@ -8141,6 +8176,9 @@ body.role-editor .admin-action {
 <!-- ── Menu Board modal ─────────────────────────────────────────────── -->
 <div id="menuboardModal">
   <div class="mb-modal-box">
+    <button class="app-modal-close" type="button" aria-label="Close Menu Board modal" title="Close" onclick="closeMenuboardModal()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
 
     <!-- Left: settings -->
     <div class="mb-modal-left">
@@ -8223,6 +8261,9 @@ body.role-editor .admin-action {
 <!-- ── Multi-Zone Layout modal ──────────────────────────────────────── -->
 <div id="multiZoneModal">
   <div class="mz-modal-box">
+    <button class="app-modal-close" type="button" aria-label="Close Multi-Zone modal" title="Close" onclick="closeMultiZoneModal()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
 
     <!-- Left: preview + layout picker + settings -->
     <div class="mz-modal-left">
