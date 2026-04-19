@@ -9922,7 +9922,7 @@ window.saveWebpageSlide = async function() {
 window.openSlidePreview = function(idx) {
   const s = slides[idx];
   if (!s) return;
-  const url = s.type === 'designed' ? s.thumbnailUrl
+  const url = s.type === 'designed' ? getDesignedSlideThumbUrl(s)
             : s.type === 'youtube'  ? `https://img.youtube.com/vi/${s.videoId}/maxresdefault.jpg`
             : (s.type === 'webpage' || s.type === 'video' || s.type === 'clock') ? null
             : s.url;
@@ -10926,6 +10926,29 @@ window.clearAll = async () => {
   await pushToFirestore();
 };
 
+function isUsableThumbSrc(src) {
+  return typeof src === 'string' && /^(https?:|data:image\/)/i.test(src);
+}
+
+function firstImageSrcFromCanvasJson(canvasJson) {
+  if (!canvasJson) return null;
+  try {
+    const data = typeof canvasJson === 'string' ? JSON.parse(canvasJson) : canvasJson;
+    const stack = Array.isArray(data?.objects) ? [...data.objects] : [];
+    while (stack.length) {
+      const obj = stack.shift();
+      if (!obj || typeof obj !== 'object') continue;
+      if (isUsableThumbSrc(obj.src)) return obj.src;
+      if (Array.isArray(obj.objects)) stack.push(...obj.objects);
+    }
+  } catch (_) {}
+  return null;
+}
+
+function getDesignedSlideThumbUrl(slide) {
+  return slide?.thumbnailUrl || firstImageSrcFromCanvasJson(slide?.canvasJson);
+}
+
 // ── Render grid ───────────────────────────────────────────────────────────
 function renderGrid() {
   const grid   = document.getElementById("slideGrid");
@@ -10947,7 +10970,7 @@ function renderGrid() {
   grid.innerHTML = slides.map((s, i) => {
     if (s.type === 'group') {
       const count    = (s.slides || []).length;
-      const firstThumb = (s.slides || []).find(gs => gs.thumbnailUrl)?.thumbnailUrl || null;
+      const firstThumb = (s.slides || []).map(getDesignedSlideThumbUrl).find(Boolean) || null;
       return `
       <div class="slide-card group-card ${s.active === false ? 'disabled' : ''}" draggable="true" data-idx="${i}">
         <div class="group-stack group-stack-2"></div>
@@ -11007,7 +11030,7 @@ function renderGrid() {
     const isGoogleSheets = s.type === 'googlesheets';
     const isGoogleReviews = s.type === 'googlereviews';
     const isMenuboard    = s.type === 'menuboard';
-    const thumbUrl   = isDesigned ? s.thumbnailUrl
+    const thumbUrl   = isDesigned ? getDesignedSlideThumbUrl(s)
                      : isYoutube  ? `https://img.youtube.com/vi/${s.videoId}/mqdefault.jpg`
                      : (isWebpage || isVideo || isClock || isQr || isWeather || isCountdown || isMultizone || isGoogleSheets || isGoogleReviews || isMenuboard) ? null
                      : s.url;
@@ -15942,6 +15965,7 @@ window.saveDesignedSlide = async function() {
     } catch(e) {
       console.warn('Thumbnail generation skipped:', e.message);
     }
+    if (!thumbnailUrl) thumbnailUrl = firstImageSrcFromCanvasJson(canvasJson);
 
     // ── Save into a group (if designer was opened from the group editor) ──
     if (editingGroupIdx !== null) {

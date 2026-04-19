@@ -4,6 +4,12 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-04-19 — Codex (session 8)
+- **Designed slide image thumbnail fallback**: when Fabric thumbnail export fails because an inserted image taints the canvas, designed slide cards now fall back to the first image URL in the saved canvas JSON instead of showing the generic image placeholder.
+  - Applied the fallback to standalone designed slides, slide preview, and group thumbnails.
+
+---
+
 ## 2026-04-19 — Codex (session 7)
 - **Template gallery green bar root cause**: moved the Waiting Room Welcome card's absolute header stripes inside `.tmpl-preview`; they were siblings of the preview, so Edge positioned them at the top of the gallery as the visible green bar.
 
