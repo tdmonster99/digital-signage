@@ -4,6 +4,11 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-04-19 — Codex (session 7)
+- **Template gallery green bar root cause**: moved the Waiting Room Welcome card's absolute header stripes inside `.tmpl-preview`; they were siblings of the preview, so Edge positioned them at the top of the gallery as the visible green bar.
+
+---
+
 ## 2026-04-19 — Codex (session 6)
 - **Template gallery canvas leak fix**: changed template thumbnail and AI preview rendering to use detached Fabric `StaticCanvas` instances that never attach to the document, preventing the green healthcare-template render from appearing above the gallery in Edge.
 
