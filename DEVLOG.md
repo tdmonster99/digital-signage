@@ -4,6 +4,14 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-04-20 — Codex (session 26)
+- **Dashboard live preview fix**: fixed a blank/black preview regression when org slideshow IDs are not `main`.
+  - `admin.html`: hardened `syncPreviewSelect()` so it always keeps a valid selected slideshow ID (preserving current selection when possible, otherwise falling back to the active show or first available show).
+  - `admin.html`: updated preview iframe refresh logic to load `display.html?slideshow=<valid-id>` whenever the selected show changes or the iframe source is stale, and fall back to `about:blank` only when no shows exist.
+  - No new environment variables or external setup required.
+
+---
+
 ## 2026-04-20 — Codex (session 25)
 - **Template library photo-led refinement**: pushed the template gallery further toward Yodeck-style photography and richer visual composition.
   - `admin.html`: added a shared template photo map, upgraded the reusable slide renderers to accept photo backdrops, and converted more of the built-in templates and extra catalog templates into image-led compositions.

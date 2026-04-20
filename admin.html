@@ -18547,26 +18547,48 @@ window.addEventListener('resize', () => {
 window.updatePreviewFrame = function() {
   const sel = document.getElementById('previewShowSelect');
   const frame = document.getElementById('previewFrame');
-  if (sel && frame) frame.src = 'display.html?slideshow=' + encodeURIComponent(sel.value);
+  if (!sel || !frame) return;
+
+  if (!sel.value && sel.options.length) sel.value = sel.options[0].value;
+  if (!sel.value) {
+    frame.src = 'about:blank';
+    return;
+  }
+  frame.src = 'display.html?slideshow=' + encodeURIComponent(sel.value);
 };
 
 function syncPreviewSelect() {
   const sel = document.getElementById('previewShowSelect');
+  const frame = document.getElementById('previewFrame');
   if (!sel) return;
   // Rebuild options from known slideshows in the show list
   const items = document.querySelectorAll('#showList .show-item');
   const current = sel.value;
+  const ids = new Set();
   sel.innerHTML = '';
   items.forEach(item => {
     const id   = item.dataset.id;
+    if (!id) return;
+    ids.add(id);
     const name = item.querySelector('.show-item-name')?.textContent || id;
     const opt  = document.createElement('option');
     opt.value = id; opt.textContent = name;
     if (id === current) opt.selected = true;
     sel.appendChild(opt);
   });
-  // Auto-load the first show in the preview if nothing is selected yet
-  if (!current && sel.options.length) updatePreviewFrame();
+
+  if (sel.options.length) {
+    if (!ids.has(current)) {
+      if (currentShowId && ids.has(currentShowId)) sel.value = currentShowId;
+      else sel.value = sel.options[0].value;
+    }
+
+    const expectedSrc = 'display.html?slideshow=' + encodeURIComponent(sel.value);
+    if (!frame || frame.getAttribute('src') !== expectedSrc) updatePreviewFrame();
+    return;
+  }
+
+  if (frame) frame.src = 'about:blank';
 }
 
 // ── Screens page ───────────────────────────────────────────────────────────
