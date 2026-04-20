@@ -5982,6 +5982,9 @@ body.role-editor .admin-action {
     <div class="gallery-cats">
       <button class="gallery-cat active" onclick="setGalleryCat(this,'all')">All</button>
       <button class="gallery-cat" onclick="setGalleryCat(this,'business')">Business</button>
+      <button class="gallery-cat" onclick="setGalleryCat(this,'office')">Office</button>
+      <button class="gallery-cat" onclick="setGalleryCat(this,'safety')">Safety</button>
+      <button class="gallery-cat" onclick="setGalleryCat(this,'wayfinding')">Wayfinding</button>
       <button class="gallery-cat" onclick="setGalleryCat(this,'restaurant')">Restaurant</button>
       <button class="gallery-cat" onclick="setGalleryCat(this,'retail')">Retail</button>
       <button class="gallery-cat" onclick="setGalleryCat(this,'healthcare')">Healthcare</button>
@@ -16283,9 +16286,976 @@ window.showPage = function(name) {
   }
 };
 
+function renderAnnouncementPoster({
+  bg = '#0f1b29',
+  accent = '#2563eb',
+  title,
+  subtitle = '',
+  footer = '',
+  badge = '',
+  titleFont = 'Anton',
+  subtitleFont = 'Open Sans',
+  titleFill = '#ffffff',
+  subtitleFill = 'rgba(255,255,255,0.80)',
+  footerFill = 'rgba(255,255,255,0.64)',
+  titleSize = 140,
+  subtitleSize = 48,
+  footerSize = 34,
+  titleY = 0.34,
+  subtitleY = 0.56,
+  footerY = 0.89,
+  titleSpacing = 20,
+  footerSpacing = 80,
+  showRules = true,
+  titleShadow = 'rgba(0,0,0,0.38)',
+} = {}) {
+  const W = CANVAS_W, H = CANVAS_H;
+  const cv = _tmplCanvas || fabricCanvas;
+  cv.backgroundColor = bg;
+  tmplRect(0, 0, W, 14, { fill: accent, rx: 0 });
+  tmplRect(0, H - 14, W, 14, { fill: accent, rx: 0 });
+  if (showRules) {
+    tmplRect(W * 0.08, H * 0.18, W * 0.84, 4, { fill: accent, rx: 2 });
+    tmplRect(W * 0.08, H * 0.77, W * 0.84, 4, { fill: accent, rx: 2 });
+  }
+  tmplRect(W * 0.08, H * 0.225, W * 0.12, 14, { fill: 'rgba(255,255,255,0.12)', rx: 7 });
+  tmplRect(W * 0.80, H * 0.225, W * 0.12, 14, { fill: 'rgba(255,255,255,0.12)', rx: 7 });
+  if (badge) {
+    tmplRect((W - 420) / 2, H * 0.09, 420, 70, { fill: accent, rx: 35 });
+    tmplText(badge, W / 2, H * 0.125, {
+      fontSize: 34,
+      fontWeight: 'bold',
+      fill: '#ffffff',
+      textAlign: 'center',
+      fontFamily: 'Montserrat',
+      charSpacing: 72,
+    });
+  }
+  tmplText(title, W / 2, H * titleY, {
+    fontSize: titleSize,
+    fontWeight: 'bold',
+    fill: titleFill,
+    textAlign: 'center',
+    fontFamily: titleFont,
+    charSpacing: titleSpacing,
+    shadow: new fabric.Shadow({ color: titleShadow, blur: 26, offsetX: 0, offsetY: 5 }),
+  });
+  if (subtitle) {
+    tmplText(subtitle, W / 2, H * subtitleY, {
+      fontSize: subtitleSize,
+      fill: subtitleFill,
+      textAlign: 'center',
+      fontFamily: subtitleFont,
+      fontWeight: '300',
+      lineHeight: 1.35,
+    });
+  }
+  if (footer) {
+    tmplRect(W * 0.34, H * 0.82, W * 0.32, 3, { fill: accent, rx: 2 });
+    tmplText(footer, W / 2, H * footerY, {
+      fontSize: footerSize,
+      fill: footerFill,
+      textAlign: 'center',
+      fontFamily: subtitleFont,
+      charSpacing: footerSpacing,
+    });
+  }
+}
+
+function renderListBoard({
+  bg = '#f7f9fc',
+  accent = '#2563eb',
+  title,
+  kicker = '',
+  subtitle = '',
+  items = [],
+  footer = '',
+  dark = false,
+  panelFill,
+  titleFill,
+  textFill,
+  bulletFill,
+  titleFont = 'Montserrat',
+  useChecks = true,
+} = {}) {
+  const W = CANVAS_W, H = CANVAS_H;
+  const cv = _tmplCanvas || fabricCanvas;
+  cv.backgroundColor = bg;
+  const resolvedPanel = panelFill || (dark ? 'rgba(255,255,255,0.08)' : '#ffffff');
+  const resolvedTitle = titleFill || (dark ? '#ffffff' : '#10213a');
+  const resolvedText = textFill || (dark ? 'rgba(255,255,255,0.82)' : '#334155');
+  const resolvedBullet = bulletFill || accent;
+  tmplRect(0, 0, W, 18, { fill: accent, rx: 0 });
+  if (kicker) {
+    tmplText(kicker, W * 0.10, H * 0.12, {
+      fontSize: 32,
+      fill: accent,
+      fontWeight: 'bold',
+      fontFamily: 'Montserrat',
+      charSpacing: 90,
+    });
+  }
+  tmplText(title, W * 0.10, H * 0.22, {
+    fontSize: 96,
+    fontWeight: 'bold',
+    fill: resolvedTitle,
+    fontFamily: titleFont,
+  });
+  if (subtitle) {
+    tmplText(subtitle, W * 0.10, H * 0.30, {
+      fontSize: 40,
+      fill: resolvedText,
+      fontFamily: 'Open Sans',
+      fontWeight: '300',
+    });
+  }
+  tmplRect(W * 0.08, H * 0.34, W * 0.84, H * 0.50, {
+    fill: resolvedPanel,
+    rx: 24,
+    stroke: dark ? 'rgba(255,255,255,0.12)' : '#d9e1f2',
+    strokeWidth: 2,
+  });
+  items.forEach((item, i) => {
+    const y = H * (0.41 + i * 0.082);
+    tmplText(useChecks ? '\u2713' : '\u2022', W * 0.12, y, {
+      fontSize: 40,
+      fill: resolvedBullet,
+      fontWeight: 'bold',
+      textAlign: 'center',
+      fontFamily: 'Montserrat',
+    });
+    tmplText(item, W * 0.16, y, {
+      fontSize: 36,
+      fill: resolvedText,
+      fontFamily: 'Open Sans',
+      fontWeight: '600',
+    });
+    if (i < items.length - 1) {
+      tmplRect(W * 0.15, y + H * 0.035, W * 0.68, 2, {
+        fill: dark ? 'rgba(255,255,255,0.08)' : 'rgba(16,33,58,0.08)',
+        rx: 1,
+      });
+    }
+  });
+  if (footer) {
+    tmplRect(W * 0.12, H * 0.88, W * 0.34, 4, { fill: accent, rx: 2 });
+    tmplText(footer, W * 0.12, H * 0.92, {
+      fontSize: 28,
+      fill: resolvedText,
+      fontFamily: 'Open Sans',
+    });
+  }
+}
+
+function renderMetricsBoard({
+  bg = '#172033',
+  accent = '#2563eb',
+  title,
+  subtitle = '',
+  metrics = [],
+  footer = '',
+  titleFill = '#ffffff',
+  subtitleFill = 'rgba(255,255,255,0.68)',
+  cardFill = '#252d3d',
+  valueFill = '#60a5fa',
+  deltaFill = '#44c97a',
+  titleFont = 'Montserrat',
+} = {}) {
+  const W = CANVAS_W, H = CANVAS_H;
+  const cv = _tmplCanvas || fabricCanvas;
+  cv.backgroundColor = bg;
+  tmplRect(0, 0, W, 18, { fill: accent, rx: 0 });
+  tmplText(title, W * 0.08, H * 0.11, {
+    fontSize: 84,
+    fontWeight: 'bold',
+    fill: titleFill,
+    fontFamily: titleFont,
+  });
+  if (subtitle) {
+    tmplText(subtitle, W * 0.08, H * 0.18, {
+      fontSize: 38,
+      fill: subtitleFill,
+      fontFamily: 'Open Sans',
+      fontWeight: '300',
+    });
+  }
+  const layout = [
+    [W * 0.06, H * 0.24],
+    [W * 0.52, H * 0.24],
+    [W * 0.06, H * 0.56],
+    [W * 0.52, H * 0.56],
+  ];
+  metrics.slice(0, 4).forEach((metric, i) => {
+    const [x, y] = layout[i];
+    const cw = W * 0.42;
+    const ch = H * 0.26;
+    tmplRect(x, y, cw, ch, { fill: cardFill, rx: 14 });
+    tmplText(metric.label, x + cw / 2, y + ch * 0.18, {
+      fontSize: 28,
+      fill: 'rgba(255,255,255,0.52)',
+      textAlign: 'center',
+      charSpacing: 70,
+      fontFamily: 'Montserrat',
+    });
+    tmplText(metric.value, x + cw / 2, y + ch * 0.52, {
+      fontSize: 76,
+      fontWeight: 'bold',
+      fill: metric.valueFill || valueFill,
+      textAlign: 'center',
+      fontFamily: 'Montserrat',
+    });
+    tmplText(metric.delta, x + cw / 2, y + ch * 0.82, {
+      fontSize: 26,
+      fill: metric.deltaFill || deltaFill,
+      textAlign: 'center',
+      fontFamily: 'Open Sans',
+    });
+  });
+  if (footer) {
+    tmplRect(W * 0.08, H * 0.90, W * 0.84, 3, { fill: accent, rx: 2 });
+    tmplText(footer, W / 2, H * 0.95, {
+      fontSize: 30,
+      fill: 'rgba(255,255,255,0.55)',
+      textAlign: 'center',
+      fontFamily: 'Open Sans',
+    });
+  }
+}
+
+function renderDirectoryBoard({
+  bg = '#f7fbff',
+  accent = '#2563eb',
+  title,
+  subtitle = '',
+  mapLabel = 'MAP',
+  mapTitle = 'BUILDING MAP',
+  listTitle = 'DIRECTORY',
+  listItems = [],
+  footer = '',
+  leftFill = '#0f1b29',
+  rightFill = '#ffffff',
+  titleFill = '#10213a',
+  textFill = '#475569',
+} = {}) {
+  const W = CANVAS_W, H = CANVAS_H;
+  const cv = _tmplCanvas || fabricCanvas;
+  cv.backgroundColor = bg;
+  tmplRect(0, 0, W, 18, { fill: accent, rx: 0 });
+  tmplText(title, W * 0.08, H * 0.11, {
+    fontSize: 86,
+    fontWeight: 'bold',
+    fill: titleFill,
+    fontFamily: 'Montserrat',
+  });
+  if (subtitle) {
+    tmplText(subtitle, W * 0.08, H * 0.18, {
+      fontSize: 38,
+      fill: textFill,
+      fontFamily: 'Open Sans',
+      fontWeight: '300',
+    });
+  }
+  tmplRect(W * 0.08, H * 0.24, W * 0.34, H * 0.62, { fill: leftFill, rx: 28 });
+  tmplText(mapLabel, W * 0.25, H * 0.30, {
+    fontSize: 32,
+    fill: 'rgba(255,255,255,0.66)',
+    textAlign: 'center',
+    charSpacing: 90,
+    fontWeight: 'bold',
+    fontFamily: 'Montserrat',
+  });
+  tmplText(mapTitle, W * 0.25, H * 0.38, {
+    fontSize: 52,
+    fill: '#ffffff',
+    textAlign: 'center',
+    fontFamily: 'Montserrat',
+    fontWeight: 'bold',
+  });
+  tmplRect(W * 0.16, H * 0.48, W * 0.18, H * 0.16, { fill: 'rgba(255,255,255,0.10)', rx: 14 });
+  tmplRect(W * 0.14, H * 0.68, W * 0.22, H * 0.10, { fill: 'rgba(255,255,255,0.16)', rx: 14 });
+  tmplRect(W * 0.19, H * 0.60, W * 0.06, H * 0.14, { fill: accent, rx: 10 });
+  tmplText('\u2192', W * 0.33, H * 0.74, {
+    fontSize: 80,
+    fill: 'rgba(255,255,255,0.65)',
+    textAlign: 'center',
+    fontFamily: 'Montserrat',
+  });
+  tmplRect(W * 0.46, H * 0.24, W * 0.46, H * 0.62, { fill: rightFill, rx: 28, stroke: '#dbe3f0', strokeWidth: 2 });
+  tmplText(listTitle, W * 0.69, H * 0.31, {
+    fontSize: 38,
+    fill: accent,
+    textAlign: 'center',
+    fontFamily: 'Montserrat',
+    charSpacing: 80,
+    fontWeight: 'bold',
+  });
+  tmplRect(W * 0.52, H * 0.36, W * 0.34, 3, { fill: accent, rx: 2 });
+  listItems.slice(0, 5).forEach((item, i) => {
+    const y = H * (0.44 + i * 0.10);
+    tmplRect(W * 0.52, y - H * 0.032, W * 0.34, H * 0.07, {
+      fill: i % 2 === 0 ? 'rgba(37,99,235,0.06)' : 'rgba(37,99,235,0.03)',
+      rx: 12,
+    });
+    tmplText(item, W * 0.69, y, {
+      fontSize: 34,
+      fill: textFill,
+      textAlign: 'center',
+      fontFamily: 'Open Sans',
+    });
+  });
+  if (footer) {
+    tmplRect(W * 0.52, H * 0.84, W * 0.34, 4, { fill: accent, rx: 2 });
+    tmplText(footer, W * 0.69, H * 0.89, {
+      fontSize: 28,
+      fill: textFill,
+      textAlign: 'center',
+      fontFamily: 'Open Sans',
+    });
+  }
+}
+
+function renderWarningBoard({
+  bg = '#fff6d6',
+  accent = '#d97706',
+  danger = '#dc2626',
+  title,
+  subtitle = '',
+  steps = [],
+  footer = '',
+  titleFill = '#10213a',
+  textFill = '#334155',
+}) {
+  const W = CANVAS_W, H = CANVAS_H;
+  const cv = _tmplCanvas || fabricCanvas;
+  cv.backgroundColor = bg;
+  tmplRect(0, 0, W, 22, { fill: danger, rx: 0 });
+  tmplRect(0, 22, W, 14, { fill: accent, rx: 0 });
+  tmplText('!', W * 0.12, H * 0.22, {
+    fontSize: 180,
+    fill: danger,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    fontFamily: 'Montserrat',
+    shadow: new fabric.Shadow({ color: 'rgba(0,0,0,0.15)', blur: 18, offsetX: 0, offsetY: 4 }),
+  });
+  tmplRect(W * 0.22, H * 0.16, W * 0.66, H * 0.18, { fill: 'rgba(255,255,255,0.72)', rx: 20, stroke: 'rgba(220,38,38,0.2)', strokeWidth: 2 });
+  tmplText(title, W * 0.55, H * 0.24, {
+    fontSize: 102,
+    fontWeight: 'bold',
+    fill: titleFill,
+    textAlign: 'center',
+    fontFamily: 'Montserrat',
+  });
+  if (subtitle) {
+    tmplText(subtitle, W * 0.55, H * 0.33, {
+      fontSize: 38,
+      fill: textFill,
+      textAlign: 'center',
+      fontFamily: 'Open Sans',
+    });
+  }
+  steps.slice(0, 3).forEach((step, i) => {
+    const y = H * (0.49 + i * 0.13);
+    tmplRect(W * 0.26, y - H * 0.038, W * 0.60, H * 0.08, {
+      fill: i % 2 === 0 ? 'rgba(220,38,38,0.10)' : 'rgba(217,119,6,0.08)',
+      rx: 14,
+    });
+    tmplText(step, W * 0.56, y, {
+      fontSize: 32,
+      fill: textFill,
+      textAlign: 'center',
+      fontFamily: 'Open Sans',
+      fontWeight: '600',
+    });
+  });
+  if (footer) {
+    tmplRect(W * 0.28, H * 0.89, W * 0.56, 4, { fill: danger, rx: 2 });
+    tmplText(footer, W * 0.56, H * 0.94, {
+      fontSize: 28,
+      fill: textFill,
+      textAlign: 'center',
+      fontFamily: 'Open Sans',
+    });
+  }
+}
+
+function renderQRBoard({
+  bg = '#f8fbff',
+  accent = '#2563eb',
+  title,
+  subtitle = '',
+  note = '',
+  footer = '',
+  leftTitle = 'SCAN',
+  bodyFill = '#10213a',
+  textFill = '#475569',
+  dark = false,
+}) {
+  const W = CANVAS_W, H = CANVAS_H;
+  const cv = _tmplCanvas || fabricCanvas;
+  cv.backgroundColor = bg;
+  tmplRect(0, 0, W, 18, { fill: accent, rx: 0 });
+  tmplRect(W * 0.08, H * 0.20, W * 0.32, H * 0.56, {
+    fill: dark ? 'rgba(255,255,255,0.94)' : '#ffffff',
+    rx: 24,
+    stroke: '#dbe3f0',
+    strokeWidth: 2,
+  });
+  tmplRect(W * 0.16, H * 0.30, W * 0.09, H * 0.09, { fill: bodyFill, rx: 6 });
+  tmplRect(W * 0.27, H * 0.30, W * 0.09, H * 0.09, { fill: bodyFill, rx: 6 });
+  tmplRect(W * 0.16, H * 0.42, W * 0.09, H * 0.09, { fill: bodyFill, rx: 6 });
+  tmplRect(W * 0.27, H * 0.42, W * 0.09, H * 0.09, { fill: bodyFill, rx: 6 });
+  tmplRect(W * 0.20, H * 0.50, W * 0.12, H * 0.12, { fill: accent, rx: 6, opacity: 0.18 });
+  tmplText(leftTitle, W * 0.24, H * 0.67, {
+    fontSize: 30,
+    fill: accent,
+    textAlign: 'center',
+    fontFamily: 'Montserrat',
+    fontWeight: 'bold',
+    charSpacing: 80,
+  });
+  tmplText(title, W * 0.58, H * 0.30, {
+    fontSize: 88,
+    fontWeight: 'bold',
+    fill: bodyFill,
+    fontFamily: 'Montserrat',
+  });
+  if (subtitle) {
+    tmplText(subtitle, W * 0.58, H * 0.40, {
+      fontSize: 40,
+      fill: textFill,
+      fontFamily: 'Open Sans',
+      fontWeight: '300',
+      lineHeight: 1.3,
+    });
+  }
+  tmplRect(W * 0.50, H * 0.52, W * 0.36, 3, { fill: accent, rx: 2 });
+  if (note) {
+    tmplText(note, W * 0.58, H * 0.60, {
+      fontSize: 34,
+      fill: textFill,
+      fontFamily: 'Open Sans',
+    });
+  }
+  tmplRect(W * 0.50, H * 0.72, W * 0.36, 10, { fill: accent, rx: 5, opacity: 0.18 });
+  tmplRect(W * 0.50, H * 0.76, W * 0.22, 36, { fill: accent, rx: 18 });
+  tmplText('OPEN NOW', W * 0.61, H * 0.795, {
+    fontSize: 32,
+    fill: '#ffffff',
+    textAlign: 'center',
+    fontFamily: 'Montserrat',
+    fontWeight: 'bold',
+  });
+  if (footer) {
+    tmplText(footer, W * 0.58, H * 0.88, {
+      fontSize: 28,
+      fill: textFill,
+      fontFamily: 'Open Sans',
+    });
+  }
+}
+
+function renderSplitWelcomeBoard({
+  bg = '#f8fbff',
+  accent = '#2563eb',
+  leftFill = '#0f1b29',
+  title,
+  subtitle = '',
+  panelTitle = '',
+  panelBody = '',
+  footer = '',
+  leftLabel = 'WELCOME',
+  titleFill = '#10213a',
+  bodyFill = '#475569',
+}) {
+  const W = CANVAS_W, H = CANVAS_H;
+  const cv = _tmplCanvas || fabricCanvas;
+  cv.backgroundColor = bg;
+  tmplRect(0, 0, W, 18, { fill: accent, rx: 0 });
+  tmplRect(W * 0.08, H * 0.18, W * 0.34, H * 0.66, { fill: leftFill, rx: 28 });
+  tmplRect(W * 0.46, H * 0.18, W * 0.46, H * 0.66, { fill: '#ffffff', rx: 28, stroke: '#dbe3f0', strokeWidth: 2 });
+  tmplText(leftLabel, W * 0.25, H * 0.26, {
+    fontSize: 32,
+    fill: 'rgba(255,255,255,0.66)',
+    textAlign: 'center',
+    fontFamily: 'Montserrat',
+    charSpacing: 100,
+    fontWeight: 'bold',
+  });
+  tmplRect(W * 0.16, H * 0.36, W * 0.18, H * 0.18, { fill: 'rgba(255,255,255,0.16)', rx: 50 });
+  tmplRect(W * 0.17, H * 0.58, W * 0.16, H * 0.08, { fill: 'rgba(255,255,255,0.22)', rx: 16 });
+  tmplText(title, W * 0.69, H * 0.32, {
+    fontSize: 88,
+    fontWeight: 'bold',
+    fill: titleFill,
+    textAlign: 'center',
+    fontFamily: 'Montserrat',
+  });
+  if (subtitle) {
+    tmplText(subtitle, W * 0.69, H * 0.42, {
+      fontSize: 40,
+      fill: bodyFill,
+      textAlign: 'center',
+      fontFamily: 'Open Sans',
+      fontWeight: '300',
+    });
+  }
+  if (panelTitle) {
+    tmplRect(W * 0.51, H * 0.53, W * 0.36, 4, { fill: accent, rx: 2 });
+    tmplText(panelTitle, W * 0.69, H * 0.60, {
+      fontSize: 36,
+      fill: accent,
+      textAlign: 'center',
+      fontFamily: 'Montserrat',
+      fontWeight: 'bold',
+      charSpacing: 80,
+    });
+  }
+  if (panelBody) {
+    tmplText(panelBody, W * 0.69, H * 0.68, {
+      fontSize: 34,
+      fill: bodyFill,
+      textAlign: 'center',
+      fontFamily: 'Open Sans',
+      lineHeight: 1.45,
+    });
+  }
+  if (footer) {
+    tmplRect(W * 0.52, H * 0.82, W * 0.34, 4, { fill: accent, rx: 2 });
+    tmplText(footer, W * 0.69, H * 0.88, {
+      fontSize: 28,
+      fill: bodyFill,
+      textAlign: 'center',
+      fontFamily: 'Open Sans',
+    });
+  }
+}
+
+const EXTRA_TEMPLATE_RENDERERS = {
+  annualreview: () => renderMetricsBoard({
+    bg: '#14213a',
+    accent: '#2563eb',
+    title: 'ANNUAL REVIEW',
+    subtitle: 'A clean executive snapshot for year-end reporting',
+    metrics: [
+      { label: 'GOALS MET', value: '92%', delta: '+8% vs last year', valueFill: '#8ec5ff', deltaFill: '#44c97a' },
+      { label: 'ENGAGEMENT', value: '4.8/5', delta: '+0.3 this quarter', valueFill: '#ffffff', deltaFill: '#8ddf7e' },
+      { label: 'GROWTH', value: '+18%', delta: 'Year over year', valueFill: '#8ec5ff', deltaFill: '#44c97a' },
+      { label: 'ON TIME', value: '97%', delta: 'Project delivery', valueFill: '#ffffff', deltaFill: '#8ddf7e' },
+    ],
+    footer: 'FINANCE  ·  PEOPLE  ·  OPERATIONS',
+  }),
+  teammeeting: () => renderListBoard({
+    bg: '#f3f7fb',
+    accent: '#2563eb',
+    title: 'TEAM MEETING',
+    kicker: 'THIS WEEK',
+    subtitle: 'Agenda and talking points for the weekly check-in',
+    items: [
+      'Review milestones and blockers',
+      'Share priority updates',
+      'Confirm owners and due dates',
+      'Capture follow-ups before the close',
+    ],
+    footer: 'MEETING ROOM A · 10:00 AM',
+  }),
+  weeklyreminders: () => renderListBoard({
+    bg: '#f8fafc',
+    accent: '#4f8ef7',
+    title: 'WEEKLY REMINDERS',
+    kicker: 'MONDAY CHECKLIST',
+    subtitle: 'Keep the team aligned before the week gets busy',
+    items: [
+      'Submit updates by 10 AM',
+      'Confirm coverage and handoffs',
+      'Share blockers early',
+      'Plan the next sprint tasks',
+    ],
+    footer: 'THANK YOU FOR STAYING IN SYNC',
+  }),
+  officedirectory: () => renderDirectoryBoard({
+    bg: '#f8fbff',
+    accent: '#2563eb',
+    title: 'OFFICE DIRECTORY',
+    subtitle: 'Floor listing, rooms, and shared spaces',
+    mapLabel: 'FLOOR MAP',
+    mapTitle: 'MAIN OFFICE',
+    listTitle: 'LOCATION GUIDE',
+    listItems: [
+      'Reception · Floor 1',
+      'Conference A · Floor 2',
+      'Studio · Floor 3',
+      'Breakout Rooms · Floor 4',
+      'Kitchen · Floor 5',
+    ],
+    footer: 'ASK RECEPTION FOR ACCESS',
+  }),
+  welcomeonboard: () => renderSplitWelcomeBoard({
+    bg: '#edf4ff',
+    accent: '#2563eb',
+    leftFill: '#0f1b29',
+    title: 'WELCOME ON BOARD',
+    subtitle: 'Your first day starts here',
+    panelTitle: 'QUICK START',
+    panelBody: 'Meet the team\nReview your setup\nAsk anything you need',
+    footer: 'WE ARE GLAD YOU ARE HERE',
+    leftLabel: 'NEW TEAM MEMBER',
+  }),
+  employeeappreciation: () => renderAnnouncementPoster({
+    bg: '#0f1b29',
+    accent: '#c9a84c',
+    title: 'THANK YOU',
+    subtitle: 'Employee Appreciation Day',
+    footer: 'YOUR WORK MAKES ZIGNS BETTER EVERY DAY',
+    badge: 'APPRECIATION',
+    titleFont: 'Anton',
+    subtitleFont: 'Open Sans',
+    titleSize: 156,
+    subtitleSize: 54,
+    footerSize: 32,
+    subtitleFill: '#d9e6f5',
+    footerFill: 'rgba(233,224,197,0.78)',
+    titleSpacing: 24,
+  }),
+  feedbackqr: () => renderQRBoard({
+    bg: '#f8fbff',
+    accent: '#2563eb',
+    title: 'FEEDBACK QR',
+    subtitle: 'Scan the code to open the quick feedback form',
+    note: 'We read every response and share the themes with the team',
+    footer: 'THANK YOU FOR SHARING YOUR THOUGHTS',
+    leftTitle: 'SCAN',
+  }),
+  safetyguide: () => renderListBoard({
+    bg: '#fff8e6',
+    accent: '#d97706',
+    title: 'SAFETY GUIDE',
+    kicker: 'SITE RULES',
+    subtitle: 'Please review these reminders before starting work',
+    items: [
+      'Wear PPE in designated areas',
+      'Keep walkways and exits clear',
+      'Report hazards immediately',
+      'Follow lockout procedures',
+    ],
+    footer: 'LOOK OUT FOR EACH OTHER',
+    dark: false,
+    panelFill: '#ffffff',
+    titleFill: '#1f2937',
+    textFill: '#374151',
+    bulletFill: '#d97706',
+  }),
+  ppechecklist: () => renderListBoard({
+    bg: '#fffdf5',
+    accent: '#ca8a04',
+    title: 'PPE CHECKLIST',
+    kicker: 'REQUIRED GEAR',
+    subtitle: 'Check off your equipment before entering the floor',
+    items: [
+      'Hard hat',
+      'Safety glasses',
+      'Hi-vis vest',
+      'Gloves',
+      'Steel-toe boots',
+    ],
+    footer: 'THANK YOU FOR STAYING READY',
+    dark: false,
+    panelFill: '#ffffff',
+    titleFill: '#1f2937',
+    textFill: '#374151',
+    bulletFill: '#ca8a04',
+  }),
+  machinestatus: () => renderMetricsBoard({
+    bg: '#172033',
+    accent: '#2563eb',
+    title: 'MACHINE STATUS',
+    subtitle: 'Live plant metrics and operating conditions',
+    metrics: [
+      { label: 'UPTIME', value: '99.8%', delta: 'Stable this shift', valueFill: '#93c5fd', deltaFill: '#8ddf7e' },
+      { label: 'ACTIVE LINES', value: '12', delta: 'Running now', valueFill: '#ffffff', deltaFill: '#8ddf7e' },
+      { label: 'ALARMS', value: '1', delta: 'Needs review', valueFill: '#fca5a5', deltaFill: '#fbbf24' },
+      { label: 'THROUGHPUT', value: '184/hr', delta: 'On target', valueFill: '#93c5fd', deltaFill: '#8ddf7e' },
+    ],
+    footer: 'PRODUCTION FLOOR · SHIFT A',
+  }),
+  productionreport: () => renderMetricsBoard({
+    bg: '#1d2430',
+    accent: '#0f1b29',
+    title: 'PRODUCTION REPORT',
+    subtitle: 'Daily output, defect rate, and shift performance',
+    metrics: [
+      { label: 'UNITS TODAY', value: '12,480', delta: '+6.2% vs yesterday', valueFill: '#ffffff', deltaFill: '#8ddf7e' },
+      { label: 'DEFECT RATE', value: '0.8%', delta: 'Below target', valueFill: '#fca5a5', deltaFill: '#fbbf24' },
+      { label: 'SHIFT OUTPUT', value: '97%', delta: 'Plan completed', valueFill: '#93c5fd', deltaFill: '#8ddf7e' },
+      { label: 'ON TIME', value: '98%', delta: 'Dispatch met', valueFill: '#ffffff', deltaFill: '#8ddf7e' },
+    ],
+    footer: 'OPERATIONS · WAREHOUSE · QUALITY',
+  }),
+  constructionnotice: () => renderWarningBoard({
+    bg: '#fff6d6',
+    accent: '#d97706',
+    danger: '#dc2626',
+    title: 'CONSTRUCTION NOTICE',
+    subtitle: 'Use the alternate entrance and follow posted instructions',
+    steps: [
+      'Hard hats required past this point',
+      'Keep clear of marked zones',
+      'Contact site staff for access',
+    ],
+    footer: 'THANK YOU FOR YOUR PATIENCE',
+  }),
+  fireexit: () => renderDirectoryBoard({
+    bg: '#f1faf4',
+    accent: '#16a34a',
+    title: 'FIRE EXIT',
+    subtitle: 'Follow the marked routes immediately',
+    mapLabel: 'EVACUATION',
+    mapTitle: 'EXIT ROUTE',
+    listTitle: 'STEPS',
+    listItems: [
+      'Exit via stairwell A',
+      'Move to the assembly point',
+      'Do not use elevators',
+      'Wait for the all-clear',
+      'Account for your team',
+    ],
+    footer: 'EMERGENCY ROUTE ONLY',
+    leftFill: '#14532d',
+    rightFill: '#ffffff',
+    titleFill: '#14532d',
+    textFill: '#166534',
+  }),
+  hazardwarning: () => renderWarningBoard({
+    bg: '#fff2f2',
+    accent: '#dc2626',
+    danger: '#991b1b',
+    title: 'HAZARD WARNING',
+    subtitle: 'Do not enter without authorization',
+    steps: [
+      'Report leaks or spills',
+      'Isolate the area immediately',
+      'Notify the supervisor',
+    ],
+    footer: 'STOP AND ASSESS THE AREA',
+  }),
+  emergencyalert: () => renderWarningBoard({
+    bg: '#2a0f12',
+    accent: '#dc2626',
+    danger: '#991b1b',
+    title: 'EMERGENCY ALERT',
+    subtitle: 'Follow staff instructions and remain calm',
+    steps: [
+      'Stop current activity',
+      'Move to the nearest safe exit',
+      'Meet at the assembly point',
+    ],
+    footer: 'WAIT FOR THE ALL-CLEAR',
+    titleFill: '#ffffff',
+    textFill: 'rgba(255,255,255,0.82)',
+  }),
+  campusmap: () => renderDirectoryBoard({
+    bg: '#f7fbff',
+    accent: '#2563eb',
+    title: 'CAMPUS MAP',
+    subtitle: 'Parking, entrance, and building locations',
+    mapLabel: 'MAIN CAMPUS',
+    mapTitle: 'VISITOR MAP',
+    listTitle: 'DESTINATIONS',
+    listItems: [
+      'North Entrance',
+      'Parking A',
+      'Student Center',
+      'Sports Hall',
+      'Admin Building',
+    ],
+    footer: 'FOLLOW BLUE WAYFINDING SIGNS',
+  }),
+  floordirectory: () => renderDirectoryBoard({
+    bg: '#ffffff',
+    accent: '#0f1b29',
+    title: 'FLOOR DIRECTORY',
+    subtitle: 'Room index with floor-by-floor navigation',
+    mapLabel: 'FLOORS',
+    mapTitle: 'BUILDING A',
+    listTitle: 'ROOMS',
+    listItems: [
+      'Reception · Level 1',
+      'Conference A · Level 2',
+      'Engineering · Level 3',
+      'Design Studio · Level 4',
+      'Support · Level 5',
+    ],
+    footer: 'ASK FOR HELP AT RECEPTION',
+    leftFill: '#10213a',
+    titleFill: '#10213a',
+    textFill: '#475569',
+  }),
+  visitordirections: () => renderDirectoryBoard({
+    bg: '#edf4ff',
+    accent: '#4f8ef7',
+    title: 'VISITOR DIRECTIONS',
+    subtitle: 'Lobby arrows and destination guidance',
+    mapLabel: 'DIRECTIONS',
+    mapTitle: 'CHECK-IN',
+    listTitle: 'FOLLOW THESE STEPS',
+    listItems: [
+      'Check in at reception',
+      'Take the east corridor',
+      'Conference rooms are to the left',
+      'Restrooms are beside the lift',
+      'Return here for pick-up',
+    ],
+    footer: 'THANK YOU FOR VISITING',
+  }),
+  lobbywelcome: () => renderSplitWelcomeBoard({
+    bg: '#f8fbff',
+    accent: '#2563eb',
+    leftFill: '#0f1b29',
+    title: 'LOBBY WELCOME',
+    subtitle: 'Reception, seating, and next steps',
+    panelTitle: 'START HERE',
+    panelBody: 'Check in at reception\nWait for your host\nAsk staff if you need help',
+    footer: 'WE ARE GLAD YOU ARE HERE',
+    leftLabel: 'WELCOME',
+  }),
+  backtoschool: () => renderAnnouncementPoster({
+    bg: '#f7f9ff',
+    accent: '#1a3a6b',
+    title: 'BACK TO SCHOOL',
+    subtitle: 'Fresh year. Fresh routines. Big energy.',
+    footer: 'WELCOME BACK',
+    badge: 'EDUCATION',
+    titleFont: 'Anton',
+    subtitleFont: 'Open Sans',
+    titleSize: 162,
+    subtitleSize: 52,
+    footerSize: 32,
+    titleFill: '#10213a',
+    subtitleFill: '#475569',
+    footerFill: '#1a3a6b',
+    titleSpacing: 24,
+  }),
+  enrollmentopen: () => renderAnnouncementPoster({
+    bg: '#10213a',
+    accent: '#f6c90e',
+    title: 'ENROLLMENT OPEN',
+    subtitle: 'Admissions and sign-up are now available',
+    footer: 'SECURE YOUR SPOT TODAY',
+    badge: 'NOW ENROLLING',
+    titleFont: 'Anton',
+    subtitleFont: 'Open Sans',
+    titleSize: 150,
+    subtitleSize: 50,
+    footerSize: 32,
+    subtitleFill: 'rgba(255,255,255,0.82)',
+    footerFill: 'rgba(246,201,14,0.90)',
+    titleSpacing: 18,
+  }),
+  studentcongrats: () => renderAnnouncementPoster({
+    bg: '#eff6ff',
+    accent: '#2563eb',
+    title: 'CONGRATULATIONS!',
+    subtitle: 'Your hard work paid off',
+    footer: 'WE ARE PROUD OF YOU',
+    badge: 'ACHIEVEMENT',
+    titleFont: 'Anton',
+    subtitleFont: 'Open Sans',
+    titleSize: 150,
+    subtitleSize: 52,
+    footerSize: 32,
+    titleFill: '#10213a',
+    subtitleFill: '#475569',
+    footerFill: '#1d4ed8',
+    titleSpacing: 20,
+  }),
+  teachersday: () => renderAnnouncementPoster({
+    bg: '#172033',
+    accent: '#c9a84c',
+    title: "TEACHER'S DAY",
+    subtitle: 'Thank you for making every day better',
+    footer: 'WE APPRECIATE YOU',
+    badge: 'EDUCATORS',
+    titleFont: 'Anton',
+    subtitleFont: 'Open Sans',
+    titleSize: 144,
+    subtitleSize: 48,
+    footerSize: 32,
+    subtitleFill: '#dce7ff',
+    footerFill: '#e9e0c5',
+    titleSpacing: 18,
+  }),
+  musicevent: () => renderAnnouncementPoster({
+    bg: '#070814',
+    accent: '#7c3aed',
+    title: 'LIVE MUSIC NIGHT',
+    subtitle: 'Band name · Friday · 8:00 PM',
+    footer: 'DOORS OPEN AT 7 PM',
+    badge: 'TONIGHT',
+    titleFont: 'Anton',
+    subtitleFont: 'Open Sans',
+    titleSize: 140,
+    subtitleSize: 50,
+    footerSize: 32,
+    subtitleFill: 'rgba(255,255,255,0.84)',
+    footerFill: 'rgba(196,181,253,0.84)',
+    titleSpacing: 22,
+  }),
+  flashsale: () => renderAnnouncementPoster({
+    bg: '#fef2f2',
+    accent: '#dc2626',
+    title: 'FLASH SALE',
+    subtitle: 'Limited-time offers across the store',
+    footer: 'TODAY ONLY',
+    badge: 'UP TO 50% OFF',
+    titleFont: 'Anton',
+    subtitleFont: 'Open Sans',
+    titleSize: 164,
+    subtitleSize: 48,
+    footerSize: 32,
+    titleFill: '#b91c1c',
+    subtitleFill: '#4b5563',
+    footerFill: '#dc2626',
+    titleSpacing: 26,
+  }),
+  productlaunch: () => renderAnnouncementPoster({
+    bg: '#ffffff',
+    accent: '#2563eb',
+    title: 'PRODUCT LAUNCH',
+    subtitle: 'Introducing the next release',
+    footer: 'DISCOVER WHAT IS NEW',
+    badge: 'NEW',
+    titleFont: 'Anton',
+    subtitleFont: 'Open Sans',
+    titleSize: 144,
+    subtitleSize: 50,
+    footerSize: 32,
+    titleFill: '#10213a',
+    subtitleFill: '#475569',
+    footerFill: '#1d4ed8',
+    titleSpacing: 20,
+  }),
+  joinqueue: () => renderQRBoard({
+    bg: '#f8fbff',
+    accent: '#2563eb',
+    title: 'JOIN QUEUE',
+    subtitle: 'Scan the code to check in and hold your place',
+    note: 'Please keep your phone nearby for updates',
+    footer: 'THANK YOU FOR YOUR PATIENCE',
+    leftTitle: 'SCAN',
+  }),
+};
+
 function applyTemplate(name) {
   if (!_tmplCanvas && !fabricCanvas) return;
   const W = 1920, H = 1080;
+  const extraTemplate = EXTRA_TEMPLATE_RENDERERS[name];
+  if (extraTemplate) {
+    extraTemplate();
+    if (!_tmplCanvas) applyBrandKitToTemplate();
+    (_tmplCanvas || fabricCanvas).renderAll();
+    if (!_tmplCanvas) { historyStack = []; histIdx = -1; historySave(); updatePropsPanel(); }
+    return;
+  }
 
   // ── 1. Corporate Announcement ────────────────────────────────────────────
   if (name === 'corporateannouncement') {
@@ -16828,12 +17798,43 @@ function applyTemplate(name) {
 }
 
 // ── Template Thumbnail Generator ─────────────────────────────────────────
+const EXTRA_TEMPLATE_CATALOG = [
+  { key:'annualreview', title:'Annual Review', desc:'Executive metrics and year-end performance snapshot', category:'office', preview:'metrics', accent:'#2563eb', bg:'#14213a', tag:'OFFICE' },
+  { key:'teammeeting', title:'Team Meeting', desc:'Agenda board with notes and talking points', category:'office', preview:'list', accent:'#0f1b29', bg:'#f3f7fb', tag:'OFFICE' },
+  { key:'weeklyreminders', title:'Weekly Reminders', desc:'Simple checklist for internal updates', category:'office', preview:'list', accent:'#4f8ef7', bg:'#f8fafc', tag:'OFFICE' },
+  { key:'officedirectory', title:'Office Directory', desc:'Floor listing and room index', category:'office', preview:'directory', accent:'#2563eb', bg:'#f8fbff', tag:'OFFICE' },
+  { key:'welcomeonboard', title:'Welcome On Board', desc:'New hire welcome and first-day orientation', category:'office', preview:'welcome', accent:'#2563eb', bg:'#edf4ff', tag:'OFFICE' },
+  { key:'employeeappreciation', title:'Employee Appreciation', desc:'Recognition message with bold thank-you copy', category:'office', preview:'announcement', accent:'#c9a84c', bg:'#0f1b29', tag:'OFFICE' },
+  { key:'feedbackqr', title:'Feedback QR', desc:'Scan to share feedback or open a form', category:'office', preview:'qr', accent:'#2563eb', bg:'#f8fbff', tag:'OFFICE' },
+  { key:'safetyguide', title:'Safety Guide', desc:'Daily safety checklist and site reminders', category:'safety', preview:'list', accent:'#d97706', bg:'#fff8e6', tag:'SAFETY' },
+  { key:'ppechecklist', title:'PPE Checklist', desc:'Required protective equipment board', category:'safety', preview:'list', accent:'#ca8a04', bg:'#fffdf5', tag:'SAFETY' },
+  { key:'machinestatus', title:'Machine Status', desc:'Industrial status dashboard with live metrics', category:'safety', preview:'metrics', accent:'#2563eb', bg:'#172033', tag:'SAFETY' },
+  { key:'productionreport', title:'Production Report', desc:'Operations summary with KPI tiles', category:'safety', preview:'metrics', accent:'#0f1b29', bg:'#1d2430', tag:'SAFETY' },
+  { key:'constructionnotice', title:'Construction Notice', desc:'Caution alert for work zones and access changes', category:'safety', preview:'warning', accent:'#d97706', bg:'#fff6d6', tag:'SAFETY' },
+  { key:'fireexit', title:'Fire Exit', desc:'Directional evacuation sign and route guidance', category:'safety', preview:'directory', accent:'#16a34a', bg:'#f1faf4', tag:'SAFETY' },
+  { key:'hazardwarning', title:'Hazard Warning', desc:'Red alert panel with critical instructions', category:'safety', preview:'warning', accent:'#dc2626', bg:'#fff2f2', tag:'SAFETY' },
+  { key:'emergencyalert', title:'Emergency Alert', desc:'High-visibility incident notification', category:'safety', preview:'warning', accent:'#991b1b', bg:'#2a0f12', tag:'SAFETY' },
+  { key:'campusmap', title:'Campus Map', desc:'Site map and arrival points', category:'wayfinding', preview:'directory', accent:'#2563eb', bg:'#f7fbff', tag:'WAYFINDING' },
+  { key:'floordirectory', title:'Floor Directory', desc:'Room index with floor-by-floor navigation', category:'wayfinding', preview:'directory', accent:'#0f1b29', bg:'#ffffff', tag:'WAYFINDING' },
+  { key:'visitordirections', title:'Visitor Directions', desc:'Lobby arrows and destination guidance', category:'wayfinding', preview:'directory', accent:'#4f8ef7', bg:'#edf4ff', tag:'WAYFINDING' },
+  { key:'lobbywelcome', title:'Lobby Welcome', desc:'Entry welcome with next-step directions', category:'wayfinding', preview:'welcome', accent:'#2563eb', bg:'#f8fbff', tag:'WAYFINDING' },
+  { key:'backtoschool', title:'Back to School', desc:'Fresh start announcement for students and staff', category:'education', preview:'announcement', accent:'#1a3a6b', bg:'#f7f9ff', tag:'EDUCATION' },
+  { key:'enrollmentopen', title:'Enrollment Open', desc:'Admissions and sign-up announcement', category:'education', preview:'announcement', accent:'#f6c90e', bg:'#10213a', tag:'EDUCATION' },
+  { key:'studentcongrats', title:'Student Congrats', desc:'Achievement and recognition message', category:'education', preview:'announcement', accent:'#2563eb', bg:'#eff6ff', tag:'EDUCATION' },
+  { key:'teachersday', title:"Teacher's Day", desc:'Thank-you recognition for educators', category:'education', preview:'announcement', accent:'#c9a84c', bg:'#172033', tag:'EDUCATION' },
+  { key:'musicevent', title:'Music Event', desc:'Gig poster for concerts and performances', category:'events', preview:'announcement', accent:'#7c3aed', bg:'#070814', tag:'EVENTS' },
+  { key:'flashsale', title:'Flash Sale', desc:'Limited-time promotion with bold urgency', category:'retail', preview:'announcement', accent:'#dc2626', bg:'#fef2f2', tag:'RETAIL' },
+  { key:'productlaunch', title:'Product Launch', desc:'Minimal product reveal with hero copy', category:'retail', preview:'announcement', accent:'#2563eb', bg:'#ffffff', tag:'RETAIL' },
+  { key:'joinqueue', title:'Join Queue', desc:'Scan to join the line or check in', category:'events', preview:'qr', accent:'#2563eb', bg:'#f8fbff', tag:'EVENTS' },
+];
+
 const TMPL_THUMB_NAMES = [
   'corporateannouncement','employeeofmonth','nowhiring','kpidashboard',
   'dailyspecial','menuboard','happyhour','saleevent','newarrival',
   'eventpromo','countdown','waitingroomwelcome','healthtip',
   'seasonsgreetings','newyear','instagramwall',
-  'schoolevents','classroomannouncement','socialpromo'
+  'schoolevents','classroomannouncement','socialpromo',
+  ...EXTRA_TEMPLATE_CATALOG.map(t => t.key)
 ];
 
 const TEMPLATE_LIBRARY_NAMES = {
@@ -16857,10 +17858,166 @@ const TEMPLATE_LIBRARY_NAMES = {
   schoolevents: 'School Events',
   classroomannouncement: 'Classroom Announcement',
   socialpromo: 'Social Media Promo',
+  ...Object.fromEntries(EXTRA_TEMPLATE_CATALOG.map(t => [t.key, t.title])),
 };
 
+function hexIsDark(hex) {
+  if (!hex || hex[0] !== '#') return false;
+  const value = hex.length === 4
+    ? hex.slice(1).split('').map(ch => ch + ch).join('')
+    : hex.slice(1);
+  if (value.length !== 6) return false;
+  const r = parseInt(value.slice(0, 2), 16);
+  const g = parseInt(value.slice(2, 4), 16);
+  const b = parseInt(value.slice(4, 6), 16);
+  return ((r * 299) + (g * 587) + (b * 114)) / 1000 < 140;
+}
+
+function buildExtraTemplatePreviewMarkup(t) {
+  const dark = hexIsDark(t.bg);
+  const fg = dark ? 'rgba(255,255,255,0.94)' : '#10213a';
+  const sub = dark ? 'rgba(255,255,255,0.58)' : 'rgba(16,33,58,0.56)';
+  const line = dark ? 'rgba(255,255,255,0.14)' : 'rgba(16,33,58,0.12)';
+  const lineSoft = dark ? 'rgba(255,255,255,0.20)' : 'rgba(16,33,58,0.18)';
+  const badge = t.accent || '#2563eb';
+  const title = t.title.toUpperCase();
+  switch (t.preview) {
+    case 'metrics':
+      return `
+        <div style="position:absolute;inset:0;background:${t.bg};overflow:hidden">
+          <div style="position:absolute;top:0;left:0;right:0;height:14%;background:${badge}"></div>
+          <div style="position:absolute;top:20%;left:8%;right:32%;height:11%;background:${fg};opacity:0.9;border-radius:3px"></div>
+          <div style="position:absolute;top:20%;right:8%;width:18%;height:11%;background:${lineSoft};border-radius:3px"></div>
+          <div style="position:absolute;top:37%;left:8%;width:39%;height:24%;background:${line};border-radius:8px"></div>
+          <div style="position:absolute;top:37%;right:8%;width:39%;height:24%;background:${line};border-radius:8px"></div>
+          <div style="position:absolute;bottom:12%;left:8%;width:39%;height:24%;background:${line};border-radius:8px"></div>
+          <div style="position:absolute;bottom:12%;right:8%;width:39%;height:24%;background:${line};border-radius:8px"></div>
+          <div style="position:absolute;top:44%;left:14%;width:27%;height:7%;background:${badge};opacity:0.45;border-radius:2px"></div>
+          <div style="position:absolute;top:44%;right:14%;width:27%;height:7%;background:${badge};opacity:0.45;border-radius:2px"></div>
+          <div style="position:absolute;bottom:19%;left:14%;width:27%;height:7%;background:${badge};opacity:0.45;border-radius:2px"></div>
+          <div style="position:absolute;bottom:19%;right:14%;width:27%;height:7%;background:${badge};opacity:0.45;border-radius:2px"></div>
+          <div style="position:absolute;top:74%;left:12%;right:12%;height:1px;background:${lineSoft}"></div>
+        </div>`;
+    case 'list':
+      return `
+        <div style="position:absolute;inset:0;background:${t.bg};overflow:hidden">
+          <div style="position:absolute;top:0;left:0;right:0;height:16%;background:${badge}"></div>
+          <div style="position:absolute;top:6%;left:10%;right:10%;height:7%;background:${fg};opacity:0.88;border-radius:3px"></div>
+          <div style="position:absolute;top:23%;left:8%;right:8%;bottom:12%;background:${dark ? 'rgba(255,255,255,0.07)' : 'rgba(16,33,58,0.04)'};border-radius:10px"></div>
+          <div style="position:absolute;top:31%;left:12%;right:32%;height:7%;background:${fg};opacity:0.9;border-radius:2px"></div>
+          <div style="position:absolute;top:46%;left:12%;right:24%;height:7%;background:${fg};opacity:0.62;border-radius:2px"></div>
+          <div style="position:absolute;top:61%;left:12%;right:28%;height:7%;background:${fg};opacity:0.42;border-radius:2px"></div>
+          <div style="position:absolute;top:76%;left:12%;right:36%;height:7%;background:${fg};opacity:0.26;border-radius:2px"></div>
+          <div style="position:absolute;top:31%;right:12%;width:12%;height:46%;background:${badge};opacity:0.2;border-radius:14px"></div>
+        </div>`;
+    case 'directory':
+      return `
+        <div style="position:absolute;inset:0;background:${t.bg};overflow:hidden">
+          <div style="position:absolute;top:0;left:0;right:0;height:14%;background:${badge}"></div>
+          <div style="position:absolute;top:18%;left:8%;width:36%;bottom:10%;background:${dark ? 'rgba(255,255,255,0.08)' : 'rgba(16,33,58,0.05)'};border-radius:12px"></div>
+          <div style="position:absolute;top:18%;right:8%;left:48%;height:8%;background:${fg};opacity:0.88;border-radius:3px"></div>
+          <div style="position:absolute;top:31%;right:8%;left:48%;height:8%;background:${lineSoft};border-radius:3px"></div>
+          <div style="position:absolute;top:44%;right:8%;left:48%;height:8%;background:${lineSoft};border-radius:3px"></div>
+          <div style="position:absolute;top:57%;right:8%;left:48%;height:8%;background:${lineSoft};border-radius:3px"></div>
+          <div style="position:absolute;top:70%;right:8%;left:48%;height:8%;background:${lineSoft};border-radius:3px"></div>
+          <div style="position:absolute;bottom:12%;left:54%;right:14%;height:7%;background:${badge};opacity:0.35;border-radius:2px"></div>
+          <div style="position:absolute;top:30%;left:18%;width:20%;height:12%;background:${badge};opacity:0.55;border-radius:8px"></div>
+          <div style="position:absolute;top:48%;left:20%;width:16%;height:10%;background:${badge};opacity:0.35;border-radius:8px"></div>
+          <div style="position:absolute;top:64%;left:17%;width:22%;height:12%;background:${badge};opacity:0.45;border-radius:8px"></div>
+        </div>`;
+    case 'welcome':
+      return `
+        <div style="position:absolute;inset:0;background:${t.bg};overflow:hidden">
+          <div style="position:absolute;left:0;top:0;bottom:0;width:38%;background:${badge}"></div>
+          <div style="position:absolute;top:18%;left:8%;width:22%;height:22%;background:${dark ? 'rgba(255,255,255,0.22)' : 'rgba(16,33,58,0.14)'};border-radius:50%"></div>
+          <div style="position:absolute;top:12%;right:8%;left:46%;height:10%;background:${fg};opacity:0.9;border-radius:3px"></div>
+          <div style="position:absolute;top:29%;right:14%;left:46%;height:6%;background:${lineSoft};border-radius:2px"></div>
+          <div style="position:absolute;top:43%;right:14%;left:46%;height:6%;background:${lineSoft};border-radius:2px"></div>
+          <div style="position:absolute;top:57%;right:18%;left:46%;height:8%;background:${badge};opacity:0.35;border-radius:24px"></div>
+          <div style="position:absolute;bottom:16%;right:18%;left:46%;height:6%;background:${lineSoft};border-radius:2px"></div>
+          <div style="position:absolute;bottom:10%;right:18%;left:46%;height:6%;background:${lineSoft};border-radius:2px"></div>
+        </div>`;
+    case 'warning':
+      return `
+        <div style="position:absolute;inset:0;background:${t.bg};overflow:hidden">
+          <div style="position:absolute;top:0;left:0;right:0;height:15%;background:${badge}"></div>
+          <div style="position:absolute;top:18%;left:8%;right:8%;height:16%;background:${fg};opacity:0.9;border-radius:3px"></div>
+          <div style="position:absolute;top:18%;left:8%;right:8%;height:16%;background:repeating-linear-gradient(135deg, ${badge} 0 14px, transparent 14px 28px);opacity:0.45;border-radius:3px"></div>
+          <div style="position:absolute;top:41%;left:10%;right:10%;height:8%;background:${lineSoft};border-radius:2px"></div>
+          <div style="position:absolute;top:54%;left:10%;right:20%;height:8%;background:${lineSoft};border-radius:2px"></div>
+          <div style="position:absolute;top:67%;left:10%;right:30%;height:8%;background:${lineSoft};border-radius:2px"></div>
+          <div style="position:absolute;bottom:12%;left:28%;right:28%;height:10%;background:${badge};border-radius:10px"></div>
+        </div>`;
+    case 'qr':
+      return `
+        <div style="position:absolute;inset:0;background:${t.bg};overflow:hidden">
+          <div style="position:absolute;top:0;left:0;right:0;height:14%;background:${badge}"></div>
+          <div style="position:absolute;top:18%;left:10%;width:34%;bottom:12%;background:${dark ? 'rgba(255,255,255,0.92)' : '#ffffff'};border-radius:12px;border:2px solid ${lineSoft}"></div>
+          <div style="position:absolute;top:28%;left:18%;width:10%;height:10%;background:${badge};border-radius:3px"></div>
+          <div style="position:absolute;top:28%;right:18%;width:10%;height:10%;background:${badge};border-radius:3px"></div>
+          <div style="position:absolute;bottom:28%;left:18%;width:10%;height:10%;background:${badge};border-radius:3px"></div>
+          <div style="position:absolute;bottom:28%;right:18%;width:10%;height:10%;background:${badge};border-radius:3px"></div>
+          <div style="position:absolute;top:42%;left:24%;width:22%;height:22%;background:${badge};opacity:0.15;border-radius:8px"></div>
+          <div style="position:absolute;top:24%;right:8%;left:50%;height:10%;background:${fg};opacity:0.9;border-radius:3px"></div>
+          <div style="position:absolute;top:40%;right:12%;left:50%;height:7%;background:${lineSoft};border-radius:2px"></div>
+          <div style="position:absolute;top:53%;right:18%;left:50%;height:7%;background:${lineSoft};border-radius:2px"></div>
+          <div style="position:absolute;top:66%;right:26%;left:50%;height:7%;background:${lineSoft};border-radius:2px"></div>
+          <div style="position:absolute;bottom:14%;right:18%;left:50%;height:9%;background:${badge};opacity:0.38;border-radius:36px"></div>
+        </div>`;
+    default:
+      return `
+        <div style="position:absolute;inset:0;background:${t.bg};overflow:hidden">
+          <div style="position:absolute;top:0;left:0;right:0;height:14%;background:${badge}"></div>
+          <div style="position:absolute;top:24%;left:10%;right:10%;height:10%;background:${fg};opacity:0.9;border-radius:3px"></div>
+          <div style="position:absolute;top:42%;left:10%;right:20%;height:7%;background:${lineSoft};border-radius:2px"></div>
+          <div style="position:absolute;top:56%;left:10%;right:28%;height:7%;background:${lineSoft};border-radius:2px"></div>
+          <div style="position:absolute;bottom:16%;left:14%;right:14%;height:10%;background:${badge};opacity:0.35;border-radius:20px"></div>
+        </div>`;
+  }
+}
+
+function renderExtraTemplateGalleryCards() {
+  const grid = document.getElementById('galleryGrid');
+  const empty = document.getElementById('galleryEmpty');
+  if (!grid || !empty || grid.dataset.extraTemplateCardsRendered === '1') return;
+  const frag = document.createDocumentFragment();
+  EXTRA_TEMPLATE_CATALOG.forEach(t => {
+    const btn = document.createElement('button');
+    btn.className = 'tmpl-card';
+    btn.type = 'button';
+    btn.dataset.category = t.category;
+    btn.dataset.templateKey = t.key;
+    btn.dataset.name = `${t.key} ${t.title} ${t.desc}`.toLowerCase();
+    btn.addEventListener('click', () => selectTemplate(t.key));
+
+    const preview = document.createElement('div');
+    preview.className = 'tmpl-preview';
+    preview.style.background = t.bg;
+    preview.innerHTML = buildExtraTemplatePreviewMarkup(t);
+
+    const info = document.createElement('div');
+    info.className = 'tmpl-info';
+    const name = document.createElement('span');
+    name.className = 'tmpl-name';
+    name.textContent = t.title;
+    const desc = document.createElement('span');
+    desc.className = 'tmpl-desc';
+    desc.textContent = t.desc;
+    const tag = document.createElement('span');
+    tag.className = 'tmpl-cat-tag';
+    tag.textContent = t.tag;
+    info.append(name, desc, tag);
+
+    btn.append(preview, info);
+    frag.appendChild(btn);
+  });
+  grid.insertBefore(frag, empty);
+  grid.dataset.extraTemplateCardsRendered = '1';
+}
+
 function getTemplateTitle(name) {
-  const card = document.querySelector(`#galleryGrid button[onclick="selectTemplate('${name}')"]`);
+  const card = document.querySelector(`#galleryGrid button[data-template-key="${name}"]`)
+    || document.querySelector(`#galleryGrid button[onclick="selectTemplate('${name}')"]`);
   return card?.querySelector('.tmpl-name')?.textContent?.trim()
     || TEMPLATE_LIBRARY_NAMES[name]
     || 'New Slide';
@@ -16933,7 +18090,8 @@ function removeOffscreenFabricArtifacts() {
 }
 
 function applyTmplThumb(name, dataUrl) {
-  const btn = document.querySelector(`#galleryGrid button[onclick="selectTemplate('${name}')"]`);
+  const btn = document.querySelector(`#galleryGrid button[data-template-key="${name}"]`)
+    || document.querySelector(`#galleryGrid button[onclick="selectTemplate('${name}')"]`);
   if (!btn) return;
   const p = btn.querySelector('.tmpl-preview');
   if (!p) return;
@@ -16941,6 +18099,12 @@ function applyTmplThumb(name, dataUrl) {
   p.style.backgroundSize = 'cover';
   p.style.backgroundPosition = 'center';
   [...p.children].forEach(c => c.style.display = 'none');
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', renderExtraTemplateGalleryCards, { once: true });
+} else {
+  renderExtraTemplateGalleryCards();
 }
 
 let _tmplThumbJob = null;
