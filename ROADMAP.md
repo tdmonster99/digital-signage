@@ -132,6 +132,7 @@ Gap analysis against Yodeck, ScreenCloud, Rise Vision, OptiSigns, Screenly, and 
 
 ### 11. Content Approval Workflow
 **Why:** Present in 4/6 competitors. Unlocks franchise, multi-location, and regulated-industry accounts — managers can approve slides before they go live. Without it, the Editor role can publish anything with no review gate.
+**Status:** Implemented 2026-04-19. Admins can require approval before editor publishing, review pending slideshow drafts, approve to publish, reject with a note, and send Resend notifications through the existing invite/notification API function.
 **What to build:**
 - Add `approvalRequired: boolean` setting to org (Admin toggles in Settings)
 - When enabled: Editor's Publish button changes to "Submit for Review" → sets slideshow to `status: 'pending_review'`
@@ -157,7 +158,7 @@ Gap analysis against Yodeck, ScreenCloud, Rise Vision, OptiSigns, Screenly, and 
 | 8 | Proof of play reporting | Low | High | 5/6 | ✓ |
 | 9 | Google Sheets live data widget | Low | High | 6/6 | ✓ |
 | 10 | Emergency broadcast override | Low | Medium | 3/6 | ✓ |
-| 11 | Content approval workflow | Medium | Medium | 4/6 |
+| 11 | Content approval workflow | Medium | Medium | 4/6 | ✓ |
 
 ---
 
@@ -175,6 +176,7 @@ All items below are shipped and in production as of April 2026.
 | 16 | PowerPoint integration | 4 | ✓ 2026-04-16 |
 | 17 | Digital menu board | 4 | ✓ 2026-04-18 |
 | 18 | Social media feeds (Instagram + Reviews) | 4 | ✓ 2026-04-19 |
+| 19 | Content approval workflow | 4 | ✓ 2026-04-19 |
 | 1 | Schedule display-side enforcement | 1 | ✓ 2026-04-14 |
 | 2 | QR code widget | 1 | ✓ 2026-04-14 |
 | 3 | Weather widget | 1 | ✓ 2026-04-14 |

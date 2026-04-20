@@ -559,6 +559,13 @@ aside {
 }
 .show-item-name { font-size: 14px; font-weight: 500; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .show-item-count { font-size: 11px; color: var(--muted); flex-shrink: 0; }
+.show-item-review-badge {
+  display: none; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+  padding: 2px 6px; border-radius: 999px; flex-shrink: 0;
+  background: rgba(245,158,11,.14); color: #b45309;
+}
+.show-item-review-badge.changes { background: rgba(239,68,68,.12); color: #dc2626; }
 .show-rename-btn { background: none; border: none; cursor: pointer; color: var(--muted); padding: 2px 4px; border-radius: 4px; opacity: 0; transition: opacity .15s; flex-shrink: 0; line-height: 0; }
 .show-item:hover .show-rename-btn, .show-item.active .show-rename-btn { opacity: 1; }
 .show-rename-btn:hover { color: var(--accent); }
@@ -578,6 +585,23 @@ aside {
   transition: all 0.15s;
 }
 .btn-new-show:hover { border-color: var(--accent); color: var(--accent); }
+
+.approval-queue { display: none; }
+.approval-queue-list { display: flex; flex-direction: column; gap: 8px; }
+.approval-card {
+  border: 1px solid var(--border); border-radius: 12px; padding: 10px;
+  background: var(--surface2); display: flex; flex-direction: column; gap: 8px;
+}
+.approval-card-title { font-size: 13px; font-weight: 700; color: var(--text); }
+.approval-card-meta { font-size: 11px; color: var(--muted); line-height: 1.45; }
+.approval-card-actions { display: flex; gap: 6px; }
+.approval-card-actions button {
+  flex: 1; border: 1px solid var(--border); border-radius: 7px; padding: 6px 8px;
+  font-size: 11px; font-weight: 700; font-family: 'DM Sans', sans-serif; cursor: pointer;
+  background: var(--surface); color: var(--text);
+}
+.approval-card-actions .approve { background: var(--accent); border-color: var(--accent); color: #fff; }
+.approval-card-actions .reject { color: #dc2626; border-color: rgba(220,38,38,.3); }
 
 /* Settings panel */
 .field { display: flex; flex-direction: column; gap: 6px; }
@@ -619,6 +643,16 @@ section.content {
   display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
 }
 .toolbar h2 { font-size: 20px; font-weight: 600; flex: 1; min-width: 0; }
+.review-status-banner {
+  display: none; align-items: flex-start; justify-content: space-between; gap: 14px;
+  border: 1px solid var(--border); border-left: 4px solid #f59e0b;
+  border-radius: 12px; background: var(--surface); padding: 12px 14px;
+  color: var(--text); font-size: 13px;
+}
+.review-status-banner strong { display: block; font-size: 13px; margin-bottom: 2px; }
+.review-status-banner span { color: var(--muted); line-height: 1.45; }
+.review-status-banner.rejected { border-left-color: #ef4444; }
+.review-status-banner.approved { border-left-color: #22c55e; }
 .toolbar-actions {
   display: flex; align-items: center; gap: 8px; flex: 1; justify-content: space-between;
 }
@@ -3854,6 +3888,11 @@ body.role-editor .admin-action {
       </button>
     </div>
 
+    <div class="approval-queue" id="approvalQueueWrap">
+      <div class="section-label">Pending Review</div>
+      <div class="approval-queue-list" id="approvalQueueList"></div>
+    </div>
+
     <div>
       <div class="section-label">Settings</div>
       <div class="field">
@@ -3971,6 +4010,7 @@ body.role-editor .admin-action {
           </div>
         </div>
       </div>
+      <div class="review-status-banner" id="reviewStatusBanner"></div>
     </div>
 
     <!-- Drop zone -->
@@ -4779,6 +4819,17 @@ body.role-editor .admin-action {
             <span class="sh-status">Enabled</span>
             <svg class="sh-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
           </div>
+          <div class="settings-hub-row admin-action" onclick="showSettingsSub('approval')">
+            <div class="sh-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6v5c0 5 3.4 8.4 8 10 4.6-1.6 8-5 8-10V6l-8-3z"/><path d="m9 12 2 2 4-4"/></svg>
+            </div>
+            <div class="sh-body">
+              <div class="sh-title">Content Approval</div>
+              <div class="sh-desc">Require editors to submit slideshow changes for admin review.</div>
+            </div>
+            <span class="sh-status" id="shApprovalStatus">Off</span>
+            <svg class="sh-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
           <div class="settings-hub-row" onclick="showSettingsSub('fonts')">
             <div class="sh-icon">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
@@ -5027,6 +5078,31 @@ body.role-editor .admin-action {
             </div>
             <label class="sw">
               <input type="checkbox" id="aiEnabledToggle" checked>
+              <span class="sw-track"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Sub-view: Content Approval ────────────────────────────── -->
+    <div id="settingsSub-approval" class="settings-sub">
+      <div class="settings-sub-hdr">
+        <button class="settings-back" onclick="showSettingsHub()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+          Settings
+        </button>
+        <h2 class="settings-sub-title">Content Approval</h2>
+      </div>
+      <div class="settings-section">
+        <div class="settings-section-body">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:20px;padding:8px 0">
+            <div>
+              <div style="font-size:14px;font-weight:600;margin-bottom:4px">Require approval before editors publish</div>
+              <div style="font-size:12px;color:var(--muted);line-height:1.5">Editors can keep creating drafts, but their Publish button submits changes for admin review. Admins can approve or reject from the Slideshows page.</div>
+            </div>
+            <label class="sw admin-action">
+              <input type="checkbox" id="approvalRequiredToggle" onchange="saveApprovalSettings()">
               <span class="sw-track"></span>
             </label>
           </div>
@@ -8868,18 +8944,15 @@ async function loadShowsFromOrg() {
     if (i === 0) item.click();
   });
 
-  // Fetch slide counts for all non-active shows so they don't show "0 slides"
-  shows.slice(1).forEach(async s => {
+  // Fetch slide counts and review badges for all shows.
+  shows.forEach(async s => {
     try {
       const snap = await getDoc(doc(db, 'slideshows', s.id));
       if (!snap.exists()) return;
-      const data = snap.data();
-      const slideArr = data.draftSlides ?? data.slides ?? [];
-      const n = slideArr.filter(sl => sl.active !== false).length;
-      const el = document.querySelector(`#showList .show-item[data-id="${CSS.escape(s.id)}"] .show-item-count`);
-      if (el) el.textContent = n + ' slide' + (n !== 1 ? 's' : '');
+      updateShowItemMeta(s.id, snap.data());
     } catch(e) { /* non-critical */ }
   });
+  loadApprovalQueue();
 }
 
 // ── Billing ────────────────────────────────────────────────────────────────
@@ -9437,12 +9510,91 @@ window.removeMember = async function(uid, email) {
 let unsubscribe = null;
 
 let currentShowName = 'Main Display';
+let currentShowReviewStatus = 'published';
+let currentShowReviewData = {};
+
+function approvalRequired() {
+  return currentOrg?.approvalRequired === true;
+}
+
+function publishIconSvg(size = 16) {
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 2 11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>`;
+}
+
+function reviewStatusLabel(status) {
+  if (status === 'pending_review') return 'Pending';
+  if (status === 'changes_requested') return 'Changes';
+  return '';
+}
+
+function updateShowItemMeta(showId, data = {}) {
+  const item = document.querySelector(`#showList .show-item[data-id="${CSS.escape(showId)}"]`);
+  if (!item) return;
+  const slideArr = data.draftSlides ?? data.slides ?? [];
+  const n = slideArr.filter(sl => sl.active !== false).length;
+  const count = item.querySelector('.show-item-count');
+  if (count) count.textContent = n + ' slide' + (n !== 1 ? 's' : '');
+
+  const badge = item.querySelector('.show-item-review-badge');
+  if (!badge) return;
+  const status = data.status || 'published';
+  const label = reviewStatusLabel(status);
+  badge.textContent = label;
+  badge.classList.toggle('changes', status === 'changes_requested');
+  badge.style.display = label ? 'inline-flex' : 'none';
+}
+
+function updateReviewStatusBanner(data = {}) {
+  const banner = document.getElementById('reviewStatusBanner');
+  if (!banner) return;
+  const status = data.status || 'published';
+  banner.classList.toggle('rejected', status === 'changes_requested');
+  banner.classList.toggle('approved', status === 'published');
+
+  if (status === 'pending_review') {
+    const submittedBy = data.reviewSubmittedBy?.email || data.draftBy?.email || 'an editor';
+    banner.innerHTML = `<div><strong>Pending admin review</strong><span>${escHtml(currentShowName)} was submitted by ${escHtml(submittedBy)}. Screens are still showing the last published version until an admin approves it.</span></div>`;
+    banner.style.display = 'flex';
+  } else if (status === 'changes_requested') {
+    const note = data.reviewRejectionNote ? ` Note: ${data.reviewRejectionNote}` : '';
+    banner.innerHTML = `<div><strong>Changes requested</strong><span>An admin rejected the latest draft.${escHtml(note)} Update the draft and submit it again when ready.</span></div>`;
+    banner.style.display = 'flex';
+  } else {
+    banner.style.display = 'none';
+    banner.innerHTML = '';
+  }
+}
+
+function syncPublishButtonState(hasDraft = false) {
+  const editorReview = approvalRequired() && currentRole === 'editor';
+  const pending = currentShowReviewStatus === 'pending_review';
+  const rejected = currentShowReviewStatus === 'changes_requested';
+  const label = editorReview
+    ? (pending ? 'Update Review' : 'Submit Review')
+    : 'Publish';
+  const badge = editorReview
+    ? (pending ? 'Pending admin review' : rejected ? 'Changes requested' : 'Review required')
+    : 'Unpublished changes';
+
+  const btn = document.getElementById('btnPush');
+  if (btn) {
+    btn.innerHTML = `${publishIconSvg(16)} ${label}`;
+    btn.disabled = !hasDraft;
+  }
+  const mob = document.getElementById('btnPushMobile');
+  if (mob) {
+    mob.innerHTML = `${publishIconSvg(14)} ${label}`;
+    mob.disabled = !hasDraft;
+  }
+  const badgeEl = document.getElementById('unpublishedBadge');
+  if (badgeEl) badgeEl.textContent = badge;
+}
 
 function makeShowItem(s) {
   const item = document.createElement('div');
   item.className  = 'show-item';
   item.dataset.id = s.id;
-  item.innerHTML  = `<span class="show-item-name">${escHtml(s.name)}</span><button class="show-rename-btn" title="Rename" tabindex="-1"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button><span class="show-item-count">0 slides</span>`;
+  item.innerHTML  = `<span class="show-item-name">${escHtml(s.name)}</span><span class="show-item-review-badge"></span><button class="show-rename-btn" title="Rename" tabindex="-1"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button><span class="show-item-count">0 slides</span>`;
   item.querySelector('.show-rename-btn').addEventListener('click', e => {
     e.stopPropagation();
     startListItemRename(s.id, item);
@@ -9515,6 +9667,7 @@ function setPushVisible(visible) {
   const sep = document.getElementById("btnPushSep");
   if (mob) mob.style.display = visible ? '' : 'none';
   if (sep) sep.style.display = visible ? '' : 'none';
+  syncPublishButtonState(visible);
 }
 
 function listenToShow(id, name) {
@@ -9531,11 +9684,19 @@ function listenToShow(id, name) {
       document.getElementById("defaultDwell").value  = data.draftDwell      ?? data.defaultDwell  ?? 6;
       document.getElementById("fitMode").value       = data.draftFitMode    ?? data.fitMode       ?? "contain";
       document.getElementById("transition").value    = data.draftTransition ?? data.transition    ?? "crossfade";
+      currentShowReviewStatus = data.status || 'published';
+      currentShowReviewData = data;
+      updateReviewStatusBanner(data);
+      updateShowItemMeta(id, data);
       // Show push button whenever there are unpublished changes
       const hasUnpublished = data.draftSlides !== undefined;
       setPushVisible(hasUnpublished);
+      loadApprovalQueue();
     } else {
       slides = [];
+      currentShowReviewStatus = 'published';
+      currentShowReviewData = {};
+      updateReviewStatusBanner({});
       setPushVisible(false);
     }
     renderGrid();
@@ -9571,6 +9732,10 @@ let _reopenPublishAfterPairing = false;
 
 window.publishToScreens = function() {
   if (!auth.currentUser) { toast("Sign in first.", true); return; }
+  if (approvalRequired() && currentRole === 'editor') {
+    submitCurrentShowForReview();
+    return;
+  }
   _openPublishModal();
 };
 
@@ -9681,6 +9846,7 @@ window.confirmPublish = async function() {
       defaultDwell: dwell,
       fitMode:      fit,
       transition,
+      status:      'published',
       publishedAt:  now,
       draftSlides:     deleteField(),
       draftDwell:      deleteField(),
@@ -9688,6 +9854,13 @@ window.confirmPublish = async function() {
       draftTransition: deleteField(),
       draftUpdatedAt:  deleteField(),
       draftBy:         deleteField(),
+      reviewSubmittedAt:  deleteField(),
+      reviewSubmittedBy:  deleteField(),
+      reviewApprovedAt:   deleteField(),
+      reviewApprovedBy:   deleteField(),
+      reviewRejectedAt:   deleteField(),
+      reviewRejectedBy:   deleteField(),
+      reviewRejectionNote: deleteField(),
       ...(currentOrgId && { orgId: currentOrgId }),
       ...(currentUser  && { publishedBy: { uid: currentUser.uid, email: currentUser.email } }),
     }, { merge: true });
@@ -9707,6 +9880,195 @@ window.confirmPublish = async function() {
     toast("Publish failed: " + e.message, true);
     btn.disabled = false;
     btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 2 11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Publish`;
+  }
+};
+
+function getApprovalShowName(showId) {
+  return (currentOrg?.slideshows || []).find(s => s.id === showId)?.name || showId || 'Slideshow';
+}
+
+function getAdminEmails() {
+  return (currentOrg?.members || [])
+    .filter(m => (m.role || '').toLowerCase() === 'admin' && m.email)
+    .map(m => m.email);
+}
+
+function notifyApproval(type, payload = {}) {
+  const to = payload.to || [];
+  if (!to.length) return;
+  fetch('/api/send-invite', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      type: 'approval',
+      action: type,
+      to,
+      orgName: currentOrg?.name || 'Zigns',
+      showName: payload.showName || getApprovalShowName(payload.showId || currentShowId),
+      actorEmail: currentUser?.email || '',
+      note: payload.note || '',
+    }),
+  }).then(async r => {
+    if (!r.ok) console.warn('Approval email failed:', r.status, await r.text().catch(() => ''));
+  }).catch(err => console.warn('Approval email error:', err.message));
+}
+
+async function submitCurrentShowForReview() {
+  if (!auth.currentUser || !currentShowId) return;
+  const now = new Date().toISOString();
+  try {
+    await setDoc(doc(db, 'slideshows', currentShowId), {
+      status: 'pending_review',
+      reviewSubmittedAt: now,
+      reviewSubmittedBy: { uid: currentUser.uid, email: currentUser.email },
+      reviewRejectedAt: deleteField(),
+      reviewRejectedBy: deleteField(),
+      reviewRejectionNote: deleteField(),
+      ...(currentOrgId && { orgId: currentOrgId }),
+    }, { merge: true });
+    currentShowReviewStatus = 'pending_review';
+    syncPublishButtonState(true);
+    updateShowItemMeta(currentShowId, { ...currentShowReviewData, status: 'pending_review' });
+    notifyApproval('submitted', { to: getAdminEmails(), showId: currentShowId });
+    logActivity(`Slideshow "${currentShowId}" submitted for review`);
+    toast('Submitted for admin review ✓');
+    loadApprovalQueue();
+  } catch(e) {
+    toast('Could not submit for review: ' + e.message, true);
+  }
+}
+
+window.approveSlideshowReview = async function(showId) {
+  if (currentRole !== 'admin') { toast('Only admins can approve content.', true); return; }
+  const showRef = doc(db, 'slideshows', showId);
+  const snap = await getDoc(showRef);
+  if (!snap.exists()) { toast('Slideshow not found.', true); return; }
+  const data = snap.data();
+  const draftSlides = data.draftSlides;
+  if (!Array.isArray(draftSlides)) { toast('No draft content to approve.', true); return; }
+
+  const now = new Date().toISOString();
+  try {
+    await setDoc(showRef, {
+      slides: draftSlides,
+      defaultDwell: data.draftDwell ?? data.defaultDwell ?? 6,
+      fitMode: data.draftFitMode ?? data.fitMode ?? 'contain',
+      transition: data.draftTransition ?? data.transition ?? 'crossfade',
+      status: 'published',
+      publishedAt: now,
+      reviewApprovedAt: now,
+      reviewApprovedBy: { uid: currentUser.uid, email: currentUser.email },
+      draftSlides: deleteField(),
+      draftDwell: deleteField(),
+      draftFitMode: deleteField(),
+      draftTransition: deleteField(),
+      draftUpdatedAt: deleteField(),
+      draftBy: deleteField(),
+      reviewSubmittedAt: deleteField(),
+      reviewSubmittedBy: deleteField(),
+      reviewRejectedAt: deleteField(),
+      reviewRejectedBy: deleteField(),
+      reviewRejectionNote: deleteField(),
+      ...(currentOrgId && { orgId: currentOrgId }),
+      ...(currentUser && { publishedBy: { uid: currentUser.uid, email: currentUser.email } }),
+    }, { merge: true });
+    notifyApproval('approved', { to: data.reviewSubmittedBy?.email ? [data.reviewSubmittedBy.email] : [], showId });
+    logActivity(`Approved slideshow "${showId}"`);
+    toast('Slideshow approved and published ✓');
+    loadApprovalQueue();
+  } catch(e) {
+    toast('Could not approve: ' + e.message, true);
+  }
+};
+
+window.rejectSlideshowReview = async function(showId) {
+  if (currentRole !== 'admin') { toast('Only admins can reject content.', true); return; }
+  const note = prompt('Optional note for the editor:') || '';
+  const showRef = doc(db, 'slideshows', showId);
+  const snap = await getDoc(showRef);
+  if (!snap.exists()) { toast('Slideshow not found.', true); return; }
+  const data = snap.data();
+  const now = new Date().toISOString();
+
+  try {
+    await setDoc(showRef, {
+      status: 'changes_requested',
+      reviewRejectedAt: now,
+      reviewRejectedBy: { uid: currentUser.uid, email: currentUser.email },
+      reviewRejectionNote: note.trim(),
+      ...(currentOrgId && { orgId: currentOrgId }),
+    }, { merge: true });
+    notifyApproval('rejected', { to: data.reviewSubmittedBy?.email ? [data.reviewSubmittedBy.email] : [], showId, note });
+    logActivity(`Rejected slideshow "${showId}" review`);
+    toast('Changes requested');
+    loadApprovalQueue();
+  } catch(e) {
+    toast('Could not reject: ' + e.message, true);
+  }
+};
+
+async function loadApprovalQueue() {
+  const wrap = document.getElementById('approvalQueueWrap');
+  const list = document.getElementById('approvalQueueList');
+  if (!wrap || !list) return;
+  if (currentRole !== 'admin' || !currentOrgId) {
+    wrap.style.display = 'none';
+    list.innerHTML = '';
+    return;
+  }
+
+  const shows = currentOrg?.slideshows || [];
+  const entries = [];
+  await Promise.all(shows.map(async show => {
+    try {
+      const snap = await getDoc(doc(db, 'slideshows', show.id));
+      if (!snap.exists()) return;
+      const data = snap.data();
+      updateShowItemMeta(show.id, data);
+      if (data.status === 'pending_review') entries.push({ show, data });
+    } catch(e) { /* non-critical */ }
+  }));
+
+  if (!entries.length) {
+    wrap.style.display = 'none';
+    list.innerHTML = '';
+    return;
+  }
+
+  wrap.style.display = 'block';
+  list.innerHTML = entries
+    .sort((a, b) => String(b.data.reviewSubmittedAt || '').localeCompare(String(a.data.reviewSubmittedAt || '')))
+    .map(({ show, data }) => {
+      const submittedBy = data.reviewSubmittedBy?.email || data.draftBy?.email || 'Unknown editor';
+      const submittedAt = data.reviewSubmittedAt ? new Date(data.reviewSubmittedAt).toLocaleString() : 'Pending';
+      return `<div class="approval-card">
+        <div>
+          <div class="approval-card-title">${escHtml(show.name || show.id)}</div>
+          <div class="approval-card-meta">${escHtml(submittedBy)}<br>${escHtml(submittedAt)}</div>
+        </div>
+        <div class="approval-card-actions">
+          <button class="approve" onclick='approveSlideshowReview(${JSON.stringify(show.id)})'>Approve</button>
+          <button class="reject" onclick='rejectSlideshowReview(${JSON.stringify(show.id)})'>Reject</button>
+        </div>
+      </div>`;
+    }).join('');
+}
+
+window.saveApprovalSettings = async function() {
+  if (currentRole !== 'admin') { toast('Only admins can change approval settings.', true); return; }
+  const enabled = !!document.getElementById('approvalRequiredToggle')?.checked;
+  try {
+    await setDoc(doc(db, 'organizations', currentOrgId), {
+      approvalRequired: enabled,
+      approvalUpdatedAt: new Date().toISOString(),
+      approvalUpdatedBy: currentUser ? { uid: currentUser.uid, email: currentUser.email } : null,
+    }, { merge: true });
+    currentOrg = { ...(currentOrg || {}), approvalRequired: enabled };
+    updateSettingsHubStatus();
+    syncPublishButtonState(document.getElementById('btnPushWrap')?.style.display !== 'none');
+    toast(enabled ? 'Content approval enabled' : 'Content approval disabled');
+  } catch(e) {
+    toast('Could not save approval setting: ' + e.message, true);
   }
 };
 
@@ -17686,6 +18048,12 @@ function updateSettingsHubStatus() {
   const members = currentOrg?.members || [];
   const memEl = document.getElementById('shMembersStatus');
   if (memEl) memEl.textContent = members.length + ' Member' + (members.length !== 1 ? 's' : '');
+
+  const approvalOn = approvalRequired();
+  const approvalStatus = document.getElementById('shApprovalStatus');
+  if (approvalStatus) approvalStatus.textContent = approvalOn ? 'On' : 'Off';
+  const approvalToggle = document.getElementById('approvalRequiredToggle');
+  if (approvalToggle) approvalToggle.checked = approvalOn;
 }
 
 // ── Screen Tags (placeholder) ─────────────────────────────────────────────

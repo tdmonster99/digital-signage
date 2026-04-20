@@ -4,6 +4,14 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-04-19 — Codex (session 19)
+- **Content approval workflow**: added an org-level review gate for editor publishing.
+  - `admin.html`: added the Content Approval setting, editor Submit Review behavior, Pending Review slideshow badges, admin review queue, approve/reject actions, and review status banners.
+  - `api/send-invite.js`: reused the existing Resend function for approval submitted/approved/rejected notification emails without adding a new Vercel function.
+  - `ROADMAP.md`: marked Content Approval Workflow implemented.
+
+---
+
 ## 2026-04-19 — Codex (session 18)
 - **Apps page ordering**: organized app cards so available integrations appear before Coming Soon items.
   - `admin.html`: added grid ordering for active cards and `.app-coming-soon` cards, preserving existing filters and card design.
