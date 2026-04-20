@@ -4,6 +4,14 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-04-20 — Codex (session 22)
+- **Plan feature entitlements**: wired the pricing tiers to actual app behavior in `admin.html`.
+  - Added a central `PLAN_FEATURES` map plus `hasFeature` / `guardFeature` helpers for Starter, Standard, Premium, Early Adopter, and Enterprise.
+  - Gated paid surfaces with upgrade prompts: Schedules, Analytics, Brand Kit, Content Approval, advanced app modals, and premium template use.
+  - Added visual locked states for unavailable app cards, template cards, and gated settings rows while preserving existing screen/user limit checks.
+
+---
+
 ## 2026-04-20 — Codex (session 21)
 - **Pricing structure update**: aligned app billing and marketing pricing tiers with Starter, Standard, Premium, Early Adopter, and Enterprise interest paths.
   - `admin.html`: updated the billing comparison table, plan labels, plan limits, and upgrade actions while keeping legacy `starter`/`pro` subscription keys compatible.

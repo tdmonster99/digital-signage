@@ -1953,9 +1953,16 @@ body > canvas[width="1920"][height="1080"] {
   cursor: pointer; background: var(--surface2);
   transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
   text-align: left;
+  position: relative;
 }
 .tmpl-card:hover { border-color: var(--accent); transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
 .tmpl-card.tmpl-hidden { display: none; }
+.tmpl-card.tmpl-plan-locked { opacity: .58; }
+.tmpl-card.tmpl-plan-locked:hover {
+  border-color: var(--border);
+  transform: none;
+  box-shadow: none;
+}
 .tmpl-preview {
   width: 100%; aspect-ratio: 16/9;
   position: relative; overflow: hidden;
@@ -1967,6 +1974,14 @@ body > canvas[width="1920"][height="1080"] {
   display: inline-block; padding: 2px 8px; border-radius: 10px;
   font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;
   background: var(--accent-bg); color: var(--accent); margin-top: 4px;
+}
+.tmpl-plan-badge {
+  position: absolute; top: 8px; right: 8px;
+  font-size: 9px; font-weight: 700; letter-spacing: .04em;
+  background: rgba(255,255,255,.92); color: var(--accent);
+  border: 1px solid rgba(0,67,206,.18); border-radius: 999px;
+  padding: 2px 7px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.08);
 }
 @media (max-width: 720px) {
   .gallery-header { flex-direction: column; gap: 12px; }
@@ -2589,6 +2604,12 @@ body > canvas[width="1920"][height="1080"] {
   transform: translateY(-3px);
 }
 .app-card.app-coming-soon { cursor: default; order: 2; }
+.app-card.app-plan-locked { opacity: .62; }
+.app-card.app-plan-locked:hover {
+  border-color: var(--border);
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  transform: none;
+}
 .app-card-icon {
   width: 60px; height: 60px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
@@ -2603,6 +2624,13 @@ body > canvas[width="1920"][height="1080"] {
   padding: 3px 9px; border-radius: 99px;
   border: 1px solid var(--border);
 }
+.app-card-plan-badge {
+  position: absolute; bottom: 13px; right: 13px;
+  font-size: 10px; font-weight: 700; letter-spacing: .04em;
+  background: var(--accent-bg); color: var(--accent);
+  padding: 3px 9px; border-radius: 99px;
+  border: 1px solid rgba(0,67,206,.18);
+}
 .app-card-add {
   position: absolute; bottom: 13px; right: 13px;
   opacity: 0; pointer-events: none;
@@ -2613,6 +2641,7 @@ body > canvas[width="1920"][height="1080"] {
   cursor: pointer;
 }
 .app-card:not(.app-coming-soon):hover .app-card-add { opacity: 1; pointer-events: auto; }
+.app-card.app-plan-locked .app-card-add { display: none; }
 
 /* ── Clock modal ───────────────────────────────────────────────────── */
 #clockModal {
@@ -3359,6 +3388,8 @@ body.role-editor .admin-action {
 .plan-table .plan-check { color: #22c55e; font-size: 15px; }
 .plan-table .plan-x     { color: var(--muted); font-size: 13px; }
 .plan-table tr.current-plan-row td { background: var(--accent-bg); }
+.settings-hub-row.plan-row-locked { opacity: .66; }
+.settings-hub-row.plan-row-locked .sh-status { color: var(--accent); }
 .plan-upgrade-btn {
   font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600;
   padding: 6px 14px; border-radius: 8px; cursor: pointer; border: none;
@@ -8822,6 +8853,7 @@ async function initUserAndOrg(user) {
 
   // Load subscription from org doc
   currentSubscription = currentOrg?.subscription || null;
+  syncPlanEntitlements();
 
   applyRole(currentRole);
   await loadShowsFromOrg();
@@ -8977,6 +9009,94 @@ const PLAN_LIMITS = {
   pro:             { screensAllowed: 9999, usersAllowed: 10,   storageGb: 50  },
 };
 
+const PLAN_FEATURES = {
+  free: {
+    starterApps: true,
+    standardApps: false,
+    premiumApps: false,
+    standardTemplates: false,
+    premiumTemplates: false,
+    scheduling: false,
+    analytics: false,
+    brandKit: false,
+    approvalWorkflow: false,
+  },
+  standard: {
+    starterApps: true,
+    standardApps: true,
+    premiumApps: false,
+    standardTemplates: true,
+    premiumTemplates: false,
+    scheduling: true,
+    analytics: false,
+    brandKit: false,
+    approvalWorkflow: false,
+  },
+  premium: {
+    starterApps: true,
+    standardApps: true,
+    premiumApps: true,
+    standardTemplates: true,
+    premiumTemplates: true,
+    scheduling: true,
+    analytics: true,
+    brandKit: true,
+    approvalWorkflow: true,
+  },
+  'early-adopter': {
+    starterApps: true,
+    standardApps: true,
+    premiumApps: true,
+    standardTemplates: true,
+    premiumTemplates: true,
+    scheduling: true,
+    analytics: true,
+    brandKit: true,
+    approvalWorkflow: true,
+  },
+  enterprise: {
+    starterApps: true,
+    standardApps: true,
+    premiumApps: true,
+    standardTemplates: true,
+    premiumTemplates: true,
+    scheduling: true,
+    analytics: true,
+    brandKit: true,
+    approvalWorkflow: true,
+  },
+};
+
+const FEATURE_UPGRADE_COPY = {
+  standardApps:     { plan: 'Standard', title: 'Standard app required', message: 'This app is available on Standard and higher plans.' },
+  premiumApps:      { plan: 'Premium',  title: 'Premium app required',  message: 'This advanced app is available on Premium, Early Adopter, and Enterprise plans.' },
+  standardTemplates:{ plan: 'Standard', title: 'Standard template required', message: 'This template is available on Standard and higher plans.' },
+  premiumTemplates: { plan: 'Premium',  title: 'Premium template required',  message: 'This template is available on Premium, Early Adopter, and Enterprise plans.' },
+  scheduling:       { plan: 'Standard', title: 'Scheduling requires Standard', message: 'Advanced schedules are available on Standard and higher plans.' },
+  analytics:        { plan: 'Premium',  title: 'Analytics requires Premium',  message: 'Proof-of-play reporting and analytics are available on Premium, Early Adopter, and Enterprise plans.' },
+  brandKit:         { plan: 'Premium',  title: 'Brand Kit requires Premium', message: 'Custom branding is available on Premium, Early Adopter, and Enterprise plans.' },
+  approvalWorkflow: { plan: 'Premium',  title: 'Approval workflow requires Premium', message: 'Content approval is available on Premium, Early Adopter, and Enterprise plans.' },
+};
+
+const APP_FEATURE_REQUIREMENTS = {
+  openClockModal:         'starterApps',
+  openQrModal:            'starterApps',
+  openWeatherModal:       'starterApps',
+  openYoutubeModal:       'starterApps',
+  openWebpageModal:       'standardApps',
+  openCountdownModal:     'standardApps',
+  openMenuboardModal:     'standardApps',
+  openMultiZoneModal:     'standardApps',
+  openGslidesModal:       'premiumApps',
+  openGoogleSheetsModal:  'premiumApps',
+  openInstagramModal:     'premiumApps',
+  openGoogleReviewsModal: 'premiumApps',
+  openCanvaModal:         'premiumApps',
+};
+
+const STARTER_TEMPLATE_IDS = new Set(['blank', 'corporateannouncement', 'employeeofmonth', 'nowhiring', 'dailyspecial']);
+const PREMIUM_TEMPLATE_IDS = new Set(['kpidashboard', 'instagramwall', 'socialpromo']);
+
 let currentSubscription = null;
 
 function canonicalPlanKey(plan) {
@@ -8998,6 +9118,104 @@ function planLabel(plan) {
 
 function getSubscription() {
   return currentSubscription || { plan: 'free', status: 'active', ...PLAN_LIMITS.free };
+}
+
+function currentPlanKey() {
+  return canonicalPlanKey(getSubscription().plan || 'free');
+}
+
+function hasFeature(feature) {
+  const features = PLAN_FEATURES[currentPlanKey()] || PLAN_FEATURES.free;
+  return !!features[feature];
+}
+
+function guardFeature(feature, customTitle, customMessage) {
+  if (!feature || hasFeature(feature)) return true;
+  const copy = FEATURE_UPGRADE_COPY[feature] || {};
+  window.showUpgradePrompt(
+    customTitle || copy.title || 'Upgrade required',
+    customMessage || copy.message || `Upgrade to ${copy.plan || 'a paid plan'} to use this feature.`
+  );
+  return false;
+}
+
+function templateRequiredFeature(templateName) {
+  if (!templateName || STARTER_TEMPLATE_IDS.has(templateName)) return null;
+  if (PREMIUM_TEMPLATE_IDS.has(templateName)) return 'premiumTemplates';
+  return 'standardTemplates';
+}
+
+function guardTemplateAccess(templateName) {
+  return guardFeature(templateRequiredFeature(templateName));
+}
+
+function syncPlanEntitlements() {
+  syncAppEntitlements();
+  syncTemplateEntitlements();
+  syncSettingsEntitlements();
+}
+
+function syncAppEntitlements() {
+  document.querySelectorAll('#appsGrid .app-card').forEach(card => {
+    if (card.classList.contains('app-coming-soon')) return;
+    const handler = Object.keys(APP_FEATURE_REQUIREMENTS).find(fn => (card.getAttribute('onclick') || '').includes(fn));
+    const feature = handler ? APP_FEATURE_REQUIREMENTS[handler] : null;
+    const locked = !!feature && !hasFeature(feature);
+    card.classList.toggle('app-plan-locked', locked);
+    let badge = card.querySelector('.app-card-plan-badge');
+    if (locked) {
+      if (!badge) {
+        badge = document.createElement('span');
+        badge.className = 'app-card-plan-badge';
+        card.appendChild(badge);
+      }
+      badge.textContent = (FEATURE_UPGRADE_COPY[feature]?.plan || 'Upgrade').toUpperCase();
+    } else if (badge) {
+      badge.remove();
+    }
+  });
+}
+
+function syncTemplateEntitlements() {
+  document.querySelectorAll('#galleryGrid .tmpl-card').forEach(card => {
+    const match = (card.getAttribute('onclick') || '').match(/selectTemplate\('([^']+)'\)/);
+    const templateName = match ? match[1] : null;
+    const feature = templateRequiredFeature(templateName);
+    const locked = !!feature && !hasFeature(feature);
+    card.classList.toggle('tmpl-plan-locked', locked);
+    let badge = card.querySelector('.tmpl-plan-badge');
+    if (locked) {
+      if (!badge) {
+        badge = document.createElement('span');
+        badge.className = 'tmpl-plan-badge';
+        card.appendChild(badge);
+      }
+      badge.textContent = (FEATURE_UPGRADE_COPY[feature]?.plan || 'Upgrade').toUpperCase();
+    } else if (badge) {
+      badge.remove();
+    }
+  });
+}
+
+function syncSettingsEntitlements() {
+  document.querySelectorAll('.settings-hub-row').forEach(row => {
+    const click = row.getAttribute('onclick') || '';
+    const feature = click.includes("showPage('brandkit')")
+      ? 'brandKit'
+      : click.includes("showSettingsSub('approval')")
+        ? 'approvalWorkflow'
+        : null;
+    row.classList.toggle('plan-row-locked', !!feature && !hasFeature(feature));
+  });
+}
+
+function guardPageEntitlement(pageName) {
+  const requiredFeature = {
+    schedules: 'scheduling',
+    analytics: 'analytics',
+    brandkit:  'brandKit',
+  }[pageName];
+  return guardFeature(requiredFeature);
 }
 
 function renderBillingSection() {
@@ -9075,6 +9293,7 @@ function renderBillingSection() {
       row.classList.remove('current-plan-row');
     });
   });
+  syncPlanEntitlements();
 }
 
 function renderUsageBar(label, used, max) {
@@ -9454,7 +9673,7 @@ window.sendInvite = async function() {
     closeInviteModal();
     showUpgradePrompt(
       'Team member limit reached',
-      `Your ${getSubscription().plan} plan allows ${getSubscription().usersAllowed} user${getSubscription().usersAllowed === 1 ? '' : 's'}. Upgrade to invite more team members.`
+      `Your ${planLabel(getSubscription().plan)} plan allows ${getSubscription().usersAllowed} user${getSubscription().usersAllowed === 1 ? '' : 's'}. Upgrade to invite more team members.`
     );
     return;
   }
@@ -9565,7 +9784,7 @@ let currentShowReviewStatus = 'published';
 let currentShowReviewData = {};
 
 function approvalRequired() {
-  return currentOrg?.approvalRequired === true;
+  return hasFeature('approvalWorkflow') && currentOrg?.approvalRequired === true;
 }
 
 function publishIconSvg(size = 16) {
@@ -10107,6 +10326,11 @@ async function loadApprovalQueue() {
 
 window.saveApprovalSettings = async function() {
   if (currentRole !== 'admin') { toast('Only admins can change approval settings.', true); return; }
+  if (!guardFeature('approvalWorkflow')) {
+    const toggle = document.getElementById('approvalRequiredToggle');
+    if (toggle) toggle.checked = false;
+    return;
+  }
   const enabled = !!document.getElementById('approvalRequiredToggle')?.checked;
   try {
     await setDoc(doc(db, 'organizations', currentOrgId), {
@@ -10581,6 +10805,7 @@ window.closeSlidePreview = function() {
 };
 
 window.openTemplatePreview = async function(templateName) {
+  if (!guardTemplateAccess(templateName)) return;
   if (typeof fabric === 'undefined') {
     toast('Fabric.js failed to load — check your internet connection and refresh.', true);
     return;
@@ -10629,6 +10854,7 @@ window.openTemplatePreview = async function(templateName) {
 window.customizeTemplatePreview = function() {
   const name = templatePreviewName;
   if (!name) return;
+  if (!guardTemplateAccess(name)) return;
   closeSlidePreview();
   pendingTemplate = name;
   closeTemplateGallery();
@@ -10638,6 +10864,7 @@ window.customizeTemplatePreview = function() {
 window.useTemplatePreview = async function() {
   const name = templatePreviewName;
   if (!name || templateInsertBusy) return;
+  if (!guardTemplateAccess(name)) return;
   if (!auth.currentUser) { toast('Sign in first to use templates.', true); return; }
 
   const useBtn = document.getElementById('slidePreviewUseTemplate');
@@ -12506,9 +12733,11 @@ window.filterGallery = function() {
     if (show) any = true;
   });
   document.getElementById('galleryEmpty').style.display = any ? 'none' : 'block';
+  syncTemplateEntitlements();
 };
 
 window.selectTemplate = function(name) {
+  if (!guardTemplateAccess(name)) return;
   if (name && name !== 'blank') {
     openTemplatePreview(name);
     return;
@@ -15776,6 +16005,7 @@ async function loadBrandKit() {
 
 window.saveBrandKit = async function() {
   if (!currentOrgId) { toast('Sign in first to save your brand kit.', true); return; }
+  if (!guardFeature('brandKit')) return;
   try {
     await setDoc(doc(db, 'brandKits', currentOrgId), window.brandKit);
     toast('Brand kit saved!');
@@ -17346,7 +17576,7 @@ window.openAddScreenModal = function() {
   if (!canAddScreen()) {
     showUpgradePrompt(
       'Screen limit reached',
-      `Your ${getSubscription().plan} plan allows ${getSubscription().screensAllowed} screen${getSubscription().screensAllowed === 1 ? '' : 's'}. Upgrade to add more.`
+      `Your ${planLabel(getSubscription().plan)} plan allows ${getSubscription().screensAllowed} screen${getSubscription().screensAllowed === 1 ? '' : 's'}. Upgrade to add more.`
     );
     return;
   }
@@ -17683,6 +17913,7 @@ function renderScheduleGrid() {
 
 // ── Open / close schedule editor ─────────────────────────────────────────
 window.openScheduleEditor = function(schedId) {
+  if (!guardFeature('scheduling')) return;
   if (schedId) {
     const found = allSchedules.find(s => s.id === schedId);
     editingSchedule = JSON.parse(JSON.stringify(found)); // deep copy
@@ -17711,6 +17942,7 @@ window.closeScheduleEditor = function() {
 
 window.saveScheduleEditor = async function() {
   if (!editingSchedule) return;
+  if (!guardFeature('scheduling')) return;
   editingSchedule.name = document.getElementById('schedEditorName').value.trim() || 'Untitled Schedule';
   editingSchedule.fillerSlideshowId = document.getElementById('schedFillerSel')?.value || 'main';
 
@@ -18063,6 +18295,7 @@ window.showPage = function(name) {
   if (name === 'schedules') renderScheduleGrid();
   if (name === 'settings')  { showSettingsHub(); renderTeamPage(); updateSettingsHubStatus(); }
   if (name === 'analytics') loadAnalytics();
+  if (name === 'apps')      syncAppEntitlements();
   if (name === 'profile')   loadProfileData();
 };
 
@@ -18074,6 +18307,8 @@ window.showSettingsHub = function() {
 };
 
 window.showSettingsSub = function(subId) {
+  const requiredFeature = { approval: 'approvalWorkflow' }[subId];
+  if (requiredFeature && !guardFeature(requiredFeature)) return;
   const hub = document.getElementById('settingsHub');
   if (hub) hub.style.display = 'none';
   document.querySelectorAll('.settings-sub').forEach(el => el.classList.remove('active'));
@@ -18083,9 +18318,9 @@ window.showSettingsSub = function(subId) {
 
 function updateSettingsHubStatus() {
   // Plan status
-  const plan = currentSubscription?.plan || 'free';
+  const plan = currentPlanKey();
   const planEl = document.getElementById('shPlanStatus');
-  if (planEl) planEl.textContent = plan.charAt(0).toUpperCase() + plan.slice(1) + ' Plan';
+  if (planEl) planEl.textContent = planLabel(plan) + ' Plan';
 
   // Show billing portal row if paid
   const bpRow = document.getElementById('shBillingPortalRow');
@@ -18102,9 +18337,10 @@ function updateSettingsHubStatus() {
 
   const approvalOn = approvalRequired();
   const approvalStatus = document.getElementById('shApprovalStatus');
-  if (approvalStatus) approvalStatus.textContent = approvalOn ? 'On' : 'Off';
+  if (approvalStatus) approvalStatus.textContent = hasFeature('approvalWorkflow') ? (approvalOn ? 'On' : 'Off') : 'Premium';
   const approvalToggle = document.getElementById('approvalRequiredToggle');
   if (approvalToggle) approvalToggle.checked = approvalOn;
+  syncSettingsEntitlements();
 }
 
 // ── Screen Tags (placeholder) ─────────────────────────────────────────────
@@ -19673,6 +19909,7 @@ function setAnalyticsDays(days) {
 }
 
 async function loadAnalytics() {
+  if (!guardFeature('analytics')) return;
   if (!currentOrgId) return;
   const since   = new Date(Date.now() - analyticsDays * 86400000);
 
@@ -19891,6 +20128,27 @@ if ('serviceWorker' in navigator) {
       b.classList.toggle('active', b.dataset.page === name)
     );
   };
+})();
+
+// ── Plan entitlement page gates ───────────────────────────────────────────
+(function patchShowPageForPlanEntitlements() {
+  const orig = window.showPage;
+  window.showPage = function(name) {
+    if (!guardPageEntitlement(name)) return;
+    orig(name);
+  };
+})();
+
+// ── Plan entitlement modal gates ──────────────────────────────────────────
+(function patchModalEntitlements() {
+  Object.entries(APP_FEATURE_REQUIREMENTS).forEach(([fnName, feature]) => {
+    const orig = window[fnName];
+    if (typeof orig !== 'function') return;
+    window[fnName] = function(...args) {
+      if (!guardFeature(feature)) return;
+      return orig.apply(this, args);
+    };
+  });
 })();
 
 // ── Mobile: block designer, show message instead ──────────────────────────
