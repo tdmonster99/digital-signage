@@ -86,11 +86,11 @@ Gap analysis against Yodeck, ScreenCloud, Rise Vision, OptiSigns, Screenly, and 
 
 ### 7. Content Templates Library
 **Why:** Present in 5/6 competitors (500–1,000+ templates each). A blank canvas is a barrier for non-designers. Even 30–50 quality templates dramatically reduce onboarding drop-off — operators can pick a template and swap in their content in minutes.
-**Status:** Expanded 2026-04-20. The existing Design a Slide template gallery now works as a Content Templates Library with category filters, high-quality preview, and "Use Template" insertion into the current slideshow draft. The catalog now ships 46 designed templates across office, safety, wayfinding, restaurant, retail, healthcare, education, events, holiday, and social media families.
+**Status:** Expanded 2026-04-20. The existing Design a Slide template gallery now works as a Content Templates Library with category filters, high-quality preview, and "Use Template" insertion into the current slideshow draft. The catalog now ships 46 designed templates across office, safety, wayfinding, restaurant, retail, healthcare, education, events, holiday, and social media families, and the newest pass pushes more of them toward photo-led compositions.
 **What to build:**
 - Keep the static template catalog inside `admin.html` per the no-split frontend rule; each template generates a designed-slide payload matching the existing slide schema.
 - Template gallery modal in admin: filter by category (Business, Office, Safety, Wayfinding, Restaurant, Retail, Healthcare, Education, Events, Holiday, Social Media), click to preview, "Use Template" inserts slides into the current slideshow.
-- Expand the initial set from the current 19 designed templates to a broader 40–60+ catalog covering the primary verticals; thumbnails continue to be generated from designed slides.
+- Continue refining the 40–60+ catalog toward more photo-rich, Yodeck-style layouts; thumbnails continue to be generated from designed slides.
 
 **Files:** `admin.html`
 

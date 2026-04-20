@@ -16286,6 +16286,55 @@ window.showPage = function(name) {
   }
 };
 
+const TEMPLATE_BG_PHOTOS = {
+  corporateannouncement: { photoId: 'tT5meRpZqo8', overlay: 'rgba(5,10,18,0.56)' },
+  employeeofmonth: { photoId: 'vWchRczcQwM', overlay: 'rgba(10,18,32,0.40)' },
+  nowhiring: { photoId: 'n95VMLxqM2I', overlay: 'rgba(255,107,53,0.18)' },
+  kpidashboard: { photoId: 'tT5meRpZqo8', overlay: 'rgba(11,15,23,0.56)' },
+  dailyspecial: { photoId: 'TmJeUh0rc3c', overlay: 'rgba(0,0,0,0.22)' },
+  menuboard: { photoId: 'ZkQnujbwWAY', overlay: 'rgba(16,12,8,0.56)' },
+  happyhour: { photoId: 'NojU4b79RfY', overlay: 'rgba(0,0,0,0.62)' },
+  saleevent: { photoId: 'NRZ8YEp7taw', overlay: 'rgba(220,38,38,0.16)' },
+  newarrival: { photoId: 'G9sAr2jBkM8', overlay: 'rgba(255,255,255,0.12)' },
+  eventpromo: { photoId: 'gM9_PflXOmQ', overlay: 'rgba(5,6,15,0.54)' },
+  countdown: { photoId: 'NojU4b79RfY', overlay: 'rgba(255,255,255,0.10)' },
+  waitingroomwelcome: { photoId: 'YI6VL2yBclo', overlay: 'rgba(5,80,70,0.18)' },
+  healthtip: { photoId: 'vtJ89W5U2ZU', overlay: 'rgba(255,255,255,0.16)' },
+  seasonsgreetings: { photoId: 'MgvEHXxGrUs', overlay: 'rgba(10,26,14,0.48)' },
+  newyear: { photoId: 'ocb4ft1qyjA', overlay: 'rgba(0,0,0,0.52)' },
+  instagramwall: { photoId: 'GRUhkcD9k8o', overlay: 'rgba(13,13,26,0.58)' },
+  schoolevents: { photoId: 'xxQCSnrI', overlay: 'rgba(15,31,61,0.78)' },
+  classroomannouncement: { photoId: '4wfEQqB4yrU', overlay: 'rgba(26,58,107,0.62)' },
+  socialpromo: { photoId: 'GRUhkcD9k8o', overlay: 'rgba(0,0,0,0.60)' },
+  annualreview: { photoId: 'tT5meRpZqo8', overlay: 'rgba(7,10,18,0.58)' },
+  teammeeting: { photoId: 'n95VMLxqM2I', overlay: 'rgba(7,10,18,0.22)' },
+  weeklyreminders: { photoId: 'tT5meRpZqo8', overlay: 'rgba(7,10,18,0.18)' },
+  officedirectory: { photoId: 'FuPgL5QqxLE', overlay: 'rgba(8,12,18,0.32)' },
+  welcomeonboard: { photoId: 'vWchRczcQwM', overlay: 'rgba(10,18,32,0.34)' },
+  employeeappreciation: { photoId: 'n95VMLxqM2I', overlay: 'rgba(10,18,32,0.58)' },
+  feedbackqr: { photoId: 'FuPgL5QqxLE', overlay: 'rgba(14,24,38,0.24)' },
+  safetyguide: { photoId: 'Vl69MKWSFrE', overlay: 'rgba(217,119,6,0.42)' },
+  ppechecklist: { photoId: 'hSD_Igxu4r0', overlay: 'rgba(202,138,4,0.34)' },
+  machinestatus: { photoId: '7jY0NKqO_eE', overlay: 'rgba(8,16,28,0.44)' },
+  productionreport: { photoId: 'w9fjPbFOpD4', overlay: 'rgba(8,16,28,0.54)' },
+  constructionnotice: { photoId: 'w9fjPbFOpD4', overlay: 'rgba(217,119,6,0.22)' },
+  fireexit: { photoId: 'hgGZAmpg7Yg', overlay: 'rgba(20,83,45,0.40)' },
+  hazardwarning: { photoId: 'Vl69MKWSFrE', overlay: 'rgba(153,27,27,0.58)' },
+  emergencyalert: { photoId: 'FuPgL5QqxLE', overlay: 'rgba(153,27,27,0.66)' },
+  campusmap: { photoId: 'aJO87vEMNT8', overlay: 'rgba(7,15,31,0.22)' },
+  floordirectory: { photoId: 'hgGZAmpg7Yg', overlay: 'rgba(15,27,41,0.18)' },
+  visitordirections: { photoId: 'FuPgL5QqxLE', overlay: 'rgba(79,142,247,0.16)' },
+  lobbywelcome: { photoId: 'FuPgL5QqxLE', overlay: 'rgba(5,80,70,0.16)' },
+  backtoschool: { photoId: 'xxQCSnrI', overlay: 'rgba(26,58,107,0.26)' },
+  enrollmentopen: { photoId: '4wfEQqB4yrU', overlay: 'rgba(16,33,58,0.58)' },
+  studentcongrats: { photoId: 'xxQCSnrI', overlay: 'rgba(16,33,58,0.20)' },
+  teachersday: { photoId: '4wfEQqB4yrU', overlay: 'rgba(23,32,51,0.56)' },
+  musicevent: { photoId: 'gM9_PflXOmQ', overlay: 'rgba(7,8,20,0.46)' },
+  flashsale: { photoId: 'NRZ8YEp7taw', overlay: 'rgba(220,38,38,0.18)' },
+  productlaunch: { photoId: 'P2FTV6GMV5Y', overlay: 'rgba(16,33,58,0.12)' },
+  joinqueue: { photoId: 'NojU4b79RfY', overlay: 'rgba(16,33,58,0.22)' },
+};
+
 function renderAnnouncementPoster({
   bg = '#0f1b29',
   accent = '#2563eb',
@@ -16308,10 +16357,13 @@ function renderAnnouncementPoster({
   footerSpacing = 80,
   showRules = true,
   titleShadow = 'rgba(0,0,0,0.38)',
+  photoId = '',
+  photoOverlay = 'rgba(0,0,0,0.38)',
 } = {}) {
   const W = CANVAS_W, H = CANVAS_H;
   const cv = _tmplCanvas || fabricCanvas;
   cv.backgroundColor = bg;
+  if (photoId) tmplBgPhoto(photoId, photoOverlay);
   tmplRect(0, 0, W, 14, { fill: accent, rx: 0 });
   tmplRect(0, H - 14, W, 14, { fill: accent, rx: 0 });
   if (showRules) {
@@ -16377,10 +16429,13 @@ function renderListBoard({
   bulletFill,
   titleFont = 'Montserrat',
   useChecks = true,
+  photoId = '',
+  photoOverlay = 'rgba(255,255,255,0.18)',
 } = {}) {
   const W = CANVAS_W, H = CANVAS_H;
   const cv = _tmplCanvas || fabricCanvas;
   cv.backgroundColor = bg;
+  if (photoId) tmplBgPhoto(photoId, photoOverlay);
   const resolvedPanel = panelFill || (dark ? 'rgba(255,255,255,0.08)' : '#ffffff');
   const resolvedTitle = titleFill || (dark ? '#ffffff' : '#10213a');
   const resolvedText = textFill || (dark ? 'rgba(255,255,255,0.82)' : '#334155');
@@ -16460,10 +16515,13 @@ function renderMetricsBoard({
   valueFill = '#60a5fa',
   deltaFill = '#44c97a',
   titleFont = 'Montserrat',
+  photoId = '',
+  photoOverlay = 'rgba(0,0,0,0.36)',
 } = {}) {
   const W = CANVAS_W, H = CANVAS_H;
   const cv = _tmplCanvas || fabricCanvas;
   cv.backgroundColor = bg;
+  if (photoId) tmplBgPhoto(photoId, photoOverlay);
   tmplRect(0, 0, W, 18, { fill: accent, rx: 0 });
   tmplText(title, W * 0.08, H * 0.11, {
     fontSize: 84,
@@ -16536,10 +16594,13 @@ function renderDirectoryBoard({
   rightFill = '#ffffff',
   titleFill = '#10213a',
   textFill = '#475569',
+  photoId = '',
+  photoOverlay = 'rgba(0,0,0,0.30)',
 } = {}) {
   const W = CANVAS_W, H = CANVAS_H;
   const cv = _tmplCanvas || fabricCanvas;
   cv.backgroundColor = bg;
+  if (photoId) tmplBgPhoto(photoId, photoOverlay);
   tmplRect(0, 0, W, 18, { fill: accent, rx: 0 });
   tmplText(title, W * 0.08, H * 0.11, {
     fontSize: 86,
@@ -16624,10 +16685,13 @@ function renderWarningBoard({
   footer = '',
   titleFill = '#10213a',
   textFill = '#334155',
+  photoId = '',
+  photoOverlay = 'rgba(0,0,0,0.22)',
 }) {
   const W = CANVAS_W, H = CANVAS_H;
   const cv = _tmplCanvas || fabricCanvas;
   cv.backgroundColor = bg;
+  if (photoId) tmplBgPhoto(photoId, photoOverlay);
   tmplRect(0, 0, W, 22, { fill: danger, rx: 0 });
   tmplRect(0, 22, W, 14, { fill: accent, rx: 0 });
   tmplText('!', W * 0.12, H * 0.22, {
@@ -16690,10 +16754,13 @@ function renderQRBoard({
   bodyFill = '#10213a',
   textFill = '#475569',
   dark = false,
+  photoId = '',
+  photoOverlay = 'rgba(0,0,0,0.18)',
 }) {
   const W = CANVAS_W, H = CANVAS_H;
   const cv = _tmplCanvas || fabricCanvas;
   cv.backgroundColor = bg;
+  if (photoId) tmplBgPhoto(photoId, photoOverlay);
   tmplRect(0, 0, W, 18, { fill: accent, rx: 0 });
   tmplRect(W * 0.08, H * 0.20, W * 0.32, H * 0.56, {
     fill: dark ? 'rgba(255,255,255,0.94)' : '#ffffff',
@@ -16767,10 +16834,13 @@ function renderSplitWelcomeBoard({
   leftLabel = 'WELCOME',
   titleFill = '#10213a',
   bodyFill = '#475569',
+  photoId = '',
+  photoOverlay = 'rgba(0,0,0,0.18)',
 }) {
   const W = CANVAS_W, H = CANVAS_H;
   const cv = _tmplCanvas || fabricCanvas;
   cv.backgroundColor = bg;
+  if (photoId) tmplBgPhoto(photoId, photoOverlay);
   tmplRect(0, 0, W, 18, { fill: accent, rx: 0 });
   tmplRect(W * 0.08, H * 0.18, W * 0.34, H * 0.66, { fill: leftFill, rx: 28 });
   tmplRect(W * 0.46, H * 0.18, W * 0.46, H * 0.66, { fill: '#ffffff', rx: 28, stroke: '#dbe3f0', strokeWidth: 2 });
@@ -16844,6 +16914,8 @@ const EXTRA_TEMPLATE_RENDERERS = {
       { label: 'ON TIME', value: '97%', delta: 'Project delivery', valueFill: '#ffffff', deltaFill: '#8ddf7e' },
     ],
     footer: 'FINANCE  ·  PEOPLE  ·  OPERATIONS',
+    photoId: TEMPLATE_BG_PHOTOS.annualreview.photoId,
+    photoOverlay: TEMPLATE_BG_PHOTOS.annualreview.overlay,
   }),
   teammeeting: () => renderListBoard({
     bg: '#f3f7fb',
@@ -16858,6 +16930,8 @@ const EXTRA_TEMPLATE_RENDERERS = {
       'Capture follow-ups before the close',
     ],
     footer: 'MEETING ROOM A · 10:00 AM',
+    photoId: TEMPLATE_BG_PHOTOS.teammeeting.photoId,
+    photoOverlay: TEMPLATE_BG_PHOTOS.teammeeting.overlay,
   }),
   weeklyreminders: () => renderListBoard({
     bg: '#f8fafc',
@@ -16872,6 +16946,8 @@ const EXTRA_TEMPLATE_RENDERERS = {
       'Plan the next sprint tasks',
     ],
     footer: 'THANK YOU FOR STAYING IN SYNC',
+    photoId: TEMPLATE_BG_PHOTOS.weeklyreminders.photoId,
+    photoOverlay: TEMPLATE_BG_PHOTOS.weeklyreminders.overlay,
   }),
   officedirectory: () => renderDirectoryBoard({
     bg: '#f8fbff',
@@ -16889,6 +16965,8 @@ const EXTRA_TEMPLATE_RENDERERS = {
       'Kitchen · Floor 5',
     ],
     footer: 'ASK RECEPTION FOR ACCESS',
+    photoId: TEMPLATE_BG_PHOTOS.officedirectory.photoId,
+    photoOverlay: TEMPLATE_BG_PHOTOS.officedirectory.overlay,
   }),
   welcomeonboard: () => renderSplitWelcomeBoard({
     bg: '#edf4ff',
@@ -16900,6 +16978,8 @@ const EXTRA_TEMPLATE_RENDERERS = {
     panelBody: 'Meet the team\nReview your setup\nAsk anything you need',
     footer: 'WE ARE GLAD YOU ARE HERE',
     leftLabel: 'NEW TEAM MEMBER',
+    photoId: TEMPLATE_BG_PHOTOS.welcomeonboard.photoId,
+    photoOverlay: TEMPLATE_BG_PHOTOS.welcomeonboard.overlay,
   }),
   employeeappreciation: () => renderAnnouncementPoster({
     bg: '#0f1b29',
@@ -16916,6 +16996,8 @@ const EXTRA_TEMPLATE_RENDERERS = {
     subtitleFill: '#d9e6f5',
     footerFill: 'rgba(233,224,197,0.78)',
     titleSpacing: 24,
+    photoId: TEMPLATE_BG_PHOTOS.employeeappreciation.photoId,
+    photoOverlay: TEMPLATE_BG_PHOTOS.employeeappreciation.overlay,
   }),
   feedbackqr: () => renderQRBoard({
     bg: '#f8fbff',
@@ -16925,6 +17007,8 @@ const EXTRA_TEMPLATE_RENDERERS = {
     note: 'We read every response and share the themes with the team',
     footer: 'THANK YOU FOR SHARING YOUR THOUGHTS',
     leftTitle: 'SCAN',
+    photoId: TEMPLATE_BG_PHOTOS.feedbackqr.photoId,
+    photoOverlay: TEMPLATE_BG_PHOTOS.feedbackqr.overlay,
   }),
   safetyguide: () => renderListBoard({
     bg: '#fff8e6',
@@ -16944,6 +17028,8 @@ const EXTRA_TEMPLATE_RENDERERS = {
     titleFill: '#1f2937',
     textFill: '#374151',
     bulletFill: '#d97706',
+    photoId: TEMPLATE_BG_PHOTOS.safetyguide.photoId,
+    photoOverlay: TEMPLATE_BG_PHOTOS.safetyguide.overlay,
   }),
   ppechecklist: () => renderListBoard({
     bg: '#fffdf5',
@@ -16964,6 +17050,8 @@ const EXTRA_TEMPLATE_RENDERERS = {
     titleFill: '#1f2937',
     textFill: '#374151',
     bulletFill: '#ca8a04',
+    photoId: TEMPLATE_BG_PHOTOS.ppechecklist.photoId,
+    photoOverlay: TEMPLATE_BG_PHOTOS.ppechecklist.overlay,
   }),
   machinestatus: () => renderMetricsBoard({
     bg: '#172033',
@@ -16977,6 +17065,8 @@ const EXTRA_TEMPLATE_RENDERERS = {
       { label: 'THROUGHPUT', value: '184/hr', delta: 'On target', valueFill: '#93c5fd', deltaFill: '#8ddf7e' },
     ],
     footer: 'PRODUCTION FLOOR · SHIFT A',
+    photoId: TEMPLATE_BG_PHOTOS.machinestatus.photoId,
+    photoOverlay: TEMPLATE_BG_PHOTOS.machinestatus.overlay,
   }),
   productionreport: () => renderMetricsBoard({
     bg: '#1d2430',
@@ -16990,6 +17080,8 @@ const EXTRA_TEMPLATE_RENDERERS = {
       { label: 'ON TIME', value: '98%', delta: 'Dispatch met', valueFill: '#ffffff', deltaFill: '#8ddf7e' },
     ],
     footer: 'OPERATIONS · WAREHOUSE · QUALITY',
+    photoId: TEMPLATE_BG_PHOTOS.productionreport.photoId,
+    photoOverlay: TEMPLATE_BG_PHOTOS.productionreport.overlay,
   }),
   constructionnotice: () => renderWarningBoard({
     bg: '#fff6d6',
@@ -17003,6 +17095,8 @@ const EXTRA_TEMPLATE_RENDERERS = {
       'Contact site staff for access',
     ],
     footer: 'THANK YOU FOR YOUR PATIENCE',
+    photoId: TEMPLATE_BG_PHOTOS.constructionnotice.photoId,
+    photoOverlay: TEMPLATE_BG_PHOTOS.constructionnotice.overlay,
   }),
   fireexit: () => renderDirectoryBoard({
     bg: '#f1faf4',
@@ -17024,6 +17118,8 @@ const EXTRA_TEMPLATE_RENDERERS = {
     rightFill: '#ffffff',
     titleFill: '#14532d',
     textFill: '#166534',
+    photoId: TEMPLATE_BG_PHOTOS.fireexit.photoId,
+    photoOverlay: TEMPLATE_BG_PHOTOS.fireexit.overlay,
   }),
   hazardwarning: () => renderWarningBoard({
     bg: '#fff2f2',
@@ -17037,6 +17133,8 @@ const EXTRA_TEMPLATE_RENDERERS = {
       'Notify the supervisor',
     ],
     footer: 'STOP AND ASSESS THE AREA',
+    photoId: TEMPLATE_BG_PHOTOS.hazardwarning.photoId,
+    photoOverlay: TEMPLATE_BG_PHOTOS.hazardwarning.overlay,
   }),
   emergencyalert: () => renderWarningBoard({
     bg: '#2a0f12',
@@ -17052,6 +17150,8 @@ const EXTRA_TEMPLATE_RENDERERS = {
     footer: 'WAIT FOR THE ALL-CLEAR',
     titleFill: '#ffffff',
     textFill: 'rgba(255,255,255,0.82)',
+    photoId: TEMPLATE_BG_PHOTOS.emergencyalert.photoId,
+    photoOverlay: TEMPLATE_BG_PHOTOS.emergencyalert.overlay,
   }),
   campusmap: () => renderDirectoryBoard({
     bg: '#f7fbff',
@@ -17069,6 +17169,8 @@ const EXTRA_TEMPLATE_RENDERERS = {
       'Admin Building',
     ],
     footer: 'FOLLOW BLUE WAYFINDING SIGNS',
+    photoId: TEMPLATE_BG_PHOTOS.campusmap.photoId,
+    photoOverlay: TEMPLATE_BG_PHOTOS.campusmap.overlay,
   }),
   floordirectory: () => renderDirectoryBoard({
     bg: '#ffffff',
@@ -17089,6 +17191,8 @@ const EXTRA_TEMPLATE_RENDERERS = {
     leftFill: '#10213a',
     titleFill: '#10213a',
     textFill: '#475569',
+    photoId: TEMPLATE_BG_PHOTOS.floordirectory.photoId,
+    photoOverlay: TEMPLATE_BG_PHOTOS.floordirectory.overlay,
   }),
   visitordirections: () => renderDirectoryBoard({
     bg: '#edf4ff',
@@ -17106,6 +17210,8 @@ const EXTRA_TEMPLATE_RENDERERS = {
       'Return here for pick-up',
     ],
     footer: 'THANK YOU FOR VISITING',
+    photoId: TEMPLATE_BG_PHOTOS.visitordirections.photoId,
+    photoOverlay: TEMPLATE_BG_PHOTOS.visitordirections.overlay,
   }),
   lobbywelcome: () => renderSplitWelcomeBoard({
     bg: '#f8fbff',
@@ -17117,6 +17223,8 @@ const EXTRA_TEMPLATE_RENDERERS = {
     panelBody: 'Check in at reception\nWait for your host\nAsk staff if you need help',
     footer: 'WE ARE GLAD YOU ARE HERE',
     leftLabel: 'WELCOME',
+    photoId: TEMPLATE_BG_PHOTOS.lobbywelcome.photoId,
+    photoOverlay: TEMPLATE_BG_PHOTOS.lobbywelcome.overlay,
   }),
   backtoschool: () => renderAnnouncementPoster({
     bg: '#f7f9ff',
@@ -17134,6 +17242,8 @@ const EXTRA_TEMPLATE_RENDERERS = {
     subtitleFill: '#475569',
     footerFill: '#1a3a6b',
     titleSpacing: 24,
+    photoId: TEMPLATE_BG_PHOTOS.backtoschool.photoId,
+    photoOverlay: TEMPLATE_BG_PHOTOS.backtoschool.overlay,
   }),
   enrollmentopen: () => renderAnnouncementPoster({
     bg: '#10213a',
@@ -17150,6 +17260,8 @@ const EXTRA_TEMPLATE_RENDERERS = {
     subtitleFill: 'rgba(255,255,255,0.82)',
     footerFill: 'rgba(246,201,14,0.90)',
     titleSpacing: 18,
+    photoId: TEMPLATE_BG_PHOTOS.enrollmentopen.photoId,
+    photoOverlay: TEMPLATE_BG_PHOTOS.enrollmentopen.overlay,
   }),
   studentcongrats: () => renderAnnouncementPoster({
     bg: '#eff6ff',
@@ -17167,6 +17279,8 @@ const EXTRA_TEMPLATE_RENDERERS = {
     subtitleFill: '#475569',
     footerFill: '#1d4ed8',
     titleSpacing: 20,
+    photoId: TEMPLATE_BG_PHOTOS.studentcongrats.photoId,
+    photoOverlay: TEMPLATE_BG_PHOTOS.studentcongrats.overlay,
   }),
   teachersday: () => renderAnnouncementPoster({
     bg: '#172033',
@@ -17183,6 +17297,8 @@ const EXTRA_TEMPLATE_RENDERERS = {
     subtitleFill: '#dce7ff',
     footerFill: '#e9e0c5',
     titleSpacing: 18,
+    photoId: TEMPLATE_BG_PHOTOS.teachersday.photoId,
+    photoOverlay: TEMPLATE_BG_PHOTOS.teachersday.overlay,
   }),
   musicevent: () => renderAnnouncementPoster({
     bg: '#070814',
@@ -17199,6 +17315,8 @@ const EXTRA_TEMPLATE_RENDERERS = {
     subtitleFill: 'rgba(255,255,255,0.84)',
     footerFill: 'rgba(196,181,253,0.84)',
     titleSpacing: 22,
+    photoId: TEMPLATE_BG_PHOTOS.musicevent.photoId,
+    photoOverlay: TEMPLATE_BG_PHOTOS.musicevent.overlay,
   }),
   flashsale: () => renderAnnouncementPoster({
     bg: '#fef2f2',
@@ -17216,6 +17334,8 @@ const EXTRA_TEMPLATE_RENDERERS = {
     subtitleFill: '#4b5563',
     footerFill: '#dc2626',
     titleSpacing: 26,
+    photoId: TEMPLATE_BG_PHOTOS.flashsale.photoId,
+    photoOverlay: TEMPLATE_BG_PHOTOS.flashsale.overlay,
   }),
   productlaunch: () => renderAnnouncementPoster({
     bg: '#ffffff',
@@ -17233,6 +17353,8 @@ const EXTRA_TEMPLATE_RENDERERS = {
     subtitleFill: '#475569',
     footerFill: '#1d4ed8',
     titleSpacing: 20,
+    photoId: TEMPLATE_BG_PHOTOS.productlaunch.photoId,
+    photoOverlay: TEMPLATE_BG_PHOTOS.productlaunch.overlay,
   }),
   joinqueue: () => renderQRBoard({
     bg: '#f8fbff',
@@ -17242,6 +17364,8 @@ const EXTRA_TEMPLATE_RENDERERS = {
     note: 'Please keep your phone nearby for updates',
     footer: 'THANK YOU FOR YOUR PATIENCE',
     leftTitle: 'SCAN',
+    photoId: TEMPLATE_BG_PHOTOS.joinqueue.photoId,
+    photoOverlay: TEMPLATE_BG_PHOTOS.joinqueue.overlay,
   }),
 };
 
@@ -17262,6 +17386,8 @@ function applyTemplate(name) {
     (_tmplCanvas||fabricCanvas).backgroundColor ='#1a2744';
     loadGoogleFont('Montserrat');
     loadGoogleFont('Open Sans');
+    const photo = TEMPLATE_BG_PHOTOS.corporateannouncement;
+    tmplBgPhoto(photo.photoId, photo.overlay);
     tmplRect(W*0.08, H*0.082, W*0.84, 5, { fill:'#C9A84C', rx:3 });
     tmplText('CORPORATE ANNOUNCEMENT', W/2, H*0.38, {
       fontSize:96, fontWeight:'bold', textAlign:'center', fontFamily:'Montserrat',
@@ -17281,7 +17407,9 @@ function applyTemplate(name) {
   else if (name === 'employeeofmonth') {
     (_tmplCanvas||fabricCanvas).backgroundColor ='#ffffff';
     loadGoogleFont('Playfair Display');
-    tmplRect(0, 0, W*0.40, H, { fill:'#1a56a0', rx:0 });
+    const photo = TEMPLATE_BG_PHOTOS.employeeofmonth;
+    tmplBgPhoto(photo.photoId, photo.overlay);
+    tmplRect(0, 0, W*0.40, H, { fill:'rgba(26,86,160,0.80)', rx:0 });
     const circR = 200, circCx = W*0.20, circCy = H*0.38;
     const empCircle = new fabric.Circle({
       left: circCx-circR, top: circCy-circR,
@@ -17313,6 +17441,8 @@ function applyTemplate(name) {
   else if (name === 'nowhiring') {
     (_tmplCanvas||fabricCanvas).backgroundColor ='#FF6B35';
     loadGoogleFont('Anton');
+    const photo = TEMPLATE_BG_PHOTOS.nowhiring;
+    tmplBgPhoto(photo.photoId, photo.overlay);
     [[0,0],[W-160,0],[0,H-160],[W-160,H-160]].forEach(([x,y]) =>
       tmplRect(x, y, 160, 160, { fill:'rgba(255,255,255,0.12)', rx:0 })
     );
@@ -17333,6 +17463,8 @@ function applyTemplate(name) {
   // ── 4. KPI Dashboard ──────────────────────────────────────────────────────
   else if (name === 'kpidashboard') {
     (_tmplCanvas||fabricCanvas).backgroundColor ='#1e2433';
+    const photo = TEMPLATE_BG_PHOTOS.kpidashboard;
+    tmplBgPhoto(photo.photoId, photo.overlay);
     tmplRect(0, 0, W, H*0.14, { fill:'#2563eb', rx:0 });
     tmplText('PERFORMANCE DASHBOARD', W*0.44, H*0.07, {
       fontSize:52, fontWeight:'bold', fill:'#ffffff', textAlign:'center', charSpacing:60
@@ -17348,7 +17480,7 @@ function applyTemplate(name) {
     [[0,0],[1,0],[0,1],[1,1]].forEach(([col, row], i) => {
       const cx = W*(0.06 + col*0.50), cy = H*(0.175 + row*0.40);
       const cw = W*0.42, ch = H*0.355;
-      tmplRect(cx, cy, cw, ch, { fill:'#252d3d', rx:14 });
+      tmplRect(cx, cy, cw, ch, { fill:'rgba(37,45,61,0.90)', rx:14 });
       tmplText(metrics[i][0], cx+cw/2, cy+ch*0.17, { fontSize:28, fill:'#64748b', textAlign:'center', charSpacing:60 });
       tmplText(metrics[i][1], cx+cw/2, cy+ch*0.52, { fontSize:76, fontWeight:'bold', fill:'#60a5fa', textAlign:'center' });
       tmplText(metrics[i][2], cx+cw/2, cy+ch*0.83, { fontSize:28, fill:'#44c97a', textAlign:'center' });
@@ -17360,6 +17492,7 @@ function applyTemplate(name) {
     (_tmplCanvas||fabricCanvas).backgroundColor ='#1a0a00';
     loadGoogleFont('Anton');
     loadGoogleFont('Open Sans');
+    const photo = TEMPLATE_BG_PHOTOS.dailyspecial;
     // Right dark panel (text area)
     tmplRect(W*0.46, 0, W*0.54, H, { fill:'rgba(10,5,0,0.88)', rx:0 });
     tmplRect(W*0.46, 0, W*0.54, H*0.014, { fill:'#e65c00', rx:0 });
@@ -17380,7 +17513,7 @@ function applyTemplate(name) {
     tmplText('YOUR RESTAURANT', W*0.73, H*0.925, {
       fontSize:38, fill:'rgba(255,255,255,0.5)', textAlign:'center', fontFamily:'Anton', charSpacing:80
     });
-    tmplBgPhoto('kcA-c3f_3FE', 'rgba(0,0,0,0.22)');
+    tmplBgPhoto(photo.photoId, photo.overlay);
   }
 
   // ── 6. Menu Board ────────────────────────────────────────────────────────
@@ -17388,6 +17521,8 @@ function applyTemplate(name) {
     (_tmplCanvas||fabricCanvas).backgroundColor ='#2C2C2C';
     loadGoogleFont('Playfair Display');
     loadGoogleFont('Open Sans');
+    const photo = TEMPLATE_BG_PHOTOS.menuboard;
+    tmplBgPhoto(photo.photoId, photo.overlay);
     tmplRect(0, 0, W, H*0.195, { fill:'#1a1a1a', rx:0 });
     tmplText('THE GOLDEN FORK', W/2, H*0.098, {
       fontSize:96, fontWeight:'bold', fill:'#D4AF37', textAlign:'center', fontFamily:'Playfair Display', charSpacing:40
@@ -17421,6 +17556,7 @@ function applyTemplate(name) {
     (_tmplCanvas||fabricCanvas).backgroundColor ='#0d0d0d';
     loadGoogleFont('Bebas Neue');
     loadGoogleFont('Open Sans');
+    const photo = TEMPLATE_BG_PHOTOS.happyhour;
     tmplRect(0, H*0.77, W, H*0.23, { fill:'rgba(0,0,0,0.85)', rx:0 });
     tmplRect(W*0.10, H*0.776, W*0.80, 5, { fill:'#FF6B00', rx:3 });
     tmplText('HAPPY', W/2, H*0.305, {
@@ -17437,13 +17573,15 @@ function applyTemplate(name) {
     tmplText('50% OFF ALL COCKTAILS & BEER', W/2, H*0.935, {
       fontSize:50, fontWeight:'bold', fill:'#FF6B00', textAlign:'center', fontFamily:'Bebas Neue', charSpacing:40
     });
-    tmplBgPhoto('vexxZA_JNso', 'rgba(0,0,0,0.62)');
+    tmplBgPhoto(photo.photoId, photo.overlay);
   }
 
   // ── 8. Sale Event ────────────────────────────────────────────────────────
   else if (name === 'saleevent') {
     (_tmplCanvas||fabricCanvas).backgroundColor ='#e0000a';
     loadGoogleFont('Anton');
+    const photo = TEMPLATE_BG_PHOTOS.saleevent;
+    tmplBgPhoto(photo.photoId, photo.overlay);
     tmplRect(0, 0, W*0.28, H*0.28, { fill:'rgba(255,255,255,0.06)', rx:0 });
     tmplRect(W*0.72, H*0.72, W*0.28, H*0.28, { fill:'rgba(255,255,255,0.06)', rx:0 });
     tmplText('50%', W/2, H*0.28, {
@@ -17463,13 +17601,15 @@ function applyTemplate(name) {
   else if (name === 'newarrival') {
     (_tmplCanvas||fabricCanvas).backgroundColor ='#ffffff';
     loadGoogleFont('Raleway');
+    const photo = TEMPLATE_BG_PHOTOS.newarrival;
+    tmplBgPhoto(photo.photoId, photo.overlay);
     tmplRect(0, 0, W, 8, { fill:'#000000', rx:0 });
     tmplRect(0, H-8, W, 8, { fill:'#000000', rx:0 });
     tmplText('N E W  A R R I V A L', W/2, H*0.10, {
       fontSize:44, fill:'rgba(0,0,0,0.5)', textAlign:'center', charSpacing:160
     });
-    tmplRect(W*0.28, H*0.16, W*0.44, H*0.55, { fill:'#f5f5f5', rx:12 });
-    tmplText('[ PRODUCT IMAGE ]', W/2, H*0.435, { fontSize:40, fill:'rgba(0,0,0,0.25)', textAlign:'center' });
+    tmplRect(W*0.28, H*0.16, W*0.44, H*0.55, { fill:'rgba(255,255,255,0.18)', rx:12, stroke:'rgba(255,255,255,0.35)', strokeWidth:2 });
+    tmplText('FEATURED PRODUCT', W/2, H*0.435, { fontSize:40, fill:'rgba(255,255,255,0.84)', textAlign:'center', charSpacing:60 });
     tmplText('Product Name Here', W/2, H*0.77, {
       fontSize:72, fontWeight:'300', fill:'#111111', textAlign:'center', fontFamily:'Raleway'
     });
@@ -17482,6 +17622,7 @@ function applyTemplate(name) {
     (_tmplCanvas||fabricCanvas).backgroundColor ='#05060f';
     loadGoogleFont('Anton');
     loadGoogleFont('Raleway');
+    const photo = TEMPLATE_BG_PHOTOS.eventpromo;
     tmplRect(0, H*0.60, W, H*0.40, { fill:'rgba(5,6,15,0.90)', rx:0 });
     tmplRect(W*0.05, H*0.603, W*0.90, 5, { fill:'#7c3aed', rx:3 });
     tmplRect((W-380)/2, H*0.045, 380, H*0.075, { fill:'rgba(124,58,237,0.80)', rx:30 });
@@ -17500,18 +17641,20 @@ function applyTemplate(name) {
     });
     tmplRect((W-420)/2, H*0.862, 420, H*0.072, { fill:'#7c3aed', rx:36 });
     tmplText('GET TICKETS', W/2, H*0.898, { fontSize:42, fontWeight:'bold', fill:'#ffffff', textAlign:'center' });
-    tmplBgPhoto('3C7G04ownm8', 'rgba(5,6,15,0.52)');
+    tmplBgPhoto(photo.photoId, photo.overlay);
   }
 
   // ── 11. Countdown ─────────────────────────────────────────────────────────
   else if (name === 'countdown') {
     (_tmplCanvas||fabricCanvas).backgroundColor ='#ffffff';
     loadGoogleFont('Montserrat');
+    const photo = TEMPLATE_BG_PHOTOS.countdown;
+    tmplBgPhoto(photo.photoId, photo.overlay);
     tmplRect(W*0.08, H*0.07, W*0.84, 5, { fill:'#4f8ef7', rx:3 });
     tmplText('DAYS UNTIL', W/2, H*0.175, {
       fontSize:54, fill:'#6b7280', textAlign:'center', fontFamily:'Montserrat', charSpacing:100
     });
-    tmplRect(W*0.22, H*0.23, W*0.56, H*0.44, { fill:'#eff6ff', rx:20, stroke:'#bfdbfe', strokeWidth:3 });
+    tmplRect(W*0.22, H*0.23, W*0.56, H*0.44, { fill:'rgba(239,246,255,0.82)', rx:20, stroke:'rgba(191,219,254,0.72)', strokeWidth:3 });
     tmplText('30', W/2, H*0.455, {
       fontSize:260, fontWeight:'bold', fill:'#1d4ed8', textAlign:'center', fontFamily:'Montserrat'
     });
@@ -17529,6 +17672,7 @@ function applyTemplate(name) {
     (_tmplCanvas||fabricCanvas).backgroundColor ='#e6f7f5';
     loadGoogleFont('Nunito');
     loadGoogleFont('Open Sans');
+    const photo = TEMPLATE_BG_PHOTOS.waitingroomwelcome;
     tmplRect(0, 0, W, H*0.155, { fill:'#00897b', rx:0 });
     tmplText('RIVERSIDE MEDICAL CENTER', W/2, H*0.078, {
       fontSize:56, fontWeight:'bold', fill:'#ffffff', textAlign:'center', charSpacing:40
@@ -17551,13 +17695,15 @@ function applyTemplate(name) {
     tmplText('For emergencies, please alert staff immediately', W*0.70, H*0.965, {
       fontSize:30, fill:'#9e9e9e', textAlign:'center'
     });
-    tmplBgPhoto('tE7_jvK-_YU', 'rgba(5,80,70,0.15)');
+    tmplBgPhoto(photo.photoId, photo.overlay);
   }
 
   // ── 13. Health Tip ────────────────────────────────────────────────────────
   else if (name === 'healthtip') {
     (_tmplCanvas||fabricCanvas).backgroundColor ='#ffffff';
     loadGoogleFont('Open Sans');
+    const photo = TEMPLATE_BG_PHOTOS.healthtip;
+    tmplBgPhoto(photo.photoId, photo.overlay);
     tmplRect(0, 0, 18, H, { fill:'#16a34a', rx:0 });
     const htR = 70, htCx = W*0.10, htCy = H*0.13;
     const htCircle = new fabric.Circle({
@@ -17587,6 +17733,7 @@ function applyTemplate(name) {
     (_tmplCanvas||fabricCanvas).backgroundColor ='#0a1a0e';
     loadGoogleFont('Playfair Display');
     loadGoogleFont('Open Sans');
+    const photo = TEMPLATE_BG_PHOTOS.seasonsgreetings;
     tmplRect(0, 0, W, H*0.012, { fill:'#C9A84C', rx:0 });
     tmplRect(0, H*0.988, W, H*0.012, { fill:'#C9A84C', rx:0 });
     tmplRect(0, H*0.58, W, H*0.42, { fill:'rgba(10,26,14,0.90)', rx:0 });
@@ -17606,13 +17753,14 @@ function applyTemplate(name) {
     tmplText('FROM YOUR COMPANY NAME', W/2, H*0.900, {
       fontSize:40, fontWeight:'bold', fill:'#C9A84C', textAlign:'center', charSpacing:80
     });
-    tmplBgPhoto('MgvEHXxGrUs', 'rgba(10,26,14,0.48)');
+    tmplBgPhoto(photo.photoId, photo.overlay);
   }
 
   // ── 15. New Year ─────────────────────────────────────────────────────────
   else if (name === 'newyear') {
     (_tmplCanvas||fabricCanvas).backgroundColor ='#000000';
     loadGoogleFont('Anton');
+    const photo = TEMPLATE_BG_PHOTOS.newyear;
     tmplRect(0, H*0.62, W, H*0.38, { fill:'rgba(0,0,0,0.82)', rx:0 });
     tmplRect(W*0.08, H*0.625, W*0.84, 4, { fill:'#C9A84C', rx:2 });
     tmplText('2026', W/2, H*0.375, {
@@ -17629,13 +17777,15 @@ function applyTemplate(name) {
     tmplText('Wishing you a year full of success & happiness', W/2, H*0.958, {
       fontSize:38, fill:'rgba(255,255,255,0.35)', textAlign:'center'
     });
-    tmplBgPhoto('ocb4ft1qyjA', 'rgba(0,0,0,0.52)');
+    tmplBgPhoto(photo.photoId, photo.overlay);
   }
 
   // ── 16. Instagram Wall ───────────────────────────────────────────────────
   else if (name === 'instagramwall') {
     (_tmplCanvas||fabricCanvas).backgroundColor ='#ffffff';
     loadGoogleFont('Montserrat');
+    const photo = TEMPLATE_BG_PHOTOS.instagramwall;
+    tmplBgPhoto(photo.photoId, photo.overlay);
     tmplText('Follow Us on Instagram', W/2, H*0.07, {
       fontSize:72, fontWeight:'bold', fill:'#111827', textAlign:'center', fontFamily:'Montserrat'
     });
@@ -17660,6 +17810,7 @@ function applyTemplate(name) {
     (_tmplCanvas||fabricCanvas).backgroundColor ='#0f1f3d';
     loadGoogleFont('Anton');
     loadGoogleFont('Open Sans');
+    const photo = TEMPLATE_BG_PHOTOS.schoolevents;
     tmplRect(0, 0, W, H*0.155, { fill:'#1a3a6b', rx:0 });
     tmplRect(0, H*0.155, W, H*0.012, { fill:'#e53e3e', rx:0 });
     tmplText('UPCOMING SCHOOL EVENTS', W/2, H*0.078, {
@@ -17681,7 +17832,7 @@ function applyTemplate(name) {
       tmplRect(W*0.20, y - H*0.045, W*0.75, H*0.09, { fill:'rgba(255,255,255,0.08)', rx:6 });
       tmplText(evtName, W*0.575, y, { fontSize:40, fill:'#ffffff', textAlign:'center', fontFamily:'Open Sans', fontWeight:'600' });
     });
-    tmplBgPhoto('zFSo6bnZJTw', 'rgba(15,31,61,0.78)');
+    tmplBgPhoto(photo.photoId, photo.overlay);
   }
 
   // ── 18. Classroom Announcement ───────────────────────────────────────────
@@ -17689,6 +17840,8 @@ function applyTemplate(name) {
     (_tmplCanvas||fabricCanvas).backgroundColor ='#1a3a6b';
     loadGoogleFont('Anton');
     loadGoogleFont('Open Sans');
+    const photo = TEMPLATE_BG_PHOTOS.classroomannouncement;
+    tmplBgPhoto(photo.photoId, photo.overlay);
     tmplRect(0, 0, W, H*0.18, { fill:'#f6c90e', rx:0 });
     tmplText('IMPORTANT ANNOUNCEMENT', W/2, H*0.09, {
       fontSize:66, fontWeight:'bold', fill:'#1a3a6b', textAlign:'center', fontFamily:'Anton', charSpacing:50
@@ -17716,6 +17869,7 @@ function applyTemplate(name) {
   else if (name === 'socialpromo') {
     (_tmplCanvas||fabricCanvas).backgroundColor ='#0d0d1a';
     loadGoogleFont('Anton');
+    const photo = TEMPLATE_BG_PHOTOS.socialpromo;
     tmplRect(0, H*0.52, W, H*0.48, { fill:'rgba(10,10,26,0.90)', rx:0 });
     tmplRect(W*0.05, H*0.523, W*0.90, 5, { fill:'#e91e8c', rx:3 });
     tmplText('FOLLOW', W/2, H*0.235, {
@@ -17734,7 +17888,7 @@ function applyTemplate(name) {
     });
     tmplRect((W-500)/2, H*0.862, 500, H*0.072, { fill:'#e91e8c', rx:36 });
     tmplText('FOLLOW NOW', W/2, H*0.898, { fontSize:44, fontWeight:'bold', fill:'#ffffff', textAlign:'center' });
-    tmplBgPhoto('GRUhkcD9k8o', 'rgba(0,0,0,0.60)');
+    tmplBgPhoto(photo.photoId, photo.overlay);
   }
 
   // ── Legacy templates (kept for backward compat) ──────────────────────────
@@ -17881,10 +18035,17 @@ function buildExtraTemplatePreviewMarkup(t) {
   const lineSoft = dark ? 'rgba(255,255,255,0.20)' : 'rgba(16,33,58,0.18)';
   const badge = t.accent || '#2563eb';
   const title = t.title.toUpperCase();
+  const photo = TEMPLATE_BG_PHOTOS[t.key];
+  const photoUrl = photo?.photoId ? _tmplPhotoUrls[photo.photoId] : '';
+  const photoLayer = photoUrl ? `
+          <div style="position:absolute;inset:0;background:url('${photoUrl}') center/cover no-repeat"></div>
+          <div style="position:absolute;inset:0;background:${photo.overlay || (dark ? 'rgba(0,0,0,0.42)' : 'rgba(255,255,255,0.16)')}"></div>
+        ` : '';
   switch (t.preview) {
     case 'metrics':
       return `
         <div style="position:absolute;inset:0;background:${t.bg};overflow:hidden">
+          ${photoLayer}
           <div style="position:absolute;top:0;left:0;right:0;height:14%;background:${badge}"></div>
           <div style="position:absolute;top:20%;left:8%;right:32%;height:11%;background:${fg};opacity:0.9;border-radius:3px"></div>
           <div style="position:absolute;top:20%;right:8%;width:18%;height:11%;background:${lineSoft};border-radius:3px"></div>
@@ -17901,6 +18062,7 @@ function buildExtraTemplatePreviewMarkup(t) {
     case 'list':
       return `
         <div style="position:absolute;inset:0;background:${t.bg};overflow:hidden">
+          ${photoLayer}
           <div style="position:absolute;top:0;left:0;right:0;height:16%;background:${badge}"></div>
           <div style="position:absolute;top:6%;left:10%;right:10%;height:7%;background:${fg};opacity:0.88;border-radius:3px"></div>
           <div style="position:absolute;top:23%;left:8%;right:8%;bottom:12%;background:${dark ? 'rgba(255,255,255,0.07)' : 'rgba(16,33,58,0.04)'};border-radius:10px"></div>
@@ -17913,6 +18075,7 @@ function buildExtraTemplatePreviewMarkup(t) {
     case 'directory':
       return `
         <div style="position:absolute;inset:0;background:${t.bg};overflow:hidden">
+          ${photoLayer}
           <div style="position:absolute;top:0;left:0;right:0;height:14%;background:${badge}"></div>
           <div style="position:absolute;top:18%;left:8%;width:36%;bottom:10%;background:${dark ? 'rgba(255,255,255,0.08)' : 'rgba(16,33,58,0.05)'};border-radius:12px"></div>
           <div style="position:absolute;top:18%;right:8%;left:48%;height:8%;background:${fg};opacity:0.88;border-radius:3px"></div>
@@ -17928,6 +18091,7 @@ function buildExtraTemplatePreviewMarkup(t) {
     case 'welcome':
       return `
         <div style="position:absolute;inset:0;background:${t.bg};overflow:hidden">
+          ${photoLayer}
           <div style="position:absolute;left:0;top:0;bottom:0;width:38%;background:${badge}"></div>
           <div style="position:absolute;top:18%;left:8%;width:22%;height:22%;background:${dark ? 'rgba(255,255,255,0.22)' : 'rgba(16,33,58,0.14)'};border-radius:50%"></div>
           <div style="position:absolute;top:12%;right:8%;left:46%;height:10%;background:${fg};opacity:0.9;border-radius:3px"></div>
@@ -17940,6 +18104,7 @@ function buildExtraTemplatePreviewMarkup(t) {
     case 'warning':
       return `
         <div style="position:absolute;inset:0;background:${t.bg};overflow:hidden">
+          ${photoLayer}
           <div style="position:absolute;top:0;left:0;right:0;height:15%;background:${badge}"></div>
           <div style="position:absolute;top:18%;left:8%;right:8%;height:16%;background:${fg};opacity:0.9;border-radius:3px"></div>
           <div style="position:absolute;top:18%;left:8%;right:8%;height:16%;background:repeating-linear-gradient(135deg, ${badge} 0 14px, transparent 14px 28px);opacity:0.45;border-radius:3px"></div>
@@ -17951,6 +18116,7 @@ function buildExtraTemplatePreviewMarkup(t) {
     case 'qr':
       return `
         <div style="position:absolute;inset:0;background:${t.bg};overflow:hidden">
+          ${photoLayer}
           <div style="position:absolute;top:0;left:0;right:0;height:14%;background:${badge}"></div>
           <div style="position:absolute;top:18%;left:10%;width:34%;bottom:12%;background:${dark ? 'rgba(255,255,255,0.92)' : '#ffffff'};border-radius:12px;border:2px solid ${lineSoft}"></div>
           <div style="position:absolute;top:28%;left:18%;width:10%;height:10%;background:${badge};border-radius:3px"></div>
@@ -17967,6 +18133,7 @@ function buildExtraTemplatePreviewMarkup(t) {
     default:
       return `
         <div style="position:absolute;inset:0;background:${t.bg};overflow:hidden">
+          ${photoLayer}
           <div style="position:absolute;top:0;left:0;right:0;height:14%;background:${badge}"></div>
           <div style="position:absolute;top:24%;left:10%;right:10%;height:10%;background:${fg};opacity:0.9;border-radius:3px"></div>
           <div style="position:absolute;top:42%;left:10%;right:20%;height:7%;background:${lineSoft};border-radius:2px"></div>
@@ -17976,10 +18143,11 @@ function buildExtraTemplatePreviewMarkup(t) {
   }
 }
 
-function renderExtraTemplateGalleryCards() {
+async function renderExtraTemplateGalleryCards() {
   const grid = document.getElementById('galleryGrid');
   const empty = document.getElementById('galleryEmpty');
   if (!grid || !empty || grid.dataset.extraTemplateCardsRendered === '1') return;
+  await prefetchTmplPhotoUrls();
   const frag = document.createDocumentFragment();
   EXTRA_TEMPLATE_CATALOG.forEach(t => {
     const btn = document.createElement('button');
@@ -18027,14 +18195,8 @@ function getTemplateTitle(name) {
 let _tmplPhotoUrls = {};
 let _tmplPhotoPending = 0; // count of in-flight image loads on _tmplCanvas
 
-const TMPL_PHOTO_IDS = [
-  'kcA-c3f_3FE','vexxZA_JNso','3C7G04ownm8','tE7_jvK-_YU',
-  'MgvEHXxGrUs','ocb4ft1qyjA','zFSo6bnZJTw','GRUhkcD9k8o','KY01qp6xKlQ'
-];
-const TMPL_PHOTO_TEMPLATES = new Set([
-  'dailyspecial','happyhour','eventpromo','waitingroomwelcome',
-  'seasonsgreetings','newyear','schoolevents','socialpromo'
-]);
+const TMPL_PHOTO_IDS = [...new Set(Object.values(TEMPLATE_BG_PHOTOS).map(v => v.photoId))];
+const TMPL_PHOTO_TEMPLATES = new Set(Object.keys(TEMPLATE_BG_PHOTOS));
 
 const TMPL_FONTS = ['Anton','Bebas Neue','Montserrat','Open Sans','Playfair Display','Raleway','Nunito'];
 

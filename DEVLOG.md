@@ -4,6 +4,12 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-04-20 — Codex (session 25)
+- **Template library photo-led refinement**: pushed the template gallery further toward Yodeck-style photography and richer visual composition.
+  - `admin.html`: added a shared template photo map, upgraded the reusable slide renderers to accept photo backdrops, and converted more of the built-in templates and extra catalog templates into image-led compositions.
+  - `admin.html`: updated the gallery preview markup to wait for photo URLs and render real image-backed thumbnails for the photo-led templates instead of purely shape-based placeholders.
+  - `ROADMAP.md`: clarified that the Content Templates Library is now in a quality pass focused on more photo-rich layouts.
+
 ## 2026-04-20 — Codex (session 24)
 - **Template library expansion**: expanded the Design a Slide gallery into a much larger 46-template catalog inspired by the Yodeck reference PDF.
   - `admin.html`: added office, safety, wayfinding, education, events, and retail template families; wired the new cards into the gallery with new category filters and dynamic thumbnail rendering.
