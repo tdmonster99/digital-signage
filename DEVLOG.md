@@ -4,6 +4,12 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-04-19 — Codex (session 18)
+- **Apps page ordering**: organized app cards so available integrations appear before Coming Soon items.
+  - `admin.html`: added grid ordering for active cards and `.app-coming-soon` cards, preserving existing filters and card design.
+
+---
+
 ## 2026-04-19 — Codex (session 17)
 - **YouTube app activation**: promoted YouTube from a Coming Soon app tile to a working slideshow app.
   - `admin.html`: wired the Apps YouTube card into the existing YouTube slide flow, added add/edit modal support with slideshow targeting, duration, and thumbnail preview, and added slide-card editing for YouTube slides.
