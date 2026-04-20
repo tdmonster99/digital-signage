@@ -4,6 +4,13 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-04-20 — Codex (session 23)
+- **Legal copy cleanup**: removed Yodeck-style template residue from the app Terms of Service and aligned the wording with Zigns terminology.
+  - `terms.html`: replaced `Authorized User` language with plain `User` wording and changed the user-limit clause to match the app's plan-based team member limits.
+  - Verified the app legal pages contain no direct `Yodeck` references or leftover `Authorized User` phrases.
+
+---
+
 ## 2026-04-20 — Codex (session 22)
 - **Plan feature entitlements**: wired the pricing tiers to actual app behavior in `admin.html`.
   - Added a central `PLAN_FEATURES` map plus `hasFeature` / `guardFeature` helpers for Starter, Standard, Premium, Early Adopter, and Enterprise.
