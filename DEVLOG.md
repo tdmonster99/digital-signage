@@ -4,6 +4,12 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-04-20 — Codex (session 20)
+- **YouTube display timing fix**: fixed per-slide dwell values being treated as milliseconds on `display.html`.
+  - `display.html`: added display-side dwell normalization so YouTube and widget slides saved with `dwell: 30` now stay up for 30 seconds instead of rapidly reloading the iframe.
+
+---
+
 ## 2026-04-19 — Codex (session 19)
 - **Content approval workflow**: added an org-level review gate for editor publishing.
   - `admin.html`: added the Content Approval setting, editor Submit Review behavior, Pending Review slideshow badges, admin review queue, approve/reject actions, and review status banners.

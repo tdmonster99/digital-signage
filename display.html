@@ -1824,10 +1824,18 @@
   }
 
   // ── Playback ──────────────────────────────────────────────────────────────
+  function getSlideDwellMs(slide) {
+    const raw = Number(slide?.dwell);
+    if (!Number.isFinite(raw) || raw <= 0) return defaultDwell;
+    // Admin stores per-slide dwell in seconds. Keep legacy millisecond values working.
+    return raw <= 3600 ? raw * 1000 : raw;
+  }
+
   function scheduleNext(dwell) {
     clearTimeout(timer);
-    timer = setTimeout(advance, dwell);
-    resetWatchdog(dwell);
+    const dwellMs = Math.max(1000, Number(dwell) || defaultDwell);
+    timer = setTimeout(advance, dwellMs);
+    resetWatchdog(dwellMs);
     preloadNext().catch(() => {});
   }
 
@@ -1861,7 +1869,7 @@
       }
       const ok       = await crossfadeTo(slide);
       if (ok) {
-        scheduleNext(slide.dwell ?? defaultDwell);
+        scheduleNext(getSlideDwellMs(slide));
         return;
       }
       console.warn(`[Skip] Slide ${current + 1}/${slides.length} failed, trying next`);
@@ -1920,7 +1928,7 @@
       slideViewStart = Date.now();
       const ok = await crossfadeTo(slides[current]);
       if (ok) {
-        scheduleNext(slides[current].dwell ?? defaultDwell);
+        scheduleNext(getSlideDwellMs(slides[current]));
       } else {
         advance(); // first slide failed — find one that works
       }
