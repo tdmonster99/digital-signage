@@ -3334,15 +3334,20 @@ body.role-editor .admin-action {
   padding: 4px 12px; border-radius: 20px;
 }
 .plan-badge.free    { background: var(--surface2);          color: var(--muted); }
-.plan-badge.starter { background: rgba(59,130,246,.12);     color: #3b82f6; }
-.plan-badge.pro     { background: rgba(59,130,246,.12);     color: #3b82f6; }
-.plan-badge.ea      { background: rgba(15,27,41,.12);      color: #0f1b29; }
-.plan-badge.pro::before { content: '✦ '; }
+.plan-badge.starter,
+.plan-badge.standard { background: rgba(59,130,246,.12);    color: #3b82f6; }
+.plan-badge.pro,
+.plan-badge.premium  { background: rgba(124,58,237,.12);    color: #7c3aed; }
+.plan-badge.ea,
+.plan-badge.early-adopter { background: rgba(15,27,41,.12); color: #0f1b29; }
+.plan-badge.enterprise { background: rgba(16,185,129,.12);  color: #059669; }
+.plan-badge.pro::before,
+.plan-badge.premium::before { content: '✦ '; }
 .usage-bar-wrap { background: var(--border); border-radius: 99px; height: 6px; flex: 1; overflow: hidden; }
 .usage-bar-fill { height: 100%; border-radius: 99px; background: var(--accent); transition: width 0.4s; }
 .usage-bar-fill.warn  { background: #f59e0b; }
 .usage-bar-fill.full  { background: #ef4444; }
-.plan-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.plan-table { width: 100%; min-width: 900px; border-collapse: collapse; font-size: 13px; }
 .plan-table th {
   padding: 10px 14px; text-align: left; font-size: 11px; font-weight: 600;
   color: var(--muted); text-transform: uppercase; letter-spacing: .06em;
@@ -4903,20 +4908,24 @@ body.role-editor .admin-action {
               <thead>
                 <tr>
                   <th style="width:35%">Feature</th>
-                  <th class="plan-col">Free</th>
                   <th class="plan-col">Starter</th>
-                  <th class="plan-col">Pro</th>
+                  <th class="plan-col">Standard</th>
+                  <th class="plan-col">Premium</th>
+                  <th class="plan-col">Early Adopter</th>
+                  <th class="plan-col">Enterprise</th>
                 </tr>
               </thead>
               <tbody>
-                <tr><td>Price</td><td class="plan-col">Free</td><td class="plan-col">$5/screen/mo</td><td class="plan-col">$50/mo</td></tr>
-                <tr><td>Screens</td><td class="plan-col">1</td><td class="plan-col">Unlimited</td><td class="plan-col">Unlimited</td></tr>
-                <tr><td>Users</td><td class="plan-col">1</td><td class="plan-col">Unlimited</td><td class="plan-col">Unlimited</td></tr>
-                <tr><td>Storage</td><td class="plan-col">1 GB</td><td class="plan-col">10 GB</td><td class="plan-col">50 GB</td></tr>
-                <tr><td>All Templates</td><td class="plan-col"><span class="plan-x">✗</span></td><td class="plan-col"><span class="plan-check">✓</span></td><td class="plan-col"><span class="plan-check">✓</span></td></tr>
-                <tr><td>Scheduling</td><td class="plan-col"><span class="plan-x">✗</span></td><td class="plan-col"><span class="plan-check">✓</span></td><td class="plan-col"><span class="plan-check">✓</span></td></tr>
-                <tr><td>Support</td><td class="plan-col">—</td><td class="plan-col">Email</td><td class="plan-col">Priority</td></tr>
-                <tr id="planActionRow"><td></td><td class="plan-col" id="freePlanAction"></td><td class="plan-col" id="starterPlanAction"></td><td class="plan-col" id="proPlanAction"></td></tr>
+                <tr><td>Price</td><td class="plan-col">Free</td><td class="plan-col">$5/screen/mo</td><td class="plan-col">$10/screen/mo</td><td class="plan-col">$50/mo</td><td class="plan-col">Contact us</td></tr>
+                <tr><td>Screens</td><td class="plan-col">1</td><td class="plan-col">Per screen</td><td class="plan-col">Per screen</td><td class="plan-col">Unlimited</td><td class="plan-col">Custom</td></tr>
+                <tr><td>Users</td><td class="plan-col">1</td><td class="plan-col">3</td><td class="plan-col">10</td><td class="plan-col">Unlimited</td><td class="plan-col">Custom</td></tr>
+                <tr><td>Storage</td><td class="plan-col">1 GB</td><td class="plan-col">10 GB</td><td class="plan-col">50 GB</td><td class="plan-col">50 GB</td><td class="plan-col">Custom</td></tr>
+                <tr><td>Templates &amp; apps</td><td class="plan-col">Basic</td><td class="plan-col">Standard</td><td class="plan-col">All</td><td class="plan-col">All</td><td class="plan-col">Custom</td></tr>
+                <tr><td>Scheduling</td><td class="plan-col">Basic</td><td class="plan-col"><span class="plan-check">✓</span></td><td class="plan-col"><span class="plan-check">✓</span></td><td class="plan-col"><span class="plan-check">✓</span></td><td class="plan-col"><span class="plan-check">✓</span></td></tr>
+                <tr><td>Analytics &amp; proof-of-play</td><td class="plan-col"><span class="plan-x">✗</span></td><td class="plan-col"><span class="plan-x">✗</span></td><td class="plan-col"><span class="plan-check">✓</span></td><td class="plan-col"><span class="plan-check">✓</span></td><td class="plan-col">Custom</td></tr>
+                <tr><td>Approval workflow</td><td class="plan-col"><span class="plan-x">✗</span></td><td class="plan-col"><span class="plan-x">✗</span></td><td class="plan-col"><span class="plan-check">✓</span></td><td class="plan-col"><span class="plan-check">✓</span></td><td class="plan-col"><span class="plan-check">✓</span></td></tr>
+                <tr><td>Support</td><td class="plan-col">Knowledge base</td><td class="plan-col">Email</td><td class="plan-col">Priority</td><td class="plan-col">Priority onboarding</td><td class="plan-col">Enterprise</td></tr>
+                <tr id="planActionRow"><td></td><td class="plan-col" id="freePlanAction"></td><td class="plan-col" id="standardPlanAction"></td><td class="plan-col" id="premiumPlanAction"></td><td class="plan-col" id="eaPlanAction"></td><td class="plan-col" id="enterprisePlanAction"></td></tr>
               </tbody>
             </table>
           </div>
@@ -8958,12 +8967,34 @@ async function loadShowsFromOrg() {
 // ── Billing ────────────────────────────────────────────────────────────────
 
 const PLAN_LIMITS = {
-  free:    { screensAllowed: 1,    usersAllowed: 1,    storageGb: 1  },
-  starter: { screensAllowed: 3,    usersAllowed: 3,    storageGb: 5  },
-  pro:     { screensAllowed: 9999, usersAllowed: 9999, storageGb: 50 },
+  free:            { screensAllowed: 1,    usersAllowed: 1,    storageGb: 1   },
+  standard:        { screensAllowed: 9999, usersAllowed: 3,    storageGb: 10  },
+  premium:         { screensAllowed: 9999, usersAllowed: 10,   storageGb: 50  },
+  'early-adopter': { screensAllowed: 9999, usersAllowed: 9999, storageGb: 50  },
+  enterprise:      { screensAllowed: 9999, usersAllowed: 9999, storageGb: 100 },
+  // Legacy keys kept so existing org subscription documents continue to render correctly.
+  starter:         { screensAllowed: 9999, usersAllowed: 3,    storageGb: 10  },
+  pro:             { screensAllowed: 9999, usersAllowed: 10,   storageGb: 50  },
 };
 
 let currentSubscription = null;
+
+function canonicalPlanKey(plan) {
+  if (plan === 'starter') return 'standard';
+  if (plan === 'pro') return 'premium';
+  if (plan === 'ea') return 'early-adopter';
+  return plan || 'free';
+}
+
+function planLabel(plan) {
+  return ({
+    free: 'Starter',
+    standard: 'Standard',
+    premium: 'Premium',
+    'early-adopter': 'Early Adopter',
+    enterprise: 'Enterprise',
+  })[canonicalPlanKey(plan)] || 'Starter';
+}
 
 function getSubscription() {
   return currentSubscription || { plan: 'free', status: 'active', ...PLAN_LIMITS.free };
@@ -8971,12 +9002,18 @@ function getSubscription() {
 
 function renderBillingSection() {
   const sub  = getSubscription();
-  const plan = sub.plan || 'free';
-  const limits = PLAN_LIMITS[plan] || PLAN_LIMITS.free;
+  const plan = canonicalPlanKey(sub.plan || 'free');
+  const baseLimits = PLAN_LIMITS[plan] || PLAN_LIMITS.free;
+  const limits = {
+    ...baseLimits,
+    screensAllowed: sub.screensAllowed ?? baseLimits.screensAllowed,
+    usersAllowed:   sub.usersAllowed   ?? baseLimits.usersAllowed,
+    storageGb:      sub.storageGb      ?? baseLimits.storageGb,
+  };
 
   // Plan badge
   const badge = document.getElementById('currentPlanBadge');
-  badge.textContent = plan.charAt(0).toUpperCase() + plan.slice(1);
+  badge.textContent = planLabel(plan);
   badge.className   = 'plan-badge ' + plan;
 
   // Next billing date
@@ -9001,23 +9038,36 @@ function renderBillingSection() {
   ].join('');
 
   // Plan action buttons
-  const actions = { free: '', starter: '', pro: '' };
+  const actions = { free: '', standard: '', premium: '', ea: '', enterprise: '' };
   if (plan === 'free') {
-    actions.starter = `<button class="plan-upgrade-btn primary" onclick="startCheckout('starter')">Upgrade</button>`;
-    actions.pro     = `<button class="plan-upgrade-btn primary" onclick="startCheckout('pro')">Upgrade</button>`;
-    actions.free    = `<span style="font-size:12px;color:var(--accent)">Current</span>`;
-  } else if (plan === 'starter') {
-    actions.starter = `<span style="font-size:12px;color:var(--accent)">Current</span>`;
-    actions.pro     = `<button class="plan-upgrade-btn primary" onclick="startCheckout('pro')">Upgrade</button>`;
-    actions.free    = `<button class="plan-upgrade-btn outline" onclick="openBillingPortal()">Downgrade</button>`;
-  } else if (plan === 'pro') {
-    actions.pro     = `<span style="font-size:12px;color:var(--accent)">Current</span>`;
-    actions.starter = `<button class="plan-upgrade-btn outline" onclick="openBillingPortal()">Downgrade</button>`;
-    actions.free    = `<button class="plan-upgrade-btn outline" onclick="openBillingPortal()">Downgrade</button>`;
+    actions.standard = `<button class="plan-upgrade-btn primary" onclick="startCheckout('standard')">Upgrade</button>`;
+    actions.premium  = `<button class="plan-upgrade-btn primary" onclick="startCheckout('premium')">Upgrade</button>`;
+    actions.ea       = `<button class="plan-upgrade-btn outline" onclick="startCheckout('early-adopter')">Upgrade</button>`;
+    actions.free     = `<span style="font-size:12px;color:var(--accent)">Current</span>`;
+  } else if (plan === 'standard') {
+    actions.standard = `<span style="font-size:12px;color:var(--accent)">Current</span>`;
+    actions.premium  = `<button class="plan-upgrade-btn primary" onclick="startCheckout('premium')">Upgrade</button>`;
+    actions.ea       = `<button class="plan-upgrade-btn outline" onclick="startCheckout('early-adopter')">Switch</button>`;
+    actions.free     = `<button class="plan-upgrade-btn outline" onclick="openBillingPortal()">Downgrade</button>`;
+  } else if (plan === 'premium') {
+    actions.premium  = `<span style="font-size:12px;color:var(--accent)">Current</span>`;
+    actions.standard = `<button class="plan-upgrade-btn outline" onclick="openBillingPortal()">Downgrade</button>`;
+    actions.ea       = `<button class="plan-upgrade-btn outline" onclick="startCheckout('early-adopter')">Switch</button>`;
+    actions.free     = `<button class="plan-upgrade-btn outline" onclick="openBillingPortal()">Downgrade</button>`;
+  } else if (plan === 'early-adopter') {
+    actions.ea       = `<span style="font-size:12px;color:var(--accent)">Current</span>`;
+    actions.standard = `<button class="plan-upgrade-btn outline" onclick="openBillingPortal()">Change</button>`;
+    actions.premium  = `<button class="plan-upgrade-btn outline" onclick="openBillingPortal()">Change</button>`;
+    actions.free     = `<button class="plan-upgrade-btn outline" onclick="openBillingPortal()">Downgrade</button>`;
+  } else if (plan === 'enterprise') {
+    actions.enterprise = `<span style="font-size:12px;color:var(--accent)">Current</span>`;
   }
   document.getElementById('freePlanAction').innerHTML    = actions.free;
-  document.getElementById('starterPlanAction').innerHTML = actions.starter;
-  document.getElementById('proPlanAction').innerHTML     = actions.pro;
+  document.getElementById('standardPlanAction').innerHTML = actions.standard;
+  document.getElementById('premiumPlanAction').innerHTML  = actions.premium;
+  document.getElementById('eaPlanAction').innerHTML       = actions.ea;
+  document.getElementById('enterprisePlanAction').innerHTML =
+    actions.enterprise || `<button class="plan-upgrade-btn outline" onclick="location.href='mailto:hello@zigns.io?subject=Enterprise%20support'">Contact</button>`;
 
   // Highlight current plan column
   document.querySelectorAll('#planActionRow td').forEach(td => {
@@ -9052,6 +9102,7 @@ window.startCheckout = async function(plan) {
       body: JSON.stringify({
         orgId:            currentOrgId,
         plan,
+        screenQuantity:   Math.max(1, _cachedScreens.length || 1),
         customerEmail:    currentUser.email,
         stripeCustomerId: sub.stripeCustomerId || null,
       }),

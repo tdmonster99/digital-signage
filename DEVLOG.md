@@ -4,6 +4,14 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-04-20 — Codex (session 21)
+- **Pricing structure update**: aligned app billing and marketing pricing tiers with Starter, Standard, Premium, Early Adopter, and Enterprise interest paths.
+  - `admin.html`: updated the billing comparison table, plan labels, plan limits, and upgrade actions while keeping legacy `starter`/`pro` subscription keys compatible.
+  - `api/stripe-sessions.js` and `api/stripe-webhook.js`: added Standard/Premium/Early Adopter plan aliases, per-screen checkout quantities, and webhook mapping for the new public tier names.
+  - `D:\Dev\zigns\site`: updated `pricing.html`, `style.css`, and `api/checkout.js` so the marketing page shows the new tiers and Enterprise sales interest CTA.
+
+---
+
 ## 2026-04-20 — Codex (session 20)
 - **YouTube display timing fix**: fixed per-slide dwell values being treated as milliseconds on `display.html`.
   - `display.html`: added display-side dwell normalization so YouTube and widget slides saved with `dwell: 30` now stay up for 30 seconds instead of rapidly reloading the iframe.

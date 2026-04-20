@@ -32,23 +32,65 @@ async function getRawBody(req) {
 }
 
 const PLAN_LIMITS = {
-  starter: { screensAllowed: 1, usersAllowed: 1, storageGb: 1  },
-  pro:     { screensAllowed: 1, usersAllowed: 5, storageGb: 10 },
+  free:            { screensAllowed: 1,    usersAllowed: 1,    storageGb: 1   },
+  standard:        { screensAllowed: 1,    usersAllowed: 3,    storageGb: 10  },
+  premium:         { screensAllowed: 1,    usersAllowed: 10,   storageGb: 50  },
   'early-adopter': { screensAllowed: 9999, usersAllowed: 9999, storageGb: 50 },
-  free:    { screensAllowed: 1, usersAllowed: 1, storageGb: 1  },
+  enterprise:      { screensAllowed: 9999, usersAllowed: 9999, storageGb: 100 },
+  // Legacy plan keys map to the new public pricing structure.
+  starter:         { screensAllowed: 1,    usersAllowed: 3,    storageGb: 10  },
+  pro:             { screensAllowed: 1,    usersAllowed: 10,   storageGb: 50  },
 };
 
 const PLAN_LABELS = {
-  'starter':       'Starter',
-  'pro':           'Pro',
+  'free':          'Starter',
+  'starter':       'Standard',
+  'standard':      'Standard',
+  'pro':           'Premium',
+  'premium':       'Premium',
   'early-adopter': 'Early Adopter',
+  'enterprise':    'Enterprise',
 };
+
+const PER_SCREEN_PLANS = new Set(['standard', 'premium', 'starter', 'pro']);
+
+function canonicalPlanKey(plan) {
+  if (plan === 'starter') return 'standard';
+  if (plan === 'pro') return 'premium';
+  if (plan === 'ea') return 'early-adopter';
+  return plan || 'free';
+}
+
+function planFromPriceId(priceId) {
+  const mappings = [
+    [process.env.STRIPE_STANDARD_PRICE_ID, 'standard'],
+    [process.env.STRIPE_STANDARD_MONTHLY_PRICE_ID, 'standard'],
+    [process.env.STRIPE_STANDARD_ANNUAL_PRICE_ID, 'standard'],
+    [process.env.STRIPE_PREMIUM_PRICE_ID, 'premium'],
+    [process.env.STRIPE_PREMIUM_MONTHLY_PRICE_ID, 'premium'],
+    [process.env.STRIPE_PREMIUM_ANNUAL_PRICE_ID, 'premium'],
+    [process.env.STRIPE_EARLY_ADOPTER_PRICE_ID, 'early-adopter'],
+    [process.env.STRIPE_EARLY_ADOPTER_MONTHLY_PRICE_ID, 'early-adopter'],
+    [process.env.STRIPE_EARLY_ADOPTER_ANNUAL_PRICE_ID, 'early-adopter'],
+    // Existing marketing-site price IDs: $5 per-screen and $50 early-adopter.
+    ['price_1TK02WRuAPPHV19GvMremOT1', 'standard'],
+    ['price_1TK03GRuAPPHV19GG2FZJFsi', 'standard'],
+    ['price_1TK0rRRudWboEbYXjnNkzBNO', 'standard'],
+    ['price_1TK0rORudWboEbYXWdnlb1EI', 'standard'],
+    ['price_1TK09LRuAPPHV19GsVkAieXE', 'early-adopter'],
+    ['price_1TK09LRuAPPHV19GZIGFuNIG', 'early-adopter'],
+    ['price_1TK0rQRudWboEbYXZNxV8ql3', 'early-adopter'],
+    ['price_1TK0rPRudWboEbYXod5Jjvqt', 'early-adopter'],
+  ];
+  const match = mappings.find(([id]) => id && id === priceId);
+  return match ? match[1] : null;
+}
 
 async function sendWelcomeEmail(email, plan) {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) { console.warn('RESEND_API_KEY not set — skipping welcome email'); return; }
 
-  const planLabel = PLAN_LABELS[plan] || plan;
+  const planLabel = PLAN_LABELS[canonicalPlanKey(plan)] || plan;
   const html = `
     <div style="font-family:sans-serif;max-width:560px;margin:0 auto;color:#1a2e44">
       <div style="margin-bottom:32px">
@@ -135,23 +177,24 @@ module.exports = async function handler(req, res) {
       case 'checkout.session.completed': {
         const session = event.data.object;
         const orgId   = session.metadata?.orgId;
-        const plan    = session.metadata?.plan || 'starter';
+        const plan    = canonicalPlanKey(session.metadata?.plan || 'standard');
         const source  = session.metadata?.source;
 
         // Fetch subscription to get quantity (number of screens)
         let screensCount = 1;
-        if (plan === 'pro') {
+        if (PER_SCREEN_PLANS.has(plan)) {
           const subscription = await stripe.subscriptions.retrieve(session.subscription);
           screensCount = subscription.items.data[0].quantity || 1;
         }
 
+        const limits = PLAN_LIMITS[plan] || PLAN_LIMITS.standard;
         const subscriptionData = {
+          ...limits,
           plan,
           status: 'active',
           stripeCustomerId: session.customer,
           stripeSubscriptionId: session.subscription,
-          ...(PLAN_LIMITS[plan] || PLAN_LIMITS.starter),
-          screensAllowed: plan === 'pro' ? screensCount : (PLAN_LIMITS[plan]?.screensAllowed || 1),
+          screensAllowed: PER_SCREEN_PLANS.has(plan) ? screensCount : limits.screensAllowed,
         };
 
         if (orgId) {
@@ -176,20 +219,20 @@ module.exports = async function handler(req, res) {
         if (!orgId) break;
 
         const priceId = sub.items?.data?.[0]?.price?.id;
-        let plan = 'starter';
-        if (priceId === 'price_1TK02WRuAPPHV19GvMremOT1' || priceId === 'price_1TK03GRuAPPHV19GG2FZJFsi') plan = 'pro';
-        if (priceId === 'price_1TK09LRuAPPHV19GsVkAieXE' || priceId === 'price_1TK09LRuAPPHV19GZIGFuNIG') plan = 'early-adopter';
+        let plan = canonicalPlanKey(sub.metadata?.plan || planFromPriceId(priceId) || 'standard');
+        if (!PLAN_LIMITS[plan]) plan = 'standard';
 
         const screensCount = sub.items?.data?.[0]?.quantity || 1;
+        const limits = PLAN_LIMITS[plan] || PLAN_LIMITS.standard;
 
         await updateOrgSubscription(db, orgId, {
+          ...limits,
           plan,
           status:               sub.status,
           stripeCustomerId:     sub.customer,
           stripeSubscriptionId: sub.id,
-          screensAllowed:       plan === 'pro' ? screensCount : (PLAN_LIMITS[plan]?.screensAllowed || 1),
+          screensAllowed:       PER_SCREEN_PLANS.has(plan) ? screensCount : limits.screensAllowed,
           currentPeriodEnd:     new Date(sub.current_period_end * 1000).toISOString(),
-          ...(PLAN_LIMITS[plan] || PLAN_LIMITS.starter),
         });
         break;
       }

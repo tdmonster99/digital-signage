@@ -1,8 +1,12 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 const PLANS = {
-  starter: { priceId: process.env.STRIPE_STARTER_PRICE_ID, name: 'Starter' },
-  pro:     { priceId: process.env.STRIPE_PRO_PRICE_ID,     name: 'Pro'     },
+  standard:        { priceId: process.env.STRIPE_STANDARD_PRICE_ID || process.env.STRIPE_STARTER_PRICE_ID, name: 'Standard' },
+  premium:         { priceId: process.env.STRIPE_PREMIUM_PRICE_ID  || process.env.STRIPE_PRO_PRICE_ID,     name: 'Premium'  },
+  'early-adopter': { priceId: process.env.STRIPE_EARLY_ADOPTER_PRICE_ID,                              name: 'Early Adopter' },
+  // Legacy aliases kept for older UI links and existing integrations.
+  starter:         { priceId: process.env.STRIPE_STANDARD_PRICE_ID || process.env.STRIPE_STARTER_PRICE_ID, name: 'Standard' },
+  pro:             { priceId: process.env.STRIPE_PREMIUM_PRICE_ID  || process.env.STRIPE_PRO_PRICE_ID,     name: 'Premium'  },
 };
 
 module.exports = async function handler(req, res) {
@@ -22,18 +26,22 @@ module.exports = async function handler(req, res) {
 
   // ── Checkout session ──────────────────────────────────────────────────────
   if (type === 'checkout') {
-    const { orgId, plan, customerEmail, stripeCustomerId } = req.body || {};
+    const { orgId, plan, customerEmail, stripeCustomerId, screenQuantity } = req.body || {};
     if (!orgId || !plan) return res.status(400).json({ error: 'orgId and plan are required' });
 
     const planConfig = PLANS[plan];
     if (!planConfig) return res.status(400).json({ error: 'Invalid plan: ' + plan });
     if (!planConfig.priceId) return res.status(500).json({ error: `Price ID for ${plan} plan not configured.` });
+    const isPerScreenPlan = ['standard', 'premium', 'starter', 'pro'].includes(plan);
+    const quantity = isPerScreenPlan
+      ? Math.max(1, Math.min(500, Number(screenQuantity) || 1))
+      : 1;
 
     try {
       const params = {
         mode:                 'subscription',
         payment_method_types: ['card'],
-        line_items:           [{ price: planConfig.priceId, quantity: 1 }],
+        line_items:           [{ price: planConfig.priceId, quantity }],
         success_url:          `${baseUrl}/admin.html?billing=success&plan=${plan}`,
         cancel_url:           `${baseUrl}/admin.html?billing=cancelled`,
         metadata:             { orgId, plan },
