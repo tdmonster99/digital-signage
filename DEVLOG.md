@@ -4,6 +4,13 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-04-21 — Codex (session 29)
+- **Cross-chat handoff context**: added a dedicated handoff snapshot so a new chat can resume immediately with current roadmap and implementation state.
+  - `NEXT_CHAT_CONTEXT.md`: added current Phase 4 status, latest relevant commits, summary of recent preview/template performance work, and recommended next steps.
+  - No environment variables or external setup changes.
+
+---
+
 ## 2026-04-21 — Codex (session 28)
 - **Template library load-time optimization**: reduced the generic-placeholder window and made template previews appear faster/more consistently.
   - `admin.html`: added background thumbnail warmup scheduling (after auth init and when opening Design a Slide) so previews start rendering before the user scrolls the gallery.
