@@ -8892,6 +8892,7 @@ async function initUserAndOrg(user) {
   loadBrandKit();
   _subscribeBroadcast();
   handleInitialDeepLink();
+  scheduleTemplateThumbnailWarmup();
 
   // Show billing success toast if returning from Stripe
   if (window._pendingBillingSuccess) {
@@ -12739,8 +12740,10 @@ window.openDesigner = function(existingSlide = null, slideIdx = null) {
 
 function openTemplateGallery() {
   document.getElementById('templateGallery').style.display = 'flex';
+  Object.entries(_tmplThumbnails).forEach(([n, url]) => applyTmplThumb(n, url));
   filterGallery();
-  setTimeout(generateTemplateThumbnails, 80);
+  scheduleTemplateThumbnailWarmup();
+  setTimeout(generateTemplateThumbnails, 40);
 }
 
 window.closeTemplateGallery = function() {
@@ -15345,6 +15348,16 @@ window.applyBgImage = function() {
 // ── Template System ───────────────────────────────────────────────────────
 let _tmplCanvas = null;    // offscreen canvas for thumbnail rendering (null = use fabricCanvas)
 let _tmplThumbnails = {}; // cache: templateName → jpeg dataUrl
+const TMPL_THUMB_CACHE_KEY = 'zigns-template-thumbs-v2026-04-21';
+let _tmplThumbPersistTimer = null;
+let _tmplWarmupScheduled = false;
+
+function getUnsplashPhotoUrl(photoId, width = 960, quality = 72) {
+  if (!photoId) return '';
+  const w = Math.max(320, Math.min(2400, Number(width) || 960));
+  const q = Math.max(40, Math.min(90, Number(quality) || 72));
+  return `https://images.unsplash.com/photo-${photoId}?auto=format&fit=crop&w=${w}&q=${q}`;
+}
 
 function tmplText(text, left, top, opts = {}) {
   const cv = _tmplCanvas || fabricCanvas;
@@ -15367,8 +15380,9 @@ function tmplRect(left, top, width, height, opts = {}) {
 function tmplBgPhoto(photoId, overlayRgba) {
   if (_tmplCanvas) {
     // Thumbnail mode: use pre-fetched small URL if available
-    const url = _tmplPhotoUrls[photoId];
+    const url = _tmplPhotoUrls[photoId] || getUnsplashPhotoUrl(photoId, 960, 72);
     if (!url) return;
+    if (!_tmplPhotoUrls[photoId]) _tmplPhotoUrls[photoId] = url;
     _tmplPhotoPending++;
     fabric.Image.fromURL(url, (img) => {
       _tmplPhotoPending--;
@@ -15388,30 +15402,26 @@ function tmplBgPhoto(photoId, overlayRgba) {
     }, { crossOrigin: 'anonymous' });
     return;
   }
-  if (!UNSPLASH_ACCESS_KEY || !fabricCanvas) return;
-  fetch(`${UNSPLASH_BASE}/photos/${photoId}?client_id=${UNSPLASH_ACCESS_KEY}`)
-    .then(r => r.json())
-    .then(photo => {
-      if (!photo?.urls?.regular) return;
-      trackUnsplashDownload(photoId);
-      fabric.Image.fromURL(photo.urls.regular, (img) => {
-        if (!img) return;
-        const scale = Math.max(CANVAS_W / img.width, CANVAS_H / img.height);
-        img.set({ scaleX: scale, scaleY: scale, left: CANVAS_W / 2, top: CANVAS_H / 2,
-                  originX: 'center', originY: 'center', selectable: false, evented: false });
-        fabricCanvas.add(img);
-        if (overlayRgba) {
-          const ov = new fabric.Rect({ left: 0, top: 0, width: CANVAS_W, height: CANVAS_H,
-            fill: overlayRgba, selectable: false, evented: false, rx: 0 });
-          fabricCanvas.add(ov);
-          fabricCanvas.sendToBack(ov);
-        }
-        fabricCanvas.sendToBack(img);
-        fabricCanvas.renderAll();
-        historySave();
-      }, { crossOrigin: 'anonymous' });
-    })
-    .catch(() => {});
+  if (!fabricCanvas) return;
+  const url = getUnsplashPhotoUrl(photoId, 1920, 78);
+  if (!url) return;
+  trackUnsplashDownload(photoId);
+  fabric.Image.fromURL(url, (img) => {
+    if (!img) return;
+    const scale = Math.max(CANVAS_W / img.width, CANVAS_H / img.height);
+    img.set({ scaleX: scale, scaleY: scale, left: CANVAS_W / 2, top: CANVAS_H / 2,
+              originX: 'center', originY: 'center', selectable: false, evented: false });
+    fabricCanvas.add(img);
+    if (overlayRgba) {
+      const ov = new fabric.Rect({ left: 0, top: 0, width: CANVAS_W, height: CANVAS_H,
+        fill: overlayRgba, selectable: false, evented: false, rx: 0 });
+      fabricCanvas.add(ov);
+      fabricCanvas.sendToBack(ov);
+    }
+    fabricCanvas.sendToBack(img);
+    fabricCanvas.renderAll();
+    historySave();
+  }, { crossOrigin: 'anonymous' });
 }
 
 // ── Icon Search (Iconify) ──────────────────────────────────────────────────
@@ -18019,6 +18029,56 @@ const TMPL_THUMB_NAMES = [
   ...EXTRA_TEMPLATE_CATALOG.map(t => t.key)
 ];
 
+function readTemplateThumbCache() {
+  try {
+    const raw = localStorage.getItem(TMPL_THUMB_CACHE_KEY);
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return;
+    _tmplThumbnails = parsed;
+  } catch(_) {}
+}
+
+function persistTemplateThumbCacheNow() {
+  try {
+    const valid = new Set(TMPL_THUMB_NAMES);
+    const compact = {};
+    Object.entries(_tmplThumbnails).forEach(([name, dataUrl]) => {
+      if (!valid.has(name)) return;
+      if (typeof dataUrl !== 'string' || !dataUrl.startsWith('data:image/')) return;
+      compact[name] = dataUrl;
+    });
+    localStorage.setItem(TMPL_THUMB_CACHE_KEY, JSON.stringify(compact));
+  } catch(_) {}
+}
+
+function persistTemplateThumbCacheSoon() {
+  if (_tmplThumbPersistTimer) return;
+  _tmplThumbPersistTimer = setTimeout(() => {
+    _tmplThumbPersistTimer = null;
+    persistTemplateThumbCacheNow();
+  }, 280);
+}
+
+function getTemplateKeyFromCard(card) {
+  if (!card) return null;
+  if (card.dataset.templateKey) return card.dataset.templateKey;
+  const onclick = card.getAttribute('onclick') || '';
+  const m = onclick.match(/selectTemplate\('([^']+)'\)/);
+  return m ? m[1] : null;
+}
+
+function getTemplateThumbRenderOrder() {
+  const cards = Array.from(document.querySelectorAll('#galleryGrid .tmpl-card'));
+  const valid = new Set(TMPL_THUMB_NAMES);
+  const visible = cards
+    .filter(card => !card.classList.contains('tmpl-hidden'))
+    .map(getTemplateKeyFromCard)
+    .filter(Boolean);
+  const all = cards.map(getTemplateKeyFromCard).filter(Boolean);
+  return Array.from(new Set([...visible, ...all, ...TMPL_THUMB_NAMES])).filter(name => valid.has(name));
+}
+
 const TEMPLATE_LIBRARY_NAMES = {
   blank: 'New Slide',
   corporateannouncement: 'Corporate Announcement',
@@ -18209,6 +18269,7 @@ async function renderExtraTemplateGalleryCards() {
   });
   grid.insertBefore(frag, empty);
   grid.dataset.extraTemplateCardsRendered = '1';
+  Object.entries(_tmplThumbnails).forEach(([n, url]) => applyTmplThumb(n, url));
 }
 
 function getTemplateTitle(name) {
@@ -18227,25 +18288,43 @@ const TMPL_PHOTO_IDS = [...new Set(Object.values(TEMPLATE_BG_PHOTOS).map(v => v.
 const TMPL_PHOTO_TEMPLATES = new Set(Object.keys(TEMPLATE_BG_PHOTOS));
 
 const TMPL_FONTS = ['Anton','Bebas Neue','Montserrat','Open Sans','Playfair Display','Raleway','Nunito'];
+let _tmplPhotoPrefetchPromise = null;
 
-async function prefetchTmplPhotoUrls() {
-  await Promise.allSettled(TMPL_PHOTO_IDS.map(async id => {
-    if (_tmplPhotoUrls[id]) return;
-    try {
-      const r = await fetch(`${UNSPLASH_BASE}/photos/${id}?client_id=${UNSPLASH_ACCESS_KEY}`);
-      const p = await r.json();
-      if (p?.urls?.small) _tmplPhotoUrls[id] = p.urls.small;
-    } catch(e) {}
-  }));
+function preloadImage(url) {
+  return new Promise(resolve => {
+    if (!url) { resolve(); return; }
+    const img = new Image();
+    img.decoding = 'async';
+    img.referrerPolicy = 'no-referrer';
+    img.onload = () => resolve();
+    img.onerror = () => resolve();
+    img.src = url;
+  });
 }
 
-async function prepareTemplateAssets() {
+async function prefetchTmplPhotoUrls() {
+  TMPL_PHOTO_IDS.forEach(id => {
+    if (!_tmplPhotoUrls[id]) _tmplPhotoUrls[id] = getUnsplashPhotoUrl(id, 960, 72);
+  });
+  if (_tmplPhotoPrefetchPromise) return _tmplPhotoPrefetchPromise;
+  const primeUrls = TMPL_PHOTO_IDS.slice(0, 18).map(id => _tmplPhotoUrls[id]).filter(Boolean);
+  _tmplPhotoPrefetchPromise = Promise.allSettled(primeUrls.map(preloadImage))
+    .finally(() => { _tmplPhotoPrefetchPromise = null; });
+  return _tmplPhotoPrefetchPromise;
+}
+
+async function prepareTemplateAssets({ waitForFonts = true } = {}) {
   TMPL_FONTS.forEach(loadGoogleFont);
+  const photoTask = prefetchTmplPhotoUrls();
+  if (!waitForFonts || !document.fonts?.load) {
+    await photoTask;
+    return;
+  }
   await Promise.allSettled([
-    prefetchTmplPhotoUrls(),
+    photoTask,
     Promise.race([
       Promise.allSettled(TMPL_FONTS.map(f => document.fonts.load(`bold 72px "${f}"`))),
-      new Promise(r => setTimeout(r, 4000))
+      new Promise(r => setTimeout(r, 1200))
     ])
   ]);
 }
@@ -18291,6 +18370,9 @@ function applyTmplThumb(name, dataUrl) {
   [...p.children].forEach(c => c.style.display = 'none');
 }
 
+readTemplateThumbCache();
+Object.entries(_tmplThumbnails).forEach(([n, url]) => applyTmplThumb(n, url));
+
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', renderExtraTemplateGalleryCards, { once: true });
 } else {
@@ -18304,6 +18386,17 @@ function queueTemplateRender(task) {
   const run = _tmplRenderQueue.catch(() => {}).then(task);
   _tmplRenderQueue = run.catch(() => {});
   return run;
+}
+
+function scheduleTemplateThumbnailWarmup() {
+  if (_tmplWarmupScheduled) return;
+  _tmplWarmupScheduled = true;
+  const run = () => generateTemplateThumbnails().catch(() => {});
+  if (typeof window.requestIdleCallback === 'function') {
+    window.requestIdleCallback(() => setTimeout(run, 220), { timeout: 2800 });
+  } else {
+    setTimeout(run, 900);
+  }
 }
 
 async function generateTemplateThumbnails() {
@@ -18322,11 +18415,11 @@ async function generateTemplateThumbnailsImpl() {
 
   // Restore cached thumbnails immediately on subsequent gallery opens
   Object.entries(_tmplThumbnails).forEach(([n, url]) => applyTmplThumb(n, url));
-  const pending = TMPL_THUMB_NAMES.filter(n => !_tmplThumbnails[n]);
+  const pending = getTemplateThumbRenderOrder().filter(n => !_tmplThumbnails[n]);
   if (!pending.length) return;
 
-  // Step 1: Pre-load all template fonts + pre-fetch photo URLs in parallel
-  await prepareTemplateAssets();
+  // Start fonts/photo hydration without blocking first thumbnail render.
+  await prepareTemplateAssets({ waitForFonts: false });
 
   const el = createDetachedFabricCanvas();
   try {
@@ -18347,9 +18440,11 @@ async function generateTemplateThumbnailsImpl() {
         const url = _tmplCanvas.toDataURL({ format: 'jpeg', quality: 0.82, multiplier: 0.167 });
         _tmplThumbnails[name] = url;
         applyTmplThumb(name, url);
+        persistTemplateThumbCacheSoon();
       } catch(e) { console.warn('Thumbnail failed:', name, e); }
       await new Promise(r => setTimeout(r, 10));
     }
+    persistTemplateThumbCacheNow();
   } finally {
     if (_tmplCanvas) _tmplCanvas.dispose();
     _tmplCanvas = null;
@@ -18364,7 +18459,7 @@ async function buildTemplateSlideFromName(name, options = {}) {
 
 async function buildTemplateSlideFromNameImpl(name, { uploadThumbnail = false } = {}) {
   if (typeof fabric === 'undefined') throw new Error('Fabric.js is not loaded.');
-  await prepareTemplateAssets();
+  await prepareTemplateAssets({ waitForFonts: true });
 
   const el = createDetachedFabricCanvas();
   let tmp = null;
@@ -18390,6 +18485,7 @@ async function buildTemplateSlideFromNameImpl(name, { uploadThumbnail = false } 
       if (name !== 'blank' && previewDataUrl && !_tmplThumbnails[name]) {
         _tmplThumbnails[name] = previewDataUrl;
         applyTmplThumb(name, previewDataUrl);
+        persistTemplateThumbCacheSoon();
       }
     } catch(e) {
       console.warn('Template thumbnail render failed:', name, e);

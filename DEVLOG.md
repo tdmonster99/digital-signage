@@ -4,6 +4,16 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-04-21 — Codex (session 28)
+- **Template library load-time optimization**: reduced the generic-placeholder window and made template previews appear faster/more consistently.
+  - `admin.html`: added background thumbnail warmup scheduling (after auth init and when opening Design a Slide) so previews start rendering before the user scrolls the gallery.
+  - `admin.html`: switched template photo URL hydration from Unsplash metadata API round-trips to direct Unsplash image URLs, plus lightweight image preloading for top photo assets.
+  - `admin.html`: added localStorage-backed template thumbnail cache (`zigns-template-thumbs-v2026-04-21`) so previously rendered previews load immediately on subsequent visits/reloads.
+  - `admin.html`: prioritized thumbnail generation by currently visible gallery cards first, then remaining templates.
+  - No new environment variables or external setup required.
+
+---
+
 ## 2026-04-20 — Codex (session 27)
 - **Dashboard preview fallback UX**: added a visible status pill on Live Preview so loading and failure states are obvious without scrolling or guesswork.
   - `admin.html`: added `#previewStatus` overlay in the Live Preview frame with state styles for loading, ready, and error.
