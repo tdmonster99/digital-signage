@@ -4,6 +4,14 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-04-20 — Codex (session 27)
+- **Dashboard preview fallback UX**: added a visible status pill on Live Preview so loading and failure states are obvious without scrolling or guesswork.
+  - `admin.html`: added `#previewStatus` overlay in the Live Preview frame with state styles for loading, ready, and error.
+  - `admin.html`: enhanced preview iframe logic with load/error listeners and state inspection of `display.html` (`#loader` / `#errBox`) so invalid slideshow or connection issues show a clear message.
+  - No new environment variables or external setup required.
+
+---
+
 ## 2026-04-20 — Codex (session 26)
 - **Dashboard live preview fix**: fixed a blank/black preview regression when org slideshow IDs are not `main`.
   - `admin.html`: hardened `syncPreviewSelect()` so it always keeps a valid selected slideshow ID (preserving current selection when possible, otherwise falling back to the active show or first available show).

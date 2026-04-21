@@ -251,6 +251,31 @@ body {
   width: 100%; height: 100%; border: none; pointer-events: none;
   display: block;
 }
+.preview-status {
+  position: absolute; top: 12px; left: 12px; z-index: 2;
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 10px; border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(17, 24, 39, 0.85); color: #f5f7fb;
+  font-size: 12px; font-weight: 600; letter-spacing: 0.01em;
+  opacity: 0; transform: translateY(-4px); pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+.preview-status.show { opacity: 1; transform: translateY(0); }
+.preview-status.loading::before {
+  content: ""; width: 10px; height: 10px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff;
+  animation: preview-spin 0.7s linear infinite;
+}
+.preview-status.ok {
+  background: rgba(6, 78, 59, 0.86);
+  border-color: rgba(110, 231, 183, 0.5);
+}
+.preview-status.error {
+  background: rgba(127, 29, 29, 0.88);
+  border-color: rgba(252, 165, 165, 0.45);
+}
+@keyframes preview-spin { to { transform: rotate(360deg); } }
 
 /* ── Screens page ───────────────────────────────────────────────────────── */
 #page-screens.active { flex-direction: column; padding: 32px; gap: 24px; }
@@ -3900,6 +3925,9 @@ body.role-editor .admin-action {
         </div>
         <div class="preview-wrap">
           <iframe id="previewFrame" src="about:blank"></iframe>
+          <div id="previewStatus" class="preview-status show loading">
+            <span id="previewStatusText">Loading preview...</span>
+          </div>
         </div>
       </div>
 
@@ -18544,22 +18572,134 @@ window.addEventListener('resize', () => {
 // (showPage is defined in the Brand Kit module above)
 
 // ── Preview frame ──────────────────────────────────────────────────────────
+let _previewLoadTimer = null;
+let _previewWatchTimer = null;
+let _previewHideTimer = null;
+let _previewFrameEventsBound = false;
+
+function _setPreviewStatus(type, text, persist = false) {
+  const badge = document.getElementById('previewStatus');
+  const textEl = document.getElementById('previewStatusText');
+  if (!badge || !textEl) return;
+  if (_previewHideTimer) {
+    clearTimeout(_previewHideTimer);
+    _previewHideTimer = null;
+  }
+  badge.classList.remove('loading', 'ok', 'error');
+  if (!type || !text) {
+    badge.classList.remove('show');
+    return;
+  }
+  badge.classList.add('show', type);
+  textEl.textContent = text;
+  if (type === 'ok' && !persist) {
+    _previewHideTimer = setTimeout(() => badge.classList.remove('show'), 1200);
+  }
+}
+
+function _stopPreviewWatch() {
+  if (_previewWatchTimer) {
+    clearInterval(_previewWatchTimer);
+    _previewWatchTimer = null;
+  }
+}
+
+function _inspectPreviewFrameState() {
+  const frame = document.getElementById('previewFrame');
+  if (!frame) return null;
+  try {
+    const doc = frame.contentDocument;
+    if (!doc) return null;
+    const errBox = doc.getElementById('errBox');
+    if (errBox && getComputedStyle(errBox).display !== 'none') {
+      const msg = (errBox.textContent || '').replace(/\s+/g, ' ').trim();
+      _setPreviewStatus('error', msg || 'Preview unavailable for selected slideshow.', true);
+      return 'error';
+    }
+    const loader = doc.getElementById('loader');
+    if (loader && getComputedStyle(loader).display !== 'none') {
+      _setPreviewStatus('loading', 'Loading preview...', true);
+      return 'loading';
+    }
+    _setPreviewStatus('ok', 'Preview ready');
+    return 'ok';
+  } catch(_) {}
+  return null;
+}
+
+function _ensurePreviewFrameEvents() {
+  const frame = document.getElementById('previewFrame');
+  if (!frame || _previewFrameEventsBound) return;
+
+  frame.addEventListener('load', () => {
+    if (_previewLoadTimer) {
+      clearTimeout(_previewLoadTimer);
+      _previewLoadTimer = null;
+    }
+    _stopPreviewWatch();
+    const state = _inspectPreviewFrameState();
+    if (state === 'loading') {
+      _previewWatchTimer = setInterval(() => {
+        const next = _inspectPreviewFrameState();
+        if (next === 'ok' || next === 'error') _stopPreviewWatch();
+      }, 1200);
+    }
+  });
+
+  frame.addEventListener('error', () => {
+    if (_previewLoadTimer) {
+      clearTimeout(_previewLoadTimer);
+      _previewLoadTimer = null;
+    }
+    _setPreviewStatus('error', 'Preview failed to load. Please refresh and try again.', true);
+  });
+
+  _previewFrameEventsBound = true;
+}
+
 window.updatePreviewFrame = function() {
   const sel = document.getElementById('previewShowSelect');
   const frame = document.getElementById('previewFrame');
+  _ensurePreviewFrameEvents();
   if (!sel || !frame) return;
 
   if (!sel.value && sel.options.length) sel.value = sel.options[0].value;
   if (!sel.value) {
+    if (_previewLoadTimer) {
+      clearTimeout(_previewLoadTimer);
+      _previewLoadTimer = null;
+    }
+    _stopPreviewWatch();
     frame.src = 'about:blank';
+    _setPreviewStatus('error', 'No slideshow selected for preview.', true);
     return;
   }
-  frame.src = 'display.html?slideshow=' + encodeURIComponent(sel.value);
+
+  const nextSrc = 'display.html?slideshow=' + encodeURIComponent(sel.value);
+  const showName = sel.selectedOptions?.[0]?.textContent?.trim() || sel.value;
+  if (frame.getAttribute('src') === nextSrc) {
+    const state = _inspectPreviewFrameState();
+    if (state === 'loading' && !_previewWatchTimer) {
+      _previewWatchTimer = setInterval(() => {
+        const next = _inspectPreviewFrameState();
+        if (next === 'ok' || next === 'error') _stopPreviewWatch();
+      }, 1200);
+    }
+    return;
+  }
+
+  if (_previewLoadTimer) clearTimeout(_previewLoadTimer);
+  _setPreviewStatus('loading', `Loading ${showName} preview...`, true);
+  _previewLoadTimer = setTimeout(() => {
+    _setPreviewStatus('error', 'Preview is taking longer than expected. Try refresh or reselect the slideshow.', true);
+  }, 9000);
+  frame.src = nextSrc;
 };
 
 function syncPreviewSelect() {
   const sel = document.getElementById('previewShowSelect');
   const frame = document.getElementById('previewFrame');
+  _ensurePreviewFrameEvents();
   if (!sel) return;
   // Rebuild options from known slideshows in the show list
   const items = document.querySelectorAll('#showList .show-item');
@@ -18585,10 +18725,17 @@ function syncPreviewSelect() {
 
     const expectedSrc = 'display.html?slideshow=' + encodeURIComponent(sel.value);
     if (!frame || frame.getAttribute('src') !== expectedSrc) updatePreviewFrame();
+    else _inspectPreviewFrameState();
     return;
   }
 
+  if (_previewLoadTimer) {
+    clearTimeout(_previewLoadTimer);
+    _previewLoadTimer = null;
+  }
+  _stopPreviewWatch();
   if (frame) frame.src = 'about:blank';
+  _setPreviewStatus('error', 'No slideshows available for preview.', true);
 }
 
 // ── Screens page ───────────────────────────────────────────────────────────
