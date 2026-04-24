@@ -144,6 +144,19 @@ Gap analysis against Yodeck, ScreenCloud, Rise Vision, OptiSigns, Screenly, and 
 
 ---
 
+### 12. 14-Day Trial + Automatic Downgrade
+**Why:** Lower-friction trials help new orgs evaluate the full product before committing, while still landing them on the Starter/Free 1-screen floor when the trial ends.
+**What to build:**
+- Add trial fields to the org subscription doc: `status: 'trialing'`, `trialStartedAt`, `trialEndsAt`, `trialPlan`.
+- Treat an active trial as the chosen paid plan for feature gating, usage bars, and billing UI.
+- Add a scheduled expiry job that downgrades expired trials to Starter/Free and clamps `screensAllowed` back to 1.
+- Show a visible trial countdown / expiry banner in the billing section and settings hub.
+- Decide whether over-limit screens are only blocked in admin or also soft-disabled in `display.html` once the org drops back to free.
+
+**Files:** `admin.html`, `display.html`, `api/stripe-sessions.js`, `api/stripe-webhook.js`, `vercel.json`, `firestore.rules`
+
+---
+
 ## Summary Table — Phase 4
 
 | # | Feature | Effort | Impact | Competitors |
@@ -159,6 +172,7 @@ Gap analysis against Yodeck, ScreenCloud, Rise Vision, OptiSigns, Screenly, and 
 | 9 | Google Sheets live data widget | Low | High | 6/6 | ✓ |
 | 10 | Emergency broadcast override | Low | Medium | 3/6 | ✓ |
 | 11 | Content approval workflow | Medium | Medium | 4/6 | ✓ |
+| 12 | 14-day trial + auto-downgrade | Medium | High | — |
 
 ---
 

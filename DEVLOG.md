@@ -4,6 +4,48 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-04-21 — Codex (session 35)
+- **Roadmap update**: added the 14-day trial and automatic downgrade flow to Phase 4 so the billing work is tracked alongside the rest of the product roadmap.
+  - `ROADMAP.md`: inserted a new Phase 4 item for trialing paid tiers, automatic downgrade back to Starter/Free with one screen, and the supporting backend/UI pieces.
+  - No environment variables or external setup changes.
+
+## 2026-04-21 — Codex (session 34)
+- **Widget icon second pass**: tightened the remaining generic app badges so the catalog feels more like a colorful app library than a row of placeholder glyphs.
+  - `admin.html`: rebuilt the QR Code badge into a fuller QR-style mark with stronger finder blocks and a clearer code matrix.
+  - `admin.html`: refreshed the remaining generic widget badges for RSS Ticker, Web Page, Menu Board, WiFi Password, and Stock Ticker so each one reads as a distinct, colorful mini-logo at gallery size.
+  - `admin.html`: verified the updated Apps grid in a temporary local bypass preview render, including a taller viewport pass to spot-check the lower widget row.
+  - `admin.html`: deployed the refreshed icon set to production and updated `app.zigns.io`.
+  - No environment variables or external setup changes.
+
+## 2026-04-21 — Codex (session 33)
+- **Apps icon refresh**: updated the app catalog badges to feel more like Yodeck-style colorful app logos.
+  - `admin.html`: increased the icon badge size, switched the badges to rounded-square containers, and added stronger shadows/borders so the catalog reads less like pale placeholder bubbles.
+  - `admin.html`: replaced the most important brand tiles with more recognizable marks and colors, including YouTube, Instagram, Google Sheets, Google Slides, Google Reviews, and the remaining widget icons.
+  - `admin.html`: deployed the updated catalog to production and visually checked the rendered Apps grid through a temporary local bypass copy because the production route still redirects to sign-in for anonymous sessions.
+  - No environment variables or external setup changes.
+
+## 2026-04-21 — Codex (session 32)
+- **Template-richness follow-up**: turned the most sparse office/wayfinding templates into more image-led compositions and invalidated stale thumbnail cache data.
+  - `admin.html`: added a reusable inset-photo helper and used it to give list, directory, split-welcome, and QR templates real photo panels instead of relying only on full-canvas backgrounds.
+  - `admin.html`: switched `teammeeting` and `weeklyreminders` to split layouts with dedicated image tiles so the office boards feel more intentional and less flat.
+  - `admin.html`: tightened text bounds on the metrics and directory renderers so long labels have more breathing room.
+  - `admin.html`: bumped the thumbnail cache key to `zigns-template-thumbs-v2026-04-21-richer` so the gallery will regenerate with the updated template visuals.
+  - No environment variables or external setup changes.
+
+---
+
+## 2026-04-21 — Codex (session 31)
+- **Template polish pass**: fixed the broken extra-template layouts and made the new templates feel more photo-led.
+  - `admin.html`: tightened the announcement, list, metrics, directory, warning, QR, and split-welcome renderers so long titles and body copy fit safely instead of clipping.
+  - `admin.html`: switched several template backgrounds to Pexels-hosted images and made the preview/prefetch pipeline understand direct image URLs.
+  - `.impeccable.md`: added persistent design context focused on legibility, safe margins, and photo-driven signage layouts.
+  - No environment variables or external setup changes.
+
+## 2026-04-21 — Codex (session 30)
+- **Template gallery first-paint fix**: removed the blocking wait on extra template photo prefetch so the gallery can render immediately on open.
+  - `admin.html`: `renderExtraTemplateGalleryCards()` now kicks off `prefetchTmplPhotoUrls()` in the background instead of awaiting it before inserting the extra template cards.
+  - No environment variables or external setup changes.
+
 ## 2026-04-21 — Codex (session 29)
 - **Cross-chat handoff context**: added a dedicated handoff snapshot so a new chat can resume immediately with current roadmap and implementation state.
   - `NEXT_CHAT_CONTEXT.md`: added current Phase 4 status, latest relevant commits, summary of recent preview/template performance work, and recommended next steps.
