@@ -2133,6 +2133,18 @@
       schedMinTick = setInterval(_schedApply, 60 * 1000);
     }
 
+    // ── Suspended overlay (over-limit after plan downgrade) ──────────────────
+    const stageSuspended = document.getElementById('stageSuspended');
+    function _applySuspended(isSuspended) {
+      if (!stageSuspended) return;
+      if (isSuspended) {
+        stageSuspended.style.display = 'flex';
+        clearTimeout(timer);
+      } else {
+        stageSuspended.style.display = 'none';
+      }
+    }
+
     // ── Working Hours enforcement ────────────────────────────────────────────
     // When enabled, blacks out the display outside the configured window.
     let workingHours = null;   // { enabled, startHour, startMin, endHour, endMin, days[] }
@@ -2211,6 +2223,8 @@
           // re-fires this snapshot callback, causing an infinite write loop.
           emitOnline(newOrgId);
           _subscribeBroadcast(newOrgId);
+          _applySuspended(data.suspended === true);
+          if (data.suspended === true) return;
           baseShowId = newBaseId;
           screenTimezone = data.timezone || null;
           _setWorkingHours(data.workingHours || null);
@@ -2363,6 +2377,25 @@
     align-items: center; justify-content: center; color: #555;
     font-family: 'Segoe UI', Arial, sans-serif; font-size: 28px; letter-spacing: 0.5px; }
 
+  #stageSuspended {
+    position: fixed; inset: 0; z-index: 150;
+    display: none; flex-direction: column;
+    align-items: center; justify-content: center;
+    background: #0f1b29; color: #fff;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    text-align: center; padding: 60px;
+  }
+  #stageSuspended .sus-mark {
+    font-size: 4vw; font-weight: 700; letter-spacing: 0.05em;
+    margin-bottom: 2vw; opacity: .7;
+  }
+  #stageSuspended .sus-title {
+    font-size: 5vw; font-weight: 700; margin-bottom: 1.2vw;
+  }
+  #stageSuspended .sus-msg {
+    font-size: 2.2vw; line-height: 1.5; max-width: 70vw;
+    color: rgba(255,255,255,.7);
+  }
   #stageBroadcast {
     position: fixed; inset: 0; z-index: 200;
     display: none; flex-direction: column;
@@ -2756,6 +2789,13 @@
 <div id="stageMenuboard" class="stage"></div>
 
 <div id="stageClosed" class="stage">Outside working hours</div>
+
+<!-- Suspended (subscription over screen limit) overlay -->
+<div id="stageSuspended">
+  <div class="sus-mark">ZIGNS</div>
+  <div class="sus-title">Subscription limit reached</div>
+  <div class="sus-msg">This screen is paused because the account has more screens paired than the current plan allows. Ask an admin to upgrade the plan or unpair this screen in the admin panel.</div>
+</div>
 
 <!-- Emergency broadcast overlay (z-index 200, above everything) -->
 <div id="stageBroadcast">

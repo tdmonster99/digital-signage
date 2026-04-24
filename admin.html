@@ -3433,6 +3433,29 @@ body.role-editor .admin-action {
 .plan-upgrade-btn.primary { background: var(--accent); color: #fff; }
 .plan-upgrade-btn.outline { background: none; border: 1px solid var(--border); color: var(--muted); }
 .plan-upgrade-btn:hover   { opacity: .85; }
+.plan-trial-link {
+  display: block; margin-top: 6px;
+  font-size: 11px; font-weight: 600; color: var(--accent);
+  text-decoration: none; letter-spacing: .02em;
+}
+.plan-trial-link:hover { text-decoration: underline; }
+.plan-badge.trialing::after {
+  content: 'TRIAL'; margin-left: 8px; padding: 2px 7px;
+  font-size: 10px; font-weight: 700; letter-spacing: .08em;
+  background: rgba(245, 158, 11, .18); color: #b45309; border-radius: 10px;
+}
+.trial-banner {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px; margin-bottom: 16px;
+  background: linear-gradient(135deg, rgba(245,158,11,.12), rgba(250,204,21,.08));
+  border: 1px solid rgba(245, 158, 11, .3);
+  border-radius: 12px; font-size: 13px; color: var(--text);
+}
+.trial-banner .trial-banner-icon {
+  font-size: 20px; flex-shrink: 0;
+}
+.trial-banner .trial-banner-body { flex: 1; line-height: 1.4; }
+.trial-banner .trial-banner-body strong { color: #b45309; }
 .upgrade-prompt {
   position: fixed; inset: 0; z-index: 1200;
   background: rgba(0,0,0,.55); backdrop-filter: blur(4px);
@@ -5027,6 +5050,11 @@ body.role-editor .admin-action {
           <button class="btn btn-secondary" id="manageBillingBtn" onclick="openBillingPortal()" style="display:none">Manage Billing</button>
         </div>
         <div class="settings-section-body">
+          <div id="trialBanner" class="trial-banner" style="display:none">
+            <div class="trial-banner-icon">✦</div>
+            <div class="trial-banner-body" id="trialBannerText"></div>
+            <button class="btn btn-secondary" onclick="openBillingPortal()" style="font-size:12px;padding:6px 12px">Manage</button>
+          </div>
           <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:24px;flex-wrap:wrap">
             <div>
               <div style="font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.06em">Current Plan</div>
@@ -8972,8 +9000,15 @@ async function initUserAndOrg(user) {
   // Show billing success toast if returning from Stripe
   if (window._pendingBillingSuccess) {
     const planName = window._pendingBillingSuccess;
+    const wasTrial = window._pendingBillingTrial === true;
     window._pendingBillingSuccess = null;
-    setTimeout(() => toast(`You're now on the ${planName.charAt(0).toUpperCase() + planName.slice(1)} plan! 🎉`), 800);
+    window._pendingBillingTrial   = false;
+    const labelled = planName.charAt(0).toUpperCase() + planName.slice(1);
+    setTimeout(() => toast(
+      wasTrial
+        ? `Your 14-day ${labelled} trial is active. 🎉`
+        : `You're now on the ${labelled} plan! 🎉`
+    ), 800);
   }
 }
 
@@ -9337,16 +9372,32 @@ function renderBillingSection() {
   };
 
   // Plan badge
+  const isTrialing = sub.status === 'trialing';
   const badge = document.getElementById('currentPlanBadge');
   badge.textContent = planLabel(plan);
-  badge.className   = 'plan-badge ' + plan;
+  badge.className   = 'plan-badge ' + plan + (isTrialing ? ' trialing' : '');
 
-  // Next billing date
+  // Next billing date / trial end
   const periodEl = document.getElementById('billingPeriodText');
-  if (sub.currentPeriodEnd && plan !== 'free') {
+  if (isTrialing && sub.trialEndsAt) {
+    periodEl.textContent = 'Trial ends ' + new Date(sub.trialEndsAt).toLocaleDateString();
+  } else if (sub.currentPeriodEnd && plan !== 'free') {
     periodEl.textContent = 'Renews ' + new Date(sub.currentPeriodEnd).toLocaleDateString();
   } else {
     periodEl.textContent = '';
+  }
+
+  // Trial banner
+  const bannerEl   = document.getElementById('trialBanner');
+  const bannerText = document.getElementById('trialBannerText');
+  if (bannerEl && bannerText) {
+    if (isTrialing && sub.trialEndsAt) {
+      const daysLeft = Math.max(0, Math.ceil((new Date(sub.trialEndsAt) - new Date()) / (1000 * 60 * 60 * 24)));
+      bannerText.innerHTML = `You're on a <strong>${planLabel(plan)} trial</strong>. ${daysLeft === 0 ? 'Trial ends today.' : daysLeft + ' day' + (daysLeft === 1 ? '' : 's') + ' left.'} Your card will be charged automatically when the trial ends.`;
+      bannerEl.style.display = 'flex';
+    } else {
+      bannerEl.style.display = 'none';
+    }
   }
 
   // Manage billing button
@@ -9364,10 +9415,12 @@ function renderBillingSection() {
 
   // Plan action buttons
   const actions = { free: '', standard: '', premium: '', ea: '', enterprise: '' };
+  const trialLink = (targetPlan) =>
+    `<a href="#" class="plan-trial-link" onclick="event.preventDefault();startCheckout('${targetPlan}', {trial: true})">Start 14-day free trial</a>`;
   if (plan === 'free') {
-    actions.standard = `<button class="plan-upgrade-btn primary" onclick="startCheckout('standard')">Upgrade</button>`;
-    actions.premium  = `<button class="plan-upgrade-btn primary" onclick="startCheckout('premium')">Upgrade</button>`;
-    actions.ea       = `<button class="plan-upgrade-btn outline" onclick="startCheckout('early-adopter')">Upgrade</button>`;
+    actions.standard = `<button class="plan-upgrade-btn primary" onclick="startCheckout('standard')">Upgrade</button>${trialLink('standard')}`;
+    actions.premium  = `<button class="plan-upgrade-btn primary" onclick="startCheckout('premium')">Upgrade</button>${trialLink('premium')}`;
+    actions.ea       = `<button class="plan-upgrade-btn outline" onclick="startCheckout('early-adopter')">Upgrade</button>${trialLink('early-adopter')}`;
     actions.free     = `<span style="font-size:12px;color:var(--accent)">Current</span>`;
   } else if (plan === 'standard') {
     actions.standard = `<span style="font-size:12px;color:var(--accent)">Current</span>`;
@@ -9418,8 +9471,9 @@ function renderUsageBar(label, used, max) {
   </div>`;
 }
 
-window.startCheckout = async function(plan) {
+window.startCheckout = async function(plan, opts) {
   if (!currentOrgId || !currentUser) { toast('Sign in first.', true); return; }
+  const trial = !!(opts && opts.trial);
   try {
     const sub = getSubscription();
     const res = await fetch('/api/stripe-sessions?type=checkout', {
@@ -9428,6 +9482,7 @@ window.startCheckout = async function(plan) {
       body: JSON.stringify({
         orgId:            currentOrgId,
         plan,
+        trial,
         screenQuantity:   Math.max(1, _cachedScreens.length || 1),
         customerEmail:    currentUser.email,
         stripeCustomerId: sub.stripeCustomerId || null,
@@ -9485,10 +9540,12 @@ window.closeUpgradePrompt = function() {
   const params = new URLSearchParams(window.location.search);
   const status = params.get('billing');
   const plan   = params.get('plan');
+  const trial  = params.get('trial') === '1';
   if (status === 'success' && plan) {
     window.history.replaceState({}, '', window.location.pathname);
     // Toast shown after org loads
     window._pendingBillingSuccess = plan;
+    window._pendingBillingTrial   = trial;
   } else if (status === 'cancelled') {
     window.history.replaceState({}, '', window.location.pathname);
     // silently ignore
@@ -19260,6 +19317,7 @@ function initScreensPage() {
       _cachedScreens = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       _screensReady  = true;
       renderScreens(_cachedScreens);
+      enforceScreenLimit(_cachedScreens);
       // Re-render publish modal if it was opened before data arrived
       if (_pendingPublishModal && document.getElementById('publishModal').classList.contains('open')) {
         _pendingPublishModal = false;
@@ -19268,6 +19326,31 @@ function initScreensPage() {
     },
     err => console.warn('Screens listener error:', err.message)
   );
+}
+
+// Suspend screens that exceed the current plan's screensAllowed. Oldest-first
+// wins: screens are kept by registration order, newest overflow gets suspended.
+// Idempotent — only writes when the desired state differs from current.
+async function enforceScreenLimit(screens) {
+  if (!currentOrgId || currentRole !== 'admin') return;
+  const sub    = getSubscription();
+  const limit  = Number(sub.screensAllowed) || 1;
+  const sorted = [...screens].sort((a, b) => {
+    const aT = a.registeredAt ? new Date(a.registeredAt).getTime() : 0;
+    const bT = b.registeredAt ? new Date(b.registeredAt).getTime() : 0;
+    return aT - bT;
+  });
+  for (let i = 0; i < sorted.length; i++) {
+    const screen    = sorted[i];
+    const shouldSuspend = i >= limit;
+    const isSuspended   = screen.suspended === true;
+    if (shouldSuspend === isSuspended) continue;
+    try {
+      await updateDoc(doc(db, 'screens', screen.id), { suspended: shouldSuspend });
+    } catch (e) {
+      console.warn('enforceScreenLimit write failed for', screen.id, e.message);
+    }
+  }
 }
 
 function fmtLastSeen(lastSeen) {
@@ -20388,12 +20471,21 @@ window.showSettingsSub = function(subId) {
 function updateSettingsHubStatus() {
   // Plan status
   const plan = currentPlanKey();
+  const sub  = getSubscription();
+  const isTrialing = sub.status === 'trialing';
   const planEl = document.getElementById('shPlanStatus');
-  if (planEl) planEl.textContent = planLabel(plan) + ' Plan';
+  if (planEl) {
+    if (isTrialing && sub.trialEndsAt) {
+      const daysLeft = Math.max(0, Math.ceil((new Date(sub.trialEndsAt) - new Date()) / (1000 * 60 * 60 * 24)));
+      planEl.textContent = planLabel(plan) + ' trial · ' + (daysLeft === 0 ? 'ends today' : daysLeft + 'd left');
+    } else {
+      planEl.textContent = planLabel(plan) + ' Plan';
+    }
+  }
 
-  // Show billing portal row if paid
+  // Show billing portal row if paid or trialing
   const bpRow = document.getElementById('shBillingPortalRow');
-  if (bpRow) bpRow.style.display = (plan !== 'free') ? '' : 'none';
+  if (bpRow) bpRow.style.display = (plan !== 'free' || isTrialing) ? '' : 'none';
 
   // Org name
   const orgEl = document.getElementById('shOrgNameStatus');

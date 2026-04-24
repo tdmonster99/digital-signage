@@ -4,6 +4,17 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-04-23 — Claude (session 36)
+- **14-day trial + automatic downgrade (Phase 4 #12)**: added opt-in trial flow that rides on Stripe's native trial machinery, with admin UI and display-side enforcement when plans drop below the paired screen count.
+  - `api/stripe-sessions.js`: checkout now accepts `trial: true` and passes `trial_period_days: 14` with `trial_settings.end_behavior.missing_payment_method: 'cancel'`. Adds `trial=1` to the success URL so the UI can show a trial-specific toast.
+  - `api/stripe-webhook.js`: `checkout.session.completed` and `customer.subscription.updated` now capture `status: 'trialing'`, `trialStartedAt`, `trialEndsAt`, and `currentPeriodEnd` from Stripe. `customer.subscription.deleted` clears the trial fields.
+  - `admin.html`: added "Start 14-day free trial" link under each paid-tier upgrade button when the org is on Free. `startCheckout()` forwards the trial flag. New trial banner in the billing sub-view with days-remaining countdown. Plan badge gets a `trialing` suffix label. Settings hub `shPlanStatus` now shows "Premium trial · 10d left" when trialing.
+  - `admin.html`: `enforceScreenLimit()` runs on every screens listener update and marks overflow screens (sorted by registration order, newest first) with `suspended: true`. Idempotent write — skips when the doc already matches.
+  - `display.html`: new `#stageSuspended` overlay ("Subscription limit reached") shows when the screen's own doc has `suspended: true`; pauses the slideshow timer and hides on un-suspend.
+  - No environment variables or external setup changes.
+
+---
+
 ## 2026-04-21 — Codex (session 35)
 - **Roadmap update**: added the 14-day trial and automatic downgrade flow to Phase 4 so the billing work is tracked alongside the rest of the product roadmap.
   - `ROADMAP.md`: inserted a new Phase 4 item for trialing paid tiers, automatic downgrade back to Starter/Free with one screen, and the supporting backend/UI pieces.

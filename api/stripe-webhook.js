@@ -180,21 +180,34 @@ module.exports = async function handler(req, res) {
         const plan    = canonicalPlanKey(session.metadata?.plan || 'standard');
         const source  = session.metadata?.source;
 
-        // Fetch subscription to get quantity (number of screens)
+        // Fetch subscription to get quantity, status, and trial info
         let screensCount = 1;
-        if (PER_SCREEN_PLANS.has(plan)) {
+        let subStatus = 'active';
+        let trialStartedAt = null;
+        let trialEndsAt = null;
+        let currentPeriodEnd = null;
+        if (session.subscription) {
           const subscription = await stripe.subscriptions.retrieve(session.subscription);
-          screensCount = subscription.items.data[0].quantity || 1;
+          if (PER_SCREEN_PLANS.has(plan)) {
+            screensCount = subscription.items.data[0].quantity || 1;
+          }
+          subStatus = subscription.status || 'active';
+          if (subscription.trial_start) trialStartedAt = new Date(subscription.trial_start * 1000).toISOString();
+          if (subscription.trial_end)   trialEndsAt    = new Date(subscription.trial_end   * 1000).toISOString();
+          if (subscription.current_period_end) currentPeriodEnd = new Date(subscription.current_period_end * 1000).toISOString();
         }
 
         const limits = PLAN_LIMITS[plan] || PLAN_LIMITS.standard;
         const subscriptionData = {
           ...limits,
           plan,
-          status: 'active',
+          status: subStatus,
           stripeCustomerId: session.customer,
           stripeSubscriptionId: session.subscription,
           screensAllowed: PER_SCREEN_PLANS.has(plan) ? screensCount : limits.screensAllowed,
+          trialStartedAt,
+          trialEndsAt,
+          currentPeriodEnd,
         };
 
         if (orgId) {
@@ -233,6 +246,8 @@ module.exports = async function handler(req, res) {
           stripeSubscriptionId: sub.id,
           screensAllowed:       PER_SCREEN_PLANS.has(plan) ? screensCount : limits.screensAllowed,
           currentPeriodEnd:     new Date(sub.current_period_end * 1000).toISOString(),
+          trialStartedAt:       sub.trial_start ? new Date(sub.trial_start * 1000).toISOString() : null,
+          trialEndsAt:          sub.trial_end   ? new Date(sub.trial_end   * 1000).toISOString() : null,
         });
         break;
       }
@@ -246,6 +261,8 @@ module.exports = async function handler(req, res) {
           plan:                 'free',
           status:               'canceled',
           stripeSubscriptionId: null,
+          trialStartedAt:       null,
+          trialEndsAt:          null,
           ...PLAN_LIMITS.free,
         });
         break;

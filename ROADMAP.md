@@ -146,14 +146,15 @@ Gap analysis against Yodeck, ScreenCloud, Rise Vision, OptiSigns, Screenly, and 
 
 ### 12. 14-Day Trial + Automatic Downgrade
 **Why:** Lower-friction trials help new orgs evaluate the full product before committing, while still landing them on the Starter/Free 1-screen floor when the trial ends.
-**What to build:**
-- Add trial fields to the org subscription doc: `status: 'trialing'`, `trialStartedAt`, `trialEndsAt`, `trialPlan`.
-- Treat an active trial as the chosen paid plan for feature gating, usage bars, and billing UI.
-- Add a scheduled expiry job that downgrades expired trials to Starter/Free and clamps `screensAllowed` back to 1.
-- Show a visible trial countdown / expiry banner in the billing section and settings hub.
-- Decide whether over-limit screens are only blocked in admin or also soft-disabled in `display.html` once the org drops back to free.
+**Status:** Implemented 2026-04-23. Opt-in "Start 14-day free trial" link on each paid tier in the billing page. Rides on Stripe's native trial (`trial_period_days: 14` with `trial_settings.end_behavior.missing_payment_method: 'cancel'`), so conversion and expiry are handled by Stripe — no custom cron needed. Trial status and `trialEndsAt` are captured on the org subscription via the existing webhook, surfaced as a countdown banner in billing and a badge in the settings hub. Admin-side `enforceScreenLimit()` marks overflow screens `suspended: true` when paired count exceeds the plan's `screensAllowed`; `display.html` shows a "Subscription limit reached" overlay for those screens until an admin upgrades or unpairs.
+**What was built:**
+- Checkout accepts `trial: true`, Stripe collects the card up front and auto-charges on day 15.
+- Webhook captures `trialStartedAt` / `trialEndsAt` / `status: 'trialing'` into the org doc.
+- Billing UI shows trial banner with days-left countdown; settings hub status shows "Premium trial · 10d left".
+- Feature gating already reads from `plan`, so trialing orgs get full paid-tier access automatically.
+- `display.html` has a dedicated suspended overlay for over-limit screens (z-index above stages, below broadcast).
 
-**Files:** `admin.html`, `display.html`, `api/stripe-sessions.js`, `api/stripe-webhook.js`, `vercel.json`, `firestore.rules`
+**Files:** `admin.html`, `display.html`, `api/stripe-sessions.js`, `api/stripe-webhook.js`
 
 ---
 
@@ -172,7 +173,7 @@ Gap analysis against Yodeck, ScreenCloud, Rise Vision, OptiSigns, Screenly, and 
 | 9 | Google Sheets live data widget | Low | High | 6/6 | ✓ |
 | 10 | Emergency broadcast override | Low | Medium | 3/6 | ✓ |
 | 11 | Content approval workflow | Medium | Medium | 4/6 | ✓ |
-| 12 | 14-day trial + auto-downgrade | Medium | High | — |
+| 12 | 14-day trial + auto-downgrade | Medium | High | — | ✓ |
 
 ---
 

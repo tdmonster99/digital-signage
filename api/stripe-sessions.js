@@ -26,7 +26,7 @@ module.exports = async function handler(req, res) {
 
   // ── Checkout session ──────────────────────────────────────────────────────
   if (type === 'checkout') {
-    const { orgId, plan, customerEmail, stripeCustomerId, screenQuantity } = req.body || {};
+    const { orgId, plan, customerEmail, stripeCustomerId, screenQuantity, trial } = req.body || {};
     if (!orgId || !plan) return res.status(400).json({ error: 'orgId and plan are required' });
 
     const planConfig = PLANS[plan];
@@ -38,14 +38,23 @@ module.exports = async function handler(req, res) {
       : 1;
 
     try {
+      const subscriptionData = { metadata: { orgId, plan } };
+      if (trial === true) {
+        subscriptionData.trial_period_days = 14;
+        // If the card is missing/declined at trial end, cancel rather than leave unpaid.
+        subscriptionData.trial_settings = {
+          end_behavior: { missing_payment_method: 'cancel' },
+        };
+      }
+
       const params = {
         mode:                 'subscription',
         payment_method_types: ['card'],
         line_items:           [{ price: planConfig.priceId, quantity }],
-        success_url:          `${baseUrl}/admin.html?billing=success&plan=${plan}`,
+        success_url:          `${baseUrl}/admin.html?billing=success&plan=${plan}${trial === true ? '&trial=1' : ''}`,
         cancel_url:           `${baseUrl}/admin.html?billing=cancelled`,
-        metadata:             { orgId, plan },
-        subscription_data:    { metadata: { orgId, plan } },
+        metadata:             { orgId, plan, trial: trial === true ? '1' : '0' },
+        subscription_data:    subscriptionData,
       };
       if (stripeCustomerId)  params.customer       = stripeCustomerId;
       else if (customerEmail) params.customer_email = customerEmail;
