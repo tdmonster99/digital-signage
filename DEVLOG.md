@@ -4,6 +4,16 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-04-25 — Claude Code (session 39)
+
+- **screen-monitor.js: parallelized Firestore reads to eliminate duplicate org fetches**:
+  - All org docs now fetched once per run in a single `Promise.all()` batch and stored in `orgMap`
+  - `orgMap` passed into `enforceAllScreenLimits()` and `notifyOrg()` — neither function re-reads org docs
+  - User docs in `notifyOrg()` fetched in parallel; notification+write pairs are now concurrent
+  - Reduces latency for cron runs with many screens across many orgs
+
+---
+
 ## 2026-04-25 — Claude Code (session 38)
 
 - **Rate limiting for AI generation — full stack implementation**:
