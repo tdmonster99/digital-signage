@@ -4,6 +4,14 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-04-25 — Claude Code (session 38)
+
+- **Firebase ID token authentication for AI generation**: Updated the `generateAiSlide()` function in `admin.html` to fetch the current user's Firebase ID token and send it as a Bearer token in the Authorization header for all `/api/ai-generate` requests. This enables server-side token verification and rate limiting by user.
+  - `admin.html` (line ~12736): Added `const idToken = await currentUser.getIdToken();` before the fetch call, and updated the headers object to include `'authorization': Bearer ${idToken}`. This builds on the server-side rate limiting already added in previous sessions.
+  - No environment variables or external setup changes.
+
+---
+
 ## 2026-04-25 — Session 37
 
 - **`api/screen-monitor.js`**: Added `enforceAllScreenLimits()`. On every cron run, screens are now grouped by org, each org's `subscription.screensAllowed` is read from Firestore, and overflow screens (newest-first) are suspended/unsuspended automatically. Previously this only happened when an admin visited the dashboard (`enforceScreenLimit()` in `admin.html`). No new API function added — runs inside the existing cron endpoint.
