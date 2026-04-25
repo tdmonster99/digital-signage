@@ -2,6 +2,8 @@
 // (e.g. cron-job.org) since Vercel Hobby plan only allows daily crons.
 // Detects screens that have gone offline (lastSeen > 10 min ago) or come back online,
 // then emails the org's members who have notifications enabled via Resend.
+// Also enforces per-org screen limits on every run, suspending overflow screens
+// so that plan downgrades and trial expirations take effect without an admin login.
 //
 // Required env vars: FIREBASE_SERVICE_ACCOUNT_JSON, RESEND_API_KEY, CRON_SECRET
 // The caller must send `Authorization: Bearer <CRON_SECRET>`.
@@ -66,12 +68,59 @@ module.exports = async function handler(req, res) {
       }
     }
 
-    return res.status(200).json({ ok: true, checked: screensSnap.size, results });
+    const limitResults = await enforceAllScreenLimits(db, screensSnap.docs);
+
+    return res.status(200).json({ ok: true, checked: screensSnap.size, results, limitEnforcement: limitResults });
   } catch (err) {
     console.error('[screen-monitor]', err.message);
     return res.status(500).json({ error: err.message });
   }
 };
+
+// Suspend screens that exceed the org's current screensAllowed limit.
+// Oldest-first wins: screens are kept by registeredAt order; newest overflow gets suspended.
+// Reuses already-fetched screen docs to avoid an extra full-collection read.
+async function enforceAllScreenLimits(db, allScreenDocs) {
+  const byOrg = {};
+  for (const screenDoc of allScreenDocs) {
+    const screen = screenDoc.data();
+    if (!screen.orgId) continue;
+    if (!byOrg[screen.orgId]) byOrg[screen.orgId] = [];
+    byOrg[screen.orgId].push({ id: screenDoc.id, ref: screenDoc.ref, ...screen });
+  }
+
+  const results = [];
+
+  for (const [orgId, screens] of Object.entries(byOrg)) {
+    const orgDoc = await db.collection('organizations').doc(orgId).get();
+    if (!orgDoc.exists) continue;
+
+    const sub = orgDoc.data().subscription || {};
+    const screensAllowed = Number(sub.screensAllowed) || 1;
+
+    screens.sort((a, b) => {
+      const aT = a.registeredAt ? new Date(a.registeredAt).getTime() : 0;
+      const bT = b.registeredAt ? new Date(b.registeredAt).getTime() : 0;
+      return aT - bT;
+    });
+
+    for (let i = 0; i < screens.length; i++) {
+      const screen = screens[i];
+      const shouldSuspend = i >= screensAllowed;
+      const isSuspended   = screen.suspended === true;
+      if (shouldSuspend === isSuspended) continue;
+
+      try {
+        await screen.ref.update({ suspended: shouldSuspend });
+        results.push({ orgId, screenId: screen.id, suspended: shouldSuspend });
+      } catch (e) {
+        console.warn('[screen-monitor] enforceLimit write failed:', screen.id, e.message);
+      }
+    }
+  }
+
+  return results;
+}
 
 async function notifyOrg(db, apiKey, orgId, screenId, screenName, event) {
   try {

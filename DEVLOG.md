@@ -4,6 +4,12 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-04-25 — Session 37
+
+- **`api/screen-monitor.js`**: Added `enforceAllScreenLimits()`. On every cron run, screens are now grouped by org, each org's `subscription.screensAllowed` is read from Firestore, and overflow screens (newest-first) are suspended/unsuspended automatically. Previously this only happened when an admin visited the dashboard (`enforceScreenLimit()` in `admin.html`). No new API function added — runs inside the existing cron endpoint.
+
+---
+
 ## 2026-04-23 — Claude (session 36)
 - **14-day trial + automatic downgrade (Phase 4 #12)**: added opt-in trial flow that rides on Stripe's native trial machinery, with admin UI and display-side enforcement when plans drop below the paired screen count.
   - `api/stripe-sessions.js`: checkout now accepts `trial: true` and passes `trial_period_days: 14` with `trial_settings.end_behavior.missing_payment_method: 'cancel'`. Adds `trial=1` to the success URL so the UI can show a trial-specific toast.
