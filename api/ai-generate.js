@@ -39,7 +39,8 @@ async function verifyToken(req) {
   try {
     const decoded = await getAuth().verifyIdToken(header.slice(7));
     return decoded.uid;
-  } catch {
+  } catch (err) {
+    console.error('[ai-generate] verifyToken error:', err.message);
     return null;
   }
 }
@@ -52,8 +53,9 @@ async function checkRateLimit(uid) {
   return db.runTransaction(async tx => {
     const doc  = await tx.get(ref);
     const data = doc.exists ? doc.data() : {};
-    if (data.date === today && data.count >= DAILY_AI_LIMIT) return false;
-    tx.set(ref, { date: today, count: data.date === today ? data.count + 1 : 1 });
+    const count = Number(data.count) || 0;
+    if (data.date === today && count >= DAILY_AI_LIMIT) return false;
+    tx.set(ref, { date: today, count: data.date === today ? count + 1 : 1 });
     return true;
   });
 }
