@@ -12709,6 +12709,7 @@ document.addEventListener('click', e => {
 });
 
 window.generateAiSlide = async function() {
+  if (!currentUser) { showAiError('Session not ready — please refresh.'); return; }
   const prompt = document.getElementById('aiPrompt').value.trim();
   if (!prompt) {
     document.getElementById('aiPrompt').focus();
