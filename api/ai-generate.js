@@ -1,5 +1,10 @@
 // Vercel serverless function — proxies Anthropic API so the key never touches the browser.
-// Set ANTHROPIC_API_KEY in Vercel Dashboard → Project Settings → Environment Variables.
+// Requires a valid Firebase ID token in: Authorization: Bearer <token>
+// Rate limit: DAILY_AI_LIMIT generations per user per calendar day (UTC).
+
+const { getAuth, getFirestore } = require('./_lib/firebase-admin');
+
+const DAILY_AI_LIMIT = 50;
 
 const AI_SYSTEM_PROMPT = `You are a professional digital signage slide designer. When given a description, you create complete Fabric.js canvas JSON for a 1920x1080 slide.
 
@@ -28,19 +33,47 @@ Example 2 — Bold happy hour promo:
 Example 3 — Clean minimal product launch:
 {"version":"6.0.0","background":"#ffffff","objects":[{"type":"rect","left":0,"top":0,"width":1920,"height":8,"fill":"#111111","opacity":1},{"type":"rect","left":0,"top":1072,"width":1920,"height":8,"fill":"#111111","opacity":1},{"type":"textbox","left":200,"top":80,"width":1520,"height":60,"text":"N E W  A R R I V A L","fontSize":44,"fontFamily":"Raleway","fontWeight":"normal","textAlign":"center","fill":"rgba(0,0,0,0.42)","opacity":1},{"type":"rect","left":538,"top":172,"width":844,"height":578,"fill":"#f5f5f5","opacity":1},{"type":"textbox","left":538,"top":390,"width":844,"height":120,"text":"PRODUCT IMAGE","fontSize":48,"fontFamily":"Montserrat","fontWeight":"normal","textAlign":"center","fill":"rgba(0,0,0,0.18)","opacity":1},{"type":"textbox","left":200,"top":800,"width":1520,"height":100,"text":"Premium Wireless Headphones","fontSize":72,"fontFamily":"Raleway","fontWeight":"300","textAlign":"center","fill":"#111111","opacity":1},{"type":"textbox","left":200,"top":908,"width":1520,"height":55,"text":"$149.00  ·  Free shipping on orders over $50","fontSize":38,"fontFamily":"Open Sans","fontWeight":"normal","textAlign":"center","fill":"#666666","opacity":1}]}`;
 
+async function verifyToken(req) {
+  const header = req.headers.authorization || '';
+  if (!header.startsWith('Bearer ')) return null;
+  try {
+    const decoded = await getAuth().verifyIdToken(header.slice(7));
+    return decoded.uid;
+  } catch {
+    return null;
+  }
+}
+
+async function checkRateLimit(uid) {
+  const db    = getFirestore();
+  const today = new Date().toISOString().slice(0, 10);
+  const ref   = db.collection('rateLimits').doc(uid);
+
+  return db.runTransaction(async tx => {
+    const doc  = await tx.get(ref);
+    const data = doc.exists ? doc.data() : {};
+    if (data.date === today && data.count >= DAILY_AI_LIMIT) return false;
+    tx.set(ref, { date: today, count: data.date === today ? data.count + 1 : 1 });
+    return true;
+  });
+}
+
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') return res.status(200).end();
-
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    return res.status(500).json({ error: 'Server not configured — contact the site owner.' });
+  if (!apiKey) return res.status(500).json({ error: 'Server not configured — contact the site owner.' });
+
+  const uid = await verifyToken(req);
+  if (!uid) return res.status(401).json({ error: 'Authentication required.' });
+
+  const allowed = await checkRateLimit(uid);
+  if (!allowed) {
+    return res.status(429).json({ error: `Daily AI generation limit (${DAILY_AI_LIMIT}) reached. Try again tomorrow.` });
   }
 
   const { prompt, style, colorScheme } = req.body || {};
@@ -50,7 +83,7 @@ module.exports = async function handler(req, res) {
     `Create a digital signage slide for: "${prompt}"\n` +
     `Style: ${style || 'Professional'}\n` +
     `Color scheme: ${colorScheme || 'Brand Colors'}\n` +
-    `Canvas: 1920\u00D71080px\n` +
+    `Canvas: 1920×1080px\n` +
     `Return ONLY the Fabric.js JSON.`;
 
   try {
@@ -76,7 +109,6 @@ module.exports = async function handler(req, res) {
       });
     }
     return res.status(200).json(data);
-
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
