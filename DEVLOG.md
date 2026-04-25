@@ -6,9 +6,11 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ## 2026-04-25 — Claude Code (session 38)
 
-- **Firebase ID token authentication for AI generation**: Updated the `generateAiSlide()` function in `admin.html` to fetch the current user's Firebase ID token and send it as a Bearer token in the Authorization header for all `/api/ai-generate` requests. This enables server-side token verification and rate limiting by user.
-  - `admin.html` (line ~12736): Added `const idToken = await currentUser.getIdToken();` before the fetch call, and updated the headers object to include `'authorization': Bearer ${idToken}`. This builds on the server-side rate limiting already added in previous sessions.
-  - No environment variables or external setup changes.
+- **Rate limiting for AI generation — full stack implementation**:
+  - `api/_lib/firebase-admin.js` (new): shared Firebase Admin SDK initializer; parses `FIREBASE_SERVICE_ACCOUNT_JSON` env var and exports a singleton `adminApp` + `getAdminDb()` helper so all API routes share one initialization.
+  - `api/ai-generate.js`: now requires an `Authorization: Bearer <firebase-id-token>` header. Verifies the token with Firebase Admin, then enforces a **50 AI generations per user per day** rate limit via the `rateLimits/{uid}` Firestore collection (resets at UTC midnight). Returns `401` for missing/invalid token and `429` with a `retryAfter` field when the limit is exceeded.
+  - `admin.html` — `generateAiSlide()`: fetches the current user's Firebase ID token via `currentUser.getIdToken()` and sends it as the Authorization header. Added a null-`currentUser` guard that shows a toast and aborts early if called while logged out.
+  - No new environment variables — uses the existing `FIREBASE_SERVICE_ACCOUNT_JSON` and `ANTHROPIC_API_KEY`.
 
 ---
 
