@@ -42,33 +42,54 @@ module.exports = async function handler(req, res) {
 
   try {
     const screensSnap = await db.collection('screens').get();
-    const results     = [];
+
+    // ── Collect all unique orgIds and fetch their docs in one parallel batch ──
+    const orgIds = [...new Set(
+      screensSnap.docs.map(d => d.data().orgId).filter(Boolean)
+    )];
+    const orgDocs = await Promise.all(
+      orgIds.map(id => db.collection('organizations').doc(id).get())
+    );
+    const orgMap = {};
+    for (const doc of orgDocs) {
+      if (doc.exists) orgMap[doc.id] = doc.data();
+    }
+
+    // ── Offline / online detection ────────────────────────────────────────────
+    const results = [];
+    const notifyPromises = [];
 
     for (const screenDoc of screensSnap.docs) {
       const screen   = screenDoc.data();
       const screenId = screenDoc.id;
-
       if (!screen.orgId || !screen.lastSeen) continue;
 
-      const lastSeenMs  = new Date(screen.lastSeen).getTime();
-      const nowOffline  = (now - lastSeenMs) > OFFLINE_THRESHOLD_MS;
-      const wasOffline  = screen.onlineStatus === 'offline';
+      const lastSeenMs = new Date(screen.lastSeen).getTime();
+      const nowOffline = (now - lastSeenMs) > OFFLINE_THRESHOLD_MS;
+      const wasOffline = screen.onlineStatus === 'offline';
 
       if (nowOffline && !wasOffline) {
-        // Transition → offline
-        const notified = await notifyOrg(db, apiKey, screen.orgId, screenId, screen.name || screenId, 'offline');
-        await screenDoc.ref.update({ onlineStatus: 'offline', lastNotifiedAt: new Date().toISOString() });
-        results.push({ screenId, event: 'offline', notified });
-
+        notifyPromises.push(
+          notifyOrg(db, apiKey, screen.orgId, screenId, screen.name || screenId, 'offline', orgMap)
+            .then(notified => {
+              results.push({ screenId, event: 'offline', notified });
+              return screenDoc.ref.update({ onlineStatus: 'offline', lastNotifiedAt: new Date().toISOString() });
+            })
+        );
       } else if (!nowOffline && wasOffline) {
-        // Transition → online
-        const notified = await notifyOrg(db, apiKey, screen.orgId, screenId, screen.name || screenId, 'online');
-        await screenDoc.ref.update({ onlineStatus: 'online', lastNotifiedAt: new Date().toISOString() });
-        results.push({ screenId, event: 'online', notified });
+        notifyPromises.push(
+          notifyOrg(db, apiKey, screen.orgId, screenId, screen.name || screenId, 'online', orgMap)
+            .then(notified => {
+              results.push({ screenId, event: 'online', notified });
+              return screenDoc.ref.update({ onlineStatus: 'online', lastNotifiedAt: new Date().toISOString() });
+            })
+        );
       }
     }
 
-    const limitResults = await enforceAllScreenLimits(db, screensSnap.docs);
+    await Promise.all(notifyPromises);
+
+    const limitResults = await enforceAllScreenLimits(screensSnap.docs, orgMap);
 
     return res.status(200).json({ ok: true, checked: screensSnap.size, results, limitEnforcement: limitResults });
   } catch (err) {
@@ -79,8 +100,8 @@ module.exports = async function handler(req, res) {
 
 // Suspend screens that exceed the org's current screensAllowed limit.
 // Oldest-first wins: screens are kept by registeredAt order; newest overflow gets suspended.
-// Reuses already-fetched screen docs to avoid an extra full-collection read.
-async function enforceAllScreenLimits(db, allScreenDocs) {
+// Uses pre-fetched orgMap to avoid re-reading org docs.
+async function enforceAllScreenLimits(allScreenDocs, orgMap) {
   const byOrg = {};
   for (const screenDoc of allScreenDocs) {
     const screen = screenDoc.data();
@@ -91,11 +112,11 @@ async function enforceAllScreenLimits(db, allScreenDocs) {
 
   const results = [];
 
-  for (const [orgId, screens] of Object.entries(byOrg)) {
-    const orgDoc = await db.collection('organizations').doc(orgId).get();
-    if (!orgDoc.exists) continue;
+  const orgPromises = Object.entries(byOrg).map(async ([orgId, screens]) => {
+    const orgData = orgMap[orgId];
+    if (!orgData) return;
 
-    const sub = orgDoc.data().subscription || {};
+    const sub = orgData.subscription || {};
     const screensAllowed = Number(sub.screensAllowed) || 1;
 
     screens.sort((a, b) => {
@@ -104,39 +125,50 @@ async function enforceAllScreenLimits(db, allScreenDocs) {
       return aT - bT;
     });
 
+    const writePromises = [];
     for (let i = 0; i < screens.length; i++) {
-      const screen = screens[i];
+      const screen        = screens[i];
       const shouldSuspend = i >= screensAllowed;
       const isSuspended   = screen.suspended === true;
       if (shouldSuspend === isSuspended) continue;
 
-      try {
-        await screen.ref.update({ suspended: shouldSuspend });
-        results.push({ orgId, screenId: screen.id, suspended: shouldSuspend });
-      } catch (e) {
-        console.warn('[screen-monitor] enforceLimit write failed:', screen.id, e.message);
-      }
+      writePromises.push(
+        screen.ref.update({ suspended: shouldSuspend })
+          .then(() => results.push({ orgId, screenId: screen.id, suspended: shouldSuspend }))
+          .catch(e => console.warn('[screen-monitor] enforceLimit write failed:', screen.id, e.message))
+      );
     }
-  }
+    await Promise.all(writePromises);
+  });
 
+  await Promise.all(orgPromises);
   return results;
 }
 
-async function notifyOrg(db, apiKey, orgId, screenId, screenName, event) {
+async function notifyOrg(db, apiKey, orgId, screenId, screenName, event, orgMap) {
   try {
-    const orgDoc = await db.collection('organizations').doc(orgId).get();
-    if (!orgDoc.exists) return 0;
+    const orgData = orgMap[orgId];
+    if (!orgData) return 0;
 
-    const members = orgDoc.data().members || [];
-    let notified  = 0;
+    const members = orgData.members || [];
 
-    for (const member of members) {
+    // Fetch all member user docs in parallel
+    const userDocs = await Promise.all(
+      members
+        .filter(m => m.uid && m.email)
+        .map(m => db.collection('users').doc(m.uid).get())
+    );
+
+    let notified = 0;
+    const emailPromises = [];
+
+    for (let i = 0; i < members.length; i++) {
+      const member = members[i];
       if (!member.uid || !member.email) continue;
 
-      const userDoc = await db.collection('users').doc(member.uid).get();
-      const prefs   = userDoc.exists ? userDoc.data() : {};
+      const userDoc = userDocs.find(d => d.id === member.uid);
+      const prefs   = userDoc?.exists ? userDoc.data() : {};
 
-      // notifOffline defaults true; notifOnline defaults false
       const shouldNotify = event === 'offline'
         ? prefs.notifOffline !== false
         : prefs.notifOnline === true;
@@ -146,9 +178,14 @@ async function notifyOrg(db, apiKey, orgId, screenId, screenName, event) {
         ? `Screen offline: ${screenName}`
         : `Screen back online: ${screenName}`;
 
-      await sendEmail(apiKey, member.email, subject, buildHtml(screenName, event));
-      notified++;
+      emailPromises.push(
+        sendEmail(apiKey, member.email, subject, buildHtml(screenName, event))
+          .then(() => { notified++; })
+          .catch(e => console.warn('[screen-monitor] email failed:', member.email, e.message))
+      );
     }
+
+    await Promise.all(emailPromises);
     return notified;
   } catch (e) {
     console.warn('[screen-monitor] notifyOrg error:', e.message);
