@@ -3,61 +3,83 @@
 Use this as the first-read handoff snapshot before making new changes.
 
 ## Current State
+
 - Phase 4 status in `ROADMAP.md`: **12/12 complete.** Phase 4 competitive parity is fully done.
 - Most recent work (session ending 2026-04-25):
-  - Synced 6 unmerged Codex sessions (template polish + apps icon refresh) from working tree to git as commit `4ef0fad`.
-  - Built **Phase 4 #12 — 14-Day Trial + Automatic Downgrade** in commit `4bf5d66`.
-  - Set up Stripe products and Vercel env vars to make the trial work end-to-end on production.
-  - Forced a fresh production deploy via `vercel deploy --prod --archive=tgz` so the new env vars took effect (commit `8abb727` is an empty commit; the live deploy is `digital-signage-njatrc7mn-...` aliased to `app.zigns.io`).
+  - Completed a full scalability assessment of the codebase.
+  - Implemented **API rate limiting** on `api/ai-generate.js`: requires Firebase ID token (`401` for unauthenticated), enforces 50 AI generations/user/day via `rateLimits/{uid}` Firestore collection (`429` when exceeded). Created shared `api/_lib/firebase-admin.js`.
+  - Implemented **screen-monitor optimization**: org docs now fetched once per run in a single `Promise.all` batch (`orgMap`), passed into both `enforceAllScreenLimits` and `notifyOrg` — eliminated all duplicate Firestore reads and sequential awaits.
+  - Verified both changes live in production (unauthenticated `/api/ai-generate` returns `401`; cron returns `{"ok":true,"checked":12,...}`).
+  - Added Operations and Scalability Backlog sections to `ROADMAP.md`.
 
 ## Latest Commits
-- `8abb727` — Trigger redeploy for Stripe price ID env vars (empty commit)
-- `4bf5d66` — Add 14-day trial and auto-downgrade (Phase 4 #12)
-- `4ef0fad` — Refresh app catalog icons and enrich template library (backfilled Codex sessions 30–35)
 
-## What Changed In Trial / Auto-Downgrade Build
-- `api/stripe-sessions.js`: checkout accepts `trial: true`; passes `trial_period_days: 14` with `trial_settings.end_behavior.missing_payment_method: 'cancel'`.
-- `api/stripe-webhook.js`: captures `trialStartedAt` / `trialEndsAt` / `status: 'trialing'` from Stripe events. `customer.subscription.deleted` clears the trial fields.
-- `admin.html`: "Start 14-day free trial" link under each paid-tier upgrade button (visible only when org is on Free). Trial countdown banner in billing sub-view. Plan badge gets a "TRIAL" suffix when trialing. Settings hub shows `Premium trial · 10d left`. New `enforceScreenLimit()` writes `suspended: true` on overflow screens (oldest-first wins).
-- `display.html`: new `#stageSuspended` overlay (z-index 150) shows "Subscription limit reached" when `screen.suspended === true`.
+Run `git -C app log --oneline -8` to see the current state.
 
-## What Changed In Stripe Setup
-- Renamed Stripe product `prod_UIc5chUUGf9uJG` from "Pro" → **"Standard"** (cosmetic — billing portal / receipts now read "Standard").
-- Created new Stripe product **"Premium"** (`prod_UOXEK4T3lMk8o0`) with $10/screen/mo recurring price (`price_1TPk9eRudWboEbYXKOY7Y3M8`).
-- Set three Vercel env vars in **Production + Development** environments (Preview is not set — only matters for PR preview deploys):
-  - `STRIPE_STANDARD_PRICE_ID = price_1TK0rRRudWboEbYXjnNkzBNO`
-  - `STRIPE_PREMIUM_PRICE_ID = price_1TPk9eRudWboEbYXKOY7Y3M8`
-  - `STRIPE_EARLY_ADOPTER_PRICE_ID = price_1TK0rQRudWboEbYXZNxV8ql3`
+Key commits from this session:
+- `dff68bb` — feat: add shared Firebase Admin helper
+- `8fc791c` — fix: throw clear error when FIREBASE_SERVICE_ACCOUNT_JSON is missing
+- `326ec39` — feat: require Firebase auth + enforce daily rate limit on ai-generate
+- `6d3429d` — fix: log verifyToken errors and guard rate limit counter
+- `a4bb2c5` — feat: send Firebase ID token with AI generation requests
+- `4aa1e51` — fix: guard generateAiSlide against null currentUser
+- `c061386` — perf: parallelize Firestore reads in screen-monitor
+- `9ff5a16` — doc: DEVLOG session 39
 
-## Important Operational Notes
-- **Live mode only.** Production uses live Stripe keys, so any trial signup will collect a real card and auto-charge on day 15. To test safely, either use a real card and cancel before 14 days, or set up test-mode price IDs separately (the env var conventions exist — `STRIPE_SECRET_KEY_TEST` is already set in all environments).
-- **`enforceScreenLimit()` runs on admin visits, not autonomously.** When a trial expires while no admin is on the dashboard, over-limit screens keep playing until the next admin login. Acceptable for MVP. Could be moved to `api/screen-monitor.js` cron later.
-- **Vercel CLI quirk:** plain `vercel deploy --prod` hangs because `node_modules/` is huge; always use `vercel deploy --prod --archive=tgz`.
-- **GitHub-push didn't auto-trigger a deploy for the empty commit `8abb727`.** Vercel may ignore zero-diff commits. Use `--archive=tgz` deploy if a redeploy is ever needed without code change.
+## Active Vercel Project
 
-## Key Files To Read First In Next Chat
-1. `AGENTS.md`
-2. `CLAUDE.md`
-3. `DEVLOG.md` (top entries — session 36 covers the trial work)
-4. `ROADMAP.md` (Phase 4 all marked complete)
-5. `admin.html` (renderBillingSection at ~9328, enforceScreenLimit at ~19330)
-6. `api/stripe-sessions.js` and `api/stripe-webhook.js`
-7. `display.html` (#stageSuspended overlay at ~2362, applySuspended hook at ~2141)
+The active project is **`digital-signage`** (not `app`). Linked in `.vercel/project.json`.
+- `app.zigns.io` → `digital-signage` project
+- There is a duplicate stale `app` project in Vercel — safe to delete after verifying it has no custom domain or env vars.
 
 ## Immediate Next Targets (Recommended)
-Since Phase 4 is fully complete, the next chat is open for whatever the user prioritizes. Possible directions:
-1. **End-to-end test the trial flow** in production with a real card (and cancel before day 14). Confirm the trial banner, plan badge, and `screen.suspended` enforcement all behave correctly.
-2. **Add test-mode Stripe price IDs** for safer staging — set `STRIPE_STANDARD_PRICE_ID_TEST` etc., or wire the checkout path to use test-mode in Preview deploys.
-3. **Move `enforceScreenLimit()` to a cron** (`api/screen-monitor.js`) so plan downgrades enforce immediately even without an admin visit.
-4. **Phase 5 planning** — gap analysis is overdue. Phase 4 was about parity with Yodeck/ScreenCloud/Rise/OptiSigns/Screenly/TelemetryTV; now Zigns sits at parity. Phase 5 should focus on differentiators.
-5. **Set Stripe price IDs in Preview environment** if PR preview deploys ever need the trial flow (currently only Production + Development have them — see CLI quirk note above).
+
+1. **Mark Vercel env vars as Sensitive** (5 min, manual in dashboard)
+   - `GOOGLE_PLACES_API_KEY`, `CRON_SECRET`, `CLOUDCONVERT_API_KEY`, `GOOGLE_SHEETS_API_KEY`, `OPENWEATHER_API_KEY` — all flagged "Needs Attention"
+   - Edit each → check Sensitive checkbox → re-paste value
+
+2. **Delete duplicate Vercel `app` project** (2 min, manual in dashboard)
+   - Verify it has no custom domain/env vars, then delete
+
+3. **Slideshow subcollection migration** (high effort, highest data-integrity risk)
+   - `slides[]` in Firestore doc will hit 1MB limit for large slideshows
+   - Needs a migration script + `admin.html` + `display.html` changes
+   - Plan separately before touching anything
+
+4. **Phase 5 planning** — what to build now that Phase 4 is done
+
+5. **Analytics daily rollup** — add aggregation cron to prevent expensive dashboard queries at scale
 
 ## Known Pending Items / Backlog
-- `.impeccable.md` is untracked in working tree (added by Codex session 31, persistent design context). Decide whether to commit or leave it personal.
-- `Zigns Bugs.txt` is untracked. Likely a personal scratch file — leave alone unless user says otherwise.
-- `firestore.rules` is untracked — Firestore security rules file. Not part of the Vercel deploy pipeline. Worth checking if rules are ever published to Firebase from local.
+
+- `.impeccable.md` is untracked (added by Codex session 31). Leave alone.
+- `Zigns Bugs.txt` is untracked. Personal scratch file — leave alone.
+- `firestore.rules` is untracked. Worth checking if rules are ever published to Firebase from local.
+- `CRON_SECRET` is currently accepted via `?secret=` query param in screen-monitor — exposes it in logs. Low priority: remove query-param path, keep `Authorization: Bearer` header only.
+
+## Scalability Status (as of this session)
+
+| Item | Status |
+|------|--------|
+| Weather caching | ✅ Already handled via `Cache-Control: s-maxage=600` in `proxy.js` |
+| API rate limiting (ai-generate) | ✅ Implemented this session |
+| screen-monitor parallel reads | ✅ Implemented this session |
+| Slideshow doc size (1MB limit) | ⏳ Backlog — needs planning |
+| Analytics aggregation | ⏳ Backlog — low priority |
+
+## Key Files To Read First In Next Chat
+
+1. `AGENTS.md`
+2. `CLAUDE.md`
+3. `DEVLOG.md` (top entries — sessions 38–39 cover this session's work)
+4. `ROADMAP.md` (Phase 4 complete; new Operations + Scalability Backlog sections added)
+5. `api/_lib/firebase-admin.js` (new shared module)
+6. `api/ai-generate.js` (new auth + rate limiting)
+7. `api/screen-monitor.js` (optimized parallel reads)
 
 ## Notes
+
 - Frontend architecture constraints still apply: single-file `admin.html`, no framework/bundler.
 - Any new session that changes files must prepend a DEVLOG entry.
-- Vercel CLI 51.8.0 is installed and the project is linked at `D:\Dev\zigns\app\.vercel\project.json`.
+- Vercel CLI 51.8.0 is installed and linked at `D:\Dev\zigns\app\.vercel\project.json`.
+- Active Vercel project: `digital-signage` (project ID: `prj_PYBCfcpx9G5Dd8K0ClImUYfDaJUf`).

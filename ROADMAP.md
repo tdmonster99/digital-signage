@@ -177,6 +177,29 @@ Gap analysis against Yodeck, ScreenCloud, Rise Vision, OptiSigns, Screenly, and 
 
 ---
 
+## Operations / Housekeeping
+
+Small non-feature tasks that need to get done.
+
+| Task | Priority | Notes |
+|------|----------|-------|
+| Mark Vercel env vars as Sensitive | Medium | `GOOGLE_PLACES_API_KEY`, `CRON_SECRET`, `CLOUDCONVERT_API_KEY`, `GOOGLE_SHEETS_API_KEY`, `OPENWEATHER_API_KEY` all flagged "Needs Attention" in Vercel dashboard. Edit each → check Sensitive → re-paste value. |
+| Delete duplicate Vercel `app` project | Low | `digital-signage` is the active project (linked in `.vercel/project.json`). The `app` project is a stale duplicate — verify it has no custom domain or env vars, then delete. |
+| Move `CRON_SECRET` to `Authorization` header only | Low | `screen-monitor.js` accepts secret via `?secret=` query param, which exposes it in server logs. Remove query-param path, keep header-only. |
+
+---
+
+## Scalability Backlog
+
+Known weaknesses to address before significant user growth.
+
+| Task | Risk | Notes |
+|------|------|-------|
+| Slideshow subcollection migration | High | `slides[]` and `draftSlides[]` stored in Firestore doc — 1MB doc limit will silently break writes for large slideshows. Migrate to `slideshows/{id}/slides/{slideId}` subcollection. Needs migration script + deep `admin.html` + `display.html` changes. Plan separately. |
+| Analytics daily rollup | Low | Raw analytics events accumulate per org with no aggregation. Dashboard queries get expensive over time. Add a daily rollup cron. |
+
+---
+
 ## Completed — Phase 1–3
 
 All items below are shipped and in production as of April 2026.
