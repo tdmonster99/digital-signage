@@ -1,85 +1,105 @@
-# Next Chat Context (2026-04-25)
+# Next Chat Context (2026-04-26)
 
 Use this as the first-read handoff snapshot before making new changes.
 
-## Current State
+## Where We Left Off
 
-- Phase 4 status in `ROADMAP.md`: **12/12 complete.** Phase 4 competitive parity is fully done.
-- Most recent work (session ending 2026-04-25):
-  - Completed a full scalability assessment of the codebase.
-  - Implemented **API rate limiting** on `api/ai-generate.js`: requires Firebase ID token (`401` for unauthenticated), enforces 50 AI generations/user/day via `rateLimits/{uid}` Firestore collection (`429` when exceeded). Created shared `api/_lib/firebase-admin.js`.
-  - Implemented **screen-monitor optimization**: org docs now fetched once per run in a single `Promise.all` batch (`orgMap`), passed into both `enforceAllScreenLimits` and `notifyOrg` — eliminated all duplicate Firestore reads and sequential awaits.
-  - Verified both changes live in production (unauthenticated `/api/ai-generate` returns `401`; cron returns `{"ok":true,"checked":12,...}`).
-  - Added Operations and Scalability Backlog sections to `ROADMAP.md`.
+A code-review agent (`superpowers:code-reviewer`) audited `admin.html`, `mobile.html`, `login.html`, `display.html`. It found **5 Critical, 6 High, 9 Medium, 20+ Low** bugs.
 
-## Latest Commits
+**Fixed so far (11 / 40+):** all Critical + all High.
 
-Run `git -C app log --oneline -8` to see the current state.
+**Resume point:** start the Medium-severity batch. The full ranked list is in this file under "Audit Backlog" below.
 
-Key commits from this session:
-- `dff68bb` — feat: add shared Firebase Admin helper
-- `8fc791c` — fix: throw clear error when FIREBASE_SERVICE_ACCOUNT_JSON is missing
-- `326ec39` — feat: require Firebase auth + enforce daily rate limit on ai-generate
-- `6d3429d` — fix: log verifyToken errors and guard rate limit counter
-- `a4bb2c5` — feat: send Firebase ID token with AI generation requests
-- `4aa1e51` — fix: guard generateAiSlide against null currentUser
-- `c061386` — perf: parallelize Firestore reads in screen-monitor
-- `9ff5a16` — doc: DEVLOG session 39
+## Sessions This Day
+
+- **Session 40** — Critical bug fixes (commit `654cba8`):
+  - #10/#26 Webpage slide `javascript:` URL XSS — whitelisted http/https on save (admin.html `saveWebpageSlide` + multizone) and at render (display.html `safeIframeUrl()` helper used by both single-zone and multizone iframe paths)
+  - #11 `acceptInvitation` email mismatch — verifies `inv.email === user.email` before joining; signs out + toasts on mismatch
+  - #17 `initUserAndOrg` silent org-loss — split user-doc/org-doc fetches into separate try/catches; new `showBootError()` overlay; auto-create only on legitimate "doc not found"
+  - #1 `mobile.html` listener leak — `closeShowDetail(true)` now called at top of every `switchTab`
+  - #2 `mobile.html` `appendDraft` lost-write race — wrapped in `runTransaction` (added to imports)
+
+- **Session 41** — High-severity bug fixes (commit `36a1612`):
+  - #12 Pairing double-submit — `pairingConfirmBtn` disabled at start, re-enabled in `finally`
+  - #13 + #14 `removeMember` — replaced `arrayRemove(member)` with filter-by-uid; refuse to remove org owner; refuse to remove the last admin
+  - #15 `escHtml` single-quote escape — added `'` → `&#39;`
+
+Plus three earlier UI fixes today: bottom nav SVG icons (`d47bdf9`), `100dvh` ordering (`e96bdcd`), unified Zigns logo across app (`98a5019`), mobile companion app + admin redirect (`0b48073`).
+
+## Audit Backlog (resume here)
+
+Reference: the full audit lives in conversation context; the commit log + DEVLOG entries from sessions 40–41 cover the fixed items. The remaining items are listed in priority order.
+
+### Medium severity — recommended next batch
+
+- **#16** `currentOrg` never refreshed by listener (`admin.html`) — Stripe webhook updates plan but UI shows old plan until reload. Replace one-shot `getDoc(organizations/{id})` with `onSnapshot` that re-runs `syncPlanEntitlements` / `applyRole`.
+- **#21** Several `pushToFirestore()` calls fire-and-forget (`admin.html:11365, 12420, 12556, 12562`) — racing the publish flow. `await` them or use a write batch.
+- **#22** `screensUnsub` never resets on org change (`admin.html:19330`) — after `acceptInvitation`, the listener is still scoped to the previous org. Reset and re-init when `currentOrgId` changes.
+- **#33** `?screen=xxx` URL lets anyone impersonate a screen (`display.html:2262`) — no auth on display, so anyone with a copied URL can write the heartbeat as that screen. Needs Firestore rules + short-lived tokens or server-side pairing.
+- **#19** No file size validation on uploads (`admin.html:10555, 22486`) — multi-GB videos burn S3 egress. Reject `file.size > MAX_BYTES`.
+- **#27** CSS injection via `backgroundImage` template (`display.html:1788, 803`) — defense-in-depth; assign via `setProperty` with `JSON.stringify(url)`.
+- **#28** `crossfadeTo` doesn't await async helpers (`display.html:1745-1758`) — weather/multizone slides briefly show empty stage during fade-up. `await renderWeather/renderMultizone`.
+
+### Other Medium / Low items still open
+
+- #8 mobile.html no file size validation (25MB image cap recommended)
+- #18 pairing `data.orgId` spread shadow — currently in `confirmPairingCode`, fix by always using `currentOrgId`
+- #20 zero-byte file upload not rejected
+- #23 slideshow `unsubscribe` listener never closed on logout/page nav
+- #24 `enforceScreenLimit` runs from every admin's session — concurrent admins double-write
+- #25 CSS-injection / minor XSS via `screen.id` in inline onclick (defense-in-depth)
+- #29 `_subscribeBroadcast` runs once but never unsubs
+- #31 `applyPlaylist` silently drops unknown slide types
+- #34 youtubeFallback background uses unescaped URL (videoId is validated, low risk)
+- #35 `?slideshow=xxx` URL exposes any org's slideshow (preview path)
+- #36–#42 login.html buttons not disabled during async (#36/#37/#38), `showLinkAccountPrompt` unescaped email innerHTML (#40), swallowed `getRedirectResult` errors (#41)
+
+### Mobile.html small items
+
+- #3 Publish button stuck in "Publishing…" if snapshot delayed
+- #4 `screens.sort()` mutates live array
+- #6 `parseInt(...) || 30` accepts negatives — clamp to [5, 3600]
+- #7 YouTube slide stores `url` field redundantly
+- #9 `name.split(' ')` returns `undefined` initials when consecutive spaces
 
 ## Active Vercel Project
 
-The active project is **`digital-signage`** (not `app`). Linked in `.vercel/project.json`.
-- `app.zigns.io` → `digital-signage` project
-- There is a duplicate stale `app` project in Vercel — safe to delete after verifying it has no custom domain or env vars.
+The active project is **`digital-signage`**. Linked in `.vercel/project.json`.
+- `app.zigns.io` → `digital-signage`
+- `app/` repo: `git push origin main` auto-deploys
+- `site/` repo (in `D:\Dev\zigns\site\`): on `redesign/optisigns-driven` branch — separate
 
-## Immediate Next Targets (Recommended)
+## Carryover Tasks (not from audit)
 
-1. **Mark Vercel env vars as Sensitive** (5 min, manual in dashboard)
-   - `GOOGLE_PLACES_API_KEY`, `CRON_SECRET`, `CLOUDCONVERT_API_KEY`, `GOOGLE_SHEETS_API_KEY`, `OPENWEATHER_API_KEY` — all flagged "Needs Attention"
-   - Edit each → check Sensitive checkbox → re-paste value
+These remain from earlier days:
 
+1. **Mark Vercel env vars as Sensitive** (5 min, manual in dashboard) — `GOOGLE_PLACES_API_KEY`, `CRON_SECRET`, `CLOUDCONVERT_API_KEY`, `GOOGLE_SHEETS_API_KEY`, `OPENWEATHER_API_KEY`
 2. **Delete duplicate Vercel `app` project** (2 min, manual in dashboard)
-   - Verify it has no custom domain/env vars, then delete
+3. **Slideshow subcollection migration** — `slides[]` will hit 1MB limit at scale; needs migration script + admin/display rewrites
+4. **Phase 5 planning** — Phase 4 is complete (12/12); next phase not yet scoped
+5. **Analytics daily rollup** — aggregation cron to prevent expensive dashboard queries at scale
+6. **Google Cloud OAuth verification** — user is mid-flow; needs to verify `zigns.io` ownership in Search Console (TXT record on `@`) before branding goes through
+7. **CRON_SECRET in URL query** — currently logged. Switch to `Authorization: Bearer` header only.
 
-3. **Slideshow subcollection migration** (high effort, highest data-integrity risk)
-   - `slides[]` in Firestore doc will hit 1MB limit for large slideshows
-   - Needs a migration script + `admin.html` + `display.html` changes
-   - Plan separately before touching anything
+## Manual Testing Wishlist
 
-4. **Phase 5 planning** — what to build now that Phase 4 is done
+User wants to actually test the app via browser automation. Path requires:
+- Playwright installed (not yet)
+- Test account credentials (user undecided whether to share `jzegar2@gmail.com` creds or create a dedicated test account)
+- Defined flow list (auth, screens, content, billing, mobile)
 
-5. **Analytics daily rollup** — add aggregation cron to prevent expensive dashboard queries at scale
+## Architecture Reminders
 
-## Known Pending Items / Backlog
-
-- `.impeccable.md` is untracked (added by Codex session 31). Leave alone.
-- `Zigns Bugs.txt` is untracked. Personal scratch file — leave alone.
-- `firestore.rules` is untracked. Worth checking if rules are ever published to Firebase from local.
-- `CRON_SECRET` is currently accepted via `?secret=` query param in screen-monitor — exposes it in logs. Low priority: remove query-param path, keep `Authorization: Bearer` header only.
-
-## Scalability Status (as of this session)
-
-| Item | Status |
-|------|--------|
-| Weather caching | ✅ Already handled via `Cache-Control: s-maxage=600` in `proxy.js` |
-| API rate limiting (ai-generate) | ✅ Implemented this session |
-| screen-monitor parallel reads | ✅ Implemented this session |
-| Slideshow doc size (1MB limit) | ⏳ Backlog — needs planning |
-| Analytics aggregation | ⏳ Backlog — low priority |
+- Single-file `admin.html` (~16,000 lines) — DO NOT split
+- No framework, no bundler — ES modules via CDN
+- Firebase SDK 10.12.0 from `gstatic.com`
+- Vercel Hobby limit: 12 serverless functions in `api/`
+- After any session that changes files: prepend DEVLOG entry
+- Deploy: `git push origin main` only; never `vercel deploy`
 
 ## Key Files To Read First In Next Chat
 
-1. `AGENTS.md`
-2. `CLAUDE.md`
-3. `DEVLOG.md` (top entries — sessions 38–39 cover this session's work)
-4. `ROADMAP.md` (Phase 4 complete; new Operations + Scalability Backlog sections added)
-5. `api/_lib/firebase-admin.js` (new shared module)
-6. `api/ai-generate.js` (new auth + rate limiting)
-7. `api/screen-monitor.js` (optimized parallel reads)
-
-## Notes
-
-- Frontend architecture constraints still apply: single-file `admin.html`, no framework/bundler.
-- Any new session that changes files must prepend a DEVLOG entry.
-- Vercel CLI 51.8.0 is installed and linked at `D:\Dev\zigns\app\.vercel\project.json`.
-- Active Vercel project: `digital-signage` (project ID: `prj_PYBCfcpx9G5Dd8K0ClImUYfDaJUf`).
+1. `CLAUDE.md` (root + this file's project)
+2. `AGENTS.md`
+3. `DEVLOG.md` (top entries — sessions 40, 41 cover today's work)
+4. This file
