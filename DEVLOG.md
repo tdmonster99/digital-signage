@@ -4,6 +4,21 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-04-26 — Claude Code (session 41) — High-severity bug fixes from code-review audit (batch 2)
+
+Four more issues from the audit fixed:
+
+- **#12 — Pairing double-submit creates orphan screens (High)**:
+  - `admin.html` Connect Screen button now has `id="pairingConfirmBtn"`. `confirmPairingCode()` disables the button immediately, runs the pairing flow inside `try/finally`, and re-enables (and hides the spinner) in finally. An early `if (btn.disabled) return;` guards against the rare double-fire from synthetic events. No more phantom screens from impatient clicks.
+
+- **#13 + #14 — `removeMember` last-admin protection and stale arrayRemove (High)**:
+  - `admin.html` `removeMember()`: replaced `arrayRemove(member)` (which silently no-ops when any member field has drifted, e.g. displayName updated) with a read-modify-write that filters by `uid`. Added two guards: refuse to remove the org owner (`orgData.ownerId`), and refuse to remove the last admin in the org (would orphan billing/team management).
+
+- **#15 — `escHtml` missing single-quote escape (High)**:
+  - `admin.html` `escHtml()`: now also replaces `'` with `&#39;`. Closes the XSS hole where an email containing `'` (legal RFC 5321 character) could break out of an inline `onclick="removeMember('${escHtml(email)}')"` JS string literal. After the fix, malicious quotes get HTML-decoded to `'` inside the attribute value, which causes a JS syntax error rather than executing the injected code.
+
+---
+
 ## 2026-04-26 — Claude Code (session 40) — Critical bug fixes from code-review audit
 
 Five high-priority issues from the bug audit fixed in priority order:

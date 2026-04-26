@@ -4686,7 +4686,7 @@ body.role-editor .admin-action {
               letter-spacing:12px;color:var(--text);text-align:center;line-height:1.2">
           <div class="pairing-expires" id="pairingCodeError" style="color:#f87171;min-height:18px;margin-top:6px"></div>
         </div>
-        <button class="btn btn-primary" style="width:100%;margin-bottom:12px" onclick="confirmPairingCode()">Connect Screen</button>
+        <button id="pairingConfirmBtn" class="btn btn-primary" style="width:100%;margin-bottom:12px" onclick="confirmPairingCode()">Connect Screen</button>
         <div class="pairing-waiting" id="pairingWaiting" style="display:none">
           <div class="pairing-spinner"></div>
           <span>Connecting…</span>
@@ -9974,9 +9974,28 @@ window.removeMember = async function(uid, email) {
   try {
     const orgSnap = await getDoc(doc(db, 'organizations', currentOrgId));
     if (!orgSnap.exists()) return;
-    const member = (orgSnap.data().members || []).find(m => m.uid === uid);
-    if (!member) return;
-    await updateDoc(doc(db, 'organizations', currentOrgId), { members: arrayRemove(member) });
+    const orgData = orgSnap.data();
+    const members = orgData.members || [];
+    const member  = members.find(m => m.uid === uid);
+    if (!member) { toast('Member not found.', true); return; }
+
+    // Guard: refuse to remove the org owner — they own billing and can't be ejected
+    if (orgData.ownerId && uid === orgData.ownerId) {
+      toast('Cannot remove the organization owner.', true); return;
+    }
+
+    // Guard: refuse to remove the last remaining admin (would orphan the org)
+    if (member.role === 'admin') {
+      const remainingAdmins = members.filter(m => m.uid !== uid && m.role === 'admin').length;
+      if (remainingAdmins === 0) {
+        toast('Cannot remove the last admin. Promote another member to admin first.', true); return;
+      }
+    }
+
+    // Filter by uid — robust against any field drift (displayName changes, addedAt formatting, etc.)
+    // arrayRemove(member) silently no-ops when fields don't match exactly, so we don't use it.
+    const newMembers = members.filter(m => m.uid !== uid);
+    await updateDoc(doc(db, 'organizations', currentOrgId), { members: newMembers });
     // Remove user record so they get a fresh org on next login
     await updateDoc(doc(db, 'users', uid), { orgId: null }).catch(() => {});
     toast(`${email} removed from team`);
@@ -19523,7 +19542,10 @@ window.copyDisplayUrl = function(screenId, btn) {
 };
 
 function escHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  // Escapes single quotes too (RFC 5321 allows ' in email local-parts) so output
+  // is safe to interpolate into either single- or double-quoted attribute values
+  // including inline onclick="foo('${escHtml(x)}')" patterns used throughout this file.
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
 // ── Apps page filter / search ─────────────────────────────────────────────
@@ -19825,30 +19847,31 @@ window.openAddScreenModal = function() {
 };
 
 window.confirmPairingCode = async function() {
-  const code = document.getElementById('pairingCodeInput').value.trim().toUpperCase();
+  const code  = document.getElementById('pairingCodeInput').value.trim().toUpperCase();
   const errEl = document.getElementById('pairingCodeError');
+  const btn   = document.getElementById('pairingConfirmBtn');
   errEl.textContent = '';
 
   if (code.length !== 6) { errEl.textContent = 'Please enter the full 6-character code.'; return; }
 
+  // Disable the button immediately so a double-click can't spawn two screens.
+  if (btn.disabled) return;
+  btn.disabled = true;
   document.getElementById('pairingWaiting').style.display = 'flex';
 
   try {
     const snap = await getDoc(doc(db, 'pairingCodes', code));
     if (!snap.exists()) {
       errEl.textContent = 'Code not found. Make sure the display is showing a pairing screen.';
-      document.getElementById('pairingWaiting').style.display = 'none';
       return;
     }
     const data = snap.data();
     if (data.status !== 'pending') {
       errEl.textContent = data.status === 'paired' ? 'This code has already been used.' : 'This code is no longer valid.';
-      document.getElementById('pairingWaiting').style.display = 'none';
       return;
     }
     if (data.expiresAt && new Date() > new Date(data.expiresAt)) {
       errEl.textContent = 'This code has expired. The display will generate a new one shortly.';
-      document.getElementById('pairingWaiting').style.display = 'none';
       return;
     }
 
@@ -19874,14 +19897,15 @@ window.confirmPairingCode = async function() {
       pairedAt:   new Date().toISOString(),
     });
 
-    document.getElementById('pairingWaiting').style.display = 'none';
     document.getElementById('pairingPendingSection').style.display = 'none';
     document.getElementById('pairingSuccessSection').style.display = 'flex';
     document.getElementById('pairingSuccessName').textContent = `"${screenName}" is now connected.`;
     logActivity('Screen "' + screenName + '" paired successfully');
   } catch(e) {
     errEl.textContent = 'Connection failed: ' + e.message;
+  } finally {
     document.getElementById('pairingWaiting').style.display = 'none';
+    btn.disabled = false;
   }
 };
 
