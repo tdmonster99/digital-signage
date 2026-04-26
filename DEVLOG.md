@@ -4,6 +4,29 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-04-26 — Claude Code (session 40) — Critical bug fixes from code-review audit
+
+Five high-priority issues from the bug audit fixed in priority order:
+
+- **#10/#26 — `javascript:` URL XSS via webpage slide (Critical)**:
+  - `admin.html` `saveWebpageSlide()`: now rejects any URL whose protocol is not `http:` or `https:` after `new URL()` parse.
+  - `admin.html` `_mzSaveZoneState()`: webpage zones with non-http(s) URLs are blanked out before save.
+  - `display.html`: added `safeIframeUrl()` helper. Both `iframeWebpage.src` (single-zone) and the multizone webpage iframe `ifr.src` now route through it. Anything other than http/https resolves to `about:blank`. Defense-in-depth — even if a malicious slide is in Firestore from before this fix, the display refuses to load it.
+
+- **#11 — `acceptInvitation` email mismatch (Critical)**:
+  - `admin.html` now compares `inv.email.toLowerCase() === user.email.toLowerCase()` before adding the user to the org. On mismatch: toast a clear error, sign the user out so they can re-auth with the correct account. Closes the invite-link-sharing hole.
+
+- **#17 — `initUserAndOrg` silent org-loss on transient errors (Critical)**:
+  - `admin.html`: split the user-doc fetch and org-doc fetch into separate try/catch blocks. A transient Firestore error during boot no longer falls through to `createOrg()` (which would orphan the user from their real org). Instead, a new `showBootError()` overlay appears with a Reload button. Auto-create only happens on the legitimate "user doc does not exist" path.
+
+- **#1 — `mobile.html` listener leak when leaving Content tab (High)**:
+  - `mobile.html` `switchTab()`: now calls `closeShowDetail(true)` at the top, regardless of which tab is being entered. Prevents the slideshow `onSnapshot` listener from leaking when a user opens a slideshow and then switches to Screens or Account.
+
+- **#2 — `mobile.html` `appendDraft` lost-write race (High)**:
+  - `mobile.html`: imported `runTransaction`. `appendDraft()` now wraps the read-modify-write in a Firestore transaction, so two rapid uploads from mobile (or a mobile upload concurrent with an admin edit) no longer silently lose slides.
+
+---
+
 ## 2026-04-25 — Claude Code (session 39)
 
 - **screen-monitor.js: parallelized Firestore reads to eliminate duplicate org fetches**:

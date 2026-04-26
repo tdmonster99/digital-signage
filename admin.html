@@ -8954,46 +8954,71 @@ const ROLE_DESCS = {
   viewer: 'Read-only access. Can view slideshows but cannot edit.',
 };
 
+function showBootError(message) {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#0f172a;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:24px;text-align:center;font-family:DM Sans,system-ui,sans-serif;';
+  overlay.innerHTML = `
+    <div style="font-size:32px;font-weight:800;color:#4d8bff;">Zigns</div>
+    <div style="font-size:16px;font-weight:600;max-width:420px;line-height:1.4;">${message}</div>
+    <button id="bootErrReload" style="background:#0043ce;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-weight:600;font-size:14px;cursor:pointer;">Reload</button>
+  `;
+  document.body.appendChild(overlay);
+  document.getElementById('bootErrReload').onclick = () => location.reload();
+}
+
 async function initUserAndOrg(user) {
   // Check for invite link first
   const inviteId = new URLSearchParams(window.location.search).get('invite');
 
+  // Step 1: load the user doc. A missing doc means a brand new user; any other
+  // error is transient (network, permission, throttle) and must NOT trigger
+  // createOrg — that would orphan the user from their existing organization.
+  let userSnap;
   try {
-    const userSnap = await getDoc(doc(db, 'users', user.uid));
-
-    if (userSnap.exists()) {
-      const userData = userSnap.data();
-      currentOrgId   = userData.orgId;
-      currentRole    = userData.role || 'admin';
-      const orgSnap  = await getDoc(doc(db, 'organizations', currentOrgId));
-      currentOrg     = orgSnap.exists() ? { id: currentOrgId, ...orgSnap.data() } : null;
-
-      // Claim any pending subscription from the marketing site
-      try {
-        const pendingSnap = await getDoc(doc(db, 'pending_subscriptions', user.email.toLowerCase()));
-        if (pendingSnap.exists()) {
-          const pending = pendingSnap.data();
-          const { email: _email, updatedAt: _updatedAt, ...subscriptionData } = pending;
-          await updateDoc(doc(db, 'organizations', currentOrgId), { subscription: { ...subscriptionData, updatedAt: new Date().toISOString() } });
-          await deleteDoc(doc(db, 'pending_subscriptions', user.email.toLowerCase()));
-          if (currentOrg) currentOrg.subscription = subscriptionData;
-          window._pendingBillingSuccess = subscriptionData.plan;
-        }
-      } catch(e) {
-        console.warn('Could not claim pending subscription:', e.message);
-      }
-
-      // Resume onboarding if not completed
-      if (!userData.onboardingComplete) setTimeout(showOnboarding, 200);
-    } else if (inviteId) {
-      await acceptInvitation(inviteId, user);
-    } else {
-      const merged = await tryMergeAccount(user);
-      if (!merged) await createOrg(user);
-    }
+    userSnap = await getDoc(doc(db, 'users', user.uid));
   } catch(e) {
-    console.warn('Org init error:', e.message);
-    await createOrg(user);
+    console.error('Failed to load user document:', e);
+    showBootError('Could not load your account. Check your internet connection and reload.');
+    return;
+  }
+
+  if (userSnap.exists()) {
+    const userData = userSnap.data();
+    currentOrgId   = userData.orgId;
+    currentRole    = userData.role || 'admin';
+
+    // Step 2: load the organization doc. Same rule — don't auto-create on error.
+    try {
+      const orgSnap = await getDoc(doc(db, 'organizations', currentOrgId));
+      currentOrg    = orgSnap.exists() ? { id: currentOrgId, ...orgSnap.data() } : null;
+    } catch(e) {
+      console.error('Failed to load organization document:', e);
+      showBootError('Could not load your organization. Please reload.');
+      return;
+    }
+
+    // Claim any pending subscription from the marketing site (best-effort)
+    try {
+      const pendingSnap = await getDoc(doc(db, 'pending_subscriptions', user.email.toLowerCase()));
+      if (pendingSnap.exists()) {
+        const pending = pendingSnap.data();
+        const { email: _email, updatedAt: _updatedAt, ...subscriptionData } = pending;
+        await updateDoc(doc(db, 'organizations', currentOrgId), { subscription: { ...subscriptionData, updatedAt: new Date().toISOString() } });
+        await deleteDoc(doc(db, 'pending_subscriptions', user.email.toLowerCase()));
+        if (currentOrg) currentOrg.subscription = subscriptionData;
+        window._pendingBillingSuccess = subscriptionData.plan;
+      }
+    } catch(e) {
+      console.warn('Could not claim pending subscription:', e.message);
+    }
+
+    // Resume onboarding if not completed
+    if (!userData.onboardingComplete) setTimeout(showOnboarding, 200);
+  } else if (inviteId) {
+    await acceptInvitation(inviteId, user);
+  } else {
+    const merged = await tryMergeAccount(user);
+    if (!merged) await createOrg(user);
   }
 
   // Remove invite param from URL without reload
@@ -9096,6 +9121,15 @@ async function acceptInvitation(inviteId, user) {
 
   const inv = invSnap.data();
   if (inv.status !== 'pending') { toast('This invitation has already been used.', true); await createOrg(user); return; }
+
+  // Verify the invitation was sent to this exact email — prevent invite-link sharing
+  const inviteEmail = (inv.email || '').trim().toLowerCase();
+  const userEmail   = (user.email || '').trim().toLowerCase();
+  if (!inviteEmail || inviteEmail !== userEmail) {
+    toast(`This invitation was sent to ${inv.email || 'a different address'}. Please sign in with that account.`, true);
+    await signOut(auth);
+    return;
+  }
 
   currentOrgId = inv.orgId;
   currentRole  = inv.role || 'editor';
@@ -10915,7 +10949,11 @@ window.saveWebpageSlide = async function() {
   const url  = document.getElementById('webpageUrl').value.trim();
   const name = document.getElementById('webpageName').value.trim() || 'Web Page';
   if (!url) { toast('Please enter a URL.', true); return; }
-  try { new URL(url); } catch { toast('Please enter a valid URL (include https://).', true); return; }
+  let parsed;
+  try { parsed = new URL(url); } catch { toast('Please enter a valid URL (include https://).', true); return; }
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    toast('URL must start with http:// or https://', true); return;
+  }
   slides.push({ id: crypto.randomUUID(), type: 'webpage', url, name, active: true });
   renderGrid();
   updateCount();
@@ -22765,6 +22803,12 @@ function _mzSaveZoneState(idx) {
   const get  = id => document.getElementById(id)?.value || '';
   const c    = {};
   if (['image','video','youtube','webpage','qr'].includes(type)) c.url = get(`mzZ${idx}_url`);
+  if (type === 'webpage' && c.url) {
+    try {
+      const _p = new URL(c.url);
+      if (_p.protocol !== 'http:' && _p.protocol !== 'https:') c.url = '';
+    } catch { c.url = ''; }
+  }
   if (type === 'image')    c.fit         = get(`mzZ${idx}_fit`) || 'cover';
   if (type === 'clock') {
     c.timezone  = get(`mzZ${idx}_timezone`) || 'local';

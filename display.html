@@ -464,6 +464,15 @@
     return `https://i.ytimg.com/vi/${encodeURIComponent(videoId)}/hqdefault.jpg`;
   }
 
+  // Returns a safe http(s) URL or 'about:blank' for anything else (javascript:, data:, file:, etc.)
+  function safeIframeUrl(url) {
+    if (!url || typeof url !== 'string') return 'about:blank';
+    try {
+      const p = new URL(url);
+      return (p.protocol === 'http:' || p.protocol === 'https:') ? url : 'about:blank';
+    } catch { return 'about:blank'; }
+  }
+
   function youtubeEmbedUrl(videoId) {
     const params = new URLSearchParams({
       autoplay: '1',
@@ -823,7 +832,7 @@
 
     } else if (type === 'webpage') {
       const ifr = document.createElement('iframe');
-      ifr.src = c.url;
+      ifr.src = safeIframeUrl(c.url);
       ifr.style.cssText = 'width:100%;height:100%;border:none;';
       zoneEl.appendChild(ifr);
 
@@ -1729,7 +1738,7 @@
 
     } else if (slide.type === "webpage") {
       _hideAllStages();
-      iframeWebpage.src          = slide.url;
+      iframeWebpage.src          = safeIframeUrl(slide.url);
       stageWebpage.style.opacity = "1";
 
     } else if (slide.type === "clock") {
