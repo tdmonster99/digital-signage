@@ -107,15 +107,16 @@ body {
   cursor: pointer;
 }
 .zigns-mark {
-  width: 30px; height: 30px; flex-shrink: 0;
-  border: 2.5px solid #111827;
+  width: 30px; height: 30px; flex-shrink: 0; border-radius: 8px;
+  background: linear-gradient(140deg, #2563eb, #1d4ed8);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.18), 0 2px 8px rgba(37,99,235,0.3);
   display: flex; align-items: center; justify-content: center;
   font-weight: 800; font-size: 16px; line-height: 1;
-  color: #111827; letter-spacing: -0.5px;
+  color: #fff; letter-spacing: -0.5px;
 }
 [data-theme="dark"] .zigns-mark {
-  border-color: var(--accent);
-  color: var(--accent);
+  background: linear-gradient(140deg, #2563eb, #1d4ed8);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.18), 0 2px 8px rgba(37,99,235,0.4);
 }
 .zigns-wordmark {
   font-size: 17px; font-weight: 700; letter-spacing: 2px;
@@ -3380,7 +3381,7 @@ body.role-editor .admin-action {
 #signInModal.open { display:flex; }
 .signin-box { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:36px 32px; width:100%; max-width:400px; box-shadow:0 24px 64px rgba(0,0,0,.25); }
 .signin-logo { display:flex; align-items:center; gap:6px; margin-bottom:28px; }
-.signin-logo-mark { border:3px solid var(--text); width:28px; height:28px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:18px; color:var(--text); }
+.signin-logo-mark { width:28px; height:28px; border-radius:7px; background:linear-gradient(140deg,#2563eb,#1d4ed8); box-shadow:inset 0 0 0 1px rgba(255,255,255,0.18),0 2px 8px rgba(37,99,235,0.3); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:18px; color:#fff; flex-shrink:0; }
 .signin-logo-text { font-weight:700; font-size:22px; letter-spacing:.05em; color:var(--text); }
 .signin-title { font-size:20px; font-weight:700; margin:0 0 4px; color:var(--text); }
 .signin-sub { font-size:13px; color:var(--muted); margin:0 0 24px; }
