@@ -353,6 +353,14 @@ body {
   padding: 2px 8px; border-radius: 10px; white-space: nowrap;
   overflow: hidden; text-overflow: ellipsis; max-width: 140px;
 }
+.screen-url-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px; font-weight: 500; color: var(--muted);
+  background: none; border: none; cursor: pointer; padding: 2px 0;
+  transition: color 0.15s;
+}
+.screen-url-btn:hover { color: var(--accent); }
+.screen-url-btn svg { flex-shrink: 0; }
 
 /* ── Pairing modal ───────────────────────────────────────────────────── */
 #pairingModal {
@@ -19439,10 +19447,36 @@ function renderScreens(screens) {
             <div class="screen-card-meta">Last seen: ${lastSeenStr}</div>
             <div class="screen-card-show">${escHtml(showName)}</div>
           </div>
+          <div>
+            <button class="screen-url-btn" onclick="event.stopPropagation(); copyDisplayUrl('${screen.id}', this)" title="Copy the bookmarkable URL for this screen's display">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+              Copy display URL
+            </button>
+          </div>
         </div>
       </div>`;
     }).join('');
 }
+
+window.copyDisplayUrl = function(screenId, btn) {
+  const url = `${location.origin}/display.html?screen=${screenId}`;
+  const reset = () => {
+    setTimeout(() => {
+      btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copy display URL`;
+    }, 2000);
+  };
+  navigator.clipboard.writeText(url).then(() => {
+    btn.textContent = 'Copied!';
+    reset();
+  }).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = url; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); btn.textContent = 'Copied!'; } catch(_) { btn.textContent = 'Copy failed'; }
+    document.body.removeChild(ta);
+    reset();
+  });
+};
 
 function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
