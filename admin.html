@@ -3605,6 +3605,11 @@ body.role-editor .admin-action {
 </script>
 </head>
 <body>
+<script>
+  if (window.innerWidth <= 860 && !new URLSearchParams(location.search).has('desktop')) {
+    location.replace('/mobile.html');
+  }
+</script>
 
 <!-- ── Onboarding Wizard ──────────────────────────────────────────────── -->
 <div id="onboardingOverlay">

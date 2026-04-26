@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>Zigns</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --brand:    #2563eb;
+      --brand-dk: #1d4ed8;
+      --success:  #22c55e;
+      --danger:   #ef4444;
+      --warn:     #f59e0b;
+      --text:     #0f172a;
+      --text2:    #334155;
+      --muted:    #64748b;
+      --border:   #e2e8f0;
+      --border2:  #cbd5e1;
+      --bg:       #f1f5f9;
+      --surface:  #ffffff;
+      --surface2: #f8fafc;
+      --r:        14px;
+      --r-sm:     8px;
+      --top-h:    58px;
+      --tab-h:    64px;
+      --shadow:   0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
+    }
+
+    html, body { height: 100%; overflow: hidden; background: var(--bg); }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: var(--text); line-height: 1.5; -webkit-font-smoothing: antialiased; }
+    button { font: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+    img { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    input, textarea { font: inherit; }
+
+    /* ── Loading ── */
+    #loading {
+      position: fixed; inset: 0; background: #fff; z-index: 9999;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px;
+    }
+    .loading-mark {
+      width: 60px; height: 60px; border-radius: 15px;
+      background: linear-gradient(140deg, #2563eb, #1d4ed8);
+      display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 1.6rem;
+    }
+    .spinner {
+      width: 26px; height: 26px; border: 2.5px solid var(--border);
+      border-top-color: var(--brand); border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Shell ── */
+    #app { display: flex; flex-direction: column; height: 100dvh; height: 100vh; overflow: hidden; }
+
+    /* ── Top bar ── */
+    #topBar {
+      height: var(--top-h); flex-shrink: 0;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; padding: 0 16px; gap: 10px; z-index: 10;
+    }
+    .top-mark {
+      width: 34px; height: 34px; border-radius: 8px; flex-shrink: 0;
+      background: linear-gradient(140deg, #2563eb, #1d4ed8);
+      display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 0.95rem;
+    }
+    #tabTitle { font-size: 1rem; font-weight: 700; flex: 1; }
+
+    /* ── Scroll area ── */
+    #mainContent { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; }
+
+    /* ── Tab panels ── */
+    .tab-panel { display: none; padding: 16px; padding-bottom: 88px; }
+    .tab-panel.active { display: block; }
+
+    /* ── Bottom nav ── */
+    #bottomNav {
+      height: var(--tab-h); flex-shrink: 0;
+      background: var(--surface); border-top: 1px solid var(--border);
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    .tab-btn {
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+      color: var(--muted); transition: color 0.15s; padding: 8px 0;
+    }
+    .tab-btn.active { color: var(--brand); }
+    .tab-btn svg { width: 22px; height: 22px; }
+    .tab-label { font-size: 10px; font-weight: 600; letter-spacing: 0.02em; }
+
+    /* ── Cards ── */
+    .card { background: var(--surface); border-radius: var(--r); border: 1px solid var(--border); box-shadow: var(--shadow); overflow: hidden; }
+    .card + .card, .card + div { margin-top: 12px; }
+
+    /* ── Status ── */
+    .status-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; display: inline-block; }
+    .status-dot.online  { background: var(--success); box-shadow: 0 0 0 2px rgba(34,197,94,0.2); }
+    .status-dot.offline { background: var(--border2); }
+    .badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 999px; flex-shrink: 0;
+    }
+    .badge.online  { background: rgba(34,197,94,0.12); color: #16a34a; }
+    .badge.offline { background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
+    .plan-badge {
+      display: inline-block; font-size: 11px; font-weight: 700;
+      padding: 3px 9px; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .plan-badge.free          { background: var(--bg); color: var(--muted); border: 1px solid var(--border); }
+    .plan-badge.standard      { background: #eff6ff; color: #2563eb; }
+    .plan-badge.premium       { background: #faf5ff; color: #7c3aed; }
+    .plan-badge.early-adopter { background: #fefce8; color: #92400e; }
+    .plan-badge.enterprise    { background: #f0fdf4; color: #15803d; }
+
+    .draft-chip {
+      display: inline-flex; align-items: center; gap: 3px;
+      font-size: 10px; font-weight: 700; padding: 2px 6px;
+      border-radius: 999px; background: #fef3c7; color: #92400e; letter-spacing: 0.04em;
+    }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 0 16px; height: 38px; border-radius: var(--r-sm);
+      font-size: 0.85rem; font-weight: 700; transition: opacity 0.15s, transform 0.1s;
+      white-space: nowrap;
+    }
+    .btn:active { transform: scale(0.96); }
+    .btn-primary   { background: var(--brand); color: #fff; }
+    .btn-primary:hover { background: var(--brand-dk); }
+    .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+    .btn-danger    { background: #fef2f2; color: var(--danger); }
+    .btn-sm  { height: 32px; padding: 0 12px; font-size: 0.8rem; border-radius: 6px; }
+    .btn-full { width: 100%; height: 48px; border-radius: var(--r); font-size: 0.95rem; }
+    .btn:disabled { opacity: 0.45; pointer-events: none; }
+
+    /* ── Section head ── */
+    .sh { font-size: 0.72rem; font-weight: 700; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; padding: 0 2px 10px; }
+
+    /* ── Screen card ── */
+    .sc-body { padding: 14px 16px; }
+    .sc-top  { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+    .sc-name { font-weight: 700; font-size: 0.93rem; }
+    .sc-show { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+    .sc-loc  { font-size: 0.78rem; color: var(--muted); margin-bottom: 10px; }
+    .sc-foot { display: flex; align-items: center; gap: 10px; border-top: 1px solid var(--border); padding-top: 12px; }
+
+    /* ── Slideshow card ── */
+    .sw-card { display: flex; align-items: center; gap: 14px; padding: 14px 16px; cursor: pointer; }
+    .sw-icon {
+      width: 42px; height: 42px; border-radius: 10px; flex-shrink: 0;
+      background: #eff6ff; display: grid; place-items: center; color: var(--brand);
+    }
+    .sw-name { font-weight: 700; font-size: 0.88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sw-meta { font-size: 0.76rem; color: var(--muted); margin-top: 2px; }
+
+    /* ── Back bar ── */
+    .back-bar {
+      display: flex; align-items: center; gap: 10px; padding: 0 16px;
+      height: var(--top-h); background: var(--surface); border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 5;
+    }
+    .back-btn { display: flex; align-items: center; gap: 3px; color: var(--brand); font-weight: 600; font-size: 0.88rem; padding: 8px 0; }
+    .back-title { font-weight: 700; font-size: 0.9rem; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* ── Slide list item ── */
+    .slide-item { display: flex; align-items: center; gap: 12px; padding: 11px 16px; border-bottom: 1px solid var(--border); }
+    .slide-item:last-child { border-bottom: none; }
+    .slide-thumb {
+      width: 56px; height: 36px; border-radius: 6px; flex-shrink: 0;
+      background: var(--bg); border: 1px solid var(--border); overflow: hidden;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .slide-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .slide-name { font-size: 0.83rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .slide-type { font-size: 0.74rem; color: var(--muted); text-transform: capitalize; }
+
+    /* ── Bottom sheets ── */
+    .backdrop {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.38); z-index: 100;
+      opacity: 0; pointer-events: none; transition: opacity 0.25s;
+    }
+    .backdrop.open { opacity: 1; pointer-events: all; }
+    .sheet {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: var(--surface); border-radius: 20px 20px 0 0; z-index: 101;
+      transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.32,0.72,0,1);
+      padding-bottom: env(safe-area-inset-bottom); max-height: 88vh; overflow-y: auto;
+    }
+    .sheet.open { transform: translateY(0); }
+    .sheet-handle { width: 36px; height: 4px; background: var(--border2); border-radius: 999px; margin: 12px auto; }
+    .sheet-hd { padding: 4px 20px 14px; display: flex; align-items: center; justify-content: space-between; }
+    .sheet-title { font-size: 1rem; font-weight: 700; }
+    .sheet-x { width: 30px; height: 30px; border-radius: 50%; background: var(--bg); color: var(--muted); display: grid; place-items: center; }
+    .sheet-body { padding: 0 20px 24px; }
+
+    .opt { display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: 12px; cursor: pointer; transition: background 0.1s; }
+    .opt:hover, .opt:active { background: var(--surface2); }
+    .opt-icon { width: 44px; height: 44px; border-radius: 10px; flex-shrink: 0; display: grid; place-items: center; background: var(--bg); }
+    .opt-label { font-weight: 600; font-size: 0.9rem; }
+    .opt-desc  { font-size: 0.76rem; color: var(--muted); margin-top: 2px; }
+
+    /* ── Inputs ── */
+    .field { margin-bottom: 16px; }
+    .field label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text2); margin-bottom: 6px; }
+    .inp {
+      width: 100%; padding: 12px 14px; border-radius: var(--r-sm);
+      border: 1.5px solid var(--border); font-size: 0.9rem; background: var(--surface);
+      color: var(--text); outline: none; transition: border-color 0.15s;
+    }
+    .inp:focus { border-color: var(--brand); }
+
+    /* ── Upload progress ── */
+    .prog-wrap { margin-top: 12px; }
+    .prog-label { font-size: 0.82rem; color: var(--muted); margin-bottom: 6px; }
+    .prog-track { height: 4px; background: var(--border); border-radius: 999px; overflow: hidden; }
+    .prog-bar   { height: 100%; background: var(--brand); border-radius: 999px; width: 0%; transition: width 0.2s; }
+
+    /* ── Account ── */
+    .acct-avatar {
+      width: 60px; height: 60px; border-radius: 50%; background: var(--brand);
+      display: grid; place-items: center; color: #fff; font-size: 1.4rem; font-weight: 700; flex-shrink: 0;
+    }
+
+    /* ── FAB ── */
+    #fab {
+      position: fixed; bottom: calc(var(--tab-h) + 16px); right: 20px;
+      width: 52px; height: 52px; border-radius: 50%;
+      background: var(--brand); color: #fff; box-shadow: 0 4px 16px rgba(37,99,235,0.38);
+      display: grid; place-items: center; z-index: 50; transition: transform 0.15s, opacity 0.15s;
+    }
+    #fab:active { transform: scale(0.92); }
+    #fab.hidden { opacity: 0; pointer-events: none; }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed; bottom: calc(var(--tab-h) + 14px); left: 50%;
+      transform: translateX(-50%) translateY(12px);
+      background: #1e293b; color: #fff; padding: 10px 18px; border-radius: 999px;
+      font-size: 0.83rem; font-weight: 600; opacity: 0; pointer-events: none;
+      transition: opacity 0.2s, transform 0.2s; z-index: 9000; white-space: nowrap;
+      max-width: calc(100vw - 32px); text-align: center;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ── Empty state ── */
+    .empty { text-align: center; padding: 60px 24px; color: var(--muted); }
+    .empty svg { margin: 0 auto 14px; opacity: 0.3; }
+    .empty p { font-size: 0.88rem; line-height: 1.6; }
+
+    /* ── Info banner ── */
+    .info-banner {
+      display: flex; align-items: flex-start; gap: 10px;
+      background: #fef3c7; border: 1px solid #fcd34d; border-radius: 10px;
+      padding: 11px 14px; margin-bottom: 14px; font-size: 0.81rem; color: #92400e;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Loading -->
+  <div id="loading">
+    <div class="loading-mark">Z</div>
+    <div class="spinner"></div>
+  </div>
+
+  <!-- App -->
+  <div id="app" style="display:none">
+
+    <header id="topBar">
+      <div class="top-mark">Z</div>
+      <span id="tabTitle">Screens</span>
+    </header>
+
+    <div id="mainContent">
+
+      <!-- Screens -->
+      <div id="panelScreens" class="tab-panel active">
+        <div id="screensList"></div>
+      </div>
+
+      <!-- Content -->
+      <div id="panelContent" class="tab-panel">
+        <div id="slideshowsList"></div>
+        <div id="slideshowDetail" style="display:none">
+          <div class="back-bar">
+            <button class="back-btn" onclick="closeShowDetail()">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+              Content
+            </button>
+            <span class="back-title" id="detailTitle"></span>
+            <button class="btn btn-primary btn-sm" id="publishBtn" onclick="publishActive()" style="margin-left:8px;flex-shrink:0">Publish</button>
+          </div>
+          <div id="slidesList" style="padding:16px"></div>
+        </div>
+      </div>
+
+      <!-- Account -->
+      <div id="panelAccount" class="tab-panel">
+        <div id="accountContent"></div>
+      </div>
+
+    </div><!-- /mainContent -->
+
+    <nav id="bottomNav">
+      <button class="tab-btn active" id="tabBtnScreens" onclick="switchTab('screens')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+        <span class="tab-label">Screens</span>
+      </button>
+      <button class="tab-btn" id="tabBtnContent" onclick="switchTab('content')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/>
+        </svg>
+        <span class="tab-label">Content</span>
+      </button>
+      <button class="tab-btn" id="tabBtnAccount" onclick="switchTab('account')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+        </svg>
+        <span class="tab-label">Account</span>
+      </button>
+    </nav>
+
+  </div><!-- /app -->
+
+  <!-- FAB -->
+  <button id="fab" class="hidden" onclick="openAddSlide()" aria-label="Add slide">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+  </button>
+
+  <!-- Add Slide sheet -->
+  <div class="backdrop" id="addSlideBackdrop" onclick="closeAddSlide()"></div>
+  <div class="sheet" id="addSlideSheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-hd">
+      <span class="sheet-title">Add Slide</span>
+      <button class="sheet-x" onclick="closeAddSlide()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body">
+      <div class="opt" onclick="triggerImageUpload()">
+        <div class="opt-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        </div>
+        <div>
+          <div class="opt-label">Upload Image</div>
+          <div class="opt-desc">JPG, PNG, GIF, WebP</div>
+        </div>
+      </div>
+      <div class="opt" onclick="openYTSheet()">
+        <div class="opt-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="#dc2626"><path d="M23.5 6.2a3 3 0 00-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 00.5 6.2C0 8.1 0 12 0 12s0 3.9.5 5.8a3 3 0 002.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 002.1-2.1C24 15.9 24 12 24 12s0-3.9-.5-5.8zM9.8 15.6V8.4l6.3 3.6-6.3 3.6z"/></svg>
+        </div>
+        <div>
+          <div class="opt-label">YouTube Video</div>
+          <div class="opt-desc">Paste a YouTube URL</div>
+        </div>
+      </div>
+      <div id="uploadWrap" style="display:none">
+        <div class="prog-wrap">
+          <div class="prog-label" id="uploadLabel">Uploading…</div>
+          <div class="prog-track"><div class="prog-bar" id="uploadBar"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- YouTube sheet -->
+  <div class="backdrop" id="ytBackdrop" onclick="closeYTSheet()"></div>
+  <div class="sheet" id="ytSheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-hd">
+      <span class="sheet-title">YouTube Video</span>
+      <button class="sheet-x" onclick="closeYTSheet()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body">
+      <div class="field">
+        <label for="ytUrl">YouTube URL</label>
+        <input class="inp" id="ytUrl" type="url" placeholder="https://www.youtube.com/watch?v=…" autocomplete="off" autocorrect="off" spellcheck="false">
+      </div>
+      <div class="field">
+        <label for="ytDwell">Duration (seconds)</label>
+        <input class="inp" id="ytDwell" type="number" value="30" min="5" max="3600">
+      </div>
+      <button class="btn btn-primary btn-full" onclick="addYTSlide()">Add YouTube Slide</button>
+    </div>
+  </div>
+
+  <!-- Hidden file input -->
+  <input type="file" id="imgInput" accept="image/*" style="display:none">
+
+  <!-- Toast -->
+  <div id="toast"></div>
+
+  <script type="module">
+    import { initializeApp }
+      from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut as fbSignOut }
+      from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { getFirestore, doc, collection, query, where,
+             onSnapshot, setDoc, getDoc, deleteField }
+      from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    const fbApp = initializeApp({
+      apiKey:            "AIzaSyDYsip5Xx2N-gewNDqTj7EAnvabfbrBQTY",
+      authDomain:        "digital-signage-2.firebaseapp.com",
+      projectId:         "digital-signage-2",
+      storageBucket:     "digital-signage-2.firebasestorage.app",
+      messagingSenderId: "1004548485661",
+      appId:             "1:1004548485661:web:b3ab204d94943716674cf4",
+    });
+    const auth = getAuth(fbApp);
+    const db   = getFirestore(fbApp);
+
+    // ── State ────────────────────────────────────────────────────────────────
+    let me           = null;   // Firebase auth user
+    let orgId        = null;
+    let org          = null;
+    let screens      = [];
+    let showMeta     = [];     // [{ id, name }] from org doc
+    let activeTab    = 'screens';
+    let activeShowId = null;
+    let activeShowData = null;
+    let activeShowUnsub = null;
+
+    // ── Auth guard ───────────────────────────────────────────────────────────
+    onAuthStateChanged(auth, async user => {
+      if (!user) { location.href = '/login.html'; return; }
+      me = user;
+      await boot();
+    });
+
+    async function boot() {
+      try {
+        const uSnap = await getDoc(doc(db, 'users', me.uid));
+        if (!uSnap.exists()) throw new Error('User record missing.');
+        orgId = uSnap.data().orgId;
+        if (!orgId) throw new Error('No organization linked to this account.');
+
+        // Org subscription
+        onSnapshot(doc(db, 'organizations', orgId), snap => {
+          if (!snap.exists()) return;
+          org      = { id: snap.id, ...snap.data() };
+          showMeta = Array.isArray(org.slideshows) ? org.slideshows : [];
+          if (activeTab === 'content' && !activeShowId) renderSlideshows();
+          if (activeTab === 'account') renderAccount();
+        });
+
+        // Screens subscription
+        onSnapshot(
+          query(collection(db, 'screens'), where('orgId', '==', orgId)),
+          snap => {
+            screens = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            if (activeTab === 'screens') renderScreens();
+          }
+        );
+
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('app').style.display    = 'flex';
+        renderScreens();
+      } catch(e) {
+        document.getElementById('loading').innerHTML =
+          `<div class="loading-mark">Z</div>
+           <p style="color:#ef4444;font-size:0.88rem;padding:0 32px;text-align:center">${esc(e.message)}</p>
+           <a href="/login.html" style="color:#2563eb;font-size:0.88rem;font-weight:600">Back to login</a>`;
+      }
+    }
+
+    // ── Tabs ─────────────────────────────────────────────────────────────────
+    window.switchTab = function(tab) {
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('panelScreens').classList[tab === 'screens' ? 'add' : 'remove']('active');
+      document.getElementById('panelContent').classList[tab === 'content' ? 'add' : 'remove']('active');
+      document.getElementById('panelAccount').classList[tab === 'account' ? 'add' : 'remove']('active');
+      document.getElementById(`tabBtn${tab[0].toUpperCase()+tab.slice(1)}`).classList.add('active');
+      const labels = { screens: 'Screens', content: 'Content', account: 'Account' };
+      document.getElementById('tabTitle').textContent = labels[tab];
+      activeTab = tab;
+      setFab(false);
+      if (tab === 'screens') renderScreens();
+      if (tab === 'content') { closeShowDetail(true); renderSlideshows(); }
+      if (tab === 'account') renderAccount();
+    };
+
+    // ── Screens tab ──────────────────────────────────────────────────────────
+    function online(lastSeen) {
+      return lastSeen && (Date.now() - new Date(lastSeen)) < 3 * 60 * 1000;
+    }
+
+    function showName(id) {
+      if (!id) return '—';
+      return showMeta.find(s => s.id === id)?.name || id;
+    }
+
+    function renderScreens() {
+      const el = document.getElementById('screensList');
+      if (!screens.length) {
+        el.innerHTML = `<div class="empty">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+            <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+          </svg>
+          <p>No screens yet.<br>Add one from the desktop admin.</p>
+        </div>`;
+        return;
+      }
+
+      el.innerHTML = screens
+        .sort((a, b) => (a.registeredAt || '') > (b.registeredAt || '') ? 1 : -1)
+        .map(s => {
+          const on = online(s.lastSeen);
+          return `<div class="card" style="margin-bottom:12px">
+            <div class="sc-body">
+              <div class="sc-top">
+                <div style="min-width:0">
+                  <div class="sc-name">${esc(s.name || s.id)}</div>
+                  <div class="sc-show">Showing: ${esc(showName(s.slideshowId))}</div>
+                </div>
+                <span class="badge ${on ? 'online' : 'offline'}">
+                  <span class="status-dot ${on ? 'online' : 'offline'}"></span>
+                  ${on ? 'Online' : 'Offline'}
+                </span>
+              </div>
+              ${s.location ? `<div class="sc-loc">${esc(s.location)}</div>` : ''}
+              <div class="sc-foot">
+                <button class="btn btn-primary btn-sm" data-screen-id="${esc(s.id)}" data-show-id="${esc(s.slideshowId||'')}" onclick="publishScreen(this)">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 2 11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                  Publish
+                </button>
+                <span style="font-size:0.76rem;color:var(--muted)">Push draft live</span>
+              </div>
+            </div>
+          </div>`;
+        }).join('');
+    }
+
+    window.publishScreen = async function(btn) {
+      const showId = btn.dataset.showId;
+      if (!showId) { toast('No slideshow assigned to this screen'); return; }
+      btn.disabled = true;
+      btn.textContent = 'Publishing…';
+      try {
+        await doPublish(showId);
+        toast('Published successfully');
+      } catch(e) {
+        toast('Publish failed: ' + e.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 2 11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Publish`;
+      }
+    };
+
+    // ── Content tab ──────────────────────────────────────────────────────────
+    function renderSlideshows() {
+      const el = document.getElementById('slideshowsList');
+      if (!showMeta.length) {
+        el.innerHTML = `<div class="empty">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+            <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/>
+          </svg>
+          <p>No slideshows yet.<br>Create one from the desktop admin.</p>
+        </div>`;
+        return;
+      }
+
+      el.innerHTML = `<div class="sh">Slideshows</div>` +
+        showMeta.map(s => `
+          <div class="card" style="margin-bottom:10px" onclick="openShowDetail('${esc(s.id)}','${esc(s.name)}')">
+            <div class="sw-card">
+              <div class="sw-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/>
+                </svg>
+              </div>
+              <div style="flex:1;min-width:0">
+                <div class="sw-name">${esc(s.name)}</div>
+                <div class="sw-meta" id="swm-${esc(s.id)}">Loading…</div>
+              </div>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--muted);flex-shrink:0"><path d="M9 18l6-6-6-6"/></svg>
+            </div>
+          </div>`).join('');
+
+      showMeta.forEach(s => loadShowMeta(s.id));
+    }
+
+    async function loadShowMeta(id) {
+      const el = document.getElementById(`swm-${id}`);
+      if (!el) return;
+      try {
+        const snap = await getDoc(doc(db, 'slideshows', id));
+        if (!snap.exists()) { el.textContent = 'Not found'; return; }
+        const d = snap.data();
+        const count = (d.slides || []).length;
+        const draft = !!d.draftSlides;
+        el.innerHTML = `${count} slide${count !== 1 ? 's' : ''}` +
+          (draft ? ' &nbsp;<span class="draft-chip">DRAFT</span>' : '');
+      } catch(_) { el.textContent = '—'; }
+    }
+
+    window.openShowDetail = function(id, name) {
+      activeShowId = id;
+      document.getElementById('detailTitle').textContent = name;
+      document.getElementById('slideshowsList').style.display = 'none';
+      document.getElementById('slideshowDetail').style.display = 'block';
+      document.getElementById('tabTitle').textContent = name;
+      setFab(true);
+
+      if (activeShowUnsub) { activeShowUnsub(); }
+      activeShowUnsub = onSnapshot(doc(db, 'slideshows', id), snap => {
+        if (!snap.exists()) return;
+        activeShowData = snap.data();
+        renderSlides(activeShowData);
+        syncPublishBtn(activeShowData);
+      });
+    };
+
+    window.closeShowDetail = function(silent) {
+      if (activeShowUnsub) { activeShowUnsub(); activeShowUnsub = null; }
+      activeShowId = null; activeShowData = null;
+      document.getElementById('slideshowsList').style.display = '';
+      document.getElementById('slideshowDetail').style.display = 'none';
+      document.getElementById('tabTitle').textContent = 'Content';
+      setFab(false);
+      if (!silent) renderSlideshows();
+    };
+
+    function renderSlides(data) {
+      const el = document.getElementById('slidesList');
+      const slides = data.draftSlides ?? data.slides ?? [];
+      const hasDraft = !!data.draftSlides;
+
+      if (!slides.length) {
+        el.innerHTML = `<div class="empty"><p>No slides yet.<br>Tap <strong>+</strong> to add one.</p></div>`;
+        return;
+      }
+
+      el.innerHTML =
+        (hasDraft ? `<div class="info-banner">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          Unpublished changes — tap Publish to go live.
+        </div>` : '') +
+        `<div class="card">${slides.map((s, i) => slideHtml(s, i)).join('')}</div>`;
+    }
+
+    function slideHtml(s, i) {
+      const type = s.type || 'image';
+      let thumb, typeLabel;
+      if (type === 'image' || !s.type) {
+        thumb = s.url
+          ? `<img src="${esc(s.url)}" alt="" loading="lazy">`
+          : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--muted)"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`;
+        typeLabel = 'Image';
+      } else if (type === 'youtube') {
+        thumb = `<svg width="20" height="20" viewBox="0 0 24 24" fill="#dc2626"><path d="M23.5 6.2a3 3 0 00-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 00.5 6.2C0 8.1 0 12 0 12s0 3.9.5 5.8a3 3 0 002.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 002.1-2.1C24 15.9 24 12 24 12s0-3.9-.5-5.8zM9.8 15.6V8.4l6.3 3.6-6.3 3.6z"/></svg>`;
+        typeLabel = 'YouTube';
+      } else if (type === 'video') {
+        thumb = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--muted)"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>`;
+        typeLabel = 'Video';
+      } else {
+        thumb = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--muted)"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>`;
+        typeLabel = type;
+      }
+      return `<div class="slide-item">
+        <div class="slide-thumb">${thumb}</div>
+        <div style="flex:1;min-width:0">
+          <div class="slide-name">${esc(s.name || `Slide ${i + 1}`)}</div>
+          <div class="slide-type">${typeLabel}</div>
+        </div>
+      </div>`;
+    }
+
+    function syncPublishBtn(data) {
+      const btn = document.getElementById('publishBtn');
+      const hasDraft = !!data.draftSlides;
+      btn.disabled = !hasDraft;
+      btn.textContent = hasDraft ? 'Publish' : 'Up to date';
+    }
+
+    window.publishActive = async function() {
+      if (!activeShowId) return;
+      const btn = document.getElementById('publishBtn');
+      btn.disabled = true; btn.textContent = 'Publishing…';
+      try {
+        await doPublish(activeShowId);
+        toast('Published successfully');
+      } catch(e) {
+        toast('Publish failed: ' + e.message);
+        btn.disabled = false; btn.textContent = 'Publish';
+      }
+    };
+
+    // ── Publish logic ────────────────────────────────────────────────────────
+    async function doPublish(showId) {
+      const snap = await getDoc(doc(db, 'slideshows', showId));
+      if (!snap.exists()) throw new Error('Slideshow not found');
+      const d = snap.data();
+      await setDoc(doc(db, 'slideshows', showId), {
+        slides:          d.draftSlides    ?? d.slides    ?? [],
+        defaultDwell:    d.draftDwell     ?? d.defaultDwell ?? 6,
+        fitMode:         d.draftFitMode   ?? d.fitMode   ?? 'contain',
+        transition:      d.draftTransition ?? d.transition ?? 'crossfade',
+        status:          'published',
+        publishedAt:     new Date().toISOString(),
+        publishedBy:     { uid: me.uid, email: me.email },
+        orgId,
+        draftSlides:     deleteField(),
+        draftDwell:      deleteField(),
+        draftFitMode:    deleteField(),
+        draftTransition: deleteField(),
+        draftUpdatedAt:  deleteField(),
+        draftBy:         deleteField(),
+      }, { merge: true });
+    }
+
+    // ── Add slide ────────────────────────────────────────────────────────────
+    window.openAddSlide  = () => openSheet('addSlide');
+    window.closeAddSlide = () => closeSheet('addSlide');
+    window.openYTSheet   = () => { closeAddSlide(); setTimeout(() => openSheet('yt'), 180); };
+    window.closeYTSheet  = () => closeSheet('yt');
+
+    window.triggerImageUpload = () => document.getElementById('imgInput').click();
+
+    document.getElementById('imgInput').addEventListener('change', async e => {
+      const file = e.target.files[0];
+      e.target.value = '';
+      if (!file || !activeShowId) return;
+      await uploadImage(file);
+    });
+
+    async function uploadImage(file) {
+      const wrap  = document.getElementById('uploadWrap');
+      const bar   = document.getElementById('uploadBar');
+      const label = document.getElementById('uploadLabel');
+      wrap.style.display = 'block'; bar.style.width = '10%'; label.textContent = 'Uploading…';
+      try {
+        const ext = file.name.split('.').pop().toLowerCase();
+        const key = `signage/${activeShowId}/${crypto.randomUUID()}.${ext}`;
+        const r1  = await fetch(`/api/upload-url?key=${encodeURIComponent(key)}&contentType=${encodeURIComponent(file.type)}`);
+        if (!r1.ok) throw new Error('Could not get upload URL');
+        const { uploadUrl, cdnUrl } = await r1.json();
+        bar.style.width = '40%';
+        const r2 = await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Type': file.type }, body: file });
+        if (!r2.ok) throw new Error('Upload to storage failed');
+        bar.style.width = '80%';
+        await appendDraft({ id: crypto.randomUUID(), url: cdnUrl, name: file.name, active: true });
+        bar.style.width = '100%'; label.textContent = 'Done!';
+        setTimeout(() => { wrap.style.display = 'none'; bar.style.width = '0%'; }, 700);
+        closeAddSlide();
+        toast('Image added — tap Publish to go live');
+      } catch(e) {
+        wrap.style.display = 'none'; bar.style.width = '0%';
+        closeAddSlide();
+        toast('Upload failed: ' + e.message);
+      }
+    }
+
+    window.addYTSlide = async function() {
+      const url   = document.getElementById('ytUrl').value.trim();
+      const dwell = parseInt(document.getElementById('ytDwell').value, 10) || 30;
+      if (!url) { toast('Enter a YouTube URL'); return; }
+      const videoId = ytId(url);
+      if (!videoId) { toast('Could not find a YouTube video ID in that URL'); return; }
+      closeYTSheet();
+      try {
+        await appendDraft({ id: crypto.randomUUID(), type: 'youtube', videoId, url, name: 'YouTube Video', dwell, active: true });
+        document.getElementById('ytUrl').value = '';
+        toast('YouTube slide added — tap Publish to go live');
+      } catch(e) { toast('Failed: ' + e.message); }
+    };
+
+    async function appendDraft(slide) {
+      const ref  = doc(db, 'slideshows', activeShowId);
+      const snap = await getDoc(ref);
+      const d    = snap.exists() ? snap.data() : {};
+      const current = d.draftSlides ?? d.slides ?? [];
+      await setDoc(ref, {
+        draftSlides:    [...current, slide],
+        draftUpdatedAt: new Date().toISOString(),
+        orgId,
+        draftBy: { uid: me.uid, email: me.email },
+      }, { merge: true });
+    }
+
+    function ytId(url) {
+      const pats = [
+        /youtu\.be\/([^?&\s]+)/,
+        /youtube\.com\/watch\?.*v=([^&\s]+)/,
+        /youtube\.com\/embed\/([^?&\s]+)/,
+        /youtube\.com\/shorts\/([^?&\s]+)/,
+        /youtube\.com\/v\/([^?&\s]+)/,
+      ];
+      for (const p of pats) { const m = url.match(p); if (m) return m[1]; }
+      return null;
+    }
+
+    // ── Account tab ──────────────────────────────────────────────────────────
+    function renderAccount() {
+      if (!me || !org) return;
+      const el   = document.getElementById('accountContent');
+      const name = me.displayName || me.email || 'User';
+      const init = name.split(' ').slice(0,2).map(n => n[0]).join('').toUpperCase();
+      const plan = org.subscription?.plan || 'free';
+      const planLabels = { free: 'Free', standard: 'Standard', premium: 'Premium', 'early-adopter': 'Early Adopter', enterprise: 'Enterprise' };
+      const screensAllowed = org.subscription?.screensAllowed ?? 1;
+
+      el.innerHTML = `
+        <div class="card" style="margin-bottom:12px">
+          <div style="padding:18px">
+            <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
+              <div class="acct-avatar">${esc(init)}</div>
+              <div>
+                <div style="font-weight:700;font-size:0.95rem">${esc(name)}</div>
+                <div style="font-size:0.82rem;color:var(--muted)">${esc(me.email || '')}</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--border);padding-top:14px">
+              <div>
+                <div style="font-size:0.75rem;color:var(--muted);margin-bottom:3px">Organization</div>
+                <div style="font-weight:700;font-size:0.88rem">${esc(org.name || 'My Org')}</div>
+              </div>
+              <span class="plan-badge ${esc(plan)}">${esc(planLabels[plan] || plan)}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:12px">
+          <div style="padding:16px">
+            <div class="sh">Usage</div>
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="font-size:0.85rem;color:var(--text2)">Screens</span>
+              <span style="font-size:0.85rem;font-weight:700">${screens.length} / ${screensAllowed === 9999 ? '∞' : screensAllowed}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="padding:16px;display:flex;flex-direction:column;gap:4px">
+            <a href="/admin.html?desktop=1" style="display:flex;align-items:center;gap:10px;padding:10px 0;color:var(--text2);font-weight:600;font-size:0.88rem">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+              Open full admin
+            </a>
+            <div style="height:1px;background:var(--border)"></div>
+            <button onclick="doSignOut()" style="display:flex;align-items:center;gap:10px;padding:10px 0;color:var(--danger);font-weight:600;font-size:0.88rem">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+              Sign out
+            </button>
+          </div>
+        </div>`;
+    }
+
+    window.doSignOut = async () => { await fbSignOut(auth); location.href = '/login.html'; };
+
+    // ── Sheet helpers ─────────────────────────────────────────────────────────
+    function openSheet(n)  { document.getElementById(n+'Backdrop').classList.add('open'); document.getElementById(n+'Sheet').classList.add('open'); }
+    function closeSheet(n) { document.getElementById(n+'Backdrop').classList.remove('open'); document.getElementById(n+'Sheet').classList.remove('open'); }
+
+    function setFab(show) { document.getElementById('fab').classList[show ? 'remove' : 'add']('hidden'); }
+
+    // ── Toast ─────────────────────────────────────────────────────────────────
+    let toastT;
+    function toast(msg) {
+      const el = document.getElementById('toast');
+      el.textContent = msg; el.classList.add('show');
+      clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('show'), 3200);
+    }
+
+    // ── Escape ────────────────────────────────────────────────────────────────
+    function esc(s) {
+      return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+  </script>
+</body>
+</html>
