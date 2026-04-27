@@ -105,6 +105,57 @@
   const stageAudio    = document.getElementById("stageAudio");
   const audioEl       = document.getElementById("audioEl");
   const audioTitleEl  = document.getElementById("audioTitle");
+
+  // Audio unlock — browser autoplay-with-sound policies block audio playback
+  // until the page receives a user gesture. We show a one-time overlay when a
+  // playlist contains audio slides and the screen hasn't been unlocked yet.
+  // The unlock state is persisted per device so a TV reboot doesn't re-prompt.
+  const audioUnlockEl = document.getElementById("audioUnlock");
+  let audioUnlocked   = false;
+  try { audioUnlocked = localStorage.getItem('zigns-audio-unlocked') === '1'; } catch(_) {}
+
+  function unlockAudio() {
+    if (audioUnlocked) { audioUnlockEl.hidden = true; return; }
+    audioUnlocked = true;
+    try { localStorage.setItem('zigns-audio-unlocked', '1'); } catch(_) {}
+    // If an audio slide is already on stage (its initial play() was blocked),
+    // resume its real source. Otherwise prime the audio element inside the
+    // user gesture so the next audio slide can play without further taps.
+    try {
+      const currentSlide = slides && slides[current];
+      const audioSlideOnStage = currentSlide && currentSlide.type === 'audio'
+        && stageAudio.style.opacity === '1';
+      if (audioSlideOnStage) {
+        audioEl.muted = false;
+        audioEl.src   = currentSlide.url;
+        audioEl.play().catch(e => console.warn('Audio resume after unlock failed:', e.message));
+      } else {
+        const SILENT = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
+        audioEl.muted = true;
+        audioEl.src   = SILENT;
+        const p = audioEl.play();
+        const cleanup = () => { audioEl.pause(); audioEl.removeAttribute('src'); audioEl.load(); audioEl.muted = false; };
+        if (p && typeof p.then === 'function') p.then(cleanup).catch(cleanup);
+        else cleanup();
+      }
+    } catch(_) { audioEl.muted = false; }
+    audioUnlockEl.hidden = true;
+  }
+
+  audioUnlockEl.addEventListener('click', unlockAudio);
+  audioUnlockEl.addEventListener('touchstart', unlockAudio, { passive: true });
+  // Any keypress while overlay is visible counts as the unlock gesture (helps
+  // remote-controlled TVs and keyboard-only setups).
+  window.addEventListener('keydown', () => {
+    if (audioUnlocked || audioUnlockEl.hidden) return;
+    unlockAudio();
+  });
+
+  function maybeShowAudioUnlock(slides) {
+    if (audioUnlocked) { audioUnlockEl.hidden = true; return; }
+    const hasAudio = Array.isArray(slides) && slides.some(s => s && s.type === 'audio');
+    audioUnlockEl.hidden = !hasAudio;
+  }
   const stageYoutube  = document.getElementById("stageYoutube");
   const iframeYoutube = document.getElementById("iframeYoutube");
   const youtubeFallback = document.getElementById("youtubeFallback");
@@ -1961,6 +2012,11 @@
     if (current >= incoming.length) current = 0;
     slides = incoming;
 
+    // Surface the audio unlock overlay if (a) the new playlist contains audio
+    // slides and (b) this screen hasn't been unlocked yet. Hides itself when
+    // the playlist no longer needs sound.
+    maybeShowAudioUnlock(incoming);
+
     if (wasEmpty) {
       clearTimeout(timer);
       slideViewStart = Date.now();
@@ -2478,6 +2534,32 @@
     font-size: 6vw; font-weight: 700;
     line-height: 1.2; max-width: 80vw;
   }
+  /* Audio unlock overlay — sits below broadcast (z-index 199) so emergencies still pre-empt. */
+  #audioUnlock {
+    position: fixed; inset: 0; z-index: 199;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(11, 16, 32, 0.92); backdrop-filter: blur(8px);
+    color: #ffffff; font-family: 'Segoe UI', Arial, sans-serif;
+    cursor: pointer; user-select: none;
+    animation: aulFade 0.35s ease-out;
+  }
+  #audioUnlock[hidden] { display: none; }
+  #audioUnlock .aul-card {
+    text-align: center; padding: 6vw; max-width: 70vw;
+    display: flex; flex-direction: column; align-items: center; gap: 3vh;
+  }
+  #audioUnlock .aul-icon { color: #60a5fa; animation: aulPulse 2s ease-in-out infinite; }
+  #audioUnlock .aul-icon svg { width: 7vw; height: 7vw; min-width: 80px; min-height: 80px; }
+  #audioUnlock .aul-title { font-size: 4.5vw; font-weight: 800; letter-spacing: -0.01em; line-height: 1.1; }
+  #audioUnlock .aul-sub { font-size: 1.6vw; font-weight: 500; opacity: 0.7; max-width: 50vw; line-height: 1.45; }
+  @keyframes aulFade {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  @keyframes aulPulse {
+    0%, 100% { transform: scale(1); opacity: 0.95; }
+    50%      { transform: scale(1.08); opacity: 1; }
+  }
   #clockEl {
     position: absolute; inset: 0;
     display: flex; flex-direction: column;
@@ -2886,6 +2968,21 @@
 <div id="stageBroadcast">
   <div class="bc-icon">⚠</div>
   <div class="bc-msg" id="broadcastMsgEl"></div>
+</div>
+
+<!-- Audio unlock overlay (one-time tap to satisfy browser autoplay policy) -->
+<div id="audioUnlock" hidden role="button" tabindex="0" aria-label="Tap to enable sound">
+  <div class="aul-card">
+    <div class="aul-icon">
+      <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+        <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+        <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+      </svg>
+    </div>
+    <div class="aul-title">Tap to enable sound</div>
+    <div class="aul-sub">This screen has audio slides. Press any key or click anywhere to allow them to play.</div>
+  </div>
 </div>
 
 <!-- Ticker overlay (above all stages) -->

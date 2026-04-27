@@ -18,7 +18,7 @@ Closes the Kitcast gap on audio file playback. New `audio` slide type end-to-end
   - Media library: dark thumbnail + `AUDIO` badge + new `Audio` filter tab. `insertOrCopyMedia` copies the audio URL to clipboard like videos do.
 - **`applyPlaylist` filter**: no change needed — audio slides have a `url`, so they already pass the existing predicate.
 
-Known limitation: browser autoplay policies block audio-with-sound on cold display.html load until any user interaction. The visual "Now Playing" card still shows, and audio works on subsequent slides after the first user gesture. Worth documenting on the docs page later.
+Browser autoplay policy: a one-time `#audioUnlock` overlay appears on first display.html load if the playlist contains any audio slides (`maybeShowAudioUnlock` in `applyPlaylist`). Tap/click/keypress unlocks audio for the rest of the session, primes `audioEl` with a silent WAV inside the user gesture so future plays succeed, persists `zigns-audio-unlocked=1` to localStorage so reboots don't re-prompt, and — if an audio slide is already on stage — immediately resumes its actual source. Overlay sits at z-index 199, so emergency Broadcasts (z-index 200) still pre-empt it.
 
 ---
 
