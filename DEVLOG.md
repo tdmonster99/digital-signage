@@ -4,6 +4,36 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-04-27 — Claude Code (session 42) — Medium-severity audit batch (resume)
+
+Six of the seven planned Medium items resolved; #33 deferred (architectural).
+
+- **#16 — `currentOrg` not refreshed by listener (Medium)**:
+  - `admin.html`: added `subscribeToOrg(orgId)` (with `orgUnsub` / `_orgListenerOrgId` state) — replaces the boot-time `getDoc(organizations/{id})` with an `onSnapshot`. On each snapshot the helper refreshes `currentOrg` + `currentSubscription`, refreshes `currentRole` from `members[]` (so admin-changed roles propagate), re-runs `syncPlanEntitlements()` and `updateSettingsHubStatus()`, and re-renders the billing section if it's currently visible. Wired in at the end of `initUserAndOrg`. Stripe webhook plan changes now show without a page reload.
+
+- **#22 — `screensUnsub` never reset on org change (Medium)** *(folded into #16)*:
+  - `subscribeToOrg` detects when the org id changes, tears down both `orgUnsub` and `screensUnsub`, and clears `_cachedScreens` / `_screensReady`. The screens listener will re-bind to the new org on next `initScreensPage` call.
+
+- **#21 — Fire-and-forget `pushToFirestore()` calls (Medium)**:
+  - `admin.html`: awaited the five remaining unawaited calls — `gslidesImport` (post-Google-Slides import), `addSlideGroup`, `removeGroupSlide`, `setGroupSlideDwell`, and `duplicateSlide` (image clone path). Group/duplicate handlers converted to `async function`. Eliminates the race where a user could publish slides before the draft write completed.
+
+- **#19 — File size validation on uploads (Medium)**:
+  - `lib/s3-upload.js`: added shared `_enforceSize()` guard at the entry of `s3Upload`, `s3UploadBlob`, and `s3UploadWithProgress`. Hard caps: 50 MB images, 500 MB video, 100 MB other (PDF/PPTX/etc.). Empty (0 byte) files also rejected with a clear error. Shared with `mobile.html` since both load the same script.
+  - `admin.html` `handleFiles`: friendlier per-file pre-check so multi-file selections skip oversize entries with a toast and continue with the rest, rather than aborting at the S3 layer.
+
+- **#27 — CSS injection via `backgroundImage` template (Medium, defense-in-depth)**:
+  - `display.html`: added `safeCssBgUrl(url)` helper next to the existing `safeIframeUrl`. Validates http(s)/data scheme and JSON-stringifies the URL inside `url(…)` so embedded quotes can't break out into extra CSS declarations. Replaced the two template-literal sites: image slide background (line ~1797) and YouTube fallback thumbnail (line ~492). Both now use `setProperty('background-image', safeCssBgUrl(url))`.
+
+- **#28 — `crossfadeTo` doesn't await async helpers (Medium)**:
+  - `display.html`: `await renderWeather(slide)` and `await renderMultizone(slide)` in `crossfadeTo` so the stage no longer fades up empty before the data resolves. (`renderMultizone` is currently sync — the await is harmless and forward-compatible.)
+
+- **#33 — `?screen=` URL impersonation (Medium) — DEFERRED**:
+  - Marked as still-open in the audit memory. A correct fix needs Firestore security rules requiring a signed token to write `screens/{id}.lastSeen`, plus a server-side `/api/screen-token` issuing short-lived JWTs after a successful pairing. Any pure client-side mitigation in `display.html` is bypassable since the page runs unauthenticated. Out of scope for the audit batch.
+
+**Audit progress: 17 of 40+ resolved** (5 Critical, 6 High, 6 Medium). Remaining Medium: #33 (deferred), #8, #18, #20, #23, #24, #25, #29, #31, #34, #35.
+
+---
+
 ## 2026-04-26 — Claude Code (session 41) — High-severity bug fixes from code-review audit (batch 2)
 
 Four more issues from the audit fixed:

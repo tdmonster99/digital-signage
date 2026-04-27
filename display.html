@@ -473,6 +473,18 @@
     } catch { return 'about:blank'; }
   }
 
+  // Returns a CSS background-image value (`url("…")`) for a known-safe http(s) URL,
+  // or '' for anything else. Quotes inside the URL are escaped so the CSS string
+  // cannot break out and inject extra declarations.
+  function safeCssBgUrl(url) {
+    if (!url || typeof url !== 'string') return '';
+    try {
+      const p = new URL(url, window.location.href);
+      if (p.protocol !== 'http:' && p.protocol !== 'https:') return '';
+      return 'url(' + JSON.stringify(p.href) + ')';
+    } catch { return ''; }
+  }
+
   function youtubeEmbedUrl(videoId) {
     const params = new URLSearchParams({
       autoplay: '1',
@@ -489,7 +501,7 @@
   }
 
   function showYoutubeFallback(slide, videoId, status = 'Loading YouTube video...') {
-    if (youtubeFallbackBg) youtubeFallbackBg.style.backgroundImage = `url("${youtubeThumbUrl(videoId)}")`;
+    if (youtubeFallbackBg) youtubeFallbackBg.style.setProperty('background-image', safeCssBgUrl(youtubeThumbUrl(videoId)));
     if (youtubeFallbackTitle) youtubeFallbackTitle.textContent = slide?.name || 'YouTube Video';
     if (youtubeFallbackStatus) youtubeFallbackStatus.textContent = status;
   }
@@ -1753,7 +1765,7 @@
 
     } else if (slide.type === "weather") {
       _hideAllStages();
-      renderWeather(slide);
+      await renderWeather(slide);
       stageWeather.style.opacity = "1";
 
     } else if (slide.type === "countdown") {
@@ -1763,7 +1775,7 @@
 
     } else if (slide.type === "multizone") {
       _hideAllStages();
-      renderMultizone(slide);
+      await renderMultizone(slide);
       stageMultizone.style.opacity = "1";
 
     } else if (slide.type === "googlesheets") {
@@ -1794,7 +1806,7 @@
       const fit = slide.fit || "contain";
       const bg  = slide.bg  || "#000000";
 
-      inactive.style.backgroundImage = `url('${url}')`;
+      inactive.style.setProperty('background-image', safeCssBgUrl(url));
       inactive.style.backgroundSize  = fit;
       inactive.style.backgroundColor = bg;
 

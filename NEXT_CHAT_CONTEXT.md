@@ -1,4 +1,4 @@
-# Next Chat Context (2026-04-26)
+# Next Chat Context (2026-04-27)
 
 Use this as the first-read handoff snapshot before making new changes.
 
@@ -6,11 +6,20 @@ Use this as the first-read handoff snapshot before making new changes.
 
 A code-review agent (`superpowers:code-reviewer`) audited `admin.html`, `mobile.html`, `login.html`, `display.html`. It found **5 Critical, 6 High, 9 Medium, 20+ Low** bugs.
 
-**Fixed so far (11 / 40+):** all Critical + all High.
+**Fixed so far (17 / 40+):** all Critical + all High + 6 Medium (sessions 40–42).
 
-**Resume point:** start the Medium-severity batch. The full ranked list is in this file under "Audit Backlog" below.
+**Resume point:** continue the Medium-severity batch — see "Audit Backlog" below. Top of the queue is #33 (architectural, needs Firestore rules + token endpoint), then the smaller Medium/Low items (#8, #18, #20, #23, #24, #25, #29, #31, #34, #35).
 
 ## Sessions This Day
+
+- **Session 42** — Medium-severity bug fixes (batch 1, 2026-04-27):
+  - #16 `currentOrg` listener — added `subscribeToOrg(orgId)` with `onSnapshot` so plan/role updates from Stripe webhooks propagate live
+  - #22 `screensUnsub` reset on org change — folded into #16's helper
+  - #21 awaited the 5 remaining fire-and-forget `pushToFirestore()` calls
+  - #19 file-size validation — added `_enforceSize()` in `lib/s3-upload.js` (50 MB image / 500 MB video / 100 MB other) plus a friendlier per-file pre-check in `handleFiles`
+  - #27 `backgroundImage` CSS injection — added `safeCssBgUrl()` helper, switched both call sites to `setProperty`
+  - #28 `crossfadeTo` now awaits `renderWeather` and `renderMultizone`
+  - #33 deferred — needs Firestore rules + server token endpoint
 
 - **Session 40** — Critical bug fixes (commit `654cba8`):
   - #10/#26 Webpage slide `javascript:` URL XSS — whitelisted http/https on save (admin.html `saveWebpageSlide` + multizone) and at render (display.html `safeIframeUrl()` helper used by both single-zone and multizone iframe paths)
@@ -32,13 +41,7 @@ Reference: the full audit lives in conversation context; the commit log + DEVLOG
 
 ### Medium severity — recommended next batch
 
-- **#16** `currentOrg` never refreshed by listener (`admin.html`) — Stripe webhook updates plan but UI shows old plan until reload. Replace one-shot `getDoc(organizations/{id})` with `onSnapshot` that re-runs `syncPlanEntitlements` / `applyRole`.
-- **#21** Several `pushToFirestore()` calls fire-and-forget (`admin.html:11365, 12420, 12556, 12562`) — racing the publish flow. `await` them or use a write batch.
-- **#22** `screensUnsub` never resets on org change (`admin.html:19330`) — after `acceptInvitation`, the listener is still scoped to the previous org. Reset and re-init when `currentOrgId` changes.
-- **#33** `?screen=xxx` URL lets anyone impersonate a screen (`display.html:2262`) — no auth on display, so anyone with a copied URL can write the heartbeat as that screen. Needs Firestore rules + short-lived tokens or server-side pairing.
-- **#19** No file size validation on uploads (`admin.html:10555, 22486`) — multi-GB videos burn S3 egress. Reject `file.size > MAX_BYTES`.
-- **#27** CSS injection via `backgroundImage` template (`display.html:1788, 803`) — defense-in-depth; assign via `setProperty` with `JSON.stringify(url)`.
-- **#28** `crossfadeTo` doesn't await async helpers (`display.html:1745-1758`) — weather/multizone slides briefly show empty stage during fade-up. `await renderWeather/renderMultizone`.
+- **#33** `?screen=xxx` URL lets anyone impersonate a screen (`display.html`) — no auth on display, so anyone with a copied URL can write the heartbeat as that screen. **Needs Firestore rules + short-lived tokens or server-side pairing — design + deploy work, not a one-line fix.** Sketch: write Firestore rules requiring a signed claim token on `screens/{id}` writes; add `/api/screen-token` issuing short-lived JWTs after pairing succeeds; display.html sends the token in heartbeat updates. ✅ everything else from the original Medium "next batch" is done as of session 42.
 
 ### Other Medium / Low items still open
 

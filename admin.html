@@ -8756,6 +8756,53 @@ let currentOrgId  = null;
 let currentRole   = 'admin';
 let currentUser   = null;
 let currentOrg    = null;
+let orgUnsub      = null;
+let _orgListenerOrgId = null;
+
+// Live listener on the org doc — keeps plan/role in sync when Stripe webhooks
+// or another admin's writes update the doc.
+function subscribeToOrg(orgId) {
+  if (orgUnsub && _orgListenerOrgId !== orgId) {
+    try { orgUnsub(); } catch(_) {}
+    orgUnsub = null;
+    _orgListenerOrgId = null;
+    // Org changed — also drop the screens listener so it re-binds with the new orgId
+    if (typeof screensUnsub !== 'undefined' && screensUnsub) {
+      try { screensUnsub(); } catch(_) {}
+      screensUnsub  = null;
+      _cachedScreens = [];
+      _screensReady  = false;
+    }
+  }
+  if (!orgId || orgUnsub) return;
+  _orgListenerOrgId = orgId;
+  orgUnsub = onSnapshot(
+    doc(db, 'organizations', orgId),
+    snap => {
+      if (!snap.exists()) return;
+      currentOrg          = { id: orgId, ...snap.data() };
+      currentSubscription = currentOrg.subscription || null;
+
+      // Refresh role from member list in case another admin changed it
+      if (currentUser?.uid) {
+        const me = (currentOrg.members || []).find(m => m.uid === currentUser.uid);
+        if (me?.role && me.role !== currentRole) {
+          currentRole = me.role;
+          applyRole(currentRole);
+        }
+      }
+
+      syncPlanEntitlements();
+      if (typeof updateSettingsHubStatus === 'function') updateSettingsHubStatus();
+      // Re-render billing if currently visible
+      const billingSub = document.getElementById('settingsSub-billing');
+      if (billingSub?.classList.contains('active')) {
+        try { renderBillingSection(); } catch(_) {}
+      }
+    },
+    err => console.warn('Org listener error:', err.message)
+  );
+}
 
 // ── Auth ──────────────────────────────────────────────────────────────────
 onAuthStateChanged(auth, async user => {
@@ -9029,6 +9076,8 @@ async function initUserAndOrg(user) {
   syncPlanEntitlements();
 
   applyRole(currentRole);
+  // Live listener — keeps plan/role state fresh after Stripe webhooks or admin edits
+  subscribeToOrg(currentOrgId);
   await loadShowsFromOrg();
   await loadSchedulesFromOrg();
   loadBrandKit();
@@ -10618,6 +10667,19 @@ async function handleFiles(files) {
     const isVideo = file.type.startsWith("video/");
     const isPdf   = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
     const isPptx  = /\.pptx$/i.test(file.name) || file.type === 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+
+    // Reject empty + oversized files up front so multi-file uploads keep going.
+    const sizeCap = isVideo ? 500 * 1024 * 1024 : (isPdf || isPptx ? 100 * 1024 * 1024 : 50 * 1024 * 1024);
+    if (!file.size) {
+      toast(`"${file.name}" is empty — skipped.`, true);
+      continue;
+    }
+    if (file.size > sizeCap) {
+      const capMb = Math.round(sizeCap / (1024 * 1024));
+      toast(`"${file.name}" exceeds the ${capMb} MB limit — skipped.`, true);
+      continue;
+    }
+
     label.textContent = `Uploading ${i+1}/${files.length}: ${file.name}`;
     bar.style.width = "0%";
     pct.textContent = "0%";
@@ -11419,7 +11481,7 @@ window.gslidesImport = async function() {
   updateCount();
   closeGslidesModal();
   toast(`${count} slide${count !== 1 ? 's' : ''} imported ✓`);
-  pushToFirestore(); // fire-and-forget — slides already rendered
+  await pushToFirestore();
 };
 
 // ── Dashboard Upload Modal ────────────────────────────────────────────────
@@ -12470,11 +12532,11 @@ window.editDesignedSlide = (idx) => {
 };
 
 // ── Slide Groups ───────────────────────────────────────────────────────────
-window.addSlideGroup = function() {
+window.addSlideGroup = async function() {
   const group = { id: crypto.randomUUID(), type: 'group', name: 'Slide Group', active: true, slides: [] };
   slides.push(group);
   renderGrid();
-  pushToFirestore();
+  await pushToFirestore();
   openGroupEditor(slides.length - 1);
 };
 
@@ -12604,19 +12666,19 @@ window.editGroupSlide = function(slideIdx) {
   launchDesigner(groupSlide);
 };
 
-window.removeGroupSlide = function(slideIdx) {
+window.removeGroupSlide = async function(slideIdx) {
   if (editingGroupIdx === null) return;
   if (!confirm('Remove this slide from the group?')) return;
   slides[editingGroupIdx].slides.splice(slideIdx, 1);
   renderGroupFilmstrip();
   renderGrid();
-  pushToFirestore();
+  await pushToFirestore();
 };
 
-window.setGroupSlideDwell = function(slideIdx, dwell) {
+window.setGroupSlideDwell = async function(slideIdx, dwell) {
   if (editingGroupIdx === null) return;
   slides[editingGroupIdx].slides[slideIdx].dwell = Math.max(1, dwell || 6);
-  pushToFirestore();
+  await pushToFirestore();
 };
 
 window.deleteSlide = async (idx) => {
@@ -12632,7 +12694,7 @@ window.toggleSlide = async (idx) => {
   await pushToFirestore();
 };
 
-window.duplicateSlide = function(idx) {
+window.duplicateSlide = async function(idx) {
   const src = slides[idx];
   if (src.type === 'designed') {
     // Open editor pre-populated with existing canvasJson; editingSlideIdx = null → saves as new slide
@@ -12643,7 +12705,7 @@ window.duplicateSlide = function(idx) {
     const copy = { ...src, id: crypto.randomUUID(), name: 'Copy of ' + src.name };
     slides.splice(idx + 1, 0, copy);
     renderGrid(); updateCount();
-    pushToFirestore();
+    await pushToFirestore();
   }
 };
 
