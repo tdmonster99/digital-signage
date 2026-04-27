@@ -1,18 +1,39 @@
-# Next Chat Context (2026-04-27)
+# Next Chat Context (2026-04-27, sessions 40–45)
 
 Use this as the first-read handoff snapshot before making new changes.
 
 ## Where We Left Off
 
-A code-review agent (`superpowers:code-reviewer`) audited `admin.html`, `mobile.html`, `login.html`, `display.html`. It found **5 Critical, 6 High, 9 Medium, 20+ Low** bugs.
+Two parallel tracks have been running today:
 
-**Fixed so far (17 / 40+):** all Critical + all High + 6 Medium (sessions 40–42).
+**Track 1 — Code-review audit.** A `superpowers:code-reviewer` pass on `admin.html`, `mobile.html`, `login.html`, `display.html` found **5 Critical, 6 High, 9 Medium, 20+ Low** bugs. **17 / 40+ fixed** (all Critical + all High + 6 Medium across sessions 40–42). Backlog below.
 
-**Resume point:** continue the Medium-severity batch — see "Audit Backlog" below. Top of the queue is #33 (architectural, needs Firestore rules + token endpoint), then the smaller Medium/Low items (#8, #18, #20, #23, #24, #25, #29, #31, #34, #35).
+**Track 2 — Kitcast competitive gaps.** A side-by-side comparison vs Kitcast Pro lives in `app/KITCAST_GAP_ANALYSIS.md`. Closed since the doc was written: audio playback (sessions 44–45). Multi-user is broadly shipping; rough edges tightened in session 43. Top remaining gaps: Tags + Priority Overrides + pre-built Emergency Playlist cluster, Emergency CAP feed, native players (Tizen/webOS/BrightSign), SSO/SAML, MDM/Zero-Touch.
 
-## Sessions This Day
+**Resume points:**
+- Audit: continue Medium batch — items below.
+- Kitcast: pick a closing item from `KITCAST_GAP_ANALYSIS.md` "Recommended priority" section.
 
-- **Session 42** — Medium-severity bug fixes (batch 1, 2026-04-27):
+## Sessions This Day (2026-04-27)
+
+- **Session 45** — Audio tap-to-enable overlay (commit `16cff0d`):
+  - New `#audioUnlock` overlay shown when playlist contains audio slides and screen hasn't been unlocked yet
+  - Click/tap/keypress unlocks; primes `audioEl` with silent WAV inside the user gesture; persists `zigns-audio-unlocked=1` to localStorage so reboots don't re-prompt
+  - If an audio slide is already on stage when user unlocks, immediately swaps in the slide's real URL and resumes (instead of waiting for next slide cycle)
+  - Z-index 199 — emergency Broadcasts (200) still pre-empt
+
+- **Session 44** — Audio slide type (commit `fea05e7`):
+  - New `audio` slide type with "Now Playing" card UI in `display.html` (animated equalizer bars + big title)
+  - File accept patterns updated, `probeAudioDuration()` sets slide.dwell to ceil(duration), 100 MB cap
+  - Slide grid + media library updated with music-icon thumbnail and `Audio` badge + filter tab
+  - Closes the Kitcast audio gap
+
+- **Session 43** — Multi-user rough-edge tightening (commit `126d906`):
+  - Over-limit team banner that updates live via `subscribeToOrg` snapshot when Stripe downgrade webhook lands
+  - `removeMember` writes soft-delete audit record to `organizations/{id}.removedMembers[]` (capped at 50)
+  - `initUserAndOrg` handles removed-user re-entry — orgId=null path now routes to `acceptInvitation` or `createOrg` instead of boot error
+
+- **Session 42** — Medium-severity bug fixes (commit `f70a95d`):
   - #16 `currentOrg` listener — added `subscribeToOrg(orgId)` with `onSnapshot` so plan/role updates from Stripe webhooks propagate live
   - #22 `screensUnsub` reset on org change — folded into #16's helper
   - #21 awaited the 5 remaining fire-and-forget `pushToFirestore()` calls
