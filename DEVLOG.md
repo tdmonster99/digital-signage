@@ -4,6 +4,20 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-04-27 — Claude Code (session 43) — Multi-user rough-edge tightening
+
+After the Kitcast gap analysis confirmed multi-user is broadly shipping, three rough edges noted in the review were tightened:
+
+- **Plan-downgrade nudge on Team page**: `renderTeamPage` now renders an over-limit banner inside `#settingsSub-team` when `members.length > usersAllowed`. Copy explains the gap and offers a "View Plans" button. Banner state recomputes every time the team page renders, including the live `subscribeToOrg` snapshot path — so a Stripe webhook downgrade lands as an immediate red banner rather than a silent over-quota state.
+
+- **Member-removal audit trail**: `removeMember` now writes a soft-delete record to `organizations/{id}.removedMembers[]` with `{uid, email, displayName, role, addedAt, removedAt, removedBy, removedByEmail}`. Capped at 50 entries to keep the org doc bounded. `members[]` filter behavior unchanged.
+
+- **Removed-user re-entry path**: `initUserAndOrg` now handles the case where `users/{uid}.orgId` was nulled out by a prior removal. Previously the boot path tried to fetch `organizations/null` and bailed to `showBootError`; now the user falls through to `acceptInvitation` (if there's an invite link) or `createOrg` (fresh org), matching the documented intent of `removeMember`'s `users/{uid} { orgId: null }` write.
+
+Out of scope for this batch (filed for separate consideration): per-admin approval-queue ownership, content reassignment from removed members. Both are net-new features rather than tightening.
+
+---
+
 ## 2026-04-27 — Claude Code (session 42) — Medium-severity audit batch (resume)
 
 Six of the seven planned Medium items resolved; #33 deferred (architectural).

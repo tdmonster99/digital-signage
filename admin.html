@@ -5150,6 +5150,14 @@ body.role-editor .admin-action {
           </button>
         </div>
         <div class="settings-section-body">
+          <div id="teamOverLimitBanner" style="display:none;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:12px 16px;margin-bottom:14px;align-items:flex-start;gap:12px">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:13px;font-weight:700;color:#991b1b;margin-bottom:2px">Team over plan limit</div>
+              <div id="teamOverLimitMsg" style="font-size:12px;color:#7f1d1d;line-height:1.5"></div>
+            </div>
+            <button class="btn btn-secondary admin-action" onclick="showSettingsSub('billing')" style="font-size:12px;padding:5px 12px;flex-shrink:0">View Plans</button>
+          </div>
           <div id="teamMembersList"><p style="font-size:13px;color:var(--muted)">Loading…</p></div>
         </div>
       </div>
@@ -8799,6 +8807,12 @@ function subscribeToOrg(orgId) {
       if (billingSub?.classList.contains('active')) {
         try { renderBillingSection(); } catch(_) {}
       }
+      // Re-render team if visible — keeps the over-limit banner accurate
+      // when a Stripe downgrade webhook lands while the page is open.
+      const teamSub = document.getElementById('settingsSub-team');
+      if (teamSub?.classList.contains('active')) {
+        try { renderTeamPage(); } catch(_) {}
+      }
     },
     err => console.warn('Org listener error:', err.message)
   );
@@ -9034,6 +9048,13 @@ async function initUserAndOrg(user) {
     currentOrgId   = userData.orgId;
     currentRole    = userData.role || 'admin';
 
+    // Removed-from-org case: removeMember() nulls out users/{uid}.orgId so the
+    // person can sign back in cleanly. Without this branch we'd try to fetch
+    // organizations/null and bail to showBootError.
+    if (!currentOrgId) {
+      if (inviteId) { await acceptInvitation(inviteId, user); }
+      else          { await createOrg(user); }
+    } else {
     // Step 2: load the organization doc. Same rule — don't auto-create on error.
     try {
       const orgSnap = await getDoc(doc(db, 'organizations', currentOrgId));
@@ -9061,6 +9082,7 @@ async function initUserAndOrg(user) {
 
     // Resume onboarding if not completed
     if (!userData.onboardingComplete) setTimeout(showOnboarding, 200);
+    }
   } else if (inviteId) {
     await acceptInvitation(inviteId, user);
   } else {
@@ -9848,6 +9870,26 @@ function renderTeamPage() {
   // Members
   const members    = currentOrg.members || [];
   const membersList = document.getElementById('teamMembersList');
+
+  // Over-limit nudge — fires when a Stripe downgrade or member-add race leaves
+  // the team larger than the plan allows. We never auto-eject; admin chooses
+  // whom to remove or whether to upgrade.
+  const banner    = document.getElementById('teamOverLimitBanner');
+  const bannerMsg = document.getElementById('teamOverLimitMsg');
+  if (banner && bannerMsg) {
+    const sub      = getSubscription();
+    const allowed  = Number(sub.usersAllowed) || 1;
+    const overBy   = members.length - allowed;
+    if (overBy > 0) {
+      bannerMsg.textContent =
+        `Your team has ${members.length} member${members.length === 1 ? '' : 's'} but the ${planLabel(sub.plan)} plan allows ${allowed}. ` +
+        `Upgrade or remove ${overBy} member${overBy === 1 ? '' : 's'} to stay within plan limits.`;
+      banner.style.display = 'flex';
+    } else {
+      banner.style.display = 'none';
+    }
+  }
+
   if (!members.length) {
     membersList.innerHTML = '<p style="font-size:13px;color:var(--muted)">No team members yet.</p>';
   } else {
@@ -10044,7 +10086,26 @@ window.removeMember = async function(uid, email) {
     // Filter by uid — robust against any field drift (displayName changes, addedAt formatting, etc.)
     // arrayRemove(member) silently no-ops when fields don't match exactly, so we don't use it.
     const newMembers = members.filter(m => m.uid !== uid);
-    await updateDoc(doc(db, 'organizations', currentOrgId), { members: newMembers });
+
+    // Soft-delete audit record — preserves who/when/by-whom for future audit needs.
+    // Capped at 50 entries to avoid the org doc growing unbounded.
+    const removedRecord = {
+      uid:             member.uid,
+      email:           member.email,
+      displayName:     member.displayName || '',
+      role:            member.role,
+      addedAt:         member.addedAt || null,
+      removedAt:       new Date().toISOString(),
+      removedBy:       currentUser?.uid || null,
+      removedByEmail:  currentUser?.email || null,
+    };
+    const existingRemoved = Array.isArray(orgData.removedMembers) ? orgData.removedMembers : [];
+    const newRemoved      = [...existingRemoved, removedRecord].slice(-50);
+
+    await updateDoc(doc(db, 'organizations', currentOrgId), {
+      members:        newMembers,
+      removedMembers: newRemoved,
+    });
     // Remove user record so they get a fresh org on next login
     await updateDoc(doc(db, 'users', uid), { orgId: null }).catch(() => {});
     toast(`${email} removed from team`);
