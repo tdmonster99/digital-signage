@@ -4,6 +4,24 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-04-27 — Claude Code (session 44) — Audio slide support
+
+Closes the Kitcast gap on audio file playback. New `audio` slide type end-to-end.
+
+- **`display.html`**: new `#stageAudio` stage with a "Now Playing" card — music-note icon, five animated equalizer bars, big slide title, "NOW PLAYING" eyebrow. Hidden `<audio id="audioEl">` element drives playback. Stage CSS uses dark navy background (`#0b1020`) and `#60a5fa` accent. New `crossfadeTo` branch for `slide.type === "audio"`: `_hideAllStages` → set audioEl.src → `audioEl.play()` (caught — browser autoplay-with-sound policies may block on cold load until a user gesture; the visual card still shows). All stage cleanup paths (`_hideAllStages`, designed-slide branch, swap-stage branch) now pause/clear audio.
+- **`admin.html`**:
+  - File accept patterns include audio MIME types + extensions on `#fileInput` and `#dashFileInput`.
+  - `handleFiles` and the dashboard upload handler detect `isAudio` (by MIME or extension), probe the file with `probeAudioDuration()` (a tiny helper using a temporary `<audio>` element + 8s timeout) so the slide's `dwell` defaults to the track's natural length — playback advances cleanly when the audio ends.
+  - Audio uploads get a 100 MB hard cap matching PDFs/PPTX (videos still get 500 MB).
+  - Slide grid renders a music-note SVG thumbnail + blue `Audio` badge.
+  - `slidePreviewModal` skips the image preview for audio (placeholder shown instead).
+  - Media library: dark thumbnail + `AUDIO` badge + new `Audio` filter tab. `insertOrCopyMedia` copies the audio URL to clipboard like videos do.
+- **`applyPlaylist` filter**: no change needed — audio slides have a `url`, so they already pass the existing predicate.
+
+Known limitation: browser autoplay policies block audio-with-sound on cold display.html load until any user interaction. The visual "Now Playing" card still shows, and audio works on subsequent slides after the first user gesture. Worth documenting on the docs page later.
+
+---
+
 ## 2026-04-27 — Claude Code (session 43) — Multi-user rough-edge tightening
 
 After the Kitcast gap analysis confirmed multi-user is broadly shipping, three rough edges noted in the review were tightened:

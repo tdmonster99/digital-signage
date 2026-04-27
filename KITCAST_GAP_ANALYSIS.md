@@ -13,7 +13,7 @@ Status legend: ✅ on par or better · ⚠ partial · ❌ missing
 
 | Kitcast | Zigns | Notes |
 |---|---|---|
-| Upload & play any media (images, videos, audio, PDFs) | ⚠ | **Audio missing.** File inputs (`admin.html:4135, 5812`) accept image / video / PDF / PPTX only — no audio MIME types. |
+| Upload & play any media (images, videos, audio, PDFs) | ✅ | Audio shipped 2026-04-27 — new `audio` slide type with "Now Playing" card UI in `display.html`, MP3/M4A/WAV/OGG/AAC accepted, dwell auto-set to track duration via client-side probe. Browser autoplay-with-sound policy is a known caveat. |
 | Content Templates | ✅ | Templates page with Business / Restaurant / Retail / Healthcare / Education tags. |
 | Apps (Weather, Calendars, YouTube, RSS, etc.) | ✅ | Slide types: weather, clock, countdown, YouTube, RSS ticker, Google Sheets, Google Reviews, Instagram, menu board, QR. |
 | Display web pages (URLs/HTML) | ✅ | `webpage` slide type with `safeIframeUrl()` validation. |
@@ -113,7 +113,7 @@ Zigns is a browser-based player. Runs anywhere there's a browser + internet, but
 ## Recommended priority (highest leverage first)
 
 1. **Tags + Priority Overrides + Emergency Playlist (pre-built)** — natural cluster, mid-effort, big enterprise differentiator. Tags also unlock Smart Playlists.
-2. **Audio playback + Emergency CAP** — small/medium individual lifts, both common procurement asks.
+2. ~~Audio playback~~ (shipped 2026-04-27) + **Emergency CAP** — small/medium individual lift; common procurement ask for schools/healthcare.
 3. **Native players for Tizen / webOS / BrightSign** — biggest competitive moat, biggest engineering investment. If skipped, lean into "BYOD/run on what you have" positioning instead.
 4. **SSO/SAML** — required to win mid-market and enterprise deals.
 5. **MDM + Zero-Touch + Kiosk mode** — table-stakes for IT-led rollouts (>50 screens).

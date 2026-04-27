@@ -4132,7 +4132,7 @@ body.role-editor .admin-action {
       </svg>
       <p><strong>Drop images or videos here</strong> or click to browse<br>
       PNG, JPG, GIF, WebP · MP4, WebM · PDF — any resolution</p>
-      <input type="file" id="fileInput" multiple accept="image/*,video/mp4,video/webm,application/pdf,.pdf">
+      <input type="file" id="fileInput" multiple accept="image/*,video/mp4,video/webm,audio/mpeg,audio/mp4,audio/wav,audio/ogg,audio/aac,audio/x-m4a,.mp3,.m4a,.wav,.ogg,.aac,application/pdf,.pdf">
     </div>
 
     <!-- Upload progress (hidden by default) -->
@@ -4463,6 +4463,7 @@ body.role-editor .admin-action {
         <button class="media-filter-tab active" onclick="setMediaFilter(this,'all')">All</button>
         <button class="media-filter-tab" onclick="setMediaFilter(this,'image')">Images</button>
         <button class="media-filter-tab" onclick="setMediaFilter(this,'video')">Videos</button>
+        <button class="media-filter-tab" onclick="setMediaFilter(this,'audio')">Audio</button>
       </div>
       <input class="media-search" type="search" placeholder="Search…" oninput="filterMediaSearch(this.value)">
       <span class="media-count" id="mediaCount"></span>
@@ -5817,7 +5818,7 @@ body.role-editor .admin-action {
         <div id="dashUploadLabel" style="font-size:12px;color:var(--muted);margin-top:6px"></div>
       </div>
 
-      <input type="file" id="dashFileInput" multiple accept="image/*,video/*" style="display:none">
+      <input type="file" id="dashFileInput" multiple accept="image/*,video/*,audio/*,.mp3,.m4a,.wav,.ogg,.aac" style="display:none">
       <input type="file" id="pdfFileInput"  multiple accept="application/pdf,.pdf" style="display:none">
       <input type="file" id="pptxFileInput" accept=".pptx,application/vnd.openxmlformats-officedocument.presentationml.presentation" style="display:none">
     </div>
@@ -10726,11 +10727,14 @@ async function handleFiles(files) {
   for (let i = 0; i < files.length; i++) {
     const file    = files[i];
     const isVideo = file.type.startsWith("video/");
+    const isAudio = file.type.startsWith("audio/") || /\.(mp3|m4a|wav|ogg|aac)$/i.test(file.name);
     const isPdf   = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
     const isPptx  = /\.pptx$/i.test(file.name) || file.type === 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
 
     // Reject empty + oversized files up front so multi-file uploads keep going.
-    const sizeCap = isVideo ? 500 * 1024 * 1024 : (isPdf || isPptx ? 100 * 1024 * 1024 : 50 * 1024 * 1024);
+    const sizeCap = isVideo ? 500 * 1024 * 1024
+                   : isAudio ? 100 * 1024 * 1024
+                   : (isPdf || isPptx ? 100 * 1024 * 1024 : 50 * 1024 * 1024);
     if (!file.size) {
       toast(`"${file.name}" is empty — skipped.`, true);
       continue;
@@ -10751,6 +10755,9 @@ async function handleFiles(files) {
       } else if (isPptx) {
         await handlePptxFile(file, { bar, pct, label });
       } else {
+        // Probe audio duration before upload so the slide's dwell matches the
+        // track length. Caller falls back to defaultDwell if probing fails.
+        const audioDwellSec = isAudio ? await probeAudioDuration(file) : 0;
         const { url, key } = await s3UploadWithProgress(
           file,
           `signage/${currentShowId}`,
@@ -10759,10 +10766,12 @@ async function handleFiles(files) {
         bar.style.width = "100%";
         pct.textContent = "100%";
         const slide = { id: crypto.randomUUID(), url, name: file.name, active: true };
-        if (isVideo) slide.type = "video";
+        if (isVideo)      slide.type = "video";
+        else if (isAudio) { slide.type = "audio"; if (audioDwellSec > 0) slide.dwell = audioDwellSec; }
         slides.push(slide);
         renderGrid(); updateCount();
-        saveMediaRecord(url, file.name, isVideo ? 'video' : 'image', key);
+        const mediaType = isVideo ? 'video' : (isAudio ? 'audio' : 'image');
+        saveMediaRecord(url, file.name, mediaType, key);
       }
     } catch(e) {
       toast(`Upload error: ${e.message}`, true);
@@ -10772,6 +10781,31 @@ async function handleFiles(files) {
   progress.style.display = "none";
   bar.style.width = "0%";
   await pushToFirestore();
+}
+
+// Probe an audio File for its duration (in seconds, ceiling). Returns 0 if
+// the file fails to decode — caller should fall back to defaultDwell.
+function probeAudioDuration(file) {
+  return new Promise(resolve => {
+    const blobUrl = URL.createObjectURL(file);
+    const a = new Audio();
+    a.preload = 'metadata';
+    let settled = false;
+    const finish = (val) => {
+      if (settled) return;
+      settled = true;
+      URL.revokeObjectURL(blobUrl);
+      resolve(val);
+    };
+    a.onloadedmetadata = () => {
+      const d = Number(a.duration);
+      finish(Number.isFinite(d) && d > 0 ? Math.ceil(d) : 0);
+    };
+    a.onerror = () => finish(0);
+    // Hard timeout in case metadata never resolves
+    setTimeout(() => finish(0), 8000);
+    a.src = blobUrl;
+  });
 }
 
 // ── PDF → image slides (client-side rendering via pdf.js) ───────────────────
@@ -11131,7 +11165,7 @@ window.openSlidePreview = async function(idx) {
     if (requestId !== slidePreviewRequestId) return;
   } else {
     url = s.type === 'youtube' ? getYoutubeThumbUrl(s.videoId || s.youtubeId || s.url || '', 'hqdefault')
-        : (s.type === 'webpage' || s.type === 'video' || s.type === 'clock') ? null
+        : (s.type === 'webpage' || s.type === 'video' || s.type === 'audio' || s.type === 'clock') ? null
         : s.url;
   }
 
@@ -11603,17 +11637,21 @@ document.getElementById('dashFileInput').addEventListener('change', async functi
   for (let i = 0; i < files.length; i++) {
     const file    = files[i];
     const isVideo = file.type.startsWith('video/');
+    const isAudio = file.type.startsWith('audio/') || /\.(mp3|m4a|wav|ogg|aac)$/i.test(file.name);
     label.textContent = `Uploading ${i + 1}/${files.length}: ${file.name}`;
     bar.style.width = '0%';
     try {
+      const audioDwellSec = isAudio ? await probeAudioDuration(file) : 0;
       const { url, key } = await s3UploadWithProgress(
         file, `signage/${showId}`,
         p => { bar.style.width = p + '%'; }
       );
       const slide = { id: crypto.randomUUID(), url, name: file.name, active: true };
-      if (isVideo) slide.type = 'video';
+      if (isVideo)      slide.type = 'video';
+      else if (isAudio) { slide.type = 'audio'; if (audioDwellSec > 0) slide.dwell = audioDwellSec; }
       newSlides.push(slide);
-      saveMediaRecord(url, file.name, isVideo ? 'video' : 'image', key);
+      const mediaType = isVideo ? 'video' : (isAudio ? 'audio' : 'image');
+      saveMediaRecord(url, file.name, mediaType, key);
     } catch(e) {
       toast(`Upload error: ${e.message}`, true);
     }
@@ -12402,6 +12440,7 @@ function renderGrid() {
     const isWebpage    = s.type === 'webpage';
     const isYoutube    = s.type === 'youtube';
     const isVideo      = s.type === 'video';
+    const isAudio      = s.type === 'audio';
     const isClock      = s.type === 'clock';
     const isQr         = s.type === 'qr';
     const isWeather    = s.type === 'weather';
@@ -12414,7 +12453,7 @@ function renderGrid() {
     const youtubeId      = isYoutube ? parseYoutubeId(s.videoId || s.youtubeId || s.url || '') : null;
     const thumbUrl   = isDesigned ? getDesignedSlideThumbUrl(s)
                      : isYoutube  ? getYoutubeThumbUrl(youtubeId, 'mqdefault')
-                     : (isWebpage || isVideo || isClock || isQr || isWeather || isCountdown || isMultizone || isGoogleSheets || isGoogleReviews || isInstagram || isMenuboard) ? null
+                     : (isWebpage || isVideo || isAudio || isClock || isQr || isWeather || isCountdown || isMultizone || isGoogleSheets || isGoogleReviews || isInstagram || isMenuboard) ? null
                      : s.url;
     const hasPreview = Boolean(thumbUrl || (isDesigned && s.canvasJson));
     const editSvg    = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
@@ -12473,6 +12512,10 @@ function renderGrid() {
            <line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/>
            <line x1="17" y1="17" x2="22" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/>
          </svg>`
+      : isAudio
+      ? `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+           <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+         </svg>`
       : `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="1.5">
            <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
            <polyline points="21 15 16 10 5 21"/>
@@ -12481,6 +12524,7 @@ function renderGrid() {
                 : isYoutube  ? `<div class="designed-badge" style="background:#ff0000cc">YT</div>`
                 : isWebpage  ? `<div class="designed-badge" style="background:#0ea5e9cc">Web</div>`
                 : isVideo    ? `<div class="designed-badge" style="background:#7c3aedcc">Video</div>`
+                : isAudio    ? `<div class="designed-badge" style="background:#2563ebcc">Audio</div>`
                 : isClock    ? `<div class="designed-badge" style="background:#059669cc">Clock</div>`
                 : isQr       ? `<div class="designed-badge" style="background:#8b5cf6cc">QR</div>`
                 : isWeather  ? `<div class="designed-badge" style="background:#3b82f6cc">Weather</div>`
@@ -19763,12 +19807,15 @@ function renderMediaGrid() {
   grid.innerHTML = items.map(m => {
     const date    = m.uploadedAt ? new Date(m.uploadedAt).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }) : '';
     const isVideo = m.type === 'video';
+    const isAudio = m.type === 'audio';
     const thumb   = isVideo
       ? `<div class="media-thumb-video"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.4"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>`
+      : isAudio
+      ? `<div class="media-thumb-video" style="background:#0b1020;color:#60a5fa"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>`
       : `<img class="media-thumb" src="${escHtml(m.url)}" loading="lazy" alt="${escHtml(m.name || '')}">`;
     return `<div class="media-card" onclick="insertOrCopyMedia(${JSON.stringify(m.url)},${JSON.stringify(m.type)})">
       ${thumb}
-      <span class="media-type-badge">${isVideo ? 'VIDEO' : 'IMG'}</span>
+      <span class="media-type-badge">${isVideo ? 'VIDEO' : (isAudio ? 'AUDIO' : 'IMG')}</span>
       <button class="media-card-delete" onclick="event.stopPropagation();deleteMediaRecord('${m.id}')" title="Remove from library">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
@@ -19793,8 +19840,8 @@ window.filterMediaSearch = function(val) {
 };
 
 window.insertOrCopyMedia = function(url, type) {
-  if (type === 'video') {
-    navigator.clipboard.writeText(url).then(() => toast('Video URL copied ✓'));
+  if (type === 'video' || type === 'audio') {
+    navigator.clipboard.writeText(url).then(() => toast(`${type === 'audio' ? 'Audio' : 'Video'} URL copied ✓`));
     return;
   }
   // If designer slide is open, insert into canvas
