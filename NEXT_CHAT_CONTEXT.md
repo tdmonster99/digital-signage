@@ -12,7 +12,7 @@ Two parallel tracks have been running today:
 
 **Resume points:**
 - Audit: continue Medium batch — items below.
-- Kitcast: pick a closing item from `KITCAST_GAP_ANALYSIS.md` "Recommended priority" section.
+- Kitcast → **Phase 5 in `ROADMAP.md`** is the next focus. Three priority clusters scoped: (5.1) Tags + Priority Overrides + pre-built Emergency Playlist, (5.2) Emergency CAP feed (NWS first, IPAWS deferred), (5.3) Native players for Tizen / webOS / BrightSign. Pick any cluster to start; they're independent.
 
 ## Sessions This Day (2026-04-27)
 

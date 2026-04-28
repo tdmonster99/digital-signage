@@ -4,6 +4,22 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-04-27 — Claude Code (session 46) — Phase 5 roadmap scoped
+
+Docs only. No code changes. After reviewing `KITCAST_GAP_ANALYSIS.md`, the user picked priorities #1, #2, #3 from the "Recommended priority" section as the Phase 5 scope.
+
+- **`ROADMAP.md`**: Phase 4 marked complete in the header (all 12 items shipped). New **Phase 5 — Kitcast-Driven Differentiators** section added with three clusters scoped:
+  - **5.1 Tags + Priority Overrides + Pre-Built Emergency Playlist** — promote `screentags` placeholder to a real Tag Manager, add `tags: string[]` to screens/slideshows/slides/media, add `priority: number` to schedules with ordered resolution in `display.html`, add `emergencyPlaylist: true` slideshow type, replace Broadcast text-only modal with tabbed "Quick message / Use saved playlist" picker reusing the existing z-index-200 overlay.
+  - **5.2 Emergency CAP Feed** — NWS-only first (free, no auth, `api.weather.gov/alerts`), `api/cap-poll.js` cron at 60s polling state + county FIPS + severity floor, per-screen CAP config UI, `capAlerts/{orgId}` Firestore doc mirroring the `broadcasts/{orgId}` shape, auto-clear on `<expires>`, audit trail for compliance. IPAWS deferred (FEMA COG required). Audio (the other half of priority #2) already shipped session 44.
+  - **5.3 Native Players for Tizen / webOS / BrightSign** — Tizen Studio + Samsung partner cert, webOS TV/Signage SDK + LG marketplace, BrightSign BrightScript/HTML5 hybrid shell. Decision gate flagged: if too costly, lean explicitly into "BYOD / runs on hardware you already have" positioning on the marketing site instead.
+- **`NEXT_CHAT_CONTEXT.md`**: Kitcast resume point now points at the Phase 5 clusters in `ROADMAP.md` rather than the gap analysis directly.
+
+Items 4–6 from the gap analysis (SSO/SAML, MDM/Zero-Touch/Kiosk, Time Machine / multi-workspace / data residency / white-label) deferred to a future Enterprise tier.
+
+User switched focus to the marketing site (`site/`) for the next session.
+
+---
+
 ## 2026-04-27 — Claude Code (session 44) — Audio slide support
 
 Closes the Kitcast gap on audio file playback. New `audio` slide type end-to-end.

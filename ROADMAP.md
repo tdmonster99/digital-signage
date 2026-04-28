@@ -2,9 +2,9 @@
 
 ---
 
-## Phase 4 — Competitive Parity (Current Focus)
+## Phase 4 — Competitive Parity (Complete)
 
-Gap analysis against Yodeck, ScreenCloud, Rise Vision, OptiSigns, Screenly, and TelemetryTV (April 2026). Items ordered by priority: table-stakes gaps first, then high-value differentiators.
+Gap analysis against Yodeck, ScreenCloud, Rise Vision, OptiSigns, Screenly, and TelemetryTV (April 2026). All 12 items shipped. **Phase 5 (below) is the next focus.**
 
 ---
 
@@ -174,6 +174,68 @@ Gap analysis against Yodeck, ScreenCloud, Rise Vision, OptiSigns, Screenly, and 
 | 10 | Emergency broadcast override | Low | Medium | 3/6 | ✓ |
 | 11 | Content approval workflow | Medium | Medium | 4/6 | ✓ |
 | 12 | 14-day trial + auto-downgrade | Medium | High | — | ✓ |
+
+---
+
+## Phase 5 — Kitcast-Driven Differentiators (Next Focus)
+
+Sourced from `KITCAST_GAP_ANALYSIS.md` (2026-04-27). The three priority clusters below are the agreed Phase 5 scope. Items 4–6 from the gap analysis (SSO/SAML, MDM/Zero-Touch/Kiosk, Time Machine / multi-workspace / data residency / white-label) are deferred to a future Enterprise tier.
+
+---
+
+### 5.1 Tags + Priority Overrides + Pre-Built Emergency Playlist
+
+**Why:** Single biggest enterprise differentiator missing today. A natural cluster — tagging is the foundation that unlocks both smart playlists and pre-built emergency content. Kitcast Pro has all three; Zigns has none. Required to win schools, healthcare, multi-location retail.
+
+**Status:** Not started. Existing Broadcast feature (real-time text overlay) covers part of the emergency use case but is not a designed-slide playlist.
+
+**What to build:**
+
+- **Tagging system** — first-class `tags: string[]` on screens, slideshows, slides, and media. Settings hub already has a `screentags` placeholder; promote it to a real Tag Manager (create/rename/delete tags org-wide). Tags become the join key for everything below.
+- **Smart Playlists** — a slideshow option "Auto-include slides tagged X". Resolved at publish time so `display.html` doesn't need to change.
+- **Priority Overrides** — schedules gain a `priority: number` field. When two schedules overlap on a screen, higher priority wins. `display.html` schedule resolver needs an ordered pass instead of first-match.
+- **Pre-built Emergency Playlist** — a special slideshow type (`emergencyPlaylist: true`) that admins design ahead of time (designed slides, logos, instructions). New "Trigger Emergency" button on Screens page activates it across selected screens or by tag (e.g. "all healthcare-floor screens"). Reuses existing Broadcast overlay z-index 200 path; replaces the current text-only Broadcast modal with a "Quick message / Use saved playlist" tabbed picker.
+
+**Files:** `admin.html`, `display.html` (schedule resolver + emergency overlay), Firestore schema additions on `screens/{id}`, `slideshows/{id}`, `organizations/{id}.tags`.
+
+---
+
+### 5.2 Emergency CAP Feed Integration
+
+**Why:** Procurement checkbox for schools, healthcare, government, manufacturing. Several US states require automated severe-weather and AMBER alert display in public spaces. Kitcast lists CAP support; Zigns has manual Broadcast only. Audio playback (the other half of priority #2 in the gap analysis) shipped 2026-04-27.
+
+**Status:** Not started.
+
+**What to build:**
+
+- **NWS first** (free, no auth, well-documented at `api.weather.gov/alerts`). IPAWS deferred — requires FEMA COG authorization, treat as Enterprise-only later.
+- **`api/cap-poll.js`** Vercel cron, every 60s. Hits the NWS public CAP feed with the required `User-Agent` header. Filters active alerts by state + county FIPS codes + minimum severity (Minor / Moderate / Severe / Extreme).
+- **Per-screen config** — Screens settings gain CAP fields: state, county FIPS code(s), severity floor, on/off toggle. Pull defaults from screen timezone / IP geolocation when first paired.
+- **`capAlerts/{orgId}` Firestore doc** mirrors the existing `broadcasts/{orgId}` shape. `display.html` listens via `onSnapshot` and renders an alert overlay above slides using a variant of the Broadcast overlay (z-index 200), styled with NWS standard severity colors and bilingual headline + area + instructions + expiry.
+- **Auto-clear** when the alert's `<expires>` timestamp passes or a cancel message arrives.
+- **Audit trail** — log every alert rendered to a screen for compliance reporting (some procurement RFPs ask for this).
+
+**Files:** `api/cap-poll.js`, `display.html`, `admin.html` (per-screen CAP config UI), Firestore `capAlerts/{orgId}` and `screens/{id}.cap` config.
+
+**Vercel function count check:** currently below the 12-function Hobby limit; one new function is fine. Verify before merging.
+
+---
+
+### 5.3 Native Players for Tizen / webOS / BrightSign
+
+**Why:** Biggest competitive moat for Kitcast — proprietary signage OS support is the primary procurement filter for buyers replacing existing fleets (most commercial displays in the wild are Samsung Tizen or LG webOS). Without native players, Zigns is locked out of every "we already have Samsung commercial displays" conversation.
+
+**Status:** Not started. Hero chip and Hardware page already say "more platforms on the way" — committing now means making good on that.
+
+**What to build:**
+
+- **Samsung Tizen** — Tizen Studio app wrapping `display.html` in a Tizen WebApplication (essentially a kiosk WebView). Sign with a Samsung partner cert. Submit to Samsung Smart Signage app store. Auto-launch on boot, USB sideload supported for non-store deployments.
+- **LG webOS** — webOS TV/Signage SDK app with the same WebView wrapper pattern. Submit to LG webOS Signage Marketplace. Older webOS Signage versions need a different SDK target — pick a floor (e.g. webOS 4.0+ / 2018 panels onward).
+- **BrightSign** — different beast. BrightScript/HTML5 hybrid, no full Chromium. Likely path: a thin BrightScript shell that loads `display.html` in their HTML5 player widget, with platform shims for any Web APIs BrightSign's renderer doesn't support. Validate which `display.html` features actually work there before scoping.
+- **Shared work** — pull the screen-pairing flow into a thin native shell so the same QR/code pairing works without keyboard input. Investigate whether Firestore websockets work on each platform's network stack (some commercial-display firewalls block them).
+- **Decision gate** — if engineering investment is too high, lean explicitly into "BYOD / runs on hardware you already have" positioning on the marketing site instead. This is a real fork: Tizen + webOS + BrightSign is a multi-month effort, not a sprint.
+
+**Files:** New repos / build pipelines per platform — outside the `app/` codebase. Coordinate with marketing site (`site/`) Hardware page once any one platform ships.
 
 ---
 
