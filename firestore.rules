@@ -1,0 +1,215 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ----------------------------------------------------------------
+    // Helpers
+    // ----------------------------------------------------------------
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Fetches the caller's user document. Only call after isSignedIn().
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    // Any member of the org (admin | editor | viewer).
+    function isMember(orgId) {
+      return isSignedIn() && userDoc().orgId == orgId;
+    }
+
+    // Editor or admin — can create/edit content.
+    function isEditor(orgId) {
+      return isMember(orgId) && userDoc().role in ['admin', 'editor'];
+    }
+
+    // Admin only — billing, team management, destructive ops.
+    function isAdmin(orgId) {
+      return isMember(orgId) && userDoc().role == 'admin';
+    }
+
+    // ----------------------------------------------------------------
+    // users/{uid}
+    // Users can only read and write their own document.
+    // Server-side admin SDK (screen-monitor, stripe-webhook) bypasses rules.
+    // ----------------------------------------------------------------
+    match /users/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // ----------------------------------------------------------------
+    // organizations/{orgId}
+    // ----------------------------------------------------------------
+    match /organizations/{orgId} {
+      allow read: if isMember(orgId);
+
+      // Any authenticated user can create an org as long as they are
+      // the declared owner — covers the initial onboarding flow.
+      allow create: if isSignedIn()
+        && request.resource.data.ownerId == request.auth.uid;
+
+      // Only admins can rename the org, manage members, etc.
+      // Stripe subscription updates are done via admin SDK (bypasses rules).
+      allow update: if isAdmin(orgId);
+
+      allow delete: if false;
+
+      // -- Media library --
+      match /media/{mediaId} {
+        allow read: if isMember(orgId);
+        allow create, update: if isEditor(orgId);
+        allow delete: if isEditor(orgId);
+      }
+
+      // -- Analytics events --
+      // display.html writes slide-view / online / offline events without auth.
+      // Events are append-only; no client updates or deletes.
+      match /analytics/{eventId} {
+        allow read: if isMember(orgId);
+        allow create: if true;
+        allow update, delete: if false;
+      }
+
+      // -- Schedules --
+      // display.html reads schedules without auth to determine which
+      // slideshow to play at a given time.
+      match /schedules/{scheduleId} {
+        allow read: if true;
+        allow create, update: if isEditor(orgId);
+        allow delete: if isEditor(orgId);
+      }
+    }
+
+    // ----------------------------------------------------------------
+    // screens/{screenId}
+    // display.html runs unauthenticated on TV hardware:
+    //   - needs read access to its own screen doc (slideshowId, settings)
+    //   - writes a heartbeat (lastSeen only) every 5 minutes
+    // Admins/editors create and manage screen docs during the pairing flow.
+    // ----------------------------------------------------------------
+    match /screens/{screenId} {
+      // Public read — display.html has no authenticated user.
+      allow read: if true;
+
+      // Only authenticated editors/admins can create a screen doc
+      // (this happens on the admin side during the pairing flow).
+      allow create: if isEditor(request.resource.data.orgId);
+
+      // Two cases:
+      //   1. Unauthenticated heartbeat — only lastSeen may change.
+      //   2. Authenticated editor/admin — full update for their org's screen.
+      allow update: if
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastSeen'])
+        || isEditor(resource.data.orgId);
+
+      // Only admins can delete screens.
+      allow delete: if isAdmin(resource.data.orgId);
+    }
+
+    // ----------------------------------------------------------------
+    // pairingCodes/{code}
+    // Pairing flow:
+    //   1. display.html creates a code (no auth) with status "pending".
+    //   2. display.html polls for status changes (no auth).
+    //   3. Admin reads the code, creates the screen doc, then updates
+    //      the code to status "paired".
+    // ----------------------------------------------------------------
+    match /pairingCodes/{code} {
+      // Public read — display polls for the admin to complete pairing.
+      allow read: if true;
+
+      // display.html creates codes without auth.
+      // Enforce minimal shape: status must be "pending" and expiry must be set.
+      allow create: if
+        request.resource.data.status == 'pending'
+        && request.resource.data.keys().hasAll(['status', 'createdAt', 'expiresAt']);
+
+      // Only authenticated users can mark a code as paired.
+      // Prevent replaying or overwriting already-paired codes.
+      allow update: if
+        isSignedIn()
+        && resource.data.status == 'pending'
+        && request.resource.data.status == 'paired';
+
+      allow delete: if false;
+    }
+
+    // ----------------------------------------------------------------
+    // slideshows/{showId}
+    // display.html reads published slides without auth.
+    // Admins and editors can create/edit slideshows.
+    // ----------------------------------------------------------------
+    match /slideshows/{showId} {
+      // Public read — display.html renders slides on TV screens.
+      allow read: if true;
+
+      allow create: if isEditor(request.resource.data.orgId);
+      allow update: if isEditor(resource.data.orgId);
+      allow delete: if isAdmin(resource.data.orgId);
+
+      // -- Slide version history --
+      // Versions are append-only (no updates or deletes).
+      match /slideVersions/{slideId}/versions/{versionId} {
+        allow read: if isMember(
+          get(/databases/$(database)/documents/slideshows/$(showId)).data.orgId
+        );
+        allow create: if isEditor(
+          get(/databases/$(database)/documents/slideshows/$(showId)).data.orgId
+        );
+        allow update, delete: if false;
+      }
+    }
+
+    // ----------------------------------------------------------------
+    // broadcasts/{orgId}
+    // display.html reads broadcasts without auth (emergency messaging).
+    // Only admins can create or deactivate broadcasts.
+    // ----------------------------------------------------------------
+    match /broadcasts/{orgId} {
+      allow read: if true;
+      allow write: if isAdmin(orgId);
+    }
+
+    // ----------------------------------------------------------------
+    // brandKits/{orgId}
+    // ----------------------------------------------------------------
+    match /brandKits/{orgId} {
+      allow read: if isMember(orgId);
+      allow write: if isAdmin(orgId);
+    }
+
+    // ----------------------------------------------------------------
+    // invitations/{inviteId}
+    // Admins create invitations; invitees read and accept their own.
+    // Invitee is matched by verified email from the Firebase Auth token.
+    // ----------------------------------------------------------------
+    match /invitations/{inviteId} {
+      allow read: if isSignedIn() && (
+        isAdmin(resource.data.orgId)
+        || request.auth.token.email == resource.data.email
+      );
+
+      // Only admins can invite new members.
+      allow create: if isAdmin(request.resource.data.orgId);
+
+      // Admins can cancel; invitees can accept their own invitation.
+      allow update: if isSignedIn() && (
+        isAdmin(resource.data.orgId)
+        || request.auth.token.email == resource.data.email
+      );
+
+      allow delete: if false;
+    }
+
+    // ----------------------------------------------------------------
+    // pending_subscriptions — populated by marketing site, consumed by
+    // stripe-webhook.js via admin SDK. Block all client access.
+    // ----------------------------------------------------------------
+    match /pending_subscriptions/{docId} {
+      allow read, write: if false;
+    }
+  }
+}

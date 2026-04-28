@@ -1,2 +1,21 @@
+# Vercel
 .vercel
+
+# Env / secrets — never commit
+.env
+.env.production
 .env*.local
+
+# Dependencies
+node_modules/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude Code workspace state
+.claude/
+
+# Local scratch
+Zigns Bugs.txt
+*.scratch.md
