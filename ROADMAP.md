@@ -214,7 +214,7 @@ Sourced from `KITCAST_GAP_ANALYSIS.md` (2026-04-27), plus the 2026-04-28 Vercel 
 
 **Why:** Procurement checkbox for schools, healthcare, government, manufacturing. Several US states require automated severe-weather and AMBER alert display in public spaces. Kitcast lists CAP support; Zigns has manual Broadcast only. Audio playback (the other half of priority #2 in the gap analysis) shipped 2026-04-27.
 
-**Status:** Partial foundation shipped 2026-04-28. Per-screen CAP config, `capAlerts/{orgId}` mirroring, and `display.html` alert overlay are implemented. CAP polling has been split from `api/screen-monitor.js` into dedicated `api/cap-poll.js` code for Vercel Cron, pending production cron verification. Remaining: dedicated audit/reporting UX, bilingual copy controls, richer alert testing, and possible IPAWS/FEMA path for Enterprise later.
+**Status:** Partial foundation shipped 2026-04-28. Per-screen CAP config, `capAlerts/{orgId}` mirroring, and `display.html` alert overlay are implemented. CAP polling has been split from `api/screen-monitor.js` into dedicated `api/cap-poll.js`, deployed, and production-verified on Vercel Cron. Remaining: dedicated audit/reporting UX, bilingual copy controls, richer alert testing, and possible IPAWS/FEMA path for Enterprise later.
 
 **What to build:**
 
@@ -237,19 +237,19 @@ Sourced from `KITCAST_GAP_ANALYSIS.md` (2026-04-27), plus the 2026-04-28 Vercel 
 
 **Priority:** High. Do before broader Enterprise-only features. It directly supports CAP/emergency reliability and proof-of-play scale.
 
-**Status:** In progress 2026-04-29. `/api/screen-monitor` is configured in `vercel.json` to run every 5 minutes on Vercel Cron and production logs confirmed Vercel-triggered runs. cron-job.org was disabled, and `screen-monitor.js` now requires `Authorization: Bearer <CRON_SECRET>` only. Fallback-removal deploy verified: `?secret=` requests return 401 and Vercel Cron still returns 200. CAP split is deployed and production-verified with `/api/cap-poll` scheduled every minute, a targeted 60s function duration, and a Firestore overlap guard. Analytics rollup code is complete locally with a daily `/api/analytics-rollup` cron, a targeted 300s function duration, and a Firestore overlap guard; production deploy and verification remain.
+**Status:** In progress 2026-04-29. `/api/screen-monitor` is configured in `vercel.json` to run every 5 minutes on Vercel Cron and production logs confirmed Vercel-triggered runs. cron-job.org was disabled, and `screen-monitor.js` now requires `Authorization: Bearer <CRON_SECRET>` only. Fallback-removal deploy verified: `?secret=` requests return 401 and Vercel Cron still returns 200. CAP split is deployed and production-verified with `/api/cap-poll` scheduled every minute, a targeted 60s function duration, and a Firestore overlap guard. Analytics rollup is deployed with a daily `/api/analytics-rollup` cron, a targeted 300s function duration, and a Firestore overlap guard. Public unauthenticated and query-secret requests return 401; scheduled 200 verification remains pending until the next `08:17 UTC` cron tick or an authenticated manual run.
 
 **What to build:**
 
 - **Move screen monitoring to Vercel Cron** — add `crons` entry for `/api/screen-monitor` in `vercel.json`, likely `*/5 * * * *`. Keep `CRON_SECRET`; Vercel sends it as `Authorization: Bearer <CRON_SECRET>`. After one verified production run, remove the `?secret=` query fallback so the secret is no longer exposed in URLs or request logs. **Complete 2026-04-29: configured, production-verified, cron-job.org disabled, and fallback removed.**
 - **Split CAP polling into `api/cap-poll.js`** — move NWS polling out of `screen-monitor.js` and run it every 1 minute on Vercel Cron. Keep `screen-monitor.js` focused on offline/online status and plan screen-limit enforcement. Add a simple Firestore lock/idempotency guard because Vercel Cron can overlap or duplicate invocations. **Complete 2026-04-29: deployed and production-verified.**
-- **Add analytics daily rollup cron** — create a daily job that aggregates raw `organizations/{orgId}/analytics` events into daily proof-of-play summaries. This keeps dashboard reads cheaper and faster as event volume grows. **Code complete locally 2026-04-29: `api/analytics-rollup.js` writes `organizations/{orgId}/analyticsDaily/{YYYY-MM-DD}`; pending production deploy and verification.**
+- **Add analytics daily rollup cron** — create a daily job that aggregates raw `organizations/{orgId}/analytics` events into daily proof-of-play summaries. This keeps dashboard reads cheaper and faster as event volume grows. **Deployed 2026-04-29: `api/analytics-rollup.js` writes `organizations/{orgId}/analyticsDaily/{YYYY-MM-DD}`; public auth checks passed; scheduled cron 200 verification remains pending next tick/manual authenticated run.**
 - **Set explicit function durations where useful** — use `vercel.json` `functions` config for long-running routes such as `api/import-pptx.js`, `api/canva.js`, `api/cap-poll.js`, and the future analytics rollup. Do this deliberately, not globally, so runaway functions still fail quickly. **`api/cap-poll.js` now has `maxDuration: 60`; `api/analytics-rollup.js` now has `maxDuration: 300`; other routes remain to be evaluated.**
 - **Defer broad endpoint splitting** — do not split `api/proxy.js` just because Pro allows more functions. Split weather/RSS/reviews/Instagram only when different cache/security behavior or debugging needs justify the endpoint churn.
 
 **Files:** `vercel.json`, `api/screen-monitor.js`, new `api/cap-poll.js`, new `api/analytics-rollup.js`, docs/tests as needed.
 
-**Test plan:** Deploy preview and verify each cron endpoint manually with `Authorization: Bearer <CRON_SECRET>`, then promote. Vercel Cron scheduling only activates on production deployments, so confirm production Cron Jobs logs after promotion, then remove any cron-job.org duplicate schedule. Screen-monitor cron production verification completed 2026-04-29; after fallback-removal deploy, query-string secret calls returned 401 and the next Vercel Cron run returned 200.
+**Test plan:** Deploy preview and verify each cron endpoint manually with `Authorization: Bearer <CRON_SECRET>`, then promote. Vercel Cron scheduling only activates on production deployments, so confirm production Cron Jobs logs after promotion, then remove any cron-job.org duplicate schedule. Screen-monitor cron production verification completed 2026-04-29; after fallback-removal deploy, query-string secret calls returned 401 and the next Vercel Cron run returned 200. CAP poll production cron verification completed 2026-04-29. Analytics rollup production deploy completed 2026-04-29; unauthenticated and query-string secret requests returned 401, with scheduled cron 200 verification pending the next `08:17 UTC` tick or authenticated manual run.
 
 ---
 
@@ -279,7 +279,7 @@ Small non-feature tasks that need to get done.
 |------|----------|-------|
 | Mark Vercel env vars as Sensitive | Medium | `GOOGLE_PLACES_API_KEY`, `CRON_SECRET`, `CLOUDCONVERT_API_KEY`, `GOOGLE_SHEETS_API_KEY`, `OPENWEATHER_API_KEY` all flagged "Needs Attention" in Vercel dashboard. Edit each → check Sensitive → re-paste value. |
 | Delete duplicate Vercel `app` project | Low | `digital-signage` is the active project (linked in `.vercel/project.json`). The `app` project is a stale duplicate — verify it has no custom domain or env vars, then delete. |
-| Move `CRON_SECRET` to `Authorization` header only | High | Folded into Phase 5.3 Vercel Pro Infrastructure Upgrade. `screen-monitor.js` accepts secret via `?secret=` query param, which exposes it in server logs. Remove query-param path after Vercel Cron is verified. |
+| Move `CRON_SECRET` to `Authorization` header only | High | Folded into Phase 5.3 Vercel Pro Infrastructure Upgrade. Complete for `screen-monitor.js`, `cap-poll.js`, and `analytics-rollup.js`; query-string secret requests return 401. |
 
 ---
 
@@ -290,7 +290,7 @@ Known weaknesses to address before significant user growth.
 | Task | Risk | Notes |
 |------|------|-------|
 | Slideshow subcollection migration | High | `slides[]` and `draftSlides[]` stored in Firestore doc — 1MB doc limit will silently break writes for large slideshows. Migrate to `slideshows/{id}/slides/{slideId}` subcollection. Needs migration script + deep `admin.html` + `display.html` changes. Plan separately. |
-| Analytics daily rollup | Medium | Folded into Phase 5.3 Vercel Pro Infrastructure Upgrade. Raw analytics events accumulate per org with no aggregation. Dashboard queries get expensive over time. Add a daily rollup cron. |
+| Analytics daily rollup | Medium | Folded into Phase 5.3 Vercel Pro Infrastructure Upgrade. `api/analytics-rollup.js` is deployed with a daily Vercel Cron schedule and writes `organizations/{orgId}/analyticsDaily/{YYYY-MM-DD}` summaries; scheduled cron 200 verification remains pending next tick/manual authenticated run. |
 
 ---
 

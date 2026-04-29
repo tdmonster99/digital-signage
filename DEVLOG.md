@@ -15,7 +15,7 @@ Continued Phase 5.3 by adding the daily proof-of-play rollup job.
 - **`vercel.json`**: added `/api/analytics-rollup` on a daily `17 8 * * *` schedule and set a targeted `maxDuration: 300` for `api/analytics-rollup.js`.
 - **`ROADMAP.md` / `CLAUDE.md`**: documented the new cron function and `analyticsDaily` collection.
 
-Production deploy and cron verification remain.
+Production deploy: committed and pushed `2496787` (`feat: add analytics daily rollup cron`) to `main`; Vercel built `dpl_8L39fzavvL8TaaqH6jmfevKX9uwy`, deployed `https://digital-signage-g6vk6w6ta-johns-projects-27f41c6f.vercel.app`, and aliased it to `https://app.zigns.io`. Verification confirmed the app root returns 200; unauthenticated `/api/analytics-rollup`, `/api/analytics-rollup?secret=test`, and `/api/analytics-rollup?date=2026-04-28` return 401; production error logs were clean. Daily scheduled 200 verification remains pending until the next `08:17 UTC` cron tick or an authenticated manual run with `CRON_SECRET`.
 
 ---
 
