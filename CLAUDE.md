@@ -101,6 +101,7 @@ Vercel plan: **Pro**. The old 12-function Hobby cap no longer applies, but keep 
 | `link-account.js` | Stripe/customer account linking helper |
 | `screen-monitor.js` | Cron target — detects offline/online screens, enforces screen limits, and emails notifications |
 | `cap-poll.js` | Cron target — polls NWS CAP alerts and mirrors matching active alerts to Firestore |
+| `analytics-rollup.js` | Cron target — aggregates raw proof-of-play analytics into daily summaries |
 
 ### Firebase / Firestore
 Firebase project: `digital-signage-2`. Collections:
@@ -112,6 +113,7 @@ Firebase project: `digital-signage-2`. Collections:
 | `organizations/{id}` | Org settings, member list, slideshow list, subscription/plan |
 | `organizations/{id}/media` | Media library entries |
 | `organizations/{id}/analytics` | Analytics events |
+| `organizations/{id}/analyticsDaily` | Daily rollup docs generated from raw analytics events |
 | `screens/{id}` | Screen records with `slideshowId`, `orgId`, `lastSeen` |
 | `pairingCodes/{code}` | 6-char codes written by display.html, consumed by admin pairing flow |
 | `users/{uid}` | User profile + org membership (see schema below) |

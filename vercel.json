@@ -36,6 +36,9 @@
   "functions": {
     "api/cap-poll.js": {
       "maxDuration": 60
+    },
+    "api/analytics-rollup.js": {
+      "maxDuration": 300
     }
   },
   "crons": [
@@ -46,6 +49,10 @@
     {
       "path": "/api/cap-poll",
       "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/analytics-rollup",
+      "schedule": "17 8 * * *"
     }
   ]
 }

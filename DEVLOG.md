@@ -4,6 +4,21 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-04-29 — Codex — Analytics daily rollup cron
+
+Continued Phase 5.3 by adding the daily proof-of-play rollup job.
+
+- **`api/analytics-rollup.js`**: added a dedicated CommonJS Vercel function that requires `Authorization: Bearer <CRON_SECRET>`, scans each org's raw `organizations/{orgId}/analytics` events for one UTC day, and writes `organizations/{orgId}/analyticsDaily/{YYYY-MM-DD}` summary docs.
+- **Rollup contents**: each summary includes event counts by type, total slide views, total playback seconds, online/offline event counts, CAP alert render counts, watchdog restart counts, hourly slide-view buckets, top slide breakdowns, per-screen breakdowns, and alert render breakdowns with truncation flags to keep docs bounded.
+- **Manual backfill hook**: authenticated calls can pass `?date=YYYY-MM-DD`; cron calls default to yesterday in UTC.
+- **Firestore lock**: added a 10-minute lease at `cronLocks/analytics-rollup` so duplicate or overlapping Vercel Cron/manual runs skip instead of competing.
+- **`vercel.json`**: added `/api/analytics-rollup` on a daily `17 8 * * *` schedule and set a targeted `maxDuration: 300` for `api/analytics-rollup.js`.
+- **`ROADMAP.md` / `CLAUDE.md`**: documented the new cron function and `analyticsDaily` collection.
+
+Production deploy and cron verification remain.
+
+---
+
 ## 2026-04-29 — Codex — CAP polling cron split
 
 Continued Phase 5.3 by separating emergency CAP polling from the screen status monitor.
