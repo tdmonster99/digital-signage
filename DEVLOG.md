@@ -13,7 +13,8 @@ Continued Phase 5.3 by separating emergency CAP polling from the screen status m
 - **`api/screen-monitor.js`**: removed the CAP polling call and helper functions so the monitor is focused on offline/online notifications and plan screen-limit enforcement.
 - **`vercel.json`**: added a Vercel Cron entry for `/api/cap-poll` every minute and a targeted `maxDuration: 60` function setting for `api/cap-poll.js`.
 - **`ROADMAP.md`**: updated Phase 5.2 and 5.3 to show the CAP split as code-complete locally, pending production deploy and cron verification.
-- **Verification**: `node --check api/screen-monitor.js`, `node --check api/cap-poll.js`, and JSON parsing for `vercel.json` passed locally. Mocked `?secret=`-only requests returned 401 for both cron endpoints. Production deployment and cron log verification were not run in this session.
+- **Production deploy**: committed and pushed `f091d1b` to `main`; Vercel built production deployment `dpl_Hmc3Cj5xJ8SySqbivhYgy1GDNkji` at `https://digital-signage-kb3z1yxd6-johns-projects-27f41c6f.vercel.app`, aliased to `https://app.zigns.io`.
+- **Verification**: `node --check api/screen-monitor.js`, `node --check api/cap-poll.js`, and JSON parsing for `vercel.json` passed locally. Mocked and production `?secret=`-only requests returned 401 for both cron endpoints. Production logs showed `/api/cap-poll` returning 200 on its one-minute Vercel Cron schedule and `/api/screen-monitor` returning 200 on its five-minute Vercel Cron schedule. Production error logs were clean after deploy.
 
 Next Phase 5.3 slice after deploy verification: add the analytics daily rollup cron.
 
