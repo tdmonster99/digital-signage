@@ -303,7 +303,11 @@ body {
 .media-card-meta { font-size: 11px; color: var(--muted); margin-top: 3px; }
 .media-card-delete { position: absolute; top: 6px; right: 6px; background: rgba(0,0,0,0.6); border: none; border-radius: 6px; color: #fff; width: 26px; height: 26px; cursor: pointer; display: none; align-items: center; justify-content: center; padding: 0; }
 .media-card:hover .media-card-delete { display: flex; }
+.media-card-tagbtn { position: absolute; top: 38px; right: 6px; background: rgba(0,0,0,0.6); border: none; border-radius: 6px; color: #fff; width: 26px; height: 26px; cursor: pointer; display: none; align-items: center; justify-content: center; padding: 0; }
+.media-card:hover .media-card-tagbtn { display: flex; }
 .media-type-badge { position: absolute; top: 6px; left: 6px; background: rgba(0,0,0,0.55); color: #fff; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 6px; letter-spacing: .03em; }
+.media-tag-row { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+.media-tag-row .screen-tag-chip { font-size: 9px; padding: 2px 5px; }
 .screens-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .screens-header-left h1 { font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
 .screens-header-left p  { font-size: 13px; color: var(--muted); }
@@ -593,6 +597,11 @@ aside {
 }
 .show-item-name { font-size: 14px; font-weight: 500; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .show-item-count { font-size: 11px; color: var(--muted); flex-shrink: 0; }
+.show-item-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.show-item-top { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.show-item-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.show-item-tags .screen-tag-chip { font-size: 9px; padding: 2px 5px; }
+.show-item-emergency { background: rgba(220,38,38,.12); color: #dc2626; }
 .show-item-review-badge {
   display: none; align-items: center; justify-content: center;
   font-size: 9px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
@@ -1222,6 +1231,11 @@ section.content {
   opacity: 0; transition: opacity 0.15s;
 }
 .slide-card:hover .slide-actions { opacity: 1; }
+.slide-tag-row {
+  position: absolute; left: 8px; right: 8px; bottom: 38px; z-index: 3;
+  display: flex; flex-wrap: wrap; gap: 4px; pointer-events: none;
+}
+.slide-tag-row .screen-tag-chip { font-size: 9px; padding: 2px 5px; background: rgba(0,67,206,.88); color: #fff; }
 
 .icon-btn {
   width: 28px; height: 28px;
@@ -2952,6 +2966,23 @@ body > canvas[width="1920"][height="1080"] {
   cursor: pointer; transition: transform .15s, box-shadow .15s;
 }
 .broadcast-color-btn.active { box-shadow: 0 0 0 3px var(--accent); transform: scale(1.1); }
+.broadcast-tabs { display: flex; gap: 6px; padding: 4px; border-radius: 10px; background: var(--surface2); margin-bottom: 16px; }
+.broadcast-tab {
+  flex: 1; border: 0; border-radius: 8px; padding: 8px 10px; background: transparent;
+  color: var(--muted); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer;
+}
+.broadcast-tab.active { background: var(--surface); color: var(--text); box-shadow: var(--card-shadow); }
+.screen-tag-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+.screen-tag-chip {
+  display: inline-flex; align-items: center; gap: 4px; padding: 3px 7px; border-radius: 999px;
+  background: var(--accent-bg); color: var(--accent); font-size: 11px; font-weight: 700;
+}
+.tag-manager-list { display: flex; flex-direction: column; gap: 8px; }
+.tag-manager-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface2);
+}
+.tag-manager-actions { display: flex; gap: 6px; }
 @keyframes broadcastPulse {
   0%, 100% { opacity: 1; } 50% { opacity: 0.3; }
 }
@@ -4068,6 +4099,13 @@ body.role-editor .admin-action {
             </svg>
             Create Group
           </button>
+          <button class="btn btn-secondary" onclick="openShowOptions()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M20.59 13.41 11 3.83a2 2 0 0 0-1.41-.58H4a2 2 0 0 0-2 2v5.59a2 2 0 0 0 .59 1.41l9.58 9.58a2 2 0 0 0 2.83 0l5.59-5.59a2 2 0 0 0 0-2.83z"/>
+              <circle cx="7.5" cy="7.5" r=".5"/>
+            </svg>
+            Options
+          </button>
         </div>
         <div class="toolbar-right">
           <div id="btnPushWrap" style="display:none;flex-direction:column;align-items:center;gap:4px">
@@ -4624,7 +4662,7 @@ body.role-editor .admin-action {
 
   <!-- Broadcast modal -->
   <div id="broadcastModal">
-    <div class="countdown-modal-box" style="max-width:440px">
+    <div class="countdown-modal-box" style="max-width:500px">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
         <div style="width:36px;height:36px;border-radius:9px;background:#dc2626;display:flex;align-items:center;justify-content:center;flex-shrink:0">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round">
@@ -4637,21 +4675,42 @@ body.role-editor .admin-action {
         </div>
       </div>
 
-      <div class="clock-field">
-        <label>Message</label>
-        <textarea id="broadcastMessage" rows="3" placeholder="Fire drill — please evacuate now"
-          style="width:100%;padding:10px 12px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-size:14px;resize:vertical;font-family:inherit"></textarea>
+      <div class="broadcast-tabs">
+        <button class="broadcast-tab active" id="broadcastTabMessage" onclick="setBroadcastMode('message')">Quick Message</button>
+        <button class="broadcast-tab" id="broadcastTabPlaylist" onclick="setBroadcastMode('playlist')">Saved Playlist</button>
       </div>
-      <div class="clock-field">
-        <label>Background</label>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="broadcast-color-btn active" data-color="#dc2626" onclick="selectBroadcastColor(this,'#dc2626')" style="background:#dc2626" title="Red"></button>
-          <button class="broadcast-color-btn" data-color="#d97706" onclick="selectBroadcastColor(this,'#d97706')" style="background:#d97706" title="Amber"></button>
-          <button class="broadcast-color-btn" data-color="#1e40af" onclick="selectBroadcastColor(this,'#1e40af')" style="background:#1e40af" title="Blue"></button>
-          <button class="broadcast-color-btn" data-color="#111827" onclick="selectBroadcastColor(this,'#111827')" style="background:#111827;border:1.5px solid var(--border)" title="Dark"></button>
-          <button class="broadcast-color-btn" data-color="#ffffff" onclick="selectBroadcastColor(this,'#ffffff')" style="background:#ffffff;border:1.5px solid var(--border)" title="White"></button>
+
+      <div id="broadcastMessagePanel">
+        <div class="clock-field">
+          <label>Message</label>
+          <textarea id="broadcastMessage" rows="3" placeholder="Fire drill — please evacuate now"
+            style="width:100%;padding:10px 12px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-size:14px;resize:vertical;font-family:inherit"></textarea>
+        </div>
+        <div class="clock-field">
+          <label>Background</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="broadcast-color-btn active" data-color="#dc2626" onclick="selectBroadcastColor(this,'#dc2626')" style="background:#dc2626" title="Red"></button>
+            <button class="broadcast-color-btn" data-color="#d97706" onclick="selectBroadcastColor(this,'#d97706')" style="background:#d97706" title="Amber"></button>
+            <button class="broadcast-color-btn" data-color="#1e40af" onclick="selectBroadcastColor(this,'#1e40af')" style="background:#1e40af" title="Blue"></button>
+            <button class="broadcast-color-btn" data-color="#111827" onclick="selectBroadcastColor(this,'#111827')" style="background:#111827;border:1.5px solid var(--border)" title="Dark"></button>
+            <button class="broadcast-color-btn" data-color="#ffffff" onclick="selectBroadcastColor(this,'#ffffff')" style="background:#ffffff;border:1.5px solid var(--border)" title="White"></button>
+          </div>
         </div>
       </div>
+
+      <div id="broadcastPlaylistPanel" style="display:none">
+        <div class="clock-field">
+          <label>Emergency playlist</label>
+          <select id="broadcastPlaylistSelect"></select>
+        </div>
+        <div class="clock-field">
+          <label>Target tag</label>
+          <select id="broadcastTargetTag">
+            <option value="">All screens</option>
+          </select>
+        </div>
+      </div>
+
       <div class="clock-field">
         <label>Auto-dismiss</label>
         <select id="broadcastDismiss">
@@ -4663,7 +4722,7 @@ body.role-editor .admin-action {
       </div>
       <div class="clock-modal-footer" style="margin-top:8px">
         <button class="btn btn-secondary" onclick="closeBroadcastModal()">Cancel</button>
-        <button class="btn" onclick="sendBroadcast()" style="background:#dc2626;color:#fff;border-color:#dc2626">Broadcast to All Screens</button>
+        <button class="btn" onclick="sendBroadcast()" style="background:#dc2626;color:#fff;border-color:#dc2626">Trigger Emergency</button>
       </div>
     </div>
   </div>
@@ -4798,6 +4857,33 @@ body.role-editor .admin-action {
             <option value="Pacific/Auckland">Auckland</option>
           </optgroup>
         </select>
+      </div>
+      <div class="sep-field">
+        <label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:13px;color:var(--text);font-weight:500">
+          <input type="checkbox" id="sepCapEnabled" style="width:auto;margin:0" onchange="document.getElementById('sepCapBody').style.display = this.checked ? 'flex' : 'none'">
+          Emergency CAP alerts
+        </label>
+        <div id="sepCapBody" style="display:none;flex-direction:column;gap:10px;margin-top:10px;padding:12px;background:var(--surface2);border-radius:8px">
+          <div style="display:flex;gap:10px">
+            <div style="flex:1">
+              <label style="font-size:10px">State</label>
+              <input type="text" id="sepCapState" maxlength="2" placeholder="TX">
+            </div>
+            <div style="flex:2">
+              <label style="font-size:10px">County FIPS codes</label>
+              <input type="text" id="sepCapFips" placeholder="201, 029">
+            </div>
+          </div>
+          <div>
+            <label style="font-size:10px">Minimum severity</label>
+            <select id="sepCapSeverity">
+              <option value="Minor">Minor</option>
+              <option value="Moderate">Moderate</option>
+              <option value="Severe">Severe</option>
+              <option value="Extreme">Extreme</option>
+            </select>
+          </div>
+        </div>
       </div>
       <div class="sep-field">
         <label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:13px;color:var(--text);font-weight:500">
@@ -7867,6 +7953,10 @@ body.role-editor .admin-action {
       <label>Slideshow</label>
       <select id="aemSlideshow" class="prop-select"></select>
     </div>
+    <div class="field">
+      <label>Priority</label>
+      <input type="number" id="aemPriority" value="0" min="0" max="999" step="1">
+    </div>
     <div class="aem-row">
       <div class="field" style="flex:1">
         <label>Start time</label>
@@ -10156,6 +10246,41 @@ function updateShowItemMeta(showId, data = {}) {
   badge.style.display = label ? 'inline-flex' : 'none';
 }
 
+function showMetaFromOrg(showId) {
+  return (currentOrg?.slideshows || []).find(s => s.id === showId) || null;
+}
+
+function tagChipHtml(tags, extraClass = '') {
+  const clean = (Array.isArray(tags) ? tags : []).map(normalizeTag).filter(Boolean).slice(0, 4);
+  return clean.map(t => `<span class="screen-tag-chip ${extraClass}">${escHtml(t)}</span>`).join('');
+}
+
+function renderShowTagsOnItem(item, show = {}) {
+  const row = item?.querySelector('.show-item-tags');
+  if (!row) return;
+  const tags = Array.isArray(show.tags) ? show.tags : [];
+  const smart = Array.isArray(show.autoIncludeTags) ? show.autoIncludeTags : [];
+  row.innerHTML =
+    tagChipHtml(tags) +
+    smart.map(t => `<span class="screen-tag-chip">auto:${escHtml(normalizeTag(t))}</span>`).join('') +
+    (show.emergencyPlaylist ? '<span class="screen-tag-chip show-item-emergency">emergency</span>' : '');
+}
+
+async function saveShowMetadata(showId, patch) {
+  if (!currentOrgId || !showId) return;
+  const existingShows = currentOrg?.slideshows?.length
+    ? currentOrg.slideshows
+    : [{ id: showId, name: currentShowName || showId }];
+  const found = existingShows.some(s => s.id === showId);
+  const shows = (found ? existingShows : [...existingShows, { id: showId, name: currentShowName || showId }])
+    .map(s => s.id === showId ? { ...s, ...patch } : s);
+  await updateDoc(doc(db, 'organizations', currentOrgId), { slideshows: shows });
+  currentOrg.slideshows = shows;
+  await setDoc(doc(db, 'slideshows', showId), { ...patch, ...(currentOrgId && { orgId: currentOrgId }) }, { merge: true });
+  const item = document.querySelector(`#showList .show-item[data-id="${CSS.escape(showId)}"]`);
+  renderShowTagsOnItem(item, shows.find(s => s.id === showId) || {});
+}
+
 function updateReviewStatusBanner(data = {}) {
   const banner = document.getElementById('reviewStatusBanner');
   if (!banner) return;
@@ -10206,7 +10331,8 @@ function makeShowItem(s) {
   const item = document.createElement('div');
   item.className  = 'show-item';
   item.dataset.id = s.id;
-  item.innerHTML  = `<span class="show-item-name">${escHtml(s.name)}</span><span class="show-item-review-badge"></span><button class="show-rename-btn" title="Rename" tabindex="-1"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button><span class="show-item-count">0 slides</span>`;
+  item.innerHTML  = `<div class="show-item-main"><div class="show-item-top"><span class="show-item-name">${escHtml(s.name)}</span><span class="show-item-review-badge"></span></div><div class="show-item-tags"></div></div><button class="show-rename-btn" title="Rename" tabindex="-1"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button><span class="show-item-count">0 slides</span>`;
+  renderShowTagsOnItem(item, s);
   item.querySelector('.show-rename-btn').addEventListener('click', e => {
     e.stopPropagation();
     startListItemRename(s.id, item);
@@ -10436,6 +10562,42 @@ function _updatePublishFooter() {
   if (btn) btn.disabled = n === 0;
 }
 
+function slideMatchesAnyTag(slide, tags) {
+  const slideTags = normalizeTagsFromInput(slide?.tags || []);
+  return tags.some(t => slideTags.includes(t));
+}
+
+async function resolveSmartPlaylistSlides(baseSlides, showId = currentShowId) {
+  const show = showMetaFromOrg(showId) || {};
+  const autoTags = normalizeTagsFromInput(show.autoIncludeTags || []);
+  if (!autoTags.length || !currentOrgId) return baseSlides;
+
+  const resolved = [...baseSlides];
+  const seen = new Set(resolved.map(s => s.id).filter(Boolean));
+  const shows = currentOrg?.slideshows || [];
+
+  for (const otherShow of shows) {
+    if (!otherShow?.id || otherShow.id === showId) continue;
+    try {
+      const snap = await getDoc(doc(db, 'slideshows', otherShow.id));
+      if (!snap.exists()) continue;
+      const data = snap.data();
+      const sourceSlides = Array.isArray(data.slides) ? data.slides : [];
+      for (const slide of sourceSlides) {
+        if (!slide || slide.active === false || !slideMatchesAnyTag(slide, autoTags)) continue;
+        const key = slide.id || `${otherShow.id}:${resolved.length}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        resolved.push({ ...slide, _smartIncluded: true, _smartSourceShowId: otherShow.id });
+      }
+    } catch(e) {
+      console.warn('Smart playlist source skipped:', otherShow.id, e.message);
+    }
+  }
+
+  return resolved;
+}
+
 window.closePublishModal = function() {
   document.getElementById('publishModal').classList.remove('open');
 };
@@ -10451,13 +10613,18 @@ window.confirmPublish = async function() {
     const fit        = document.getElementById("fitMode").value;
     const transition = document.getElementById("transition").value;
     const now        = new Date().toISOString();
+    const showMeta   = showMetaFromOrg(currentShowId) || {};
+    const publishedSlides = await resolveSmartPlaylistSlides(slides, currentShowId);
 
     // 1. Publish slideshow content (draft → live)
     await setDoc(doc(db, "slideshows", currentShowId), {
-      slides,
+      slides: publishedSlides,
       defaultDwell: dwell,
       fitMode:      fit,
       transition,
+      tags: normalizeTagsFromInput(showMeta.tags || []),
+      autoIncludeTags: normalizeTagsFromInput(showMeta.autoIncludeTags || []),
+      emergencyPlaylist: showMeta.emergencyPlaylist === true,
       status:      'published',
       publishedAt:  now,
       draftSlides:     deleteField(),
@@ -10484,7 +10651,7 @@ window.confirmPublish = async function() {
     await Promise.all(screenUpdates);
 
     const n = _publishSelectedIds.size;
-    logActivity(`Slideshow "${currentShowId}" published to ${n} screen${n !== 1 ? 's' : ''} (${slides.length} slide${slides.length !== 1 ? 's' : ''})`);
+    logActivity(`Slideshow "${currentShowId}" published to ${n} screen${n !== 1 ? 's' : ''} (${publishedSlides.length} slide${publishedSlides.length !== 1 ? 's' : ''})`);
     toast(`Published to ${n} screen${n !== 1 ? 's' : ''} ✓`);
     setPushVisible(false);
     closePublishModal();
@@ -10561,11 +10728,16 @@ window.approveSlideshowReview = async function(showId) {
 
   const now = new Date().toISOString();
   try {
+    const showMeta = showMetaFromOrg(showId) || data || {};
+    const publishedSlides = await resolveSmartPlaylistSlides(draftSlides, showId);
     await setDoc(showRef, {
-      slides: draftSlides,
+      slides: publishedSlides,
       defaultDwell: data.draftDwell ?? data.defaultDwell ?? 6,
       fitMode: data.draftFitMode ?? data.fitMode ?? 'contain',
       transition: data.draftTransition ?? data.transition ?? 'crossfade',
+      tags: normalizeTagsFromInput(showMeta.tags || []),
+      autoIncludeTags: normalizeTagsFromInput(showMeta.autoIncludeTags || []),
+      emergencyPlaylist: showMeta.emergencyPlaylist === true,
       status: 'published',
       publishedAt: now,
       reviewApprovedAt: now,
@@ -12404,7 +12576,11 @@ function renderGrid() {
         <div class="designed-badge" style="background:#7c3aedcc">Group</div>
         ${count > 0 ? `<div class="group-count-badge">${count} slide${count !== 1 ? 's' : ''}</div>` : ''}
         ${expirationBadgeHtml(s)}
+        ${tagChipHtml(s.tags) ? `<div class="slide-tag-row">${tagChipHtml(s.tags)}</div>` : ''}
         <div class="slide-actions">
+          <button class="icon-btn" title="Edit Tags" onclick="openSlideTagsPrompt(${i})">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M20.59 13.41 11 3.83a2 2 0 0 0-1.41-.58H4a2 2 0 0 0-2 2v5.59a2 2 0 0 0 .59 1.41l9.58 9.58a2 2 0 0 0 2.83 0l5.59-5.59a2 2 0 0 0 0-2.83z"/><circle cx="7.5" cy="7.5" r=".5"/></svg>
+          </button>
           <button class="icon-btn" title="Set Expiration" onclick="openExpirationModal(${i})" style="background:${s.expiresAt ? 'rgba(245,158,11,.85)' : 'rgba(0,0,0,.55)'}">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round">
               <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/>
@@ -12535,6 +12711,7 @@ function renderGrid() {
                 : isInstagram     ? `<div class="designed-badge" style="background:#ec4899cc">Instagram</div>`
                 : isMenuboard     ? `<div class="designed-badge" style="background:#b8860bcc">Menu</div>`
                 : '';
+    const tagRow = tagChipHtml(s.tags) ? `<div class="slide-tag-row">${tagChipHtml(s.tags)}</div>` : '';
     const editBtn    = isDesigned
       ? `<button class="icon-btn toggle" title="Edit in Designer" onclick="editDesignedSlide(${i})">${editSvg}</button>`
       : isYoutube
@@ -12575,7 +12752,11 @@ function renderGrid() {
       </div>
       ${badge}
       ${expirationBadgeHtml(s)}
+      ${tagRow}
       <div class="slide-actions">
+        <button class="icon-btn" title="Edit Tags" onclick="openSlideTagsPrompt(${i})">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M20.59 13.41 11 3.83a2 2 0 0 0-1.41-.58H4a2 2 0 0 0-2 2v5.59a2 2 0 0 0 .59 1.41l9.58 9.58a2 2 0 0 0 2.83 0l5.59-5.59a2 2 0 0 0 0-2.83z"/><circle cx="7.5" cy="7.5" r=".5"/></svg>
+        </button>
         <button class="icon-btn" title="Set Expiration" onclick="openExpirationModal(${i})" style="background:${s.expiresAt ? 'rgba(245,158,11,.85)' : 'rgba(0,0,0,.55)'}">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round">
             <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/>
@@ -12634,6 +12815,19 @@ function renderGrid() {
 // ── Slide actions ─────────────────────────────────────────────────────────
 window.editDesignedSlide = (idx) => {
   openDesigner(slides[idx], idx);
+};
+
+window.openSlideTagsPrompt = async function(idx) {
+  const slide = slides[idx];
+  if (!slide) return;
+  const raw = prompt('Slide tags (comma separated)', (slide.tags || []).join(', '));
+  if (raw === null) return;
+  const tags = normalizeTagsFromInput(raw);
+  slide.tags = tags;
+  await syncOrgTags(tags);
+  renderGrid();
+  await pushToFirestore();
+  toast('Slide tags saved ✓');
 };
 
 // ── Slide Groups ───────────────────────────────────────────────────────────
@@ -12845,6 +13039,28 @@ window.newShowPrompt = async () => {
         slideshows: arrayUnion({ id, name }),
       });
     } catch(e) { console.warn('Could not update org slideshows:', e.message); }
+  }
+};
+
+window.openShowOptions = async function(showId = currentShowId) {
+  if (!showId) return;
+  const show = showMetaFromOrg(showId) || { id: showId, name: currentShowName };
+  const tagRaw = prompt('Slideshow tags (comma separated)', (show.tags || []).join(', '));
+  if (tagRaw === null) return;
+  const autoRaw = prompt('Smart playlist: auto-include slides tagged (comma separated)', (show.autoIncludeTags || []).join(', '));
+  if (autoRaw === null) return;
+  const tags = normalizeTagsFromInput(tagRaw);
+  const autoIncludeTags = normalizeTagsFromInput(autoRaw);
+  const emergencyRaw = prompt('Saved emergency playlist? yes/no', show.emergencyPlaylist ? 'yes' : 'no');
+  if (emergencyRaw === null) return;
+  const emergencyPlaylist = /^y(es)?$/i.test(String(emergencyRaw).trim());
+  try {
+    await saveShowMetadata(showId, { tags, autoIncludeTags, emergencyPlaylist });
+    await syncOrgTags([...tags, ...autoIncludeTags]);
+    if (showId === currentShowId) await pushToFirestore();
+    toast('Slideshow options saved ✓');
+  } catch(e) {
+    toast('Could not save slideshow options: ' + e.message, true);
   }
 };
 
@@ -19652,6 +19868,9 @@ function renderScreens(screens) {
       const lastSeenStr  = fmtLastSeen(screen.lastSeen);
       const showName     = shows.find(s => s.id === screen.slideshowId)?.name || screen.slideshowId || 'main';
       const locationStr  = screen.location ? escHtml(screen.location) : '<span style="color:var(--muted);font-style:italic">No location set</span>';
+      const tagChips     = Array.isArray(screen.tags) && screen.tags.length
+        ? `<div class="screen-tag-chips">${screen.tags.map(t => `<span class="screen-tag-chip">${escHtml(t)}</span>`).join('')}</div>`
+        : '';
 
       return `<div class="screen-card" onclick="openScreenEdit('${screen.id}')">
         <div class="screen-thumb">
@@ -19673,6 +19892,7 @@ function renderScreens(screens) {
             </div>
           </div>
           <div class="screen-card-location">${locationStr}</div>
+          ${tagChips}
           <div class="screen-card-row">
             <div class="screen-card-meta">Last seen: ${lastSeenStr}</div>
             <div class="screen-card-show">${escHtml(showName)}</div>
@@ -19759,6 +19979,7 @@ async function saveMediaRecord(url, name, type, publicId) {
       name:      name || 'Untitled',
       type,
       publicId:  publicId || '',
+      tags:      [],
       uploadedAt: new Date().toISOString(),
     });
   } catch(_) { /* non-critical — media library will just miss this item */ }
@@ -19790,7 +20011,10 @@ function renderMediaGrid() {
   if (_mediaFilter !== 'all') items = items.filter(m => m.type === _mediaFilter);
   if (_mediaSearch) {
     const q = _mediaSearch.toLowerCase();
-    items = items.filter(m => (m.name || '').toLowerCase().includes(q));
+    items = items.filter(m =>
+      (m.name || '').toLowerCase().includes(q) ||
+      (Array.isArray(m.tags) && m.tags.some(t => String(t).toLowerCase().includes(q)))
+    );
   }
 
   if (countEl) countEl.textContent = `${_cachedMedia.length} item${_cachedMedia.length !== 1 ? 's' : ''}`;
@@ -19808,6 +20032,7 @@ function renderMediaGrid() {
     const date    = m.uploadedAt ? new Date(m.uploadedAt).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }) : '';
     const isVideo = m.type === 'video';
     const isAudio = m.type === 'audio';
+    const tagsHtml = tagChipHtml(m.tags);
     const thumb   = isVideo
       ? `<div class="media-thumb-video"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.4"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>`
       : isAudio
@@ -19819,9 +20044,13 @@ function renderMediaGrid() {
       <button class="media-card-delete" onclick="event.stopPropagation();deleteMediaRecord('${m.id}')" title="Remove from library">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
+      <button class="media-card-tagbtn" onclick="event.stopPropagation();openMediaTagsPrompt('${m.id}')" title="Edit tags">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20.59 13.41 11 3.83a2 2 0 0 0-1.41-.58H4a2 2 0 0 0-2 2v5.59a2 2 0 0 0 .59 1.41l9.58 9.58a2 2 0 0 0 2.83 0l5.59-5.59a2 2 0 0 0 0-2.83z"/><circle cx="7.5" cy="7.5" r=".5"/></svg>
+      </button>
       <div class="media-card-body">
         <div class="media-card-name">${escHtml(m.name || 'Untitled')}</div>
         <div class="media-card-meta">${date}</div>
+        ${tagsHtml ? `<div class="media-tag-row">${tagsHtml}</div>` : ''}
       </div>
     </div>`;
   }).join('');
@@ -19861,6 +20090,22 @@ window.deleteMediaRecord = async function(id) {
     toast('Removed from library ✓');
   } catch(e) {
     toast('Could not remove: ' + e.message, true);
+  }
+};
+
+window.openMediaTagsPrompt = async function(id) {
+  if (!currentOrgId) return;
+  const item = _cachedMedia.find(m => m.id === id);
+  if (!item) return;
+  const raw = prompt('Media tags (comma separated)', (item.tags || []).join(', '));
+  if (raw === null) return;
+  const tags = normalizeTagsFromInput(raw);
+  try {
+    await setDoc(doc(db, 'organizations', currentOrgId, 'media', id), { tags }, { merge: true });
+    await syncOrgTags(tags);
+    toast('Media tags saved ✓');
+  } catch(e) {
+    toast('Could not save media tags: ' + e.message, true);
   }
 };
 
@@ -19959,6 +20204,8 @@ window.openBroadcastModal = function() {
   document.getElementById('broadcastDismiss').value = '0';
   document.querySelectorAll('.broadcast-color-btn').forEach(b => b.classList.remove('active'));
   document.querySelector('.broadcast-color-btn[data-color="#dc2626"]').classList.add('active');
+  setBroadcastMode('message');
+  populateBroadcastPlaylistOptions();
   document.getElementById('broadcastModal').style.display = 'flex';
 };
 
@@ -19971,18 +20218,62 @@ window.selectBroadcastColor = function(btn, color) {
   btn.classList.add('active');
 };
 
+window.setBroadcastMode = function(mode) {
+  const isPlaylist = mode === 'playlist';
+  document.getElementById('broadcastTabMessage')?.classList.toggle('active', !isPlaylist);
+  document.getElementById('broadcastTabPlaylist')?.classList.toggle('active', isPlaylist);
+  document.getElementById('broadcastMessagePanel').style.display = isPlaylist ? 'none' : '';
+  document.getElementById('broadcastPlaylistPanel').style.display = isPlaylist ? '' : 'none';
+};
+
+function populateBroadcastPlaylistOptions() {
+  const showSel = document.getElementById('broadcastPlaylistSelect');
+  const tagSel  = document.getElementById('broadcastTargetTag');
+  if (showSel) {
+    const orgShows = currentOrg?.slideshows || getAllShows();
+    const emergencyShows = orgShows.filter(s => s.emergencyPlaylist === true);
+    const shows = emergencyShows.length ? emergencyShows : orgShows;
+    showSel.innerHTML = shows.length
+      ? shows.map(s => `<option value="${escHtml(s.id)}">${escHtml(s.name)}</option>`).join('')
+      : '<option value="">No slideshows available</option>';
+  }
+  if (tagSel) {
+    const tags = getOrgTags();
+    tagSel.innerHTML = '<option value="">All screens</option>' +
+      tags.map(t => `<option value="${escHtml(t)}">Screens tagged ${escHtml(t)}</option>`).join('');
+  }
+}
+
 window.sendBroadcast = async function() {
-  const message = document.getElementById('broadcastMessage').value.trim();
-  if (!message) { toast('Please enter a broadcast message', true); return; }
+  const mode = document.getElementById('broadcastTabPlaylist')?.classList.contains('active') ? 'playlist' : 'message';
   const color      = document.querySelector('.broadcast-color-btn.active')?.dataset.color || '#dc2626';
   const autoDismiss = parseInt(document.getElementById('broadcastDismiss').value, 10) || 0;
+  const payload = {
+    active: true,
+    mode,
+    color,
+    autoDismiss,
+    createdAt: new Date().toISOString(),
+    createdBy: currentUser?.email || '',
+  };
+
+  if (mode === 'playlist') {
+    const slideshowId = document.getElementById('broadcastPlaylistSelect')?.value || '';
+    if (!slideshowId) { toast('Choose an emergency playlist.', true); return; }
+    const showName = getShowName(slideshowId);
+    const targetTag = normalizeTag(document.getElementById('broadcastTargetTag')?.value || '');
+    payload.slideshowId = slideshowId;
+    payload.message = 'Emergency playlist: ' + showName;
+    if (targetTag) payload.targetTags = [targetTag];
+  } else {
+    const message = document.getElementById('broadcastMessage').value.trim();
+    if (!message) { toast('Please enter a broadcast message', true); return; }
+    payload.message = message;
+  }
+
   closeBroadcastModal();
   try {
-    await setDoc(doc(db, 'broadcasts', currentOrgId), {
-      active: true, message, color, autoDismiss,
-      createdAt: new Date().toISOString(),
-      createdBy: currentUser?.email || '',
-    });
+    await setDoc(doc(db, 'broadcasts', currentOrgId), payload);
     toast('Broadcast sent to all screens ✓');
   } catch(e) {
     toast('Broadcast failed: ' + e.message, true);
@@ -20104,6 +20395,15 @@ window.openScreenEdit = function(screenId) {
   document.getElementById('sepTags').value        = (screen.tags || []).join(', ');
   document.getElementById('sepTimezone').value    = screen.timezone || 'local';
 
+  // CAP alerts
+  const cap = screen.cap || {};
+  const capEnabled = !!cap.enabled;
+  document.getElementById('sepCapEnabled').checked = capEnabled;
+  document.getElementById('sepCapBody').style.display = capEnabled ? 'flex' : 'none';
+  document.getElementById('sepCapState').value = cap.state || '';
+  document.getElementById('sepCapFips').value = Array.isArray(cap.countyFips) ? cap.countyFips.join(', ') : '';
+  document.getElementById('sepCapSeverity').value = cap.severityFloor || 'Severe';
+
   // Working Hours
   const wh = screen.workingHours || {};
   const whEnabled = !!wh.enabled;
@@ -20144,7 +20444,14 @@ window.saveScreenEdit = async function() {
   const scheduleId  = document.getElementById('sepSchedule').value;
   const orientation = document.getElementById('sepOrientation').value;
   const tagsRaw     = document.getElementById('sepTags').value;
-  const tags        = tagsRaw.split(',').map(t => t.trim()).filter(Boolean);
+  const tags        = normalizeTagsFromInput(tagsRaw);
+  const capEnabled  = document.getElementById('sepCapEnabled').checked;
+  const cap = {
+    enabled: capEnabled,
+    state: document.getElementById('sepCapState').value.trim().toUpperCase().slice(0, 2),
+    countyFips: document.getElementById('sepCapFips').value.split(',').map(v => v.trim()).filter(Boolean),
+    severityFloor: document.getElementById('sepCapSeverity').value || 'Severe',
+  };
 
   // Working Hours
   const whEnabled = document.getElementById('sepWHEnabled').checked;
@@ -20161,9 +20468,10 @@ window.saveScreenEdit = async function() {
   try {
     await setDoc(doc(db, 'screens', editingScreenId), {
       ...(name        && { name }),
-      location, slideshowId, scheduleId, orientation, tags, workingHours,
+      location, slideshowId, scheduleId, orientation, tags, cap, workingHours,
       timezone: document.getElementById('sepTimezone').value,
     }, { merge: true });
+    await syncOrgTags(tags);
     toast('Screen saved ✓');
     closeScreenEdit();
     logActivity('Screen "' + (name || editingScreenId) + '" updated');
@@ -20469,7 +20777,7 @@ function buildEventBlock(ev, idx, day) {
 
   block.innerHTML = `
     <div class="cal-ev-name">${ev.name}</div>
-    <div class="cal-ev-time">${fmtTime(ev.startHour, ev.startMin)} – ${fmtTime(ev.endHour, ev.endMin)}</div>
+    <div class="cal-ev-time">${fmtTime(ev.startHour, ev.startMin)} – ${fmtTime(ev.endHour, ev.endMin)} · P${Number(ev.priority || 0)}</div>
     <button class="cal-ev-del" title="Delete" onclick="deleteEventFromCal(event,${idx})">✕</button>
     <div class="cal-resize-handle"></div>`;
 
@@ -20544,7 +20852,7 @@ function onDragMove(e) {
     document.querySelectorAll(`.cal-event[data-idx="${dragState.idx}"]`).forEach(b => {
       b.style.top = (newStart / 60 * CAL_ROW_H) + 'px';
       const tEl = b.querySelector('.cal-ev-time');
-      if (tEl) tEl.textContent = fmtTime(Math.floor(newStart/60), newStart%60) + ' – ' + fmtTime(Math.floor((newStart+dur)/60), (newStart+dur)%60);
+      if (tEl) tEl.textContent = fmtTime(Math.floor(newStart/60), newStart%60) + ' – ' + fmtTime(Math.floor((newStart+dur)/60), (newStart+dur)%60) + ' · P' + Number(ev.priority || 0);
     });
 
   } else { // resize
@@ -20556,7 +20864,7 @@ function onDragMove(e) {
       const h = Math.max(18, (newEnd - dragState.origStart) / 60 * CAL_ROW_H);
       b.style.height = h + 'px';
       const tEl = b.querySelector('.cal-ev-time');
-      if (tEl) tEl.textContent = fmtTime(ev.startHour, ev.startMin) + ' – ' + fmtTime(Math.floor(newEnd/60), newEnd%60);
+      if (tEl) tEl.textContent = fmtTime(ev.startHour, ev.startMin) + ' – ' + fmtTime(Math.floor(newEnd/60), newEnd%60) + ' · P' + Number(ev.priority || 0);
     });
   }
 }
@@ -20600,7 +20908,7 @@ function renderEventPanel() {
           <div class="sched-ev-dot" style="background:${ev.color}"></div>
           <div class="sched-ev-text">
             <div class="sched-ev-name">${ev.name}</div>
-            <div class="sched-ev-sub">${fmtTime(ev.startHour,ev.startMin)} – ${fmtTime(ev.endHour,ev.endMin)} · ${repeatLabel(ev)}</div>
+            <div class="sched-ev-sub">${fmtTime(ev.startHour,ev.startMin)} – ${fmtTime(ev.endHour,ev.endMin)} · ${repeatLabel(ev)} · Priority ${Number(ev.priority || 0)}</div>
           </div>
           <button class="sched-ev-del" onclick="deleteSchedEvent(event,${i})">✕</button>
         </div>`).join('')
@@ -20634,6 +20942,7 @@ window.openAddEventModal = function(evIdx = null, prefDay = 0, prefSH = 9, prefS
 
   document.getElementById('aemTitle').textContent = ev ? 'Edit Event' : 'New Event';
   document.getElementById('aemName').value  = ev?.name  || '';
+  document.getElementById('aemPriority').value = Number(ev?.priority || 0);
 
   // Populate slideshow dropdown
   const sel   = document.getElementById('aemSlideshow');
@@ -20687,6 +20996,7 @@ window.saveAddEvent = function() {
   if (!name) { toast('Please enter an event name.', true); return; }
 
   const slideshowId = document.getElementById('aemSlideshow').value;
+  const priority    = Math.max(0, parseInt(document.getElementById('aemPriority').value, 10) || 0);
   const [sh, sm]    = document.getElementById('aemStart').value.split(':').map(Number);
   const [eh, em]    = document.getElementById('aemEnd').value.split(':').map(Number);
 
@@ -20706,7 +21016,7 @@ window.saveAddEvent = function() {
 
   const ev = {
     id:          editingEvIdx !== null ? editingSchedule.events[editingEvIdx].id : 'ev-' + crypto.randomUUID().slice(0,8),
-    name, slideshowId, startHour: sh, startMin: sm, endHour: eh, endMin: em, repeat, days, color,
+    name, slideshowId, priority, startHour: sh, startMin: sm, endHour: eh, endMin: em, repeat, days, color,
   };
 
   if (editingEvIdx !== null) editingSchedule.events[editingEvIdx] = ev;
@@ -20743,6 +21053,7 @@ window.showSettingsSub = function(subId) {
   document.querySelectorAll('.settings-sub').forEach(el => el.classList.remove('active'));
   const sub = document.getElementById('settingsSub-' + subId);
   if (sub) sub.classList.add('active');
+  if (subId === 'screentags') renderScreenTagsList();
 };
 
 function updateSettingsHubStatus() {
@@ -20779,11 +21090,164 @@ function updateSettingsHubStatus() {
   const approvalToggle = document.getElementById('approvalRequiredToggle');
   if (approvalToggle) approvalToggle.checked = approvalOn;
   syncSettingsEntitlements();
+  renderScreenTagsList();
 }
 
-// ── Screen Tags (placeholder) ─────────────────────────────────────────────
-window.openAddScreenTagModal = function() {
-  toast('Screen tags coming soon');
+// ── Tag Manager ───────────────────────────────────────────────────────────
+function normalizeTag(tag) {
+  return String(tag || '').trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9_-]/g, '').slice(0, 32);
+}
+
+function normalizeTagsFromInput(value) {
+  if (Array.isArray(value)) return Array.from(new Set(value.map(normalizeTag).filter(Boolean)));
+  return Array.from(new Set(String(value || '').split(',').map(normalizeTag).filter(Boolean)));
+}
+
+function getOrgTags() {
+  return Array.isArray(currentOrg?.tags) ? currentOrg.tags.map(normalizeTag).filter(Boolean) : [];
+}
+
+async function persistOrgTags(tags) {
+  if (!currentOrgId) return;
+  const clean = Array.from(new Set(tags.map(normalizeTag).filter(Boolean))).sort();
+  await setDoc(doc(db, 'organizations', currentOrgId), { tags: clean }, { merge: true });
+  currentOrg = { ...(currentOrg || {}), tags: clean };
+  renderScreenTagsList();
+}
+
+async function syncOrgTags(tags) {
+  const next = Array.from(new Set([...getOrgTags(), ...tags.map(normalizeTag).filter(Boolean)]));
+  if (next.length !== getOrgTags().length) await persistOrgTags(next);
+}
+
+async function getOrgScreensForTagMutation() {
+  if (currentOrgId) {
+    try {
+      const snap = await getDocs(query(collection(db, 'screens'), where('orgId', '==', currentOrgId)));
+      return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch(e) {
+      console.warn('Could not query screens for tag mutation:', e.message);
+    }
+  }
+  return _cachedScreens || [];
+}
+
+function mutateTagList(tags, oldTag, newTag = null) {
+  const next = normalizeTagsFromInput(tags || [])
+    .map(t => t === oldTag ? newTag : t)
+    .filter(Boolean);
+  return Array.from(new Set(next));
+}
+
+function mutateSlideTagLists(slideList, oldTag, newTag = null) {
+  if (!Array.isArray(slideList)) return slideList;
+  return slideList.map(slide => {
+    if (!slide || typeof slide !== 'object') return slide;
+    const next = { ...slide, tags: mutateTagList(slide.tags || [], oldTag, newTag) };
+    if (Array.isArray(next.slides)) next.slides = mutateSlideTagLists(next.slides, oldTag, newTag);
+    return next;
+  });
+}
+
+async function applyTagMutationEverywhere(oldTag, newTag = null) {
+  if (!currentOrgId || !oldTag) return;
+
+  const screens = await getOrgScreensForTagMutation();
+  await Promise.all(screens
+    .filter(s => Array.isArray(s.tags) && s.tags.includes(oldTag))
+    .map(screen => setDoc(doc(db, 'screens', screen.id), { tags: mutateTagList(screen.tags, oldTag, newTag) }, { merge: true }))
+  );
+
+  const shows = currentOrg?.slideshows || [];
+  const nextShows = shows.map(show => ({
+    ...show,
+    tags: mutateTagList(show.tags || [], oldTag, newTag),
+    autoIncludeTags: mutateTagList(show.autoIncludeTags || [], oldTag, newTag),
+  }));
+  await updateDoc(doc(db, 'organizations', currentOrgId), { slideshows: nextShows });
+  currentOrg.slideshows = nextShows;
+
+  await Promise.all(nextShows.map(async show => {
+    try {
+      const showRef = doc(db, 'slideshows', show.id);
+      const snap = await getDoc(showRef);
+      if (!snap.exists()) return;
+      const data = snap.data();
+      await setDoc(showRef, {
+        tags: mutateTagList(data.tags || show.tags || [], oldTag, newTag),
+        autoIncludeTags: mutateTagList(data.autoIncludeTags || show.autoIncludeTags || [], oldTag, newTag),
+        ...(Array.isArray(data.slides) && { slides: mutateSlideTagLists(data.slides, oldTag, newTag) }),
+        ...(Array.isArray(data.draftSlides) && { draftSlides: mutateSlideTagLists(data.draftSlides, oldTag, newTag) }),
+      }, { merge: true });
+    } catch(e) {
+      console.warn('Could not update slideshow tags:', show.id, e.message);
+    }
+  }));
+
+  try {
+    const mediaSnap = await getDocs(collection(db, 'organizations', currentOrgId, 'media'));
+    await Promise.all(mediaSnap.docs
+      .filter(d => Array.isArray(d.data().tags) && d.data().tags.includes(oldTag))
+      .map(d => setDoc(doc(db, 'organizations', currentOrgId, 'media', d.id), { tags: mutateTagList(d.data().tags, oldTag, newTag) }, { merge: true }))
+    );
+  } catch(e) {
+    console.warn('Could not update media tags:', e.message);
+  }
+}
+
+function renderScreenTagsList() {
+  const el = document.getElementById('screenTagsList');
+  if (!el) return;
+  const tags = getOrgTags();
+  if (!tags.length) {
+    el.innerHTML = '<p style="font-size:13px;color:var(--muted)">No tags yet. Add a tag to get started.</p>';
+    return;
+  }
+  el.innerHTML = `<div class="tag-manager-list">${tags.map(tag => `
+    <div class="tag-manager-row">
+      <span class="screen-tag-chip">${escHtml(tag)}</span>
+      <div class="tag-manager-actions">
+        <button class="btn btn-secondary" style="font-size:12px;padding:5px 10px" onclick="renameOrgTag('${encodeURIComponent(tag)}')">Rename</button>
+        <button class="btn btn-secondary" style="font-size:12px;padding:5px 10px;color:var(--danger)" onclick="deleteOrgTag('${encodeURIComponent(tag)}')">Delete</button>
+      </div>
+    </div>`).join('')}</div>`;
+}
+
+window.openAddScreenTagModal = async function() {
+  const tag = normalizeTag(prompt('New tag name'));
+  if (!tag) return;
+  try {
+    await persistOrgTags([...getOrgTags(), tag]);
+    toast('Tag added ✓');
+  } catch(e) {
+    toast('Could not add tag: ' + e.message, true);
+  }
+};
+
+window.renameOrgTag = async function(encodedTag) {
+  const oldTag = normalizeTag(decodeURIComponent(encodedTag || ''));
+  if (!oldTag) return;
+  const newTag = normalizeTag(prompt('Rename tag', oldTag));
+  if (!newTag || newTag === oldTag) return;
+  try {
+    await persistOrgTags(getOrgTags().map(t => t === oldTag ? newTag : t));
+    await applyTagMutationEverywhere(oldTag, newTag);
+    toast('Tag renamed ✓');
+  } catch(e) {
+    toast('Could not rename tag: ' + e.message, true);
+  }
+};
+
+window.deleteOrgTag = async function(encodedTag) {
+  const tag = normalizeTag(decodeURIComponent(encodedTag || ''));
+  if (!tag || !confirm(`Delete tag "${tag}" from the organization and screens?`)) return;
+  try {
+    await persistOrgTags(getOrgTags().filter(t => t !== tag));
+    await applyTagMutationEverywhere(tag, null);
+    toast('Tag deleted ✓');
+  } catch(e) {
+    toast('Could not delete tag: ' + e.message, true);
+  }
 };
 
 // ── API Token generation (placeholder) ────────────────────────────────────
@@ -21068,7 +21532,7 @@ window.saveClockSlide = async function() {
   };
 
   if (clockEditIdx !== null) {
-    slides[clockEditIdx] = slide;
+    slides[clockEditIdx] = { ...slides[clockEditIdx], ...slide };
   } else {
     slides.push(slide);
   }
@@ -21185,7 +21649,7 @@ window.saveQrSlide = async function() {
   closeQrModal();
 
   if (targetShowId === currentShowId) {
-    if (qrEditIdx !== null) slides[qrEditIdx] = slide;
+    if (qrEditIdx !== null) slides[qrEditIdx] = { ...slides[qrEditIdx], ...slide };
     else                    slides.push(slide);
     await pushToFirestore();
     renderGrid();
@@ -21404,7 +21868,7 @@ window.saveWeatherSlide = async function() {
 
   try {
     if (targetShowId === currentShowId) {
-      if (editIdx !== null) slides[editIdx] = slide;
+      if (editIdx !== null) slides[editIdx] = { ...slides[editIdx], ...slide };
       else                  slides.push(slide);
       await pushToFirestore();
       renderGrid();
@@ -21574,7 +22038,7 @@ window.saveCountdownSlide = async function() {
 
   try {
     if (targetShowId === currentShowId) {
-      if (editIdx !== null) slides[editIdx] = slide;
+      if (editIdx !== null) slides[editIdx] = { ...slides[editIdx], ...slide };
       else                  slides.push(slide);
       await pushToFirestore();
       renderGrid();
@@ -21687,7 +22151,7 @@ window.saveGoogleSheetsSlide = async function() {
 
   try {
     if (targetShowId === currentShowId) {
-      if (editIdx !== null) slides[editIdx] = slide;
+      if (editIdx !== null) slides[editIdx] = { ...slides[editIdx], ...slide };
       else                  slides.push(slide);
       await pushToFirestore();
       renderGrid();
@@ -21775,7 +22239,7 @@ window.saveGoogleReviewsSlide = async function() {
 
   try {
     if (targetShowId === currentShowId) {
-      if (editIdx !== null) slides[editIdx] = slide;
+      if (editIdx !== null) slides[editIdx] = { ...slides[editIdx], ...slide };
       else                  slides.push(slide);
       await pushToFirestore();
       renderGrid();
@@ -21863,7 +22327,7 @@ window.saveInstagramSlide = async function() {
 
   try {
     if (targetShowId === currentShowId) {
-      if (editIdx !== null) slides[editIdx] = slide;
+      if (editIdx !== null) slides[editIdx] = { ...slides[editIdx], ...slide };
       else                  slides.push(slide);
       await pushToFirestore();
       renderGrid();
@@ -23103,7 +23567,7 @@ window.saveMultiZoneSlide = async function() {
 
   try {
     if (targetShowId === currentShowId) {
-      if (editIdx !== null) slides[editIdx] = slide;
+      if (editIdx !== null) slides[editIdx] = { ...slides[editIdx], ...slide };
       else                  slides.push(slide);
       await pushToFirestore();
       renderGrid();

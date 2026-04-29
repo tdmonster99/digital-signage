@@ -39,7 +39,7 @@ All of the following are shipped and working in production:
 1. **No framework, no bundler.** Everything runs as `<script type="module">` directly in the browser. No React, Vue, Vite, Webpack, npm install, or build steps for frontend code.
 2. **Single-file frontend.** All admin UI lives in `admin.html` (~16,000+ lines). Do not split it out. Add new CSS inside the `<style>` block, new HTML before `</body>`, new JS inside the `<script type="module">`.
 3. **`api/` is Node.js CommonJS only.** Each file exports `module.exports = async function handler(req, res)`. No ES module syntax in `api/`.
-4. **Vercel Hobby limit: 12 serverless functions.** Count the files in `api/` before adding a new one. Merge into an existing file if at the limit.
+4. **Vercel plan: Pro.** The old 12-function Hobby cap no longer applies. Still count `api/` before adding functions and prefer merging small related routes when it avoids needless serverless sprawl.
 5. **Firebase SDK via CDN.** Imported from `https://www.gstatic.com/firebasejs/10.12.0/`. Do not npm-install Firebase.
 6. **Deployment is automatic.** `git push origin main` triggers Vercel. No build step needed.
 7. **New slide types must be added to the `applyPlaylist` filter in `display.html`** or they will be silently dropped from playback.

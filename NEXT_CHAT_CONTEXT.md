@@ -117,7 +117,7 @@ User wants to actually test the app via browser automation. Path requires:
 - Single-file `admin.html` (~16,000 lines) — DO NOT split
 - No framework, no bundler — ES modules via CDN
 - Firebase SDK 10.12.0 from `gstatic.com`
-- Vercel Hobby limit: 12 serverless functions in `api/`
+- Vercel plan: Pro; old 12-function Hobby cap no longer applies, but count `api/` before adding functions
 - After any session that changes files: prepend DEVLOG entry
 - Deploy: `git push origin main` only; never `vercel deploy`
 

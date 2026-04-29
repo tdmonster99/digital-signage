@@ -4,6 +4,91 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-04-29 — Codex — CAP polling cron split
+
+Continued Phase 5.3 by separating emergency CAP polling from the screen status monitor.
+
+- **`api/cap-poll.js`**: added a dedicated CommonJS Vercel function for NWS CAP polling. It requires `Authorization: Bearer <CRON_SECRET>`, uses the shared Firebase Admin helper, fetches CAP-enabled screens, polls NWS active alerts by state, filters by county FIPS and severity floor, writes `capAlerts/{orgId}`, and preserves existing alerts for screens whose state fetch failed during a partial NWS outage.
+- **Firestore lock**: added a short lease at `cronLocks/cap-poll` so duplicate or overlapping Vercel Cron invocations skip instead of running the CAP poll twice.
+- **`api/screen-monitor.js`**: removed the CAP polling call and helper functions so the monitor is focused on offline/online notifications and plan screen-limit enforcement.
+- **`vercel.json`**: added a Vercel Cron entry for `/api/cap-poll` every minute and a targeted `maxDuration: 60` function setting for `api/cap-poll.js`.
+- **`ROADMAP.md`**: updated Phase 5.2 and 5.3 to show the CAP split as code-complete locally, pending production deploy and cron verification.
+- **Verification**: `node --check api/screen-monitor.js`, `node --check api/cap-poll.js`, and JSON parsing for `vercel.json` passed locally. Mocked `?secret=`-only requests returned 401 for both cron endpoints. Production deployment and cron log verification were not run in this session.
+
+Next Phase 5.3 slice after deploy verification: add the analytics daily rollup cron.
+
+---
+
+## 2026-04-29 — Codex — Vercel Cron for screen monitor
+
+Started Phase 5.3 Vercel Pro Infrastructure Upgrade with the screen-monitor cron migration.
+
+- **`vercel.json`**: configured Vercel Cron to call `/api/screen-monitor` every 5 minutes via `*/5 * * * *`.
+- **`ROADMAP.md`**: marked Phase 5.3 as started, noted that production cron verification and `?secret=` fallback removal remain, and clarified that Vercel Cron schedules only activate on production deployments.
+- **Production deploy**: deployed to `https://digital-signage-ck62byq7r-johns-projects-27f41c6f.vercel.app` and aliased to `https://app.zigns.io` (`dpl_8jQc9sEzYQbCdWzGXYi3dACqDQRP`).
+- **Verification**: `app.zigns.io` returned 200, unauthenticated `/api/screen-monitor` returned 401 as expected, and Vercel runtime logs showed a Vercel-triggered `/api/screen-monitor` 200 at the 09:50 CT cron boundary.
+- **`api/screen-monitor.js`**: removed the legacy `?secret=` query-param fallback after cron-job.org was disabled. The endpoint now requires `Authorization: Bearer <CRON_SECRET>`.
+- **Fallback-removal deploy**: deployed `dpl_9j17HhzRRqzrEH34La17FXGh3Y4w` to `https://digital-signage-aqjv0gkdg-johns-projects-27f41c6f.vercel.app` and aliased it to `https://app.zigns.io`.
+- **Final verification**: `https://app.zigns.io/api/screen-monitor?secret=...` returned 401, and the next Vercel Cron invocation returned 200 at 12:10 CT.
+
+Screen-monitor cron migration is complete. Next Phase 5.3 slice is splitting CAP polling into `api/cap-poll.js`.
+
+---
+
+## 2026-04-28 — Codex — Roadmap Vercel Pro project
+
+Docs only. Added a named high-priority Phase 5 project for the Vercel Pro infrastructure upgrade.
+
+- **`ROADMAP.md`**: added **5.3 Vercel Pro Infrastructure Upgrade** covering Vercel Cron migration, CAP split to `api/cap-poll.js`, analytics daily rollup, targeted function duration config, and deferring low-value endpoint splitting.
+- Re-prioritized the existing `CRON_SECRET` cleanup and analytics rollup notes so they point back to the new Phase 5.3 project.
+- Renumbered Native Players to Phase 5.4 so Pro infrastructure can be worked before lower-immediacy platform packaging.
+
+No runtime behavior changed.
+
+---
+
+## 2026-04-28 — Codex — Vercel Pro documentation update
+
+Docs and source comments now reflect the active Vercel Pro plan instead of the old Hobby constraints.
+
+- **`AGENTS.md`**: replaced the 12-function Hobby warning with Pro-plan guidance and a softer reminder to count `api/` functions before adding new ones.
+- **`CLAUDE.md`**: added Pro-plan API guidance and refreshed the API function table to match the current files.
+- **`ROADMAP.md` / `NEXT_CHAT_CONTEXT.md`**: updated Phase 5 CAP notes so `screen-monitor.js` is described as a shared-cadence choice, not a workaround for the old Hobby cap.
+- **`docs/superpowers/plans/2026-04-25-screen-monitor-optimization.md`**: refreshed the sample cron comment for Vercel Pro.
+- **`api/screen-monitor.js`**: updated comments to allow external cron or Vercel Pro cron and noted CAP can be split later if needed.
+- **`site/AGENTS.md`**: updated marketing-site serverless guidance for Vercel Pro.
+
+No runtime behavior changed.
+
+---
+
+## 2026-04-28 — Codex — Phase 5.1 foundation
+
+First Phase 5.1 implementation slice for tags, priority overrides, and saved emergency playlists.
+
+- **`admin.html`**:
+  - Replaced the Screen Tags placeholder with a real org tag manager backed by `organizations/{orgId}.tags`; supports add, rename, delete, and cleanup across screen docs.
+  - Screen cards now show tag chips. Screen edit normalizes comma-separated tags and auto-adds new ones to the org tag registry.
+  - Added Slideshow Options for `tags`, `autoIncludeTags`, and `emergencyPlaylist`; slideshow list now shows tag, smart, and emergency chips.
+  - Slide cards and media cards now have tag editors and visible tag chips. Org tag rename/delete propagates through screens, slideshow metadata, slideshow slide/draft arrays, and media records.
+  - Publish and approval now resolve smart playlists by appending active published slides from other org slideshows when their slide tags match the current slideshow's `autoIncludeTags`.
+  - Emergency Broadcast modal now has Quick Message and Saved Playlist tabs. Saved Playlist writes `broadcasts/{orgId}` with `mode: 'playlist'`, selected `slideshowId`, optional `targetTags`, and existing `autoDismiss`.
+  - Schedule event modal now includes `priority`; calendar/event list surfaces the priority value.
+- **`display.html`**:
+  - Broadcast listener now supports playlist overrides. Matching screens temporarily switch to the emergency slideshow and resume the assigned schedule/slideshow when the broadcast clears or locally auto-dismisses.
+  - Broadcast target filtering supports `targetScreenIds` and `targetTags`.
+  - Added CAP alert overlay (`#stageCapAlert`) above broadcasts. Displays listen to `capAlerts/{orgId}`, filter by `targetScreenIds` and expiry, render NWS severity colors/headline/instructions, and queue `cap_alert_rendered` analytics.
+  - Schedule resolution now considers all overlapping active events and picks highest `priority`, then latest start time.
+- **`api/screen-monitor.js`**:
+  - Added NWS CAP polling inside the existing screen monitor job, reusing the same cadence and service-account setup.
+  - CAP polling reads screens with `cap.enabled`, fetches NWS active alerts by state, filters by county FIPS + severity floor, writes `capAlerts/{orgId}`, and clears org alert docs when no active matches remain.
+- **`ROADMAP.md`**: Phase 5.1 status updated to mostly shipped, with remaining governance/polish called out.
+- **`KITCAST_GAP_ANALYSIS.md`**: Updated Tags/Priority Overrides to shipped, Smart Playlists/Emergency Playlist and CAP to partial/foundation shipped, and revised the recommended-priority note.
+
+No new Vercel functions or env vars.
+
+---
+
 ## 2026-04-27 — Claude Code (session 46) — Phase 5 roadmap scoped
 
 Docs only. No code changes. After reviewing `KITCAST_GAP_ANALYSIS.md`, the user picked priorities #1, #2, #3 from the "Recommended priority" section as the Phase 5 scope.

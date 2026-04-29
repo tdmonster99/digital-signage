@@ -44,7 +44,7 @@ Replace the entire file:
 
 ```js
 // Screen status monitor — designed to be hit every ~5 min by an external cron
-// (e.g. cron-job.org) since Vercel Hobby plan only allows daily crons.
+// (e.g. cron-job.org) or a Vercel Pro cron.
 // Detects screens that have gone offline (lastSeen > 10 min ago) or come back online,
 // then emails the org's members who have notifications enabled via Resend.
 // Also enforces per-org screen limits on every run, suspending overflow screens

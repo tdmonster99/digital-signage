@@ -1,5 +1,5 @@
 // Screen status monitor — designed to be hit every ~5 min by an external cron
-// (e.g. cron-job.org) since Vercel Hobby plan only allows daily crons.
+// (e.g. cron-job.org) or a Vercel Pro cron.
 // Detects screens that have gone offline (lastSeen > 10 min ago) or come back online,
 // then emails the org's members who have notifications enabled via Resend.
 // Also enforces per-org screen limits on every run, suspending overflow screens
@@ -29,8 +29,7 @@ module.exports = async function handler(req, res) {
   const cronSecret = process.env.CRON_SECRET;
   if (!cronSecret) return res.status(500).json({ error: 'CRON_SECRET not configured' });
   const headerOk = req.headers.authorization === `Bearer ${cronSecret}`;
-  const queryOk  = (req.query && req.query.secret) === cronSecret;
-  if (!headerOk && !queryOk) {
+  if (!headerOk) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 

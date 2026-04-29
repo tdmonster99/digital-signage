@@ -177,9 +177,9 @@ Gap analysis against Yodeck, ScreenCloud, Rise Vision, OptiSigns, Screenly, and 
 
 ---
 
-## Phase 5 — Kitcast-Driven Differentiators (Next Focus)
+## Phase 5 — Kitcast-Driven Differentiators + Pro Infrastructure (Next Focus)
 
-Sourced from `KITCAST_GAP_ANALYSIS.md` (2026-04-27). The three priority clusters below are the agreed Phase 5 scope. Items 4–6 from the gap analysis (SSO/SAML, MDM/Zero-Touch/Kiosk, Time Machine / multi-workspace / data residency / white-label) are deferred to a future Enterprise tier.
+Sourced from `KITCAST_GAP_ANALYSIS.md` (2026-04-27), plus the 2026-04-28 Vercel Pro upgrade. The priority order is product-critical differentiators first, then operational leverage now unlocked by Pro. Items 4–6 from the gap analysis (SSO/SAML, MDM/Zero-Touch/Kiosk, Time Machine / multi-workspace / data residency / white-label) are deferred to a future Enterprise tier.
 
 ---
 
@@ -187,14 +187,24 @@ Sourced from `KITCAST_GAP_ANALYSIS.md` (2026-04-27). The three priority clusters
 
 **Why:** Single biggest enterprise differentiator missing today. A natural cluster — tagging is the foundation that unlocks both smart playlists and pre-built emergency content. Kitcast Pro has all three; Zigns has none. Required to win schools, healthcare, multi-location retail.
 
-**Status:** Not started. Existing Broadcast feature (real-time text overlay) covers part of the emergency use case but is not a designed-slide playlist.
+**Status:** Mostly shipped 2026-04-28. Screen/org/slideshow/slide/media tag management, smart playlist publish resolution, schedule event priority, saved emergency playlist marking, and saved-playlist emergency override are now implemented. Remaining: fuller emergency playlist governance and any advanced targeting beyond all/tag/screen IDs.
+
+**What shipped 2026-04-28:**
+- Settings → Screen Tags is now a real org tag manager backed by `organizations/{orgId}.tags`, with create/rename/delete and cleanup across screen docs.
+- Screen cards render tag chips; screen edit normalizes comma-separated tags and auto-adds them to the org tag registry.
+- Schedule events have `priority: number`; `display.html` resolves overlapping active events by highest priority, then latest start time.
+- Emergency Broadcast modal has Quick Message / Saved Playlist tabs. Saved Playlist writes `broadcasts/{orgId}` with `mode: 'playlist'`, `slideshowId`, optional `targetTags`, and existing `autoDismiss`.
+- `display.html` honors playlist broadcasts by temporarily switching to the emergency slideshow for matching screens, then resuming the assigned schedule/slideshow when cleared or locally auto-dismissed.
+- Slideshow Options manages slideshow tags, smart auto-include tags, and `emergencyPlaylist: true`.
+- Slide and media cards now expose tag editors. Org tag rename/delete propagates through screens, slideshow metadata, slides/drafts, and media records.
+- Smart playlists materialize at publish/approval time by appending matching published slides from other org slideshows, so `display.html` stays unchanged.
 
 **What to build:**
 
-- **Tagging system** — first-class `tags: string[]` on screens, slideshows, slides, and media. Settings hub already has a `screentags` placeholder; promote it to a real Tag Manager (create/rename/delete tags org-wide). Tags become the join key for everything below.
-- **Smart Playlists** — a slideshow option "Auto-include slides tagged X". Resolved at publish time so `display.html` doesn't need to change.
-- **Priority Overrides** — schedules gain a `priority: number` field. When two schedules overlap on a screen, higher priority wins. `display.html` schedule resolver needs an ordered pass instead of first-match.
-- **Pre-built Emergency Playlist** — a special slideshow type (`emergencyPlaylist: true`) that admins design ahead of time (designed slides, logos, instructions). New "Trigger Emergency" button on Screens page activates it across selected screens or by tag (e.g. "all healthcare-floor screens"). Reuses existing Broadcast overlay z-index 200 path; replaces the current text-only Broadcast modal with a "Quick message / Use saved playlist" tabbed picker.
+- **Tagging system** — first-class `tags: string[]` on screens, slideshows, slides, and media. Settings hub already has a `screentags` placeholder; promote it to a real Tag Manager (create/rename/delete tags org-wide). Tags become the join key for everything below. **Shipped across screens, slideshows, slides, and media.**
+- **Smart Playlists** — a slideshow option "Auto-include slides tagged X". Resolved at publish time so `display.html` doesn't need to change. **Shipped for published slides in other org slideshows.**
+- **Priority Overrides** — schedules gain a `priority: number` field. When two schedules overlap on a screen, higher priority wins. `display.html` schedule resolver needs an ordered pass instead of first-match. **Shipped for events within a screen's assigned schedule.**
+- **Pre-built Emergency Playlist** — a special slideshow type (`emergencyPlaylist: true`) that admins design ahead of time (designed slides, logos, instructions). New "Trigger Emergency" button on Screens page activates it across selected screens or by tag (e.g. "all healthcare-floor screens"). Reuses existing Broadcast overlay z-index 200 path; replaces the current text-only Broadcast modal with a "Quick message / Use saved playlist" tabbed picker. **Shipped using tagged slideshows marked `emergencyPlaylist: true`; remaining work is governance/polish.**
 
 **Files:** `admin.html`, `display.html` (schedule resolver + emergency overlay), Firestore schema additions on `screens/{id}`, `slideshows/{id}`, `organizations/{id}.tags`.
 
@@ -204,24 +214,46 @@ Sourced from `KITCAST_GAP_ANALYSIS.md` (2026-04-27). The three priority clusters
 
 **Why:** Procurement checkbox for schools, healthcare, government, manufacturing. Several US states require automated severe-weather and AMBER alert display in public spaces. Kitcast lists CAP support; Zigns has manual Broadcast only. Audio playback (the other half of priority #2 in the gap analysis) shipped 2026-04-27.
 
-**Status:** Not started.
+**Status:** Partial foundation shipped 2026-04-28. Per-screen CAP config, `capAlerts/{orgId}` mirroring, and `display.html` alert overlay are implemented. CAP polling has been split from `api/screen-monitor.js` into dedicated `api/cap-poll.js` code for Vercel Cron, pending production cron verification. Remaining: dedicated audit/reporting UX, bilingual copy controls, richer alert testing, and possible IPAWS/FEMA path for Enterprise later.
 
 **What to build:**
 
 - **NWS first** (free, no auth, well-documented at `api.weather.gov/alerts`). IPAWS deferred — requires FEMA COG authorization, treat as Enterprise-only later.
-- **`api/cap-poll.js`** Vercel cron, every 60s. Hits the NWS public CAP feed with the required `User-Agent` header. Filters active alerts by state + county FIPS codes + minimum severity (Minor / Moderate / Severe / Extreme).
-- **Per-screen config** — Screens settings gain CAP fields: state, county FIPS code(s), severity floor, on/off toggle. Pull defaults from screen timezone / IP geolocation when first paired.
-- **`capAlerts/{orgId}` Firestore doc** mirrors the existing `broadcasts/{orgId}` shape. `display.html` listens via `onSnapshot` and renders an alert overlay above slides using a variant of the Broadcast overlay (z-index 200), styled with NWS standard severity colors and bilingual headline + area + instructions + expiry.
-- **Auto-clear** when the alert's `<expires>` timestamp passes or a cancel message arrives.
+- **CAP polling** — dedicated `api/cap-poll.js` Vercel Cron endpoint runs every minute, uses `Authorization: Bearer <CRON_SECRET>`, reuses the shared Firebase Admin helper, and holds a short Firestore lease at `cronLocks/cap-poll` so duplicate cron invocations do not overlap. Hits the NWS public CAP feed with the required `User-Agent` header. Filters active alerts by state + county FIPS codes + minimum severity (Minor / Moderate / Severe / Extreme).
+- **Per-screen config** — Screens settings gain CAP fields: state, county FIPS code(s), severity floor, on/off toggle. Pull defaults from screen timezone / IP geolocation when first paired. **Manual config shipped; auto-defaults remain.**
+- **`capAlerts/{orgId}` Firestore doc** mirrors the existing `broadcasts/{orgId}` shape. `display.html` listens via `onSnapshot` and renders an alert overlay above slides using a variant of the Broadcast overlay (z-index 201), styled with NWS standard severity colors and headline + area + instructions + expiry. **Shipped.**
+- **Auto-clear** when the alert's `<expires>` timestamp passes or no matching active alerts remain. **Shipped through the CAP poll refresh path and display-side expiry filtering.**
 - **Audit trail** — log every alert rendered to a screen for compliance reporting (some procurement RFPs ask for this).
 
 **Files:** `api/cap-poll.js`, `display.html`, `admin.html` (per-screen CAP config UI), Firestore `capAlerts/{orgId}` and `screens/{id}.cap` config.
 
-**Vercel function count check:** currently below the 12-function Hobby limit; one new function is fine. Verify before merging.
+**Vercel function count check:** project is on Vercel Pro; the old 12-function Hobby cap no longer applies. CAP polling now has its own cron endpoint so alert latency can be tuned separately from screen status monitoring.
 
 ---
 
-### 5.3 Native Players for Tizen / webOS / BrightSign
+### 5.3 Vercel Pro Infrastructure Upgrade
+
+**Why:** The project is now on Vercel Pro, so the old Hobby workarounds can be unwound where they reduce risk or improve product behavior. This has higher near-term value than Enterprise packaging because it improves reliability, alert latency, and operational simplicity for every customer.
+
+**Priority:** High. Do before broader Enterprise-only features. It directly supports CAP/emergency reliability and proof-of-play scale.
+
+**Status:** In progress 2026-04-29. `/api/screen-monitor` is configured in `vercel.json` to run every 5 minutes on Vercel Cron and production logs confirmed Vercel-triggered runs. cron-job.org was disabled, and `screen-monitor.js` now requires `Authorization: Bearer <CRON_SECRET>` only. Fallback-removal deploy verified: `?secret=` requests return 401 and Vercel Cron still returns 200. CAP split code is complete locally with `/api/cap-poll` scheduled every minute, a targeted 60s function duration, and a Firestore overlap guard; production deploy and cron verification remain.
+
+**What to build:**
+
+- **Move screen monitoring to Vercel Cron** — add `crons` entry for `/api/screen-monitor` in `vercel.json`, likely `*/5 * * * *`. Keep `CRON_SECRET`; Vercel sends it as `Authorization: Bearer <CRON_SECRET>`. After one verified production run, remove the `?secret=` query fallback so the secret is no longer exposed in URLs or request logs. **Complete 2026-04-29: configured, production-verified, cron-job.org disabled, and fallback removed.**
+- **Split CAP polling into `api/cap-poll.js`** — move NWS polling out of `screen-monitor.js` and run it every 1 minute on Vercel Cron. Keep `screen-monitor.js` focused on offline/online status and plan screen-limit enforcement. Add a simple Firestore lock/idempotency guard because Vercel Cron can overlap or duplicate invocations. **Code complete locally 2026-04-29; pending production deploy and cron verification.**
+- **Add analytics daily rollup cron** — create a daily job that aggregates raw `organizations/{orgId}/analytics` events into daily proof-of-play summaries. This keeps dashboard reads cheaper and faster as event volume grows.
+- **Set explicit function durations where useful** — use `vercel.json` `functions` config for long-running routes such as `api/import-pptx.js`, `api/canva.js`, `api/cap-poll.js`, and the future analytics rollup. Do this deliberately, not globally, so runaway functions still fail quickly. **`api/cap-poll.js` now has `maxDuration: 60`; other routes remain to be evaluated.**
+- **Defer broad endpoint splitting** — do not split `api/proxy.js` just because Pro allows more functions. Split weather/RSS/reviews/Instagram only when different cache/security behavior or debugging needs justify the endpoint churn.
+
+**Files:** `vercel.json`, `api/screen-monitor.js`, new `api/cap-poll.js`, new `api/analytics-rollup.js`, docs/tests as needed.
+
+**Test plan:** Deploy preview and verify each cron endpoint manually with `Authorization: Bearer <CRON_SECRET>`, then promote. Vercel Cron scheduling only activates on production deployments, so confirm production Cron Jobs logs after promotion, then remove any cron-job.org duplicate schedule. Screen-monitor cron production verification completed 2026-04-29; after fallback-removal deploy, query-string secret calls returned 401 and the next Vercel Cron run returned 200.
+
+---
+
+### 5.4 Native Players for Tizen / webOS / BrightSign
 
 **Why:** Biggest competitive moat for Kitcast — proprietary signage OS support is the primary procurement filter for buyers replacing existing fleets (most commercial displays in the wild are Samsung Tizen or LG webOS). Without native players, Zigns is locked out of every "we already have Samsung commercial displays" conversation.
 
@@ -247,7 +279,7 @@ Small non-feature tasks that need to get done.
 |------|----------|-------|
 | Mark Vercel env vars as Sensitive | Medium | `GOOGLE_PLACES_API_KEY`, `CRON_SECRET`, `CLOUDCONVERT_API_KEY`, `GOOGLE_SHEETS_API_KEY`, `OPENWEATHER_API_KEY` all flagged "Needs Attention" in Vercel dashboard. Edit each → check Sensitive → re-paste value. |
 | Delete duplicate Vercel `app` project | Low | `digital-signage` is the active project (linked in `.vercel/project.json`). The `app` project is a stale duplicate — verify it has no custom domain or env vars, then delete. |
-| Move `CRON_SECRET` to `Authorization` header only | Low | `screen-monitor.js` accepts secret via `?secret=` query param, which exposes it in server logs. Remove query-param path, keep header-only. |
+| Move `CRON_SECRET` to `Authorization` header only | High | Folded into Phase 5.3 Vercel Pro Infrastructure Upgrade. `screen-monitor.js` accepts secret via `?secret=` query param, which exposes it in server logs. Remove query-param path after Vercel Cron is verified. |
 
 ---
 
@@ -258,7 +290,7 @@ Known weaknesses to address before significant user growth.
 | Task | Risk | Notes |
 |------|------|-------|
 | Slideshow subcollection migration | High | `slides[]` and `draftSlides[]` stored in Firestore doc — 1MB doc limit will silently break writes for large slideshows. Migrate to `slideshows/{id}/slides/{slideId}` subcollection. Needs migration script + deep `admin.html` + `display.html` changes. Plan separately. |
-| Analytics daily rollup | Low | Raw analytics events accumulate per org with no aggregation. Dashboard queries get expensive over time. Add a daily rollup cron. |
+| Analytics daily rollup | Medium | Folded into Phase 5.3 Vercel Pro Infrastructure Upgrade. Raw analytics events accumulate per org with no aggregation. Dashboard queries get expensive over time. Add a daily rollup cron. |
 
 ---
 

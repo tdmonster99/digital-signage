@@ -84,18 +84,23 @@ The Two Factor tab is a placeholder toggle. To implement:
 ### `api/` directory (backend — Vercel serverless functions)
 Each file exports a single `module.exports = async function handler(req, res)`. Node.js + CommonJS only.
 
+Vercel plan: **Pro**. The old 12-function Hobby cap no longer applies, but keep counting `api/` before adding functions and prefer merging small related routes when it avoids needless serverless sprawl.
+
 | File | Purpose |
 |------|---------|
 | `upload-url.js` | Generates presigned S3 PUT URLs for direct browser→S3 uploads |
 | `import-slides.js` | Imports Google Slides as PNGs, uploads to S3 |
+| `import-pptx.js` | Imports PowerPoint decks through CloudConvert, uploads slide images to S3 |
 | `ai-generate.js` | Proxies Anthropic API for AI slide generation |
 | `send-invite.js` | Sends invitation emails via Resend |
-| `stripe-checkout.js` | Creates Stripe checkout sessions |
-| `stripe-portal.js` | Creates Stripe billing portal sessions |
+| `stripe-sessions.js` | Creates Stripe checkout sessions and billing portal sessions |
 | `stripe-webhook.js` | Handles Stripe webhooks, updates Firestore subscription state |
-| `weather.js` | Proxies OpenWeatherMap (current + 3-day forecast) for the weather widget |
-| `rss-proxy.js` | Fetches + parses RSS feeds server-side (avoids CORS) for the ticker |
-| `screen-monitor.js` | Vercel cron (every 5 min) — detects offline/online screens and emails notifications via Resend |
+| `proxy.js` | Shared proxy routes for weather, RSS, and Google Reviews |
+| `sheets-proxy.js` | Proxies Google Sheets data for the sheets widget |
+| `canva.js` | Canva OAuth, design listing, and export/import flow |
+| `link-account.js` | Stripe/customer account linking helper |
+| `screen-monitor.js` | Cron target — detects offline/online screens, enforces screen limits, and emails notifications |
+| `cap-poll.js` | Cron target — polls NWS CAP alerts and mirrors matching active alerts to Firestore |
 
 ### Firebase / Firestore
 Firebase project: `digital-signage-2`. Collections:

@@ -2109,6 +2109,17 @@
     // ── Emergency Broadcast ──────────────────────────────────────────────────
     let _broadcastUnsub = null;
     let _broadcastDismissTimer = null;
+    let _broadcastOverrideActive = false;
+    let _broadcastOverrideShowId = null;
+    let currentScreenTags = [];
+
+    function _broadcastMatchesScreen(data) {
+      const targetIds = Array.isArray(data?.targetScreenIds) ? data.targetScreenIds : [];
+      const targetTags = Array.isArray(data?.targetTags) ? data.targetTags : [];
+      if (targetIds.length && !targetIds.includes(screenId)) return false;
+      if (targetTags.length && !targetTags.some(tag => currentScreenTags.includes(tag))) return false;
+      return true;
+    }
 
     function _subscribeBroadcast(orgId) {
       if (!orgId || _broadcastUnsub) return;
@@ -2120,10 +2131,27 @@
 
         clearTimeout(_broadcastDismissTimer);
 
-        if (!active) {
+        if (!active || !_broadcastMatchesScreen(data)) {
+          if (_broadcastOverrideActive) _endBroadcastOverride();
           broadcastEl.style.display = 'none';
           return;
         }
+
+        if (data.mode === 'playlist' && data.slideshowId) {
+          broadcastEl.style.display = 'none';
+          if (!_broadcastOverrideActive || _broadcastOverrideShowId !== data.slideshowId) {
+            _broadcastOverrideActive = true;
+            _broadcastOverrideShowId = data.slideshowId;
+            currentSlideshowIdForAnalytics = data.slideshowId;
+            slides = []; current = 0; clearTimeout(timer);
+            subscribeToSlideshow(data.slideshowId);
+          }
+          const secs = parseInt(data.autoDismiss, 10);
+          if (secs > 0) _broadcastDismissTimer = setTimeout(_endBroadcastOverride, secs * 1000);
+          return;
+        }
+
+        if (_broadcastOverrideActive) _endBroadcastOverride();
 
         // Set colors
         const bg    = data.color || '#dc2626';
@@ -2141,6 +2169,60 @@
           }, secs * 1000);
         }
       }, () => {}); // ignore permission errors (unauthenticated display)
+    }
+
+    // ── CAP alerts ───────────────────────────────────────────────────────────
+    let _capUnsub = null;
+    const CAP_COLORS = {
+      Extreme: '#7f1d1d',
+      Severe: '#b91c1c',
+      Moderate: '#d97706',
+      Minor: '#1d4ed8',
+      Unknown: '#111827',
+    };
+
+    function _subscribeCapAlerts(orgId) {
+      if (!orgId || _capUnsub) return;
+      const capEl = document.getElementById('stageCapAlert');
+      const kickerEl = document.getElementById('capKickerEl');
+      const headlineEl = document.getElementById('capHeadlineEl');
+      const bodyEl = document.getElementById('capBodyEl');
+      const metaEl = document.getElementById('capMetaEl');
+
+      _capUnsub = onSnapshot(doc(db, 'capAlerts', orgId), snap => {
+        const data = snap.exists() ? snap.data() : null;
+        const alerts = Array.isArray(data?.alerts) ? data.alerts : [];
+        const now = Date.now();
+        const alert = alerts.find(a =>
+          a && a.active !== false &&
+          (!Array.isArray(a.targetScreenIds) || !a.targetScreenIds.length || a.targetScreenIds.includes(screenId)) &&
+          (!a.expiresAt || new Date(a.expiresAt).getTime() > now)
+        );
+
+        if (!alert) {
+          capEl.style.display = 'none';
+          return;
+        }
+
+        const severity = alert.severity || 'Unknown';
+        capEl.style.background = CAP_COLORS[severity] || CAP_COLORS.Unknown;
+        kickerEl.textContent = `${severity} Alert`;
+        headlineEl.textContent = alert.headline || alert.event || 'Emergency Alert';
+        bodyEl.textContent = alert.instruction || alert.description || 'Follow local emergency guidance.';
+        metaEl.textContent = [alert.areaDesc, alert.expiresAt ? 'Expires ' + new Date(alert.expiresAt).toLocaleString() : '']
+          .filter(Boolean).join(' · ');
+        capEl.style.display = 'flex';
+
+        if (analyticsOrgId) {
+          queueAnalyticsEvent({
+            type: 'cap_alert_rendered',
+            screenId,
+            alertId: alert.id || '',
+            event: alert.event || '',
+            severity,
+          });
+        }
+      }, () => {});
     }
 
     // Emit analytics online event once we know orgId; offline on page unload
@@ -2195,22 +2277,47 @@
     function _schedGetTarget() {
       if (!schedData || !Array.isArray(schedData.events)) return baseShowId;
       const { dow, mins } = _tzNow();
+      const matches = [];
       for (const ev of schedData.events) {
         if (!Array.isArray(ev.days) || !ev.days.includes(dow)) continue;
         const start = (ev.startHour || 0) * 60 + (ev.startMin || 0);
         const end   = (ev.endHour   || 0) * 60 + (ev.endMin   || 0);
-        if (mins >= start && mins < end) return ev.slideshowId || baseShowId;
+        if (mins >= start && mins < end) matches.push({ ev, start });
+      }
+      if (matches.length) {
+        matches.sort((a, b) =>
+          (Number(b.ev.priority || 0) - Number(a.ev.priority || 0)) ||
+          (b.start - a.start)
+        );
+        return matches[0].ev.slideshowId || baseShowId;
       }
       return schedData.fillerSlideshowId || baseShowId;
     }
 
     function _schedApply() {
       if (whIsClosed) return;
+      if (_broadcastOverrideActive) return;
       const target = _schedGetTarget();
       if (!target || target === activeSlideshowId) return;
       currentSlideshowIdForAnalytics = target;
       slides = []; current = 0; clearTimeout(timer);
       subscribeToSlideshow(target);
+    }
+
+    function _resumeAssignedContent() {
+      if (whIsClosed) return;
+      if (activeSchedId) _schedApply();
+      else if (baseShowId && baseShowId !== activeSlideshowId) {
+        currentSlideshowIdForAnalytics = baseShowId;
+        slides = []; current = 0; clearTimeout(timer);
+        subscribeToSlideshow(baseShowId);
+      }
+    }
+
+    function _endBroadcastOverride() {
+      _broadcastOverrideActive = false;
+      _broadcastOverrideShowId = null;
+      _resumeAssignedContent();
     }
 
     function _startSchedule(orgId, schedId) {
@@ -2307,11 +2414,15 @@
           const newBaseId  = data.slideshowId || "main";
           const newSchedId = data.scheduleId  || null;
           const newOrgId   = data.orgId       || null;
+          currentScreenTags = Array.isArray(data.tags)
+            ? data.tags.map(t => String(t || '').trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9_-]/g, '')).filter(Boolean)
+            : [];
 
           // NOTE: do NOT call heartbeat() here — it writes to screenRef which
           // re-fires this snapshot callback, causing an infinite write loop.
           emitOnline(newOrgId);
           _subscribeBroadcast(newOrgId);
+          _subscribeCapAlerts(newOrgId);
           _applySuspended(data.suspended === true);
           if (data.suspended === true) return;
           baseShowId = newBaseId;
@@ -2323,6 +2434,8 @@
             activeSchedId = newSchedId;
             _startSchedule(newOrgId, newSchedId);
           }
+
+          if (_broadcastOverrideActive) return;
 
           if (activeSchedId) {
             // Schedule is in charge — re-evaluate in case base show or schedule changed
@@ -2533,6 +2646,27 @@
   #stageBroadcast .bc-msg {
     font-size: 6vw; font-weight: 700;
     line-height: 1.2; max-width: 80vw;
+  }
+  #stageCapAlert {
+    position: fixed; inset: 0; z-index: 201; display: none;
+    flex-direction: column; align-items: center; justify-content: center;
+    gap: 2.2vh; padding: 7vh 8vw; text-align: center; color: #fff;
+    background: #b91c1c; font-family: 'Segoe UI', Arial, sans-serif;
+  }
+  #stageCapAlert .cap-kicker {
+    font-size: clamp(18px, 2vw, 34px); font-weight: 800; letter-spacing: .18em;
+    text-transform: uppercase; opacity: .88;
+  }
+  #stageCapAlert .cap-headline {
+    font-size: clamp(44px, 7vw, 132px); font-weight: 900; line-height: 1.05;
+    max-width: 1600px;
+  }
+  #stageCapAlert .cap-body {
+    font-size: clamp(22px, 2.5vw, 48px); font-weight: 650; line-height: 1.35;
+    max-width: 1400px; white-space: pre-wrap;
+  }
+  #stageCapAlert .cap-meta {
+    font-size: clamp(15px, 1.4vw, 26px); font-weight: 700; opacity: .9;
   }
   /* Audio unlock overlay — sits below broadcast (z-index 199) so emergencies still pre-empt. */
   #audioUnlock {
@@ -2968,6 +3102,14 @@
 <div id="stageBroadcast">
   <div class="bc-icon">⚠</div>
   <div class="bc-msg" id="broadcastMsgEl"></div>
+</div>
+
+<!-- CAP alert overlay (z-index 201, above broadcast) -->
+<div id="stageCapAlert">
+  <div class="cap-kicker" id="capKickerEl">Emergency Alert</div>
+  <div class="cap-headline" id="capHeadlineEl"></div>
+  <div class="cap-body" id="capBodyEl"></div>
+  <div class="cap-meta" id="capMetaEl"></div>
 </div>
 
 <!-- Audio unlock overlay (one-time tap to satisfy browser autoplay policy) -->

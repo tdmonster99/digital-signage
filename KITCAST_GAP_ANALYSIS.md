@@ -19,7 +19,7 @@ Status legend: ✅ on par or better · ⚠ partial · ❌ missing
 | Display web pages (URLs/HTML) | ✅ | `webpage` slide type with `safeIframeUrl()` validation. |
 | Display Dashboards (PowerBI, Tableau) | ⚠ | Works via the generic webpage iframe, but no first-class auth/embed helpers for BI tools. |
 | Display presentations (PowerPoint, Google Slides) | ✅ | PPTX upload + Google Slides import (`api/import-slides.js`). |
-| **Emergency alerts (CAP)** | ❌ | No NWS / IPAWS CAP feed listener. Different from Broadcast — see "Emergency Override" note below. |
+| **Emergency alerts (CAP)** | ⚠ | NWS CAP foundation shipped 2026-04-28 via `api/screen-monitor.js`, per-screen CAP config, `capAlerts/{orgId}`, and display overlay. Remaining: audit/reporting UX, richer testing, bilingual controls, and IPAWS/FEMA path if needed later. |
 | Social media integrations | ⚠ | Instagram + Google Reviews only. No Twitter/X, Facebook, LinkedIn, TikTok widgets. |
 | Google Drive & Dropbox integrations | ✅ | Both supported, plus OneDrive (Kitcast doesn't list OneDrive). |
 | Offline playback | ⚠ | `display.html` has offline indicator + Firestore offline cache; admin PWA has shell service worker. No proven extended-outage media pre-cache. |
@@ -38,7 +38,7 @@ Zigns **does** have an emergency override feature: the **Broadcast** button on t
 - Writes to `broadcasts/{orgId}` in Firestore
 - `display.html` listens via `onSnapshot` and shows the message as a full-screen overlay at z-index 200, above all running content
 
-**Difference from Kitcast's "Emergency Playlist":** Kitcast lets admins pre-build a multi-slide branded emergency playlist (designed slides, logos, instructions) and trigger it later. Zigns is a real-time text-and-color overlay only. Both solve the same procurement requirement; Zigns is lighter weight, Kitcast is more polished for industries that want pre-approved alert content (healthcare, education, manufacturing).
+**Difference from Kitcast's "Emergency Playlist":** Zigns now supports triggering a saved slideshow as an emergency playlist, including tag-targeted screens. Kitcast still appears more polished around emergency playlist governance and pre-approved alert workflows for industries like healthcare, education, and manufacturing.
 
 ---
 
@@ -48,10 +48,10 @@ Zigns **does** have an emergency override feature: the **Broadcast** button on t
 |---|---|---|
 | Content Playlists | ✅ | Slideshows are effectively playlists. |
 | Content Scheduling (daily/weekly/monthly) | ✅ | Schedules page, calendar-based (`page-schedules`, `loadSchedulesFromOrg`). |
-| **Emergency Playlist** (pre-built) | ⚠ | Broadcast covers the override use case but isn't a pre-built designed-slide playlist. |
-| **Tags** (content, playlists, groups) | ⚠ | Screen-tags is a placeholder per `CLAUDE.md`. Template tags exist, but content/playlist tagging is not implemented. |
-| **Smart Playlists/Scheduling (using tags)** | ❌ | Depends on the tagging system above. |
-| **Priority Overrides** | ❌ | Schedules don't support priority layering or weighted pre-emption. |
+| **Emergency Playlist** (pre-built) | ⚠ | Saved playlist trigger shipped 2026-04-28 using slideshows marked `emergencyPlaylist: true`, with all-screen or tag targeting through Broadcast. Remaining gap is governance/polish around emergency playlist lifecycle. |
+| **Tags** (content, playlists, groups) | ✅ | Org tag manager + tags on screens, slideshows, slides, and media shipped 2026-04-28. |
+| **Smart Playlists/Scheduling (using tags)** | ⚠ | Smart playlist publish resolution shipped 2026-04-28: a slideshow can auto-include active published slides from other org slideshows by tag. More advanced dynamic/tag scheduling remains open. |
+| **Priority Overrides** | ✅ | Schedule event priority shipped 2026-04-28; overlapping events resolve by highest priority, then latest start time. |
 
 ---
 
@@ -112,8 +112,8 @@ Zigns is a browser-based player. Runs anywhere there's a browser + internet, but
 
 ## Recommended priority (highest leverage first)
 
-1. **Tags + Priority Overrides + Emergency Playlist (pre-built)** — natural cluster, mid-effort, big enterprise differentiator. Tags also unlock Smart Playlists.
-2. ~~Audio playback~~ (shipped 2026-04-27) + **Emergency CAP** — small/medium individual lift; common procurement ask for schools/healthcare.
+1. ~~Tags + Priority Overrides + Emergency Playlist (pre-built)~~ — mostly shipped 2026-04-28. Remaining: emergency playlist governance/polish and advanced dynamic scheduling.
+2. ~~Audio playback~~ (shipped 2026-04-27) + ~~Emergency CAP foundation~~ (shipped 2026-04-28) — remaining CAP work is audit/testing/polish, not initial playback.
 3. **Native players for Tizen / webOS / BrightSign** — biggest competitive moat, biggest engineering investment. If skipped, lean into "BYOD/run on what you have" positioning instead.
 4. **SSO/SAML** — required to win mid-market and enterprise deals.
 5. **MDM + Zero-Touch + Kiosk mode** — table-stakes for IT-led rollouts (>50 screens).
