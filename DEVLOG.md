@@ -4,6 +4,19 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-04-29 — Codex — Vercel env sensitivity cleanup
+
+Closed the Phase 5.3 operations hygiene item for Vercel environment-variable sensitivity.
+
+- **Production**: marked credential-like variables as `sensitive`: `CRON_SECRET`, `GOOGLE_PLACES_API_KEY`, `CLOUDCONVERT_API_KEY`, `GOOGLE_SHEETS_API_KEY`, `OPENWEATHER_API_KEY`, Stripe secret/webhook keys, Firebase service account JSON, AWS access keys, `RESEND_API_KEY`, and `ANTHROPIC_API_KEY`.
+- **Preview**: marked matching credential-like preview variables as `sensitive`. Development entries remain `encrypted`; Vercel CLI treats Sensitive as a Production/Preview setting and rejects forcing it onto Development.
+- **Left unchanged**: non-secret config values such as `CLOUDFRONT_URL`, `AWS_REGION`, and `AWS_S3_BUCKET`.
+- **Verification**: Vercel metadata now reports all targeted Production/Preview credentials as `sensitive`; temporary env pull files were removed; `https://app.zigns.io` returned 200; unauthenticated `/api/analytics-rollup` still returned 401.
+
+No code changed.
+
+---
+
 ## 2026-04-29 — Codex — Analytics daily rollup cron
 
 Continued Phase 5.3 by adding the daily proof-of-play rollup job.
