@@ -10215,6 +10215,151 @@ let currentShowName = 'Main Display';
 let currentShowReviewStatus = 'published';
 let currentShowReviewData = {};
 
+const SLIDE_STORAGE_VERSION = 2;
+const PUBLISHED_SLIDES_COLLECTION = 'slides';
+const DRAFT_SLIDES_COLLECTION = 'draftSlides';
+
+function slideDocId(slide, index) {
+  const raw = String(slide?.id || `slide-${index + 1}`);
+  const safe = raw.replace(/[\/?#\[\]*]/g, '-').slice(0, 120);
+  return safe || `slide-${index + 1}`;
+}
+
+function normalizeSlideDoc(docSnap) {
+  const data = docSnap.data() || {};
+  const { order, updatedAt, ...slide } = data;
+  return { id: slide.id || docSnap.id, ...slide };
+}
+
+async function loadSlideCollection(showId, collectionName) {
+  const snap = await getDocs(query(
+    collection(db, 'slideshows', showId, collectionName),
+    orderBy('order', 'asc')
+  ));
+  return snap.docs.map(normalizeSlideDoc);
+}
+
+function shouldLoadSubcollection(data = {}, collectionName) {
+  if (collectionName === DRAFT_SLIDES_COLLECTION) {
+    return data.draftStorage === 'subcollection';
+  }
+  return data.slideStorageVersion >= SLIDE_STORAGE_VERSION ||
+    data.publishedStorage === 'subcollection';
+}
+
+async function loadShowWithSlides(showId, data = {}) {
+  const [publishedSub, draftSub] = await Promise.all([
+    shouldLoadSubcollection(data, PUBLISHED_SLIDES_COLLECTION)
+      ? loadSlideCollection(showId, PUBLISHED_SLIDES_COLLECTION)
+      : Promise.resolve(null),
+    shouldLoadSubcollection(data, DRAFT_SLIDES_COLLECTION)
+      ? loadSlideCollection(showId, DRAFT_SLIDES_COLLECTION)
+      : Promise.resolve(null),
+  ]);
+
+  const publishedSlides = Array.isArray(publishedSub)
+    ? publishedSub
+    : (Array.isArray(data.slides) ? data.slides : []);
+  const draftSlides = Array.isArray(draftSub)
+    ? draftSub
+    : (Array.isArray(data.draftSlides) ? data.draftSlides : undefined);
+
+  return {
+    ...data,
+    slides: publishedSlides,
+    ...(draftSlides !== undefined && { draftSlides }),
+    _hasDraftSlides: draftSlides !== undefined,
+  };
+}
+
+async function commitOpsInChunks(ops) {
+  for (let i = 0; i < ops.length; i += 450) {
+    const batch = writeBatch(db);
+    ops.slice(i, i + 450).forEach(op => op(batch));
+    await batch.commit();
+  }
+}
+
+async function ensureSlideshowParent(showId) {
+  if (!showId || !currentOrgId) return;
+  await setDoc(doc(db, 'slideshows', showId), { orgId: currentOrgId }, { merge: true });
+}
+
+async function clearSlideCollection(showId, collectionName) {
+  const snap = await getDocs(collection(db, 'slideshows', showId, collectionName));
+  await commitOpsInChunks(snap.docs.map(d => batch => batch.delete(d.ref)));
+}
+
+async function replaceSlideCollection(showId, collectionName, nextSlides) {
+  const now = new Date().toISOString();
+  const cleanSlides = Array.isArray(nextSlides) ? nextSlides : [];
+  await ensureSlideshowParent(showId);
+  await clearSlideCollection(showId, collectionName);
+  const setOps = cleanSlides.map((slide, index) => batch => {
+    const id = slideDocId(slide, index);
+    const ref = doc(db, 'slideshows', showId, collectionName, id);
+    batch.set(ref, {
+      ...slide,
+      id: slide.id || id,
+      order: index,
+      updatedAt: now,
+    });
+  });
+  await commitOpsInChunks(setOps);
+}
+
+async function saveDraftSlidesToFirestore(showId, nextSlides, patch = {}) {
+  const now = new Date().toISOString();
+  const cleanSlides = Array.isArray(nextSlides) ? nextSlides : [];
+  await replaceSlideCollection(showId, DRAFT_SLIDES_COLLECTION, cleanSlides);
+  await setDoc(doc(db, 'slideshows', showId), {
+    ...patch,
+    slideStorageVersion: SLIDE_STORAGE_VERSION,
+    draftStorage: 'subcollection',
+    draftSlidesCount: cleanSlides.length,
+    draftRevision: now,
+    draftUpdatedAt: now,
+    draftSlides: deleteField(),
+    ...(currentOrgId && { orgId: currentOrgId }),
+  }, { merge: true });
+}
+
+async function publishSlidesToFirestore(showId, publishedSlides, patch = {}) {
+  const now = new Date().toISOString();
+  const cleanSlides = Array.isArray(publishedSlides) ? publishedSlides : [];
+  await replaceSlideCollection(showId, PUBLISHED_SLIDES_COLLECTION, cleanSlides);
+  await clearSlideCollection(showId, DRAFT_SLIDES_COLLECTION);
+  await setDoc(doc(db, 'slideshows', showId), {
+    ...patch,
+    slideStorageVersion: SLIDE_STORAGE_VERSION,
+    publishedStorage: 'subcollection',
+    publishedSlidesCount: cleanSlides.length,
+    publishedRevision: now,
+    draftStorage: deleteField(),
+    draftSlidesCount: deleteField(),
+    draftRevision: deleteField(),
+    slides: deleteField(),
+    draftSlides: deleteField(),
+    draftDwell: deleteField(),
+    draftFitMode: deleteField(),
+    draftTransition: deleteField(),
+    draftUpdatedAt: deleteField(),
+    draftBy: deleteField(),
+    ...(currentOrgId && { orgId: currentOrgId }),
+  }, { merge: true });
+}
+
+async function loadEffectiveSlides(showId) {
+  const snap = await getDoc(doc(db, 'slideshows', showId));
+  if (!snap.exists()) return { data: {}, slides: [], draftSlides: undefined };
+  const data = await loadShowWithSlides(showId, snap.data());
+  return {
+    data,
+    slides: data.slides || [],
+    draftSlides: data._hasDraftSlides ? data.draftSlides : undefined,
+  };
+}
+
 function approvalRequired() {
   return hasFeature('approvalWorkflow') && currentOrg?.approvalRequired === true;
 }
