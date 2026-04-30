@@ -4,6 +4,20 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-04-30 — Codex — Slideshow subcollection compatibility deploy and migration
+
+Continued the scalability backlog item to move slideshow payloads out of parent Firestore docs.
+
+- **Compatibility deploy**: fast-forwarded `main` through the `slideshow-subcollection-migration` branch and pushed commit `67d9a8b`; Vercel production deployment `dpl_8GwwA1WEN46rivHd3qAxqKSHdUKo` went READY, followed by post-key-rotation redeploy `dpl_5Ys4ePppvsUQGNg6AD6FVtU3AYDK` aliased to `https://app.zigns.io`.
+- **Firestore rules**: deployed the new `slideshows/{showId}/slides/{slideId}` public read rules and editor/admin `draftSlides` rules to Firebase project `digital-signage-2`.
+- **Firebase Admin key hygiene**: rotated the service-account key before write migration, updated Vercel, and deleted the older Apr 8 / Apr 12 keys. The migration used the new Apr 30 key locally without printing secret contents.
+- **Migration**: ran `scripts/migrate-slideshow-subcollections.js --dry-run`, then `--write` without `--cleanup-arrays`, so legacy parent arrays remain available for rollback.
+- **Verification**: migration processed 14 slideshow docs; Firestore verification found all 14 at `slideStorageVersion: 2`, with 11 published slide docs, 5 draft slide docs, and no count mismatches. `https://app.zigns.io/` returned 200; unauthenticated `/api/analytics-rollup` and `/api/cap-poll` returned 401.
+
+Pending: manually verify admin/display behavior in production, then run the optional `--write --cleanup-arrays` cleanup and delete the temporary local JSON key file/key if it was created only for migration.
+
+---
+
 ## 2026-04-29 — Codex — Removed duplicate Vercel project
 
 Completed the low-risk Phase 5.3 operations cleanup for the stale duplicate Vercel project.

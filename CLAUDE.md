@@ -108,7 +108,9 @@ Firebase project: `digital-signage-2`. Collections:
 
 | Collection | Contains |
 |-----------|---------|
-| `slideshows/{id}` | Slides array, draft state, settings. `draftSlides` = unsaved, `slides` = published |
+| `slideshows/{id}` | Slideshow metadata, settings, draft/publish status, storage revision flags |
+| `slideshows/{id}/slides/{slideId}` | Published slide payloads ordered by `order` |
+| `slideshows/{id}/draftSlides/{slideId}` | Draft slide payloads ordered by `order` |
 | `slideshows/{id}/slideVersions/{slideId}/versions` | Version history per slide |
 | `organizations/{id}` | Org settings, member list, slideshow list, subscription/plan |
 | `organizations/{id}/media` | Media library entries |
@@ -176,9 +178,9 @@ Files upload directly from the browser to **S3** (bucket: `zigns-media`, region:
 4. `?slot=2` URL param on display.html gives a second independent screen identity on the same machine
 
 ### Slideshow draft/publish model
-- Editing auto-saves to `draftSlides` / `draftDwell` / `draftFitMode` / `draftTransition` on the Firestore doc
-- **Publish** copies draft fields to `slides` / `defaultDwell` etc. and pushes to assigned screens via their `slideshowId`
-- `display.html` reads published `slides`, not draft
+- Editing auto-saves slide payloads to `slideshows/{id}/draftSlides/{slideId}` and small draft metadata (`draftDwell`, `draftFitMode`, `draftTransition`, revision flags) on the parent slideshow doc.
+- **Publish** writes ordered payload docs to `slideshows/{id}/slides/{slideId}`, clears draft subcollection metadata, and pushes to assigned screens via their `slideshowId`.
+- `display.html` reads the published `slides` subcollection when `slideStorageVersion >= 2`; legacy parent `slides[]` remains only as a rollback fallback until post-verification cleanup.
 
 ### Roles & permissions
 | Role | Can do |
