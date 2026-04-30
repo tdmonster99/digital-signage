@@ -277,7 +277,7 @@ Small non-feature tasks that need to get done.
 
 | Task | Priority | Notes |
 |------|----------|-------|
-| Mark Vercel env vars as Sensitive | Medium | Complete 2026-04-29. Production and Preview credential-like vars now report `type: sensitive` in Vercel metadata, including `CRON_SECRET`, API keys, Stripe secrets, Firebase service account JSON, AWS access keys, `RESEND_API_KEY`, and `ANTHROPIC_API_KEY`. Development entries remain `encrypted` because Vercel CLI treats Sensitive as a Production/Preview setting. |
+| Mark Vercel env vars as Sensitive | Medium | Complete 2026-04-29. Production and Preview credential-like vars now report `type: sensitive` in Vercel metadata, including `CRON_SECRET`, API keys, Stripe secrets, Firebase service account JSON, AWS access keys, `RESEND_API_KEY`, and `ANTHROPIC_API_KEY`. `CRON_SECRET` was rotated after a whitespace-tainted update attempt, key values were re-entered cleanly, and production deployment `dpl_4L4ggRx1iWtDTTLd6ZuPrZRjrVMc` is verified on `app.zigns.io`. Development entries remain `encrypted` because Vercel CLI treats Sensitive as a Production/Preview setting. |
 | Delete duplicate Vercel `app` project | Low | `digital-signage` is the active project (linked in `.vercel/project.json`). The `app` project is a stale duplicate — verify it has no custom domain or env vars, then delete. |
 | Move `CRON_SECRET` to `Authorization` header only | High | Folded into Phase 5.3 Vercel Pro Infrastructure Upgrade. Complete for `screen-monitor.js`, `cap-poll.js`, and `analytics-rollup.js`; query-string secret requests return 401. |
 
@@ -289,7 +289,7 @@ Known weaknesses to address before significant user growth.
 
 | Task | Risk | Notes |
 |------|------|-------|
-| Slideshow subcollection migration | High | `slides[]` and `draftSlides[]` stored in Firestore doc — 1MB doc limit will silently break writes for large slideshows. Migrate to `slideshows/{id}/slides/{slideId}` subcollection. Needs migration script + deep `admin.html` + `display.html` changes. Plan separately. |
+| Slideshow subcollection migration | High | `slides[]` and `draftSlides[]` stored in Firestore doc — 1MB doc limit will silently break writes for large slideshows. Migrate to `slideshows/{id}/slides/{slideId}` and `slideshows/{id}/draftSlides/{slideId}` subcollections. Implementation plan saved at `docs/superpowers/plans/2026-04-29-slideshow-subcollection-migration.md`; execute as a staged compatibility deploy plus migration script, keeping legacy arrays until post-verify cleanup. |
 | Analytics daily rollup | Medium | Folded into Phase 5.3 Vercel Pro Infrastructure Upgrade. `api/analytics-rollup.js` is deployed with a daily Vercel Cron schedule, writes `organizations/{orgId}/analyticsDaily/{YYYY-MM-DD}` summaries, and returned 200 on an authenticated manual production run. |
 
 ---

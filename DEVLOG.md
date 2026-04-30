@@ -4,6 +4,19 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-04-29 — Codex — Slideshow subcollection migration plan
+
+Prepared the implementation plan for moving slideshow slide payloads out of parent Firestore docs.
+
+- **Plan file**: added `docs/superpowers/plans/2026-04-29-slideshow-subcollection-migration.md` with the staged admin/display/rules/migration-script rollout.
+- **Migration shape**: target schema is `slideshows/{showId}/slides/{slideId}` for published slides and `slideshows/{showId}/draftSlides/{slideId}` for drafts, with parent-doc revision flags and legacy-array fallback.
+- **Safety posture**: first migration run keeps legacy arrays for rollback; cleanup is a separate post-verification step.
+- **ROADMAP.md**: updated the scalability backlog row to point at the new plan.
+
+No code or Firestore schema changes were made yet.
+
+---
+
 ## 2026-04-29 — Codex — Vercel env sensitivity cleanup
 
 Closed the Phase 5.3 operations hygiene item for Vercel environment-variable sensitivity.
@@ -11,7 +24,8 @@ Closed the Phase 5.3 operations hygiene item for Vercel environment-variable sen
 - **Production**: marked credential-like variables as `sensitive`: `CRON_SECRET`, `GOOGLE_PLACES_API_KEY`, `CLOUDCONVERT_API_KEY`, `GOOGLE_SHEETS_API_KEY`, `OPENWEATHER_API_KEY`, Stripe secret/webhook keys, Firebase service account JSON, AWS access keys, `RESEND_API_KEY`, and `ANTHROPIC_API_KEY`.
 - **Preview**: marked matching credential-like preview variables as `sensitive`. Development entries remain `encrypted`; Vercel CLI treats Sensitive as a Production/Preview setting and rejects forcing it onto Development.
 - **Left unchanged**: non-secret config values such as `CLOUDFRONT_URL`, `AWS_REGION`, and `AWS_S3_BUCKET`.
-- **Verification**: Vercel metadata now reports all targeted Production/Preview credentials as `sensitive`; temporary env pull files were removed; `https://app.zigns.io` returned 200; unauthenticated `/api/analytics-rollup` still returned 401.
+- **Deploy recovery**: the first Git deployment of `e7dd479` failed because `CRON_SECRET` had trailing whitespace from the initial stdin update path. Rotated `CRON_SECRET` to a fresh clean Sensitive value, re-entered `GOOGLE_PLACES_API_KEY`, `STRIPE_SECRET_KEY`, and `STRIPE_WEBHOOK_SECRET` in the Vercel dashboard as clean Sensitive values, then redeployed production with `vercel --prod --yes`.
+- **Verification**: Vercel metadata now reports all targeted Production/Preview credentials as `sensitive`; temporary env pull files were removed; deployment `dpl_4L4ggRx1iWtDTTLd6ZuPrZRjrVMc` is READY and aliased to `https://app.zigns.io`; `https://app.zigns.io` returned 200; unauthenticated `/api/analytics-rollup` still returned 401; production error logs were clean.
 
 No code changed.
 
