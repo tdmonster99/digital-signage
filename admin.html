@@ -21275,6 +21275,22 @@ function mutateSlideTagLists(slideList, oldTag, newTag = null) {
   });
 }
 
+async function mutateSlideCollectionTags(showId, collectionName, oldTag, newTag = null) {
+  const snap = await getDocs(collection(db, 'slideshows', showId, collectionName));
+  const now = new Date().toISOString();
+  const ops = snap.docs.map(docSnap => batch => {
+    const current = normalizeSlideDoc(docSnap);
+    const [next] = mutateSlideTagLists([current], oldTag, newTag);
+    batch.set(docSnap.ref, {
+      ...next,
+      id: next.id || docSnap.id,
+      order: docSnap.data().order ?? 0,
+      updatedAt: now,
+    });
+  });
+  await commitOpsInChunks(ops);
+}
+
 async function applyTagMutationEverywhere(oldTag, newTag = null) {
   if (!currentOrgId || !oldTag) return;
 
@@ -21299,11 +21315,27 @@ async function applyTagMutationEverywhere(oldTag, newTag = null) {
       const snap = await getDoc(showRef);
       if (!snap.exists()) return;
       const data = snap.data();
+      const hasPublishedSubcollection =
+        data.slideStorageVersion >= SLIDE_STORAGE_VERSION ||
+        data.publishedStorage === 'subcollection';
+      const hasDraftSubcollection = data.draftStorage === 'subcollection';
+      const revisionPatch = {};
+
+      if (hasPublishedSubcollection) {
+        await mutateSlideCollectionTags(show.id, PUBLISHED_SLIDES_COLLECTION, oldTag, newTag);
+        revisionPatch.publishedRevision = new Date().toISOString();
+      }
+      if (hasDraftSubcollection) {
+        await mutateSlideCollectionTags(show.id, DRAFT_SLIDES_COLLECTION, oldTag, newTag);
+        revisionPatch.draftRevision = new Date().toISOString();
+      }
+
       await setDoc(showRef, {
         tags: mutateTagList(data.tags || show.tags || [], oldTag, newTag),
         autoIncludeTags: mutateTagList(data.autoIncludeTags || show.autoIncludeTags || [], oldTag, newTag),
         ...(Array.isArray(data.slides) && { slides: mutateSlideTagLists(data.slides, oldTag, newTag) }),
         ...(Array.isArray(data.draftSlides) && { draftSlides: mutateSlideTagLists(data.draftSlides, oldTag, newTag) }),
+        ...revisionPatch,
       }, { merge: true });
     } catch(e) {
       console.warn('Could not update slideshow tags:', show.id, e.message);
