@@ -289,7 +289,7 @@ Known weaknesses to address before significant user growth.
 
 | Task | Risk | Notes |
 |------|------|-------|
-| Slideshow subcollection migration | High | In progress 2026-04-30. Compatibility code and Firestore rules are deployed, and the no-cleanup production migration wrote all 14 slideshow docs to `slideshows/{id}/slides/{slideId}` / `draftSlides/{slideId}` subcollections. Verification found 11 published slide docs, 5 draft slide docs, and no count mismatches. Legacy parent arrays remain temporarily for rollback until admin/display behavior is manually verified, then `--cleanup-arrays` can remove them. |
+| Slideshow subcollection migration | High | Complete 2026-04-30. Compatibility code and Firestore rules are deployed; production migration moved all 14 slideshow docs to `slideshows/{id}/slides/{slideId}` / `draftSlides/{slideId}` subcollections. After manual admin/display verification, `--cleanup-arrays` removed legacy parent `slides[]` / `draftSlides[]`. Final verification found 12 published slide docs, 4 draft slide docs, no parent arrays, and no count mismatches. |
 | Analytics daily rollup | Medium | Folded into Phase 5.3 Vercel Pro Infrastructure Upgrade. `api/analytics-rollup.js` is deployed with a daily Vercel Cron schedule, writes `organizations/{orgId}/analyticsDaily/{YYYY-MM-DD}` summaries, and returned 200 on an authenticated manual production run. |
 
 ---

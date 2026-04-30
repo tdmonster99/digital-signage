@@ -4,6 +4,18 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-04-30 — Codex — Slideshow subcollection cleanup complete
+
+Completed the final cleanup pass after manual production verification succeeded.
+
+- **Cleanup migration**: ran `scripts/migrate-slideshow-subcollections.js --write --cleanup-arrays`, removing legacy parent `slides[]` and `draftSlides[]` fields now that the subcollection readers/writers are verified.
+- **Final verification**: all 14 slideshow docs remain at `slideStorageVersion: 2`; Firestore contains 12 published slide docs and 4 draft slide docs in subcollections; no parent slideshow docs still have `slides[]` or `draftSlides[]`; count metadata matches actual subcollection counts.
+- **Docs**: marked the scalability backlog item complete and updated the Firestore schema notes to make subcollections the canonical slideshow payload store.
+
+Remaining security cleanup: delete the temporary local service-account JSON file and remove its matching Apr 30 key in Google Cloud if it was created only for migration.
+
+---
+
 ## 2026-04-30 — Codex — Slideshow subcollection compatibility deploy and migration
 
 Continued the scalability backlog item to move slideshow payloads out of parent Firestore docs.

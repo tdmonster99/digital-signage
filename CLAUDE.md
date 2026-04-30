@@ -180,7 +180,7 @@ Files upload directly from the browser to **S3** (bucket: `zigns-media`, region:
 ### Slideshow draft/publish model
 - Editing auto-saves slide payloads to `slideshows/{id}/draftSlides/{slideId}` and small draft metadata (`draftDwell`, `draftFitMode`, `draftTransition`, revision flags) on the parent slideshow doc.
 - **Publish** writes ordered payload docs to `slideshows/{id}/slides/{slideId}`, clears draft subcollection metadata, and pushes to assigned screens via their `slideshowId`.
-- `display.html` reads the published `slides` subcollection when `slideStorageVersion >= 2`; legacy parent `slides[]` remains only as a rollback fallback until post-verification cleanup.
+- `display.html` reads the published `slides` subcollection when `slideStorageVersion >= 2`; legacy parent `slides[]` / `draftSlides[]` arrays were removed after migration cleanup, though the reader still has fallback support for older docs.
 
 ### Roles & permissions
 | Role | Can do |
