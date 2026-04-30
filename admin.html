@@ -10378,7 +10378,9 @@ function updateShowItemMeta(showId, data = {}) {
   const item = document.querySelector(`#showList .show-item[data-id="${CSS.escape(showId)}"]`);
   if (!item) return;
   const slideArr = data.draftSlides ?? data.slides ?? [];
-  const n = slideArr.filter(sl => sl.active !== false).length;
+  const n = Number.isFinite(data.draftSlidesCount) ? data.draftSlidesCount
+    : Number.isFinite(data.publishedSlidesCount) ? data.publishedSlidesCount
+    : slideArr.filter(sl => sl.active !== false).length;
   const count = item.querySelector('.show-item-count');
   if (count) count.textContent = n + ' slide' + (n !== 1 ? 's' : '');
 
@@ -10559,32 +10561,40 @@ function listenToShow(id, name) {
   currentShowName = name || id;
   document.getElementById("showTitle").textContent = currentShowName;
 
-  unsubscribe = onSnapshot(doc(db, "slideshows", id), snap => {
-    if (snap.exists()) {
-      const data = snap.data();
-      // Load draft if present, fall back to published slides (backward compat)
-      slides = data.draftSlides ?? data.slides ?? [];
-      document.getElementById("defaultDwell").value  = data.draftDwell      ?? data.defaultDwell  ?? 6;
-      document.getElementById("fitMode").value       = data.draftFitMode    ?? data.fitMode       ?? "contain";
-      document.getElementById("transition").value    = data.draftTransition ?? data.transition    ?? "crossfade";
-      currentShowReviewStatus = data.status || 'published';
-      currentShowReviewData = data;
-      updateReviewStatusBanner(data);
-      updateShowItemMeta(id, data);
-      // Show push button whenever there are unpublished changes
-      const hasUnpublished = data.draftSlides !== undefined;
-      setPushVisible(hasUnpublished);
-      loadApprovalQueue();
-    } else {
-      slides = [];
-      currentShowReviewStatus = 'published';
-      currentShowReviewData = {};
-      updateReviewStatusBanner({});
-      setPushVisible(false);
+  unsubscribe = onSnapshot(doc(db, "slideshows", id), async snap => {
+    if (currentShowId !== id) return;
+    try {
+      if (snap.exists()) {
+        const data = await loadShowWithSlides(id, snap.data());
+        if (currentShowId !== id) return;
+        // Load draft if present, fall back to published slides (backward compat)
+        slides = data._hasDraftSlides ? data.draftSlides : (data.slides || []);
+        document.getElementById("defaultDwell").value  = data.draftDwell      ?? data.defaultDwell  ?? 6;
+        document.getElementById("fitMode").value       = data.draftFitMode    ?? data.fitMode       ?? "contain";
+        document.getElementById("transition").value    = data.draftTransition ?? data.transition    ?? "crossfade";
+        currentShowReviewStatus = data.status || 'published';
+        currentShowReviewData = data;
+        updateReviewStatusBanner(data);
+        updateShowItemMeta(id, data);
+        // Show push button whenever there are unpublished changes
+        const hasUnpublished = data._hasDraftSlides || data.draftStorage === 'subcollection';
+        setPushVisible(hasUnpublished);
+        loadApprovalQueue();
+      } else {
+        slides = [];
+        currentShowReviewStatus = 'published';
+        currentShowReviewData = {};
+        updateReviewStatusBanner({});
+        setPushVisible(false);
+      }
+      renderGrid();
+      updateCount();
+      syncPreviewSelect();
+    } catch(e) {
+      if (currentShowId !== id) return;
+      console.warn('Slideshow load failed:', e.message);
+      toast('Could not load slideshow: ' + e.message, true);
     }
-    renderGrid();
-    updateCount();
-    syncPreviewSelect();
   });
 }
 
@@ -10595,15 +10605,12 @@ async function pushToFirestore() {
   const fit        = document.getElementById("fitMode").value;
   const transition = document.getElementById("transition").value;
 
-  await setDoc(doc(db, "slideshows", currentShowId), {
-    draftSlides:     slides,
+  await saveDraftSlidesToFirestore(currentShowId, slides, {
     draftDwell:      dwell,
     draftFitMode:    fit,
     draftTransition: transition,
-    draftUpdatedAt:  new Date().toISOString(),
-    ...(currentOrgId && { orgId: currentOrgId }),
     ...(currentUser  && { draftBy: { uid: currentUser.uid, email: currentUser.email } }),
-  }, { merge: true });
+  });
   logActivity(`Slideshow "${currentShowId}" draft saved (${slides.length} slide${slides.length !== 1 ? 's' : ''})`);
   toast("Draft saved ✓");
   setPushVisible(true);
@@ -10724,10 +10731,7 @@ async function resolveSmartPlaylistSlides(baseSlides, showId = currentShowId) {
   for (const otherShow of shows) {
     if (!otherShow?.id || otherShow.id === showId) continue;
     try {
-      const snap = await getDoc(doc(db, 'slideshows', otherShow.id));
-      if (!snap.exists()) continue;
-      const data = snap.data();
-      const sourceSlides = Array.isArray(data.slides) ? data.slides : [];
+      const { slides: sourceSlides } = await loadEffectiveSlides(otherShow.id);
       for (const slide of sourceSlides) {
         if (!slide || slide.active === false || !slideMatchesAnyTag(slide, autoTags)) continue;
         const key = slide.id || `${otherShow.id}:${resolved.length}`;
@@ -10762,22 +10766,15 @@ window.confirmPublish = async function() {
     const publishedSlides = await resolveSmartPlaylistSlides(slides, currentShowId);
 
     // 1. Publish slideshow content (draft → live)
-    await setDoc(doc(db, "slideshows", currentShowId), {
-      slides: publishedSlides,
+    await publishSlidesToFirestore(currentShowId, publishedSlides, {
       defaultDwell: dwell,
-      fitMode:      fit,
+      fitMode: fit,
       transition,
       tags: normalizeTagsFromInput(showMeta.tags || []),
       autoIncludeTags: normalizeTagsFromInput(showMeta.autoIncludeTags || []),
       emergencyPlaylist: showMeta.emergencyPlaylist === true,
-      status:      'published',
-      publishedAt:  now,
-      draftSlides:     deleteField(),
-      draftDwell:      deleteField(),
-      draftFitMode:    deleteField(),
-      draftTransition: deleteField(),
-      draftUpdatedAt:  deleteField(),
-      draftBy:         deleteField(),
+      status: 'published',
+      publishedAt: now,
       reviewSubmittedAt:  deleteField(),
       reviewSubmittedBy:  deleteField(),
       reviewApprovedAt:   deleteField(),
@@ -10785,9 +10782,8 @@ window.confirmPublish = async function() {
       reviewRejectedAt:   deleteField(),
       reviewRejectedBy:   deleteField(),
       reviewRejectionNote: deleteField(),
-      ...(currentOrgId && { orgId: currentOrgId }),
       ...(currentUser  && { publishedBy: { uid: currentUser.uid, email: currentUser.email } }),
-    }, { merge: true });
+    });
 
     // 2. Assign selected screens to this slideshow
     const screenUpdates = [..._publishSelectedIds].map(screenId =>
@@ -10867,16 +10863,15 @@ window.approveSlideshowReview = async function(showId) {
   const showRef = doc(db, 'slideshows', showId);
   const snap = await getDoc(showRef);
   if (!snap.exists()) { toast('Slideshow not found.', true); return; }
-  const data = snap.data();
-  const draftSlides = data.draftSlides;
+  const data = await loadShowWithSlides(showId, snap.data());
+  const draftSlides = data._hasDraftSlides ? data.draftSlides : undefined;
   if (!Array.isArray(draftSlides)) { toast('No draft content to approve.', true); return; }
 
   const now = new Date().toISOString();
   try {
     const showMeta = showMetaFromOrg(showId) || data || {};
     const publishedSlides = await resolveSmartPlaylistSlides(draftSlides, showId);
-    await setDoc(showRef, {
-      slides: publishedSlides,
+    await publishSlidesToFirestore(showId, publishedSlides, {
       defaultDwell: data.draftDwell ?? data.defaultDwell ?? 6,
       fitMode: data.draftFitMode ?? data.fitMode ?? 'contain',
       transition: data.draftTransition ?? data.transition ?? 'crossfade',
@@ -10887,20 +10882,13 @@ window.approveSlideshowReview = async function(showId) {
       publishedAt: now,
       reviewApprovedAt: now,
       reviewApprovedBy: { uid: currentUser.uid, email: currentUser.email },
-      draftSlides: deleteField(),
-      draftDwell: deleteField(),
-      draftFitMode: deleteField(),
-      draftTransition: deleteField(),
-      draftUpdatedAt: deleteField(),
-      draftBy: deleteField(),
       reviewSubmittedAt: deleteField(),
       reviewSubmittedBy: deleteField(),
       reviewRejectedAt: deleteField(),
       reviewRejectedBy: deleteField(),
       reviewRejectionNote: deleteField(),
-      ...(currentOrgId && { orgId: currentOrgId }),
       ...(currentUser && { publishedBy: { uid: currentUser.uid, email: currentUser.email } }),
-    }, { merge: true });
+    });
     notifyApproval('approved', { to: data.reviewSubmittedBy?.email ? [data.reviewSubmittedBy.email] : [], showId });
     logActivity(`Approved slideshow "${showId}"`);
     toast('Slideshow approved and published ✓');
@@ -11975,11 +11963,7 @@ document.getElementById('dashFileInput').addEventListener('change', async functi
   }
 
   if (newSlides.length) {
-    // Append to the target show's Firestore doc
-    const showRef  = doc(db, 'slideshows', showId);
-    const snap     = await getDoc(showRef);
-    const existing = snap.exists() ? (snap.data().slides || []) : [];
-    await setDoc(showRef, { slides: [...existing, ...newSlides] }, { merge: true });
+    await _addSlidesToShow(showId, newSlides);
 
     // If this show is currently loaded, update in-memory state too
     if (showId === currentShowId) {
@@ -12001,12 +11985,9 @@ window.dashAddByUrl = function() {
   if (!url) return;
   const name = url.split('/').pop().split('?')[0] || 'slide';
   (async () => {
-    const showRef  = doc(db, 'slideshows', showId);
-    const snap     = await getDoc(showRef);
-    const existing = snap.exists() ? (snap.data().slides || []) : [];
-    existing.push({ id: crypto.randomUUID(), url, name, active: true });
-    await setDoc(showRef, { slides: existing }, { merge: true });
-    if (showId === currentShowId) { slides.push({ id: crypto.randomUUID(), url, name, active: true }); renderGrid(); updateCount(); }
+    const slide = { id: crypto.randomUUID(), url, name, active: true };
+    await _addSlideToShow(showId, slide);
+    if (showId === currentShowId) { slides.push(slide); renderGrid(); updateCount(); }
     closeDashUpload();
     toast('Slide added ✓');
   })();
@@ -21703,19 +21684,21 @@ function _populateShowSelect(selectId) {
 }
 
 // ── Save a slide to a show that isn't currently loaded ─────────────────────
-async function _addSlideToShow(showId, slide) {
-  const snap = await getDoc(doc(db, 'slideshows', showId));
-  const data = snap.exists() ? snap.data() : {};
-  const existing = (data.draftSlides ?? data.slides ?? []).slice();
-  existing.push(slide);
-  await setDoc(doc(db, 'slideshows', showId), {
-    draftSlides:    existing,
-    draftUpdatedAt: new Date().toISOString(),
-    ...(currentOrgId && { orgId: currentOrgId }),
-  }, { merge: true });
-  // refresh the slide count badge in the sidebar
+async function _addSlidesToShow(showId, newSlides) {
+  const { data, slides: published, draftSlides } = await loadEffectiveSlides(showId);
+  const existing = (draftSlides ?? published ?? []).slice();
+  const nextSlides = existing.concat(newSlides);
+  await saveDraftSlidesToFirestore(showId, nextSlides, {
+    draftDwell: data.draftDwell ?? data.defaultDwell ?? 6,
+    draftFitMode: data.draftFitMode ?? data.fitMode ?? 'contain',
+    draftTransition: data.draftTransition ?? data.transition ?? 'crossfade',
+  });
   const el = document.querySelector(`#showList .show-item[data-id="${CSS.escape(showId)}"] .show-item-count`);
-  if (el) el.textContent = existing.filter(s => s.active !== false).length + ' slides';
+  if (el) el.textContent = nextSlides.filter(s => s.active !== false).length + ' slides';
+}
+
+async function _addSlideToShow(showId, slide) {
+  return _addSlidesToShow(showId, [slide]);
 }
 
 // ── QR Code modal ─────────────────────────────────────────────────────────
