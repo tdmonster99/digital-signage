@@ -150,6 +150,26 @@ service cloud.firestore {
       allow update: if isEditor(resource.data.orgId);
       allow delete: if isAdmin(resource.data.orgId);
 
+      // -- Published slides --
+      // display.html renders published slides without auth.
+      match /slides/{slideId} {
+        allow read: if true;
+        allow create, update: if isEditor(
+          get(/databases/$(database)/documents/slideshows/$(showId)).data.orgId
+        );
+        allow delete: if isEditor(
+          get(/databases/$(database)/documents/slideshows/$(showId)).data.orgId
+        );
+      }
+
+      // -- Draft slides --
+      // Drafts are not public; only org editors/admins can read/write them.
+      match /draftSlides/{slideId} {
+        allow read, create, update, delete: if isEditor(
+          get(/databases/$(database)/documents/slideshows/$(showId)).data.orgId
+        );
+      }
+
       // -- Slide version history --
       // Versions are append-only (no updates or deletes).
       match /slideVersions/{slideId}/versions/{versionId} {
