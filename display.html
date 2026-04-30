@@ -16,7 +16,7 @@
 <script type="module">
   import { initializeApp }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, doc, collection, onSnapshot, setDoc, addDoc }
+  import { getFirestore, doc, collection, onSnapshot, setDoc, addDoc, getDocs, query, orderBy }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   const firebaseConfig = {
@@ -1969,6 +1969,27 @@
     showError('All slides failed to load. Check your content in the Admin Panel.');
   }
 
+  function shouldLoadPublishedSubcollection(data = {}) {
+    return data.slideStorageVersion >= 2 || data.publishedStorage === 'subcollection';
+  }
+
+  function normalizeStoredSlide(docSnap) {
+    const data = docSnap.data() || {};
+    const { order, updatedAt, ...slide } = data;
+    return { id: slide.id || docSnap.id, ...slide };
+  }
+
+  async function loadPublishedSlides(slideshowId, data = {}) {
+    if (!shouldLoadPublishedSubcollection(data)) {
+      return Array.isArray(data.slides) ? data.slides : [];
+    }
+    const snap = await getDocs(query(
+      collection(db, 'slideshows', slideshowId, 'slides'),
+      orderBy('order', 'asc')
+    ));
+    return snap.docs.map(normalizeStoredSlide);
+  }
+
   async function applyPlaylist(data) {
     if (!data || !data.slides || !data.slides.length) {
       showError("No slides configured. Open the Admin Panel to add images.");
@@ -2048,15 +2069,20 @@
 
     slideshowUnsub = onSnapshot(
       doc(db, "slideshows", slideshowId),
-      snap => {
+      async snap => {
         if (activeSlideshowId !== slideshowId) return; // stale callback — a newer show has taken over
         reconnectBackoff = 5000;         // reset backoff on any successful event
         lastUpdateTime   = Date.now();
         setOffline(false);
         if (snap.exists()) {
           const data = snap.data();
-          saveCache(slideshowId, data);
-          applyPlaylist(data);
+          const resolved = {
+            ...data,
+            slides: await loadPublishedSlides(slideshowId, data),
+          };
+          if (activeSlideshowId !== slideshowId) return; // stale after subcollection load
+          saveCache(slideshowId, resolved);
+          applyPlaylist(resolved);
         } else {
           loader.style.display = "none";
           showError("Slideshow '" + slideshowId + "' not found. Create it in the Admin Panel.");
