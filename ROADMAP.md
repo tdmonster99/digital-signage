@@ -278,7 +278,7 @@ Small non-feature tasks that need to get done.
 | Task | Priority | Notes |
 |------|----------|-------|
 | Mark Vercel env vars as Sensitive | Medium | Complete 2026-04-29. Production and Preview credential-like vars now report `type: sensitive` in Vercel metadata, including `CRON_SECRET`, API keys, Stripe secrets, Firebase service account JSON, AWS access keys, `RESEND_API_KEY`, and `ANTHROPIC_API_KEY`. `CRON_SECRET` was rotated after a whitespace-tainted update attempt, key values were re-entered cleanly, and production deployment `dpl_4L4ggRx1iWtDTTLd6ZuPrZRjrVMc` is verified on `app.zigns.io`. Development entries remain `encrypted` because Vercel CLI treats Sensitive as a Production/Preview setting. |
-| Delete duplicate Vercel `app` project | Low | `digital-signage` is the active project (linked in `.vercel/project.json`). The `app` project is a stale duplicate — verify it has no custom domain or env vars, then delete. |
+| Delete duplicate Vercel `app` project | Low | Complete 2026-04-29. Deleted stale duplicate project `app` (`prj_tTB7997K3tjd169MssthjYSnhini`) after confirming it had no custom domain and only duplicated `main` branch deployments. `digital-signage` remains the active project linked to `app.zigns.io`. |
 | Move `CRON_SECRET` to `Authorization` header only | High | Folded into Phase 5.3 Vercel Pro Infrastructure Upgrade. Complete for `screen-monitor.js`, `cap-poll.js`, and `analytics-rollup.js`; query-string secret requests return 401. |
 
 ---

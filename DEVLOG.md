@@ -4,6 +4,18 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-04-29 — Codex — Removed duplicate Vercel project
+
+Completed the low-risk Phase 5.3 operations cleanup for the stale duplicate Vercel project.
+
+- **Deleted project**: removed Vercel project `app` (`prj_tTB7997K3tjd169MssthjYSnhini`) after verifying it had no custom domain and was only duplicating `main` branch deployments from the same GitHub repo.
+- **Preserved active production**: `digital-signage` (`prj_PYBCfcpx9G5Dd8K0ClImUYfDaJUf`) remains the active project with `https://app.zigns.io`.
+- **Verification**: Vercel project list no longer includes `app`; `https://app.zigns.io` returned 200; unauthenticated `/api/analytics-rollup` returned 401.
+
+No app code changed.
+
+---
+
 ## 2026-04-29 — Codex — Slideshow subcollection migration plan
 
 Prepared the implementation plan for moving slideshow slide payloads out of parent Firestore docs.
