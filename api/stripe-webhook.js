@@ -1,5 +1,6 @@
 ﻿// Stripe webhook handler â€” updated for Zigns.io integration
 const Stripe = require('stripe');
+const { getFirestore } = require('./_lib/firebase-admin');
 // Used only for signature verification — no API calls, key doesn't matter
 const stripeVerifier = Stripe('dummy');
 function getStripe(livemode) {
@@ -7,18 +8,6 @@ function getStripe(livemode) {
     ? process.env.STRIPE_SECRET_KEY
     : (process.env.STRIPE_SECRET_KEY_TEST || process.env.STRIPE_SECRET_KEY);
   return Stripe(key);
-}
-let   admin;
-
-function getFirestore() {
-  if (!admin) {
-    admin = require('firebase-admin');
-    if (!admin.apps.length) {
-      const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
-      admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
-    }
-  }
-  return admin.firestore();
 }
 
 // Stripe requires the raw body for signature verification

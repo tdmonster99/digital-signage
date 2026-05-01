@@ -4,6 +4,18 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-01 — Codex — Restore Firebase Admin cron initialization
+
+Production verification found Vercel Cron 500s for `/api/cap-poll` and `/api/screen-monitor`.
+
+- **Root cause**: Firebase Admin initialization could get stuck after a failed service-account parse/init. `_admin` was set, but no default Firebase app existed, causing subsequent invocations to skip initialization and throw `app/no-app`.
+- **Shared helper**: hardened `api/_lib/firebase-admin.js` so every call ensures an initialized app exists before returning Firestore/Auth.
+- **Env tolerance**: added a narrow repair path for service-account JSON where `private_key` was pasted with literal line breaks instead of escaped `\n` sequences.
+- **Call-site cleanup**: moved `api/screen-monitor.js`, `api/link-account.js`, and `api/stripe-webhook.js` onto the shared Firebase Admin helper.
+- **Verification**: `node --check` passed for the shared helper, `api/screen-monitor.js`, `api/cap-poll.js`, `api/analytics-rollup.js`, `api/link-account.js`, and `api/stripe-webhook.js`.
+
+---
+
 ## 2026-05-01 — Codex — Worktree normalization after reboot
 
 Recovered the local repos after the reboot left many files showing as modified from line-ending churn.

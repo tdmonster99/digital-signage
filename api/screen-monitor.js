@@ -8,17 +8,7 @@
 // Required env vars: FIREBASE_SERVICE_ACCOUNT_JSON, RESEND_API_KEY, CRON_SECRET
 // The caller must send `Authorization: Bearer <CRON_SECRET>`.
 
-let _admin;
-function getFirestore() {
-  if (!_admin) {
-    _admin = require('firebase-admin');
-    if (!_admin.apps.length) {
-      const sa = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
-      _admin.initializeApp({ credential: _admin.credential.cert(sa) });
-    }
-  }
-  return _admin.firestore();
-}
+const { getFirestore } = require('./_lib/firebase-admin');
 
 const OFFLINE_THRESHOLD_MS = 10 * 60 * 1000; // 10 minutes
 

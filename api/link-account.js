@@ -1,12 +1,4 @@
-const admin = require('firebase-admin');
-
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON)),
-  });
-}
-
-const db = admin.firestore();
+const { getAuth, getFirestore } = require('./_lib/firebase-admin');
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -19,7 +11,8 @@ module.exports = async function handler(req, res) {
   if (!idToken) return res.status(400).json({ error: 'idToken required' });
 
   try {
-    const decoded = await admin.auth().verifyIdToken(idToken);
+    const decoded = await getAuth().verifyIdToken(idToken);
+    const db = getFirestore();
     const { uid, email } = decoded;
     if (!email) return res.json({ merged: false });
 
