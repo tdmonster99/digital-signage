@@ -40,7 +40,7 @@ Two parallel tracks have been running today:
   - #19 file-size validation — added `_enforceSize()` in `lib/s3-upload.js` (50 MB image / 500 MB video / 100 MB other) plus a friendlier per-file pre-check in `handleFiles`
   - #27 `backgroundImage` CSS injection — added `safeCssBgUrl()` helper, switched both call sites to `setProperty`
   - #28 `crossfadeTo` now awaits `renderWeather` and `renderMultizone`
-  - #33 deferred — needs Firestore rules + server token endpoint
+  - #33 addressed after session recovery — new display pairing credentials, `/api/screen-token`, and credential-aware Firestore rules; legacy screens still need re-pairing to leave compatibility mode
 
 - **Session 40** — Critical bug fixes (commit `654cba8`):
   - #10/#26 Webpage slide `javascript:` URL XSS — whitelisted http/https on save (admin.html `saveWebpageSlide` + multizone) and at render (display.html `safeIframeUrl()` helper used by both single-zone and multizone iframe paths)
@@ -62,12 +62,12 @@ Reference: the full audit lives in conversation context; the commit log + DEVLOG
 
 ### Medium severity — recommended next batch
 
-- **#33** `?screen=xxx` URL lets anyone impersonate a screen (`display.html`) — no auth on display, so anyone with a copied URL can write the heartbeat as that screen. **Needs Firestore rules + short-lived tokens or server-side pairing — design + deploy work, not a one-line fix.** Sketch: write Firestore rules requiring a signed claim token on `screens/{id}` writes; add `/api/screen-token` issuing short-lived JWTs after pairing succeeds; display.html sends the token in heartbeat updates. ✅ everything else from the original Medium "next batch" is done as of session 42.
+- **#33** `?screen=xxx` URL impersonation — addressed with pair-time screen secrets, hashed credentials on `screens/{id}`, `/api/screen-token` Firebase custom tokens, and rules requiring screen tokens for credentialed heartbeat/analytics writes. Remaining operational follow-up: re-pair legacy screens so they gain `credentialHash` and stop using compatibility rules.
 
 ### Other Medium / Low items still open
 
 - #8 mobile.html no file size validation (25MB image cap recommended)
-- #18 pairing `data.orgId` spread shadow — currently in `confirmPairingCode`, fix by always using `currentOrgId`
+- #18 pairing `data.orgId` spread shadow — addressed with #33 by always using `currentOrgId` during screen pairing
 - #20 zero-byte file upload not rejected
 - #23 slideshow `unsubscribe` listener never closed on logout/page nav
 - #24 `enforceScreenLimit` runs from every admin's session — concurrent admins double-write

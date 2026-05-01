@@ -31,6 +31,30 @@ service cloud.firestore {
       return isMember(orgId) && userDoc().role == 'admin';
     }
 
+    // Display screen custom tokens are issued by api/screen-token.js after the
+    // browser proves possession of the pairing-time screen secret.
+    function isScreenToken(screenId) {
+      return isSignedIn()
+        && request.auth.token.screen == true
+        && request.auth.token.screenId == screenId;
+    }
+
+    function isScreenTokenForOrg(orgId, screenId) {
+      return isScreenToken(screenId)
+        && request.auth.token.orgId == orgId;
+    }
+
+    function screenHasCredential(screenId) {
+      return exists(/databases/$(database)/documents/screens/$(screenId))
+        && get(/databases/$(database)/documents/screens/$(screenId)).data.keys().hasAny(['credentialHash']);
+    }
+
+    function isLegacyScreenForOrg(orgId, screenId) {
+      return exists(/databases/$(database)/documents/screens/$(screenId))
+        && get(/databases/$(database)/documents/screens/$(screenId)).data.orgId == orgId
+        && !screenHasCredential(screenId);
+    }
+
     // ----------------------------------------------------------------
     // users/{uid}
     // Users can only read and write their own document.
@@ -65,11 +89,15 @@ service cloud.firestore {
       }
 
       // -- Analytics events --
-      // display.html writes slide-view / online / offline events without auth.
-      // Events are append-only; no client updates or deletes.
+      // New paired displays write with a Firebase custom screen token. Legacy
+      // screens without a credential hash are temporarily allowed until re-paired.
       match /analytics/{eventId} {
         allow read: if isMember(orgId);
-        allow create: if true;
+        allow create: if request.resource.data.screenId is string
+          && (
+            isScreenTokenForOrg(orgId, request.resource.data.screenId)
+            || (request.auth == null && isLegacyScreenForOrg(orgId, request.resource.data.screenId))
+          );
         allow update, delete: if false;
       }
 
@@ -85,24 +113,36 @@ service cloud.firestore {
 
     // ----------------------------------------------------------------
     // screens/{screenId}
-    // display.html runs unauthenticated on TV hardware:
+    // display.html runs on TV hardware:
     //   - needs read access to its own screen doc (slideshowId, settings)
-    //   - writes a heartbeat (lastSeen only) every 5 minutes
+    //   - credentialed screens write lastSeen with a Firebase custom screen token
     // Admins/editors create and manage screen docs during the pairing flow.
     // ----------------------------------------------------------------
     match /screens/{screenId} {
       // Public read — display.html has no authenticated user.
       allow read: if true;
 
-      // Only authenticated editors/admins can create a screen doc
-      // (this happens on the admin side during the pairing flow).
-      allow create: if isEditor(request.resource.data.orgId);
+      // Only authenticated editors/admins can create a screen doc during pairing.
+      // New screens must carry only the hash of the display's local secret.
+      allow create: if isEditor(request.resource.data.orgId)
+        && request.resource.data.credentialHash is string
+        && request.resource.data.credentialHash.matches('^[a-f0-9]{64}$')
+        && request.resource.data.credentialVersion == 1;
 
-      // Two cases:
-      //   1. Unauthenticated heartbeat — only lastSeen may change.
-      //   2. Authenticated editor/admin — full update for their org's screen.
+      // Three cases:
+      //   1. Credentialed display heartbeat — only lastSeen may change.
+      //   2. Legacy display heartbeat — only for screens not yet re-paired.
+      //   3. Authenticated editor/admin — full update for their org's screen.
       allow update: if
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastSeen'])
+        (
+          isScreenToken(screenId)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastSeen'])
+        )
+        || (
+          request.auth == null
+          && !resource.data.keys().hasAny(['credentialHash'])
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastSeen'])
+        )
         || isEditor(resource.data.orgId);
 
       // Only admins can delete screens.
@@ -121,18 +161,30 @@ service cloud.firestore {
       // Public read — display polls for the admin to complete pairing.
       allow read: if true;
 
-      // display.html creates codes without auth.
-      // Enforce minimal shape: status must be "pending" and expiry must be set.
+      // display.html creates codes without auth. The raw screen secret never
+      // leaves localStorage; only its SHA-256 hash is stored for admin pairing.
       allow create: if
         request.resource.data.status == 'pending'
-        && request.resource.data.keys().hasAll(['status', 'createdAt', 'expiresAt']);
+        && request.resource.data.credentialVersion == 1
+        && request.resource.data.screenCredentialHash is string
+        && request.resource.data.screenCredentialHash.matches('^[a-f0-9]{64}$')
+        && request.resource.data.keys().hasOnly([
+          'status',
+          'createdAt',
+          'expiresAt',
+          'screenCredentialHash',
+          'credentialVersion'
+        ]);
 
       // Only authenticated users can mark a code as paired.
       // Prevent replaying or overwriting already-paired codes.
       allow update: if
         isSignedIn()
         && resource.data.status == 'pending'
-        && request.resource.data.status == 'paired';
+        && request.resource.data.status == 'paired'
+        && request.resource.data.screenId is string
+        && exists(/databases/$(database)/documents/screens/$(request.resource.data.screenId))
+        && isEditor(get(/databases/$(database)/documents/screens/$(request.resource.data.screenId)).data.orgId);
 
       allow delete: if false;
     }

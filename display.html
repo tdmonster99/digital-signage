@@ -16,6 +16,8 @@
 <script type="module">
   import { initializeApp }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getAuth, signInWithCustomToken }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
   import { getFirestore, doc, collection, onSnapshot, setDoc, addDoc, getDocs, query, orderBy }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
@@ -30,6 +32,7 @@
 
   const app = initializeApp(firebaseConfig);
   const db  = getFirestore(app);
+  const screenAuth = getAuth(app);
 
   // ── Screen identity ───────────────────────────────────────────────────────
   // ?slideshow=xxx in URL = preview iframe from admin panel (skip screen registration)
@@ -41,9 +44,14 @@
   // same computer can each maintain an independent screen identity and pairing.
   const screenSlot = urlParams.get("slot") || "";
   const STORAGE_KEY = screenSlot ? `signage-screen-id-${screenSlot}` : "signage-screen-id";
+  const SECRET_KEY = screenSlot ? `signage-screen-secret-${screenSlot}` : "signage-screen-secret";
 
   let screenId = localStorage.getItem(STORAGE_KEY); // may be null if unregistered
   let ownsScreenIdentity = Boolean(screenId);
+  let screenSecret = localStorage.getItem(SECRET_KEY) || "";
+  let screenWriteState = "unknown"; // unknown | ready | legacy | denied | readonly
+  let screenAuthPromise = null;
+  let pendingPairingSecret = null;
 
   // ── Offline cache ─────────────────────────────────────────────────────────
   function saveCache(id, data) {
@@ -81,14 +89,18 @@
   let currentSlideshowIdForAnalytics = null;
   let slideViewStart  = null;   // timestamp when current slide became visible
 
+  function hasScreenWriteAccess() {
+    return ownsScreenIdentity && (screenWriteState === "ready" || screenWriteState === "legacy");
+  }
+
   function queueAnalyticsEvent(event) {
-    if (!ownsScreenIdentity) return;
+    if (!hasScreenWriteAccess()) return;
     if (!analyticsOrgId) return;
     analyticsQueue.push({ ...event, timestamp: new Date().toISOString() });
   }
 
   async function flushAnalytics() {
-    if (!ownsScreenIdentity) return;
+    if (!hasScreenWriteAccess()) return;
     if (!analyticsOrgId || !analyticsQueue.length) return;
     const batch = analyticsQueue.splice(0);
     const col   = collection(db, 'organizations', analyticsOrgId, 'analytics');
@@ -98,6 +110,78 @@
   }
 
   setInterval(flushAnalytics, 60 * 1000);
+
+  async function ensureScreenWriteAccess() {
+    if (!ownsScreenIdentity) {
+      screenWriteState = "readonly";
+      return false;
+    }
+    if (screenWriteState === "ready" || screenWriteState === "legacy") return true;
+    if (screenWriteState === "denied") return false;
+    if (!screenSecret) {
+      screenWriteState = "legacy";
+      return true;
+    }
+    if (screenAuthPromise) return screenAuthPromise;
+
+    screenAuthPromise = fetch('/api/screen-token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ screenId, secret: screenSecret }),
+    })
+      .then(async res => {
+        const data = await res.json().catch(() => ({}));
+        if (res.status === 409 && data.legacy) {
+          screenWriteState = "legacy";
+          return true;
+        }
+        if (!res.ok || !data.token) {
+          throw new Error(data.error || `HTTP ${res.status}`);
+        }
+        await signInWithCustomToken(screenAuth, data.token);
+        screenWriteState = "ready";
+        return true;
+      })
+      .catch(err => {
+        screenWriteState = "denied";
+        if (screenSecret) {
+          setTimeout(() => {
+            if (screenWriteState === "denied") screenWriteState = "unknown";
+          }, 60 * 1000);
+        }
+        console.warn('[Screen] Screen credential rejected; heartbeat and analytics disabled:', err.message);
+        return false;
+      })
+      .finally(() => {
+        screenAuthPromise = null;
+      });
+
+    return screenAuthPromise;
+  }
+
+  function applyScreenCredentialRequirement(screenData) {
+    if (!ownsScreenIdentity || screenWriteState === "ready") return;
+    if (screenData?.credentialHash && !screenSecret) {
+      screenWriteState = "denied";
+      console.warn('[Screen] This screen requires a local credential; heartbeat and analytics disabled.');
+    }
+  }
+
+  function generateScreenSecret() {
+    const bytes = new Uint8Array(32);
+    crypto.getRandomValues(bytes);
+    let raw = "";
+    bytes.forEach(b => { raw += String.fromCharCode(b); });
+    return btoa(raw).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+  }
+
+  async function sha256Hex(value) {
+    const data = new TextEncoder().encode(value);
+    const digest = await crypto.subtle.digest('SHA-256', data);
+    return [...new Uint8Array(digest)]
+      .map(b => b.toString(16).padStart(2, "0"))
+      .join("");
+  }
 
   // ── DOM refs ─────────────────────────────────────────────────────────────────
   const stageA        = document.getElementById("stageA");
@@ -1561,7 +1645,7 @@
     watchdogHandle = setTimeout(async () => {
       console.warn('[Watchdog] Playback stalled — forcing advance');
       try {
-        if (ownsScreenIdentity && analyticsOrgId) {
+        if (hasScreenWriteAccess() && analyticsOrgId) {
           await addDoc(collection(db, 'organizations', analyticsOrgId, 'analytics'), {
             type: 'watchdog_restart', screenId,
             slideshowId: currentSlideshowIdForAnalytics,
@@ -1937,7 +2021,7 @@
     // Record duration of slide that just finished
     if (slideViewStart !== null) {
       const prev = slides[current];
-      if (prev && ownsScreenIdentity && analyticsOrgId) {
+      if (prev && hasScreenWriteAccess() && analyticsOrgId) {
         const duration = Math.round((Date.now() - slideViewStart) / 1000);
         queueAnalyticsEvent({
           type:        'slide_view',
@@ -2122,8 +2206,10 @@
     const { ownsIdentity = true } = options;
     screenId = resolvedScreenId;
     ownsScreenIdentity = ownsIdentity;
+    screenWriteState = ownsScreenIdentity ? "unknown" : "readonly";
     if (ownsScreenIdentity) {
       localStorage.setItem(STORAGE_KEY, screenId);
+      await ensureScreenWriteAccess();
     }
 
     let currentSlideshowId = null;
@@ -2133,7 +2219,7 @@
     // IMPORTANT: never call heartbeat() from inside the screenRef onSnapshot
     // callback — doing so writes lastSeen → re-triggers the snapshot → infinite write loop.
     async function heartbeat() {
-      if (!ownsScreenIdentity) return;
+      if (!(await ensureScreenWriteAccess())) return;
       try { await setDoc(screenRef, { lastSeen: new Date().toISOString() }, { merge: true }); }
       catch(e) {}
     }
@@ -2251,7 +2337,7 @@
           .filter(Boolean).join(' · ');
         capEl.style.display = 'flex';
 
-        if (ownsScreenIdentity && analyticsOrgId) {
+        if (hasScreenWriteAccess() && analyticsOrgId) {
           queueAnalyticsEvent({
             type: 'cap_alert_rendered',
             screenId,
@@ -2269,7 +2355,7 @@
 
     // Emit analytics online event once we know orgId; offline on page unload
     function emitOnline(orgId) {
-      if (!ownsScreenIdentity) return;
+      if (!hasScreenWriteAccess()) return;
       if (!orgId || analyticsOrgId) return;
       analyticsOrgId = orgId;
       addDoc(collection(db, 'organizations', orgId, 'analytics'), {
@@ -2277,7 +2363,7 @@
       }).catch(() => {});
     }
     window.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'hidden' && ownsScreenIdentity && analyticsOrgId) {
+      if (document.visibilityState === 'hidden' && hasScreenWriteAccess() && analyticsOrgId) {
         // Best-effort flush + offline event when tab is hidden/closed
         flushAnalytics();
         addDoc(collection(db, 'organizations', analyticsOrgId, 'analytics'), {
@@ -2450,8 +2536,11 @@
           // different paired screen from this browser slot.
           if (ownsScreenIdentity) {
             localStorage.removeItem(STORAGE_KEY);
+            localStorage.removeItem(SECRET_KEY);
             screenId = null;
+            screenSecret = "";
             ownsScreenIdentity = false;
+            screenWriteState = "unknown";
             if (slideshowUnsub) { slideshowUnsub(); slideshowUnsub = null; }
             window.history.replaceState({}, "", window.location.pathname);
             showReadyToConnect();
@@ -2466,6 +2555,7 @@
           currentScreenTags = Array.isArray(data.tags)
             ? data.tags.map(t => String(t || '').trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9_-]/g, '')).filter(Boolean)
             : [];
+          applyScreenCredentialRequirement(data);
 
           // NOTE: do NOT call heartbeat() here — it writes to screenRef which
           // re-fires this snapshot callback, causing an infinite write loop.
@@ -2507,8 +2597,11 @@
     // ?reset — clear local identity and show pairing screen
     if (urlParams.has("reset")) {
       localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(SECRET_KEY);
       screenId = null;
+      screenSecret = "";
       ownsScreenIdentity = false;
+      screenWriteState = "unknown";
       window.history.replaceState({}, "", window.location.pathname);
       showReadyToConnect();
       return;
@@ -2542,12 +2635,17 @@
   async function showReadyToConnect() {
     loader.style.display = "none";
     const code = generatePairingCode();
+    const pairingSecret = generateScreenSecret();
+    const pairingSecretHash = await sha256Hex(pairingSecret);
+    pendingPairingSecret = pairingSecret;
 
     try {
       await setDoc(doc(db, "pairingCodes", code), {
-        status:    "pending",
-        createdAt: new Date().toISOString(),
-        expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+        status:               "pending",
+        createdAt:            new Date().toISOString(),
+        expiresAt:            new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+        screenCredentialHash: pairingSecretHash,
+        credentialVersion:    1,
       });
     } catch(e) { console.warn("Could not create pairing code:", e.message); }
 
@@ -2572,8 +2670,15 @@
       // Admin claimed the code and assigned a screenId
       if (data.status === "paired" && data.screenId) {
         pairingUnsub();
+        if (pendingPairingSecret) {
+          screenSecret = pendingPairingSecret;
+          localStorage.setItem(SECRET_KEY, screenSecret);
+          pendingPairingSecret = null;
+        }
         localStorage.setItem(STORAGE_KEY, data.screenId);
         screenId = data.screenId;
+        ownsScreenIdentity = true;
+        screenWriteState = "unknown";
         pairEl.style.transition = "opacity 0.8s";
         pairEl.style.opacity = "0";
         setTimeout(() => { pairEl.style.display = "none"; startNormalMode(data.screenId); }, 800);

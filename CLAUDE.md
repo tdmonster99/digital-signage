@@ -116,8 +116,8 @@ Firebase project: `digital-signage-2`. Collections:
 | `organizations/{id}/media` | Media library entries |
 | `organizations/{id}/analytics` | Analytics events |
 | `organizations/{id}/analyticsDaily` | Daily rollup docs generated from raw analytics events |
-| `screens/{id}` | Screen records with `slideshowId`, `orgId`, `lastSeen` |
-| `pairingCodes/{code}` | 6-char codes written by display.html, consumed by admin pairing flow |
+| `screens/{id}` | Screen records with `slideshowId`, `orgId`, `lastSeen`, and optional `credentialHash` / `credentialVersion` for display write auth |
+| `pairingCodes/{code}` | 6-char codes written by display.html, consumed by admin pairing flow; new codes include `screenCredentialHash` only, never the raw display secret |
 | `users/{uid}` | User profile + org membership (see schema below) |
 | `brandKits/{orgId}` | Brand kit (colors, fonts, logo URL) |
 | `invitations/{id}` | Pending invites |

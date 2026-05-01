@@ -20503,6 +20503,17 @@ window.confirmPairingCode = async function() {
       errEl.textContent = 'This code has expired. The display will generate a new one shortly.';
       return;
     }
+    const credentialHash = typeof data.screenCredentialHash === 'string' && /^[a-f0-9]{64}$/i.test(data.screenCredentialHash)
+      ? data.screenCredentialHash.toLowerCase()
+      : '';
+    if (!credentialHash) {
+      errEl.textContent = 'This display needs to refresh before pairing. Reload the display and use the new code.';
+      return;
+    }
+    if (!currentOrgId) {
+      errEl.textContent = 'Your organization is still loading. Try again in a moment.';
+      return;
+    }
 
     // Create screen doc
     const newScreenId = crypto.randomUUID();
@@ -20514,8 +20525,9 @@ window.confirmPairingCode = async function() {
       slideshowId:  defaultShowId,
       registeredAt: new Date().toISOString(),
       lastSeen:     new Date().toISOString(),
-      ...(currentOrgId && { orgId: currentOrgId }),
-      ...(data.orgId   && { orgId: data.orgId }),
+      credentialHash,
+      credentialVersion: 1,
+      orgId:        currentOrgId,
     });
 
     // Signal the display
@@ -24184,4 +24196,3 @@ window.canvaImport = async function canvaImport() {
 
 </body>
 </html>
-

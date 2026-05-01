@@ -4,6 +4,20 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-01 — Codex — Add screen credentials for display writes
+
+Implemented the architectural #33 hardening path for `display.html?screen=...` impersonation.
+
+- **Pair-time credential**: displays now generate a local high-entropy screen secret during pairing and write only its SHA-256 hash to the pairing code.
+- **Admin pairing**: new screen docs include `credentialHash` and `credentialVersion: 1`; stale pairing codes without a credential hash are rejected with a refresh prompt.
+- **Org binding cleanup**: pairing now writes screens into the active admin org only, removing the stale `data.orgId` shadow path from audit item #18.
+- **Screen token API**: added `api/screen-token.js`, which verifies the local secret against `screens/{screenId}.credentialHash` and issues a Firebase custom token with `screen`, `screenId`, and `orgId` claims.
+- **Display writes**: credentialed displays sign in with the custom token before writing heartbeats or analytics. Copied URLs and browsers missing the local secret render read-only.
+- **Rules hardening**: Firestore rules now require screen tokens for credentialed screen `lastSeen` and analytics writes. Legacy screens without a credential hash retain temporary heartbeat/analytics compatibility until they are re-paired.
+- **Verification**: `node --check` passed for `api/screen-token.js` plus extracted `admin.html` and `display.html` scripts; `git diff --check` passed.
+
+---
+
 ## 2026-05-01 — Codex — Rotate Firebase Admin Vercel credential
 
 Production cron verification still showed `/api/cap-poll` and `/api/screen-monitor` failing with Firebase `16 UNAUTHENTICATED` after the code-side Admin initialization fix, which pointed to the Vercel service-account key itself.
