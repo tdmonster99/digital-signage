@@ -436,10 +436,41 @@
     let activeShowId = null;
     let activeShowData = null;
     let activeShowUnsub = null;
+    let orgUnsub = null;
+    let screensUnsub = null;
+    const MOBILE_IMAGE_MAX_BYTES = 25 * 1024 * 1024;
+
+    function stopMobileListener(unsub) {
+      if (!unsub) return null;
+      try { unsub(); } catch(_) {}
+      return null;
+    }
+
+    function cleanupMobileListeners() {
+      activeShowUnsub = stopMobileListener(activeShowUnsub);
+      orgUnsub = stopMobileListener(orgUnsub);
+      screensUnsub = stopMobileListener(screensUnsub);
+    }
+
+    function formatBytes(n) {
+      if (n >= 1024 * 1024) return Math.round(n / (1024 * 1024)) + ' MB';
+      if (n >= 1024) return Math.round(n / 1024) + ' KB';
+      return n + ' B';
+    }
+
+    function validateMobileImage(file) {
+      if (!file?.size) throw new Error('Empty files cannot be uploaded.');
+      if (!(file.type || '').startsWith('image/')) {
+        throw new Error('Choose an image file.');
+      }
+      if (file.size > MOBILE_IMAGE_MAX_BYTES) {
+        throw new Error(`Images must be ${formatBytes(MOBILE_IMAGE_MAX_BYTES)} or smaller.`);
+      }
+    }
 
     // ── Auth guard ───────────────────────────────────────────────────────────
     onAuthStateChanged(auth, async user => {
-      if (!user) { location.href = '/login.html'; return; }
+      if (!user) { cleanupMobileListeners(); location.href = '/login.html'; return; }
       me = user;
       await boot();
     });
@@ -452,7 +483,8 @@
         if (!orgId) throw new Error('No organization linked to this account.');
 
         // Org subscription
-        onSnapshot(doc(db, 'organizations', orgId), snap => {
+        orgUnsub = stopMobileListener(orgUnsub);
+        orgUnsub = onSnapshot(doc(db, 'organizations', orgId), snap => {
           if (!snap.exists()) return;
           org      = { id: snap.id, ...snap.data() };
           showMeta = Array.isArray(org.slideshows) ? org.slideshows : [];
@@ -461,7 +493,8 @@
         });
 
         // Screens subscription
-        onSnapshot(
+        screensUnsub = stopMobileListener(screensUnsub);
+        screensUnsub = onSnapshot(
           query(collection(db, 'screens'), where('orgId', '==', orgId)),
           snap => {
             screens = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -746,6 +779,12 @@
     });
 
     async function uploadImage(file) {
+      try {
+        validateMobileImage(file);
+      } catch(e) {
+        toast(e.message);
+        return;
+      }
       const wrap  = document.getElementById('uploadWrap');
       const bar   = document.getElementById('uploadBar');
       const label = document.getElementById('uploadLabel');
@@ -753,7 +792,12 @@
       try {
         const ext = file.name.split('.').pop().toLowerCase();
         const key = `signage/${activeShowId}/${crypto.randomUUID()}.${ext}`;
-        const r1  = await fetch(`/api/upload-url?key=${encodeURIComponent(key)}&contentType=${encodeURIComponent(file.type)}`);
+        const params = new URLSearchParams({
+          key,
+          contentType: file.type || 'application/octet-stream',
+          size: String(file.size),
+        });
+        const r1  = await fetch(`/api/upload-url?${params}`);
         if (!r1.ok) throw new Error('Could not get upload URL');
         const { uploadUrl, cdnUrl } = await r1.json();
         bar.style.width = '40%';
@@ -870,7 +914,11 @@
         </div>`;
     }
 
-    window.doSignOut = async () => { await fbSignOut(auth); location.href = '/login.html'; };
+    window.doSignOut = async () => {
+      cleanupMobileListeners();
+      await fbSignOut(auth);
+      location.href = '/login.html';
+    };
 
     // ── Sheet helpers ─────────────────────────────────────────────────────────
     function openSheet(n)  { document.getElementById(n+'Backdrop').classList.add('open'); document.getElementById(n+'Sheet').classList.add('open'); }

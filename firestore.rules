@@ -18,7 +18,9 @@ service cloud.firestore {
 
     // Any member of the org (admin | editor | viewer).
     function isMember(orgId) {
-      return isSignedIn() && userDoc().orgId == orgId;
+      return isSignedIn()
+        && request.auth.token.screen != true
+        && userDoc().orgId == orgId;
     }
 
     // Editor or admin — can create/edit content.
@@ -42,6 +44,20 @@ service cloud.firestore {
     function isScreenTokenForOrg(orgId, screenId) {
       return isScreenToken(screenId)
         && request.auth.token.orgId == orgId;
+    }
+
+    function isOrgScreenToken(orgId) {
+      return isSignedIn()
+        && request.auth.token.screen == true
+        && request.auth.token.orgId == orgId;
+    }
+
+    function canReadPublishedSlideshow(orgId) {
+      return isMember(orgId) || isOrgScreenToken(orgId);
+    }
+
+    function slideshowOrg(showId) {
+      return get(/databases/$(database)/documents/slideshows/$(showId)).data.orgId;
     }
 
     // ----------------------------------------------------------------
@@ -170,21 +186,22 @@ service cloud.firestore {
 
     // ----------------------------------------------------------------
     // slideshows/{showId}
-    // display.html reads published slides without auth.
+    // Admin previews read with the signed-in user's auth state.
+    // Paired displays read with a Firebase custom screen token.
     // Admins and editors can create/edit slideshows.
     // ----------------------------------------------------------------
     match /slideshows/{showId} {
-      // Public read — display.html renders slides on TV screens.
-      allow read: if true;
+      allow read: if canReadPublishedSlideshow(resource.data.orgId);
 
       allow create: if isEditor(request.resource.data.orgId);
       allow update: if isEditor(resource.data.orgId);
       allow delete: if isAdmin(resource.data.orgId);
 
       // -- Published slides --
-      // display.html renders published slides without auth.
+      // display.html renders published slides with either user auth
+      // (admin preview) or a credentialed screen token.
       match /slides/{slideId} {
-        allow read: if true;
+        allow read: if canReadPublishedSlideshow(slideshowOrg(showId));
         allow create, update: if isEditor(
           get(/databases/$(database)/documents/slideshows/$(showId)).data.orgId
         );

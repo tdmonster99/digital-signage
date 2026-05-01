@@ -8899,6 +8899,31 @@ let currentUser   = null;
 let currentOrg    = null;
 let orgUnsub      = null;
 let _orgListenerOrgId = null;
+let unsubscribe   = null;
+let screensUnsub  = null;
+let _mediaUnsub   = null;
+let _broadcastUnsub = null;
+let _broadcastOrgId = null;
+
+function stopRealtimeListener(label, unsub) {
+  if (!unsub) return null;
+  try { unsub(); } catch(e) { console.warn(`${label} listener cleanup failed:`, e.message); }
+  return null;
+}
+
+function cleanupRealtimeListeners() {
+  unsubscribe = stopRealtimeListener('Slideshow', unsubscribe);
+  orgUnsub = stopRealtimeListener('Org', orgUnsub);
+  _orgListenerOrgId = null;
+  screensUnsub = stopRealtimeListener('Screens', screensUnsub);
+  _mediaUnsub = stopRealtimeListener('Media', _mediaUnsub);
+  _broadcastUnsub = stopRealtimeListener('Broadcast', _broadcastUnsub);
+  _broadcastOrgId = null;
+}
+
+function stopActiveShowListener() {
+  unsubscribe = stopRealtimeListener('Slideshow', unsubscribe);
+}
 
 // Live listener on the org doc — keeps plan/role in sync when Stripe webhooks
 // or another admin's writes update the doc.
@@ -8965,12 +8990,14 @@ onAuthStateChanged(auth, async user => {
     btn.textContent    = "Sign Out";
     await initUserAndOrg(user);
   } else {
+    cleanupRealtimeListeners();
     window.location.replace('/login');
   }
 });
 
 window.handleAuth = async () => {
   if (auth.currentUser) {
+    cleanupRealtimeListeners();
     await signOut(auth);
   } else {
     openSignInModal();
@@ -9331,6 +9358,7 @@ async function acceptInvitation(inviteId, user) {
   const userEmail   = (user.email || '').trim().toLowerCase();
   if (!inviteEmail || inviteEmail !== userEmail) {
     toast(`This invitation was sent to ${inv.email || 'a different address'}. Please sign in with that account.`, true);
+    cleanupRealtimeListeners();
     await signOut(auth);
     return;
   }
@@ -9378,6 +9406,9 @@ async function loadShowsFromOrg() {
     showList.appendChild(item);
     if (i === 0) item.click();
   });
+  if (!document.getElementById('page-slideshows')?.classList.contains('active')) {
+    stopActiveShowListener();
+  }
 
   // Fetch slide counts and review badges for all shows.
   shows.forEach(async s => {
@@ -10249,9 +10280,6 @@ window.removeMember = async function(uid, email) {
     logActivity('Removed ' + email + ' from team');
   } catch(e) { toast('Error: ' + e.message, true); }
 };
-
-// ── Firestore listener ────────────────────────────────────────────────────
-let unsubscribe = null;
 
 let currentShowName = 'Main Display';
 let currentShowReviewStatus = 'published';
@@ -17120,11 +17148,15 @@ function applyBrandKitToTemplate() {
 }
 
 window.showPage = function(name) {
+  if (name !== 'slideshows') stopActiveShowListener();
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.page === name));
   const page = document.getElementById('page-' + name);
   if (page) {
     page.classList.add('active');
+    if (name === 'slideshows' && !unsubscribe && currentShowId) {
+      listenToShow(currentShowId, currentShowName);
+    }
     if (name === 'dashboard') updateDashboard();
     if (name === 'screens')   initScreensPage();
     if (name === 'media')     initMediaPage();
@@ -19925,7 +19957,6 @@ function syncPreviewSelect() {
 }
 
 // ── Screens page ───────────────────────────────────────────────────────────
-let screensUnsub    = null;
 let editingScreenId = null;
 let pairingInterval = null;
 let pairingExpiry   = null;
@@ -20135,7 +20166,6 @@ window.appsComingSoon = function() {
 
 // ── Media Library ─────────────────────────────────────────────────────────
 let _cachedMedia  = [];
-let _mediaUnsub   = null;
 let _mediaFilter  = 'all';
 let _mediaSearch  = '';
 
@@ -20279,10 +20309,15 @@ window.openMediaTagsPrompt = async function(id) {
 
 // ── Add Screen / Pairing ──────────────────────────────────────────────────
 // ── Emergency Broadcast ───────────────────────────────────────────────────
-let _broadcastUnsub = null;
 
 function _subscribeBroadcast() {
-  if (!currentOrgId || _broadcastUnsub) return;
+  if (!currentOrgId) return;
+  if (_broadcastUnsub && _broadcastOrgId !== currentOrgId) {
+    _broadcastUnsub = stopRealtimeListener('Broadcast', _broadcastUnsub);
+    _broadcastOrgId = null;
+  }
+  if (_broadcastUnsub) return;
+  _broadcastOrgId = currentOrgId;
   _broadcastUnsub = onSnapshot(doc(db, 'broadcasts', currentOrgId), snap => {
     const data = snap.exists() ? snap.data() : null;
     const active = data?.active === true;

@@ -16,7 +16,7 @@
 <script type="module">
   import { initializeApp }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getAuth, signInWithCustomToken }
+  import { getAuth, onAuthStateChanged, signInWithCustomToken }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
   import { getFirestore, doc, collection, onSnapshot, setDoc, addDoc, getDocs, query, orderBy }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -153,6 +153,35 @@
       });
 
     return screenAuthPromise;
+  }
+
+  function waitForSignedInUser(timeoutMs = 5000) {
+    if (screenAuth.currentUser) return Promise.resolve(screenAuth.currentUser);
+    return new Promise(resolve => {
+      let settled = false;
+      let unsub = () => {};
+      const finish = user => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        try { unsub(); } catch(_) {}
+        resolve(user || null);
+      };
+      const timer = setTimeout(() => finish(screenAuth.currentUser || null), timeoutMs);
+      unsub = onAuthStateChanged(screenAuth, user => finish(user));
+    });
+  }
+
+  async function startPreviewMode(slideshowId) {
+    ownsScreenIdentity = false;
+    screenWriteState = "readonly";
+    const user = await waitForSignedInUser();
+    if (!user) {
+      loader.style.display = "none";
+      showError("Sign in to the Admin Panel to preview this slideshow.");
+      return;
+    }
+    subscribeToSlideshow(slideshowId);
   }
 
   function clearLocalScreenIdentity() {
@@ -2224,6 +2253,28 @@
     let currentSlideshowId = null;
     const screenRef = doc(db, "screens", screenId);
     let screenUnsub = null;
+    let heartbeatTimer = null;
+
+    function cleanupScreenScopedListeners() {
+      if (_broadcastUnsub) {
+        try { _broadcastUnsub(); } catch(_) {}
+        _broadcastUnsub = null;
+        _broadcastOrgId = null;
+      }
+      if (_broadcastDismissTimer) {
+        clearTimeout(_broadcastDismissTimer);
+        _broadcastDismissTimer = null;
+      }
+      if (_capUnsub) {
+        try { _capUnsub(); } catch(_) {}
+        _capUnsub = null;
+        _capOrgId = null;
+      }
+      if (schedUnsub)   { try { schedUnsub(); } catch(_) {} schedUnsub = null; }
+      if (schedMinTick) { clearInterval(schedMinTick); schedMinTick = null; }
+      if (whMinTick)    { clearInterval(whMinTick); whMinTick = null; }
+      if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
+    }
 
     function leaveScreenForPairing(message) {
       if (screenUnsub) {
@@ -2231,6 +2282,7 @@
         screenUnsub = null;
         unsub();
       }
+      cleanupScreenScopedListeners();
       restartPairing(message);
     }
 
@@ -2244,13 +2296,14 @@
     }
     if (ownsScreenIdentity) {
       heartbeat();
-      setInterval(heartbeat, 5 * 60 * 1000);
+      heartbeatTimer = setInterval(heartbeat, 5 * 60 * 1000);
     } else {
       console.warn('[Screen] Read-only display URL loaded; heartbeat and analytics disabled for', screenId);
     }
 
     // ── Emergency Broadcast ──────────────────────────────────────────────────
     let _broadcastUnsub = null;
+    let _broadcastOrgId = null;
     let _broadcastDismissTimer = null;
     let _broadcastOverrideActive = false;
     let _broadcastOverrideShowId = null;
@@ -2265,7 +2318,14 @@
     }
 
     function _subscribeBroadcast(orgId) {
-      if (!orgId || _broadcastUnsub) return;
+      if (!orgId) return;
+      if (_broadcastUnsub && _broadcastOrgId !== orgId) {
+        try { _broadcastUnsub(); } catch(_) {}
+        _broadcastUnsub = null;
+        _broadcastOrgId = null;
+      }
+      if (_broadcastUnsub) return;
+      _broadcastOrgId = orgId;
       const broadcastEl  = document.getElementById('stageBroadcast');
       const broadcastMsg = document.getElementById('broadcastMsgEl');
       _broadcastUnsub = onSnapshot(doc(db, 'broadcasts', orgId), snap => {
@@ -2316,6 +2376,7 @@
 
     // ── CAP alerts ───────────────────────────────────────────────────────────
     let _capUnsub = null;
+    let _capOrgId = null;
     const CAP_COLORS = {
       Extreme: '#7f1d1d',
       Severe: '#b91c1c',
@@ -2325,7 +2386,14 @@
     };
 
     function _subscribeCapAlerts(orgId) {
-      if (!orgId || _capUnsub) return;
+      if (!orgId) return;
+      if (_capUnsub && _capOrgId !== orgId) {
+        try { _capUnsub(); } catch(_) {}
+        _capUnsub = null;
+        _capOrgId = null;
+      }
+      if (_capUnsub) return;
+      _capOrgId = orgId;
       const capEl = document.getElementById('stageCapAlert');
       const kickerEl = document.getElementById('capKickerEl');
       const headlineEl = document.getElementById('capHeadlineEl');
@@ -2616,7 +2684,7 @@
       return;
     }
     // Priority 1: Preview mode (?slideshow=xxx)
-    if (previewId) { subscribeToSlideshow(previewId); return; }
+    if (previewId) { await startPreviewMode(previewId); return; }
     // Priority 2: Canonical display URL (?screen=xxx) — generated by admin, bookmarkable
     // A copied URL is allowed to render, but only a browser that already owns
     // the same local screen identity can write heartbeat/analytics as it.
@@ -2624,7 +2692,11 @@
     if (forcedId) {
       const ownsForcedId = screenId === forcedId;
       loader.style.display = "none";
-      await startNormalMode(forcedId, { ownsIdentity: ownsForcedId });
+      if (!ownsForcedId) {
+        showError("This display link can only play on its paired browser. Open display.html on the screen to pair it again.");
+        return;
+      }
+      await startNormalMode(forcedId, { ownsIdentity: true });
       return;
     }
     // Priority 3: Already registered screen (screenId in localStorage)

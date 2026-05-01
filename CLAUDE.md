@@ -175,12 +175,13 @@ Files upload directly from the browser to **S3** (bucket: `zigns-media`, region:
 1. `display.html` writes a 6-char code to `pairingCodes/{code}` with `status: pending`
 2. Admin enters the code → `admin.html` creates a `screens/{id}` doc and updates `pairingCodes/{code}` to `status: paired`
 3. `display.html` polls every 3s, sees `status: paired`, reads its `screenId`, and begins playback
-4. `?slot=2` URL param on display.html gives a second independent screen identity on the same machine
+4. Paired displays request a Firebase custom screen token from `/api/screen-token` before reading protected slideshow content or writing heartbeats/analytics
+5. `?slot=2` URL param on display.html gives a second independent screen identity on the same machine
 
 ### Slideshow draft/publish model
 - Editing auto-saves slide payloads to `slideshows/{id}/draftSlides/{slideId}` and small draft metadata (`draftDwell`, `draftFitMode`, `draftTransition`, revision flags) on the parent slideshow doc.
 - **Publish** writes ordered payload docs to `slideshows/{id}/slides/{slideId}`, clears draft subcollection metadata, and pushes to assigned screens via their `slideshowId`.
-- `display.html` reads the published `slides` subcollection when `slideStorageVersion >= 2`; legacy parent `slides[]` / `draftSlides[]` arrays were removed after migration cleanup, though the reader still has fallback support for older docs.
+- `display.html` reads the published `slides` subcollection when `slideStorageVersion >= 2`; reads require either an authenticated org member for admin previews or a Firebase custom screen token for paired displays. Legacy parent `slides[]` / `draftSlides[]` arrays were removed after migration cleanup, though the reader still has fallback support for older docs.
 
 ### Roles & permissions
 | Role | Can do |

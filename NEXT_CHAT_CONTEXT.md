@@ -63,19 +63,17 @@ Reference: the full audit lives in conversation context; the commit log + DEVLOG
 ### Medium severity — recommended next batch
 
 - **#33** `?screen=xxx` URL impersonation — addressed with pair-time screen secrets, hashed credentials on `screens/{id}`, `/api/screen-token` Firebase custom tokens, and rules requiring screen tokens for heartbeat/analytics writes. Legacy write compatibility has been removed; old screens will return to pairing when they next load online.
+- **#35** `?slideshow=xxx` URL exposure — addressed after #33. Slideshow parent docs and published slide subcollections now require either org-member auth or a Firebase custom screen token; admin previews wait for auth, and unpaired copied `?screen=` links stop before playback.
+- **#8/#20** mobile upload validation / zero-byte upload rejection — addressed. Mobile image uploads reject empty files, non-images, and images over 25 MB; `/api/upload-url` requires `size`, rejects zero-byte files, applies server-side caps, and keeps browser uploads under `signage/`.
+- **#23/#29** listener lifecycle cleanup — addressed. Admin/mobile slideshow listeners are torn down on page navigation/sign-out, and broadcast listeners are cleaned up/rebound by org.
 
 ### Other Medium / Low items still open
 
-- #8 mobile.html no file size validation (25MB image cap recommended)
 - #18 pairing `data.orgId` spread shadow — addressed with #33 by always using `currentOrgId` during screen pairing
-- #20 zero-byte file upload not rejected
-- #23 slideshow `unsubscribe` listener never closed on logout/page nav
 - #24 `enforceScreenLimit` runs from every admin's session — concurrent admins double-write
 - #25 CSS-injection / minor XSS via `screen.id` in inline onclick (defense-in-depth)
-- #29 `_subscribeBroadcast` runs once but never unsubs
 - #31 `applyPlaylist` silently drops unknown slide types
 - #34 youtubeFallback background uses unescaped URL (videoId is validated, low risk)
-- #35 `?slideshow=xxx` URL exposes any org's slideshow (preview path)
 - #36–#42 login.html buttons not disabled during async (#36/#37/#38), `showLinkAccountPrompt` unescaped email innerHTML (#40), swallowed `getRedirectResult` errors (#41)
 
 ### Mobile.html small items

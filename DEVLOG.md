@@ -4,6 +4,18 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-01 — Codex — Continue audit hardening batch
+
+Closed the next audit batch after the screen-credential work.
+
+- **Slideshow URL exposure (#35)**: `slideshows/{id}` and published slide subcollections are no longer public-readable; reads now require an org member auth session for admin previews or a Firebase custom screen token for paired displays.
+- **Preview/display behavior**: `display.html?slideshow=...` waits for Admin auth before subscribing, and copied `?screen=...` links no longer fall through to read-only playback on unpaired browsers.
+- **Upload hardening (#8/#20)**: mobile image upload rejects empty files, non-images, and images over 25 MB; `/api/upload-url` now requires upload size, rejects zero-byte files, applies server-side caps, and confines browser uploads to the `signage/` prefix.
+- **Listener cleanup (#23/#29)**: admin and mobile sign-out/page navigation now tear down active slideshow listeners; broadcast listeners rebind when org changes and are included in cleanup.
+- **Pre-deploy audit**: Firestore REST audit found 14 slideshow docs and 0 missing `orgId`, so the tightened read rules have the metadata they need.
+
+---
+
 ## 2026-05-01 — Codex — Remove legacy screen write compatibility
 
 Finished the operational follow-up for #33 after auditing production screen docs.
