@@ -4,6 +4,16 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-01 — Codex — Rotate Firebase Admin Vercel credential
+
+Production cron verification still showed `/api/cap-poll` and `/api/screen-monitor` failing with Firebase `16 UNAUTHENTICATED` after the code-side Admin initialization fix, which pointed to the Vercel service-account key itself.
+
+- **Credential rotation**: created a replacement key for `firebase-adminsdk-fbsvc@digital-signage-2.iam.gserviceaccount.com` and updated `FIREBASE_SERVICE_ACCOUNT_JSON` in Vercel Production and Preview.
+- **Retry cleanup**: deleted the two unused keys created by failed Vercel CLI retry attempts; kept the new active user-managed key plus the older system-managed key.
+- **Deploy note**: this log-only commit is intended to trigger a fresh Production deployment so Vercel functions pick up the rotated env var.
+
+---
+
 ## 2026-05-01 — Codex — Guard copied display URLs from screen writes
 
 Resumed security backlog item #33 around `display.html?screen=...` impersonation.
