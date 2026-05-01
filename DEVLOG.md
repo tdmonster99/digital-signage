@@ -4,6 +4,17 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-01 — Codex — Guard copied display URLs from screen writes
+
+Resumed security backlog item #33 around `display.html?screen=...` impersonation.
+
+- **Read-only copied URLs**: `?screen=` can still render a screen assignment for bookmark/share compatibility, but only a browser that already owns the same local screen identity writes heartbeats or analytics as that screen.
+- **Heartbeat/analytics guard**: gated `lastSeen`, online/offline, slide-view, watchdog, and CAP render audit writes behind local screen ownership.
+- **Local identity safety**: invalid copied `?screen=` links now show an inactive-link error without clearing a different paired screen from the same browser slot.
+- **Verification**: extracted the `display.html` module script and `node --check` passed. This is a client-side copied-link mitigation; the full architectural fix still needs server-issued screen credentials plus tighter Firestore rules.
+
+---
+
 ## 2026-05-01 — Codex — Restore Firebase Admin cron initialization
 
 Production verification found Vercel Cron 500s for `/api/cap-poll` and `/api/screen-monitor`.
