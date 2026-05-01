@@ -4,6 +4,17 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-01 — Codex — Worktree normalization after reboot
+
+Recovered the local repos after the reboot left many files showing as modified from line-ending churn.
+
+- **Worktree cleanup**: normalized the EOL-only dirty state in `app/` and confirmed no substantive app file diffs remained from the reboot churn.
+- **Line-ending guard**: added `.gitattributes` with LF defaults and binary exceptions so Windows-side tooling is less likely to dirty the repo again.
+- **Verification**: `node --check` passed for `api/cap-poll.js`, `api/analytics-rollup.js`, `api/screen-monitor.js`, and `api/stripe-webhook.js`.
+- **Push status**: local cleanup commit remains ahead of `origin/main`; WSL Git could not authenticate to GitHub from this environment.
+
+---
+
 ## 2026-05-01 — Codex — CAP alert audit reporting UX
 
 Continued Phase 5.2 emergency CAP hardening with a compliance-oriented audit view.
