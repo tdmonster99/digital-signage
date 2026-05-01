@@ -32,10 +32,8 @@ module.exports = async function handler(req, res) {
       ? screen.credentialHash
       : '';
 
-    // Transitional mode: old screens can still run on legacy Firestore writes
-    // until they are re-paired and receive a credential hash.
     if (!expectedHash) {
-      return res.status(409).json({ error: 'screen has no credential hash', legacy: true });
+      return res.status(409).json({ error: 'screen must be re-paired' });
     }
 
     const actualHash = hashSecret(secret);

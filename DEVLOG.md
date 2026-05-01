@@ -4,6 +4,17 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-01 — Codex — Remove legacy screen write compatibility
+
+Finished the operational follow-up for #33 after auditing production screen docs.
+
+- **Production audit**: Firestore has 13 screen docs, all missing `credentialHash`; none were online within the last 10 minutes at audit time.
+- **Display migration behavior**: legacy displays that come back online now clear their stale local screen identity and return to the pairing screen so they can receive a real screen credential.
+- **Rules cleanup**: removed unauthenticated legacy `lastSeen` and analytics write allowances from `firestore.rules`; screen writes now require Firebase custom screen tokens or authenticated editor/admin access.
+- **Token cleanup**: `api/screen-token.js` now returns a re-pair required error for screens without `credentialHash` instead of enabling legacy write mode.
+
+---
+
 ## 2026-05-01 — Codex — Add screen credentials for display writes
 
 Implemented the architectural #33 hardening path for `display.html?screen=...` impersonation.
@@ -13,7 +24,7 @@ Implemented the architectural #33 hardening path for `display.html?screen=...` i
 - **Org binding cleanup**: pairing now writes screens into the active admin org only, removing the stale `data.orgId` shadow path from audit item #18.
 - **Screen token API**: added `api/screen-token.js`, which verifies the local secret against `screens/{screenId}.credentialHash` and issues a Firebase custom token with `screen`, `screenId`, and `orgId` claims.
 - **Display writes**: credentialed displays sign in with the custom token before writing heartbeats or analytics. Copied URLs and browsers missing the local secret render read-only.
-- **Rules hardening**: Firestore rules now require screen tokens for credentialed screen `lastSeen` and analytics writes. Legacy screens without a credential hash retain temporary heartbeat/analytics compatibility until they are re-paired.
+- **Rules hardening**: Firestore rules now require screen tokens for credentialed screen `lastSeen` and analytics writes. Legacy compatibility was removed in the follow-up entry above.
 - **Verification**: `node --check` passed for `api/screen-token.js` plus extracted `admin.html` and `display.html` scripts; `git diff --check` passed.
 
 ---

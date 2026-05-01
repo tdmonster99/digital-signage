@@ -49,7 +49,7 @@
   let screenId = localStorage.getItem(STORAGE_KEY); // may be null if unregistered
   let ownsScreenIdentity = Boolean(screenId);
   let screenSecret = localStorage.getItem(SECRET_KEY) || "";
-  let screenWriteState = "unknown"; // unknown | ready | legacy | denied | readonly
+  let screenWriteState = "unknown"; // unknown | ready | denied | readonly
   let screenAuthPromise = null;
   let pendingPairingSecret = null;
 
@@ -90,7 +90,7 @@
   let slideViewStart  = null;   // timestamp when current slide became visible
 
   function hasScreenWriteAccess() {
-    return ownsScreenIdentity && (screenWriteState === "ready" || screenWriteState === "legacy");
+    return ownsScreenIdentity && screenWriteState === "ready";
   }
 
   function queueAnalyticsEvent(event) {
@@ -116,11 +116,11 @@
       screenWriteState = "readonly";
       return false;
     }
-    if (screenWriteState === "ready" || screenWriteState === "legacy") return true;
+    if (screenWriteState === "ready") return true;
     if (screenWriteState === "denied") return false;
     if (!screenSecret) {
-      screenWriteState = "legacy";
-      return true;
+      screenWriteState = "denied";
+      return false;
     }
     if (screenAuthPromise) return screenAuthPromise;
 
@@ -131,10 +131,6 @@
     })
       .then(async res => {
         const data = await res.json().catch(() => ({}));
-        if (res.status === 409 && data.legacy) {
-          screenWriteState = "legacy";
-          return true;
-        }
         if (!res.ok || !data.token) {
           throw new Error(data.error || `HTTP ${res.status}`);
         }
@@ -159,12 +155,25 @@
     return screenAuthPromise;
   }
 
-  function applyScreenCredentialRequirement(screenData) {
-    if (!ownsScreenIdentity || screenWriteState === "ready") return;
-    if (screenData?.credentialHash && !screenSecret) {
-      screenWriteState = "denied";
-      console.warn('[Screen] This screen requires a local credential; heartbeat and analytics disabled.');
-    }
+  function clearLocalScreenIdentity() {
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(SECRET_KEY);
+    screenId = null;
+    screenSecret = "";
+    ownsScreenIdentity = false;
+    screenWriteState = "unknown";
+  }
+
+  function restartPairing(message) {
+    console.warn(message);
+    clearLocalScreenIdentity();
+    if (slideshowUnsub) { slideshowUnsub(); slideshowUnsub = null; }
+    window.history.replaceState({}, "", window.location.pathname);
+    showReadyToConnect();
+  }
+
+  function screenNeedsPairingRefresh(screenData) {
+    return ownsScreenIdentity && (!screenData?.credentialHash || !screenSecret);
   }
 
   function generateScreenSecret() {
@@ -2214,6 +2223,16 @@
 
     let currentSlideshowId = null;
     const screenRef = doc(db, "screens", screenId);
+    let screenUnsub = null;
+
+    function leaveScreenForPairing(message) {
+      if (screenUnsub) {
+        const unsub = screenUnsub;
+        screenUnsub = null;
+        unsub();
+      }
+      restartPairing(message);
+    }
 
     // Heartbeat every 5 min — admin detects offline within ~6 min.
     // IMPORTANT: never call heartbeat() from inside the screenRef onSnapshot
@@ -2527,7 +2546,7 @@
       _whApply();
     }
 
-    onSnapshot(
+    screenUnsub = onSnapshot(
       screenRef,
       snap => {
         if (!snap.exists()) {
@@ -2535,15 +2554,7 @@
           // Clear owned identities only; copied read-only URLs must not wipe a
           // different paired screen from this browser slot.
           if (ownsScreenIdentity) {
-            localStorage.removeItem(STORAGE_KEY);
-            localStorage.removeItem(SECRET_KEY);
-            screenId = null;
-            screenSecret = "";
-            ownsScreenIdentity = false;
-            screenWriteState = "unknown";
-            if (slideshowUnsub) { slideshowUnsub(); slideshowUnsub = null; }
-            window.history.replaceState({}, "", window.location.pathname);
-            showReadyToConnect();
+            leaveScreenForPairing('[Screen] Screen record was deleted; returning to pairing.');
           } else {
             showError("This display link is no longer active.");
           }
@@ -2555,7 +2566,10 @@
           currentScreenTags = Array.isArray(data.tags)
             ? data.tags.map(t => String(t || '').trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9_-]/g, '')).filter(Boolean)
             : [];
-          applyScreenCredentialRequirement(data);
+          if (screenNeedsPairingRefresh(data)) {
+            leaveScreenForPairing('[Screen] Screen credential missing; returning to pairing.');
+            return;
+          }
 
           // NOTE: do NOT call heartbeat() here — it writes to screenRef which
           // re-fires this snapshot callback, causing an infinite write loop.
@@ -2596,12 +2610,7 @@
   async function initScreen() {
     // ?reset — clear local identity and show pairing screen
     if (urlParams.has("reset")) {
-      localStorage.removeItem(STORAGE_KEY);
-      localStorage.removeItem(SECRET_KEY);
-      screenId = null;
-      screenSecret = "";
-      ownsScreenIdentity = false;
-      screenWriteState = "unknown";
+      clearLocalScreenIdentity();
       window.history.replaceState({}, "", window.location.pathname);
       showReadyToConnect();
       return;

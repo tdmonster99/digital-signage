@@ -44,17 +44,6 @@ service cloud.firestore {
         && request.auth.token.orgId == orgId;
     }
 
-    function screenHasCredential(screenId) {
-      return exists(/databases/$(database)/documents/screens/$(screenId))
-        && get(/databases/$(database)/documents/screens/$(screenId)).data.keys().hasAny(['credentialHash']);
-    }
-
-    function isLegacyScreenForOrg(orgId, screenId) {
-      return exists(/databases/$(database)/documents/screens/$(screenId))
-        && get(/databases/$(database)/documents/screens/$(screenId)).data.orgId == orgId
-        && !screenHasCredential(screenId);
-    }
-
     // ----------------------------------------------------------------
     // users/{uid}
     // Users can only read and write their own document.
@@ -89,15 +78,11 @@ service cloud.firestore {
       }
 
       // -- Analytics events --
-      // New paired displays write with a Firebase custom screen token. Legacy
-      // screens without a credential hash are temporarily allowed until re-paired.
+      // Paired displays write with a Firebase custom screen token.
       match /analytics/{eventId} {
         allow read: if isMember(orgId);
         allow create: if request.resource.data.screenId is string
-          && (
-            isScreenTokenForOrg(orgId, request.resource.data.screenId)
-            || (request.auth == null && isLegacyScreenForOrg(orgId, request.resource.data.screenId))
-          );
+          && isScreenTokenForOrg(orgId, request.resource.data.screenId);
         allow update, delete: if false;
       }
 
@@ -129,18 +114,12 @@ service cloud.firestore {
         && request.resource.data.credentialHash.matches('^[a-f0-9]{64}$')
         && request.resource.data.credentialVersion == 1;
 
-      // Three cases:
+      // Two cases:
       //   1. Credentialed display heartbeat — only lastSeen may change.
-      //   2. Legacy display heartbeat — only for screens not yet re-paired.
-      //   3. Authenticated editor/admin — full update for their org's screen.
+      //   2. Authenticated editor/admin — full update for their org's screen.
       allow update: if
         (
           isScreenToken(screenId)
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastSeen'])
-        )
-        || (
-          request.auth == null
-          && !resource.data.keys().hasAny(['credentialHash'])
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastSeen'])
         )
         || isEditor(resource.data.orgId);

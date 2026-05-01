@@ -40,7 +40,7 @@ Two parallel tracks have been running today:
   - #19 file-size validation — added `_enforceSize()` in `lib/s3-upload.js` (50 MB image / 500 MB video / 100 MB other) plus a friendlier per-file pre-check in `handleFiles`
   - #27 `backgroundImage` CSS injection — added `safeCssBgUrl()` helper, switched both call sites to `setProperty`
   - #28 `crossfadeTo` now awaits `renderWeather` and `renderMultizone`
-  - #33 addressed after session recovery — new display pairing credentials, `/api/screen-token`, and credential-aware Firestore rules; legacy screens still need re-pairing to leave compatibility mode
+  - #33 addressed after session recovery — new display pairing credentials, `/api/screen-token`, credential-aware Firestore rules, and legacy write compatibility removed; old screens auto-return to pairing when they come online
 
 - **Session 40** — Critical bug fixes (commit `654cba8`):
   - #10/#26 Webpage slide `javascript:` URL XSS — whitelisted http/https on save (admin.html `saveWebpageSlide` + multizone) and at render (display.html `safeIframeUrl()` helper used by both single-zone and multizone iframe paths)
@@ -62,7 +62,7 @@ Reference: the full audit lives in conversation context; the commit log + DEVLOG
 
 ### Medium severity — recommended next batch
 
-- **#33** `?screen=xxx` URL impersonation — addressed with pair-time screen secrets, hashed credentials on `screens/{id}`, `/api/screen-token` Firebase custom tokens, and rules requiring screen tokens for credentialed heartbeat/analytics writes. Remaining operational follow-up: re-pair legacy screens so they gain `credentialHash` and stop using compatibility rules.
+- **#33** `?screen=xxx` URL impersonation — addressed with pair-time screen secrets, hashed credentials on `screens/{id}`, `/api/screen-token` Firebase custom tokens, and rules requiring screen tokens for heartbeat/analytics writes. Legacy write compatibility has been removed; old screens will return to pairing when they next load online.
 
 ### Other Medium / Low items still open
 
