@@ -2246,6 +2246,10 @@
             alertId: alert.id || '',
             event: alert.event || '',
             severity,
+            headline: alert.headline || '',
+            areaDesc: alert.areaDesc || '',
+            expiresAt: alert.expiresAt || '',
+            source: alert.source || 'NWS',
           });
         }
       }, () => {});

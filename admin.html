@@ -3222,7 +3222,7 @@ body.role-editor .admin-action {
 .date-range-btn:hover  { background: var(--surface2); }
 .date-range-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; }
 .analytics-overview {
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px;
 }
 @media (max-width: 1100px) { .analytics-overview { grid-template-columns: repeat(2, 1fr); } }
 .analytics-card {
@@ -3270,7 +3270,7 @@ body.role-editor .admin-action {
 /* Screen breakdown table */
 .analytics-table-card {
   background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
-  overflow: hidden;
+  overflow-x: auto;
 }
 .analytics-table-header {
   padding: 18px 24px; border-bottom: 1px solid var(--border);
@@ -3282,6 +3282,7 @@ body.role-editor .admin-action {
 .analytics-table td   { padding: 12px 24px; font-size: 13px; border-bottom: 1px solid var(--border); }
 .analytics-table tr:last-child td { border-bottom: none; }
 .analytics-table tr:hover td { background: var(--surface2); }
+.analytics-table td.analytics-tight { max-width: 260px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .uptime-pill {
   display: inline-block; padding: 2px 10px; border-radius: 20px;
   font-size: 11px; font-weight: 600;
@@ -3289,6 +3290,14 @@ body.role-editor .admin-action {
 .uptime-pill.high   { background: var(--success-bg); color: var(--success); }
 .uptime-pill.medium { background: rgba(234,179,8,.12); color: #ca8a04; }
 .uptime-pill.low    { background: var(--danger-bg); color: var(--danger); }
+.cap-severity-pill {
+  display: inline-block; padding: 2px 9px; border-radius: 20px;
+  font-size: 11px; font-weight: 700; background: var(--surface2); color: var(--muted);
+}
+.cap-severity-pill.extreme { background: rgba(126,34,206,.14); color: #7e22ce; }
+.cap-severity-pill.severe  { background: var(--danger-bg); color: var(--danger); }
+.cap-severity-pill.moderate { background: rgba(234,179,8,.14); color: #a16207; }
+.cap-severity-pill.minor { background: rgba(37,99,235,.12); color: var(--accent); }
 .analytics-empty {
   text-align: center; padding: 60px 24px; color: var(--muted); font-size: 13px;
 }
@@ -4570,6 +4579,16 @@ body.role-editor .admin-action {
         <div class="analytics-card-value" id="statUptime">—</div>
         <div class="analytics-card-sub">across all screens</div>
       </div>
+      <div class="analytics-card">
+        <div class="analytics-card-label">CAP Alerts Rendered</div>
+        <div class="analytics-card-value" id="statCapAlerts">—</div>
+        <div class="analytics-card-sub" id="statCapAlertsSub">emergency overlays shown</div>
+      </div>
+      <div class="analytics-card">
+        <div class="analytics-card-label">CAP Screens Reached</div>
+        <div class="analytics-card-value" id="statCapScreens">—</div>
+        <div class="analytics-card-sub">unique screens</div>
+      </div>
     </div>
 
     <!-- Charts row -->
@@ -4593,6 +4612,29 @@ body.role-editor .admin-action {
           <div class="analytics-empty" style="grid-column:1/-1">No data yet</div>
         </div>
       </div>
+    </div>
+
+    <!-- CAP alert audit table -->
+    <div class="analytics-table-card">
+      <div class="analytics-table-header">
+        <span class="analytics-table-title">CAP Alert Audit</span>
+      </div>
+      <table class="analytics-table">
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Alert</th>
+            <th>Severity</th>
+            <th>Screen</th>
+            <th>Area</th>
+            <th>Expires</th>
+            <th>Source</th>
+          </tr>
+        </thead>
+        <tbody id="analyticsCapTable">
+          <tr><td colspan="7" class="analytics-empty">No CAP alert renders yet</td></tr>
+        </tbody>
+      </table>
     </div>
 
     <!-- Per-screen table -->
@@ -23000,6 +23042,7 @@ function renderAnalytics() {
   const slideViews  = events.filter(e => e.type === 'slide_view');
   const onlineEvts  = events.filter(e => e.type === 'screen_online');
   const offlineEvts = events.filter(e => e.type === 'screen_offline');
+  const capEvents   = events.filter(e => e.type === 'cap_alert_rendered');
 
   // ── Overview cards ──────────────────────────────────────────────────────
   // Screen hours: sum durations of online periods
@@ -23027,6 +23070,15 @@ function renderAnalytics() {
     ? Math.round(uptimePcts.reduce((s,v) => s+v, 0) / uptimePcts.length) + '%'
     : '—';
   document.getElementById('statUptime').textContent = avgUptime;
+
+  // CAP alert audit summary
+  const capAlertKeys = new Set(capEvents.map(e => capAlertKey(e)));
+  const capScreenIds = new Set(capEvents.map(e => e.screenId).filter(Boolean));
+  document.getElementById('statCapAlerts').textContent = capEvents.length.toLocaleString();
+  document.getElementById('statCapAlertsSub').textContent = capAlertKeys.size
+    ? `${capAlertKeys.size} unique alert${capAlertKeys.size === 1 ? '' : 's'}`
+    : 'emergency overlays shown';
+  document.getElementById('statCapScreens').textContent = capScreenIds.size.toLocaleString();
 
   // ── Uptime bars ──────────────────────────────────────────────────────────
   const uptimeBarsEl = document.getElementById('uptimeBars');
@@ -23090,6 +23142,8 @@ function renderAnalytics() {
     ).join('');
   }
 
+  renderCapAuditTable(capEvents, screens);
+
   // ── Per-screen table ─────────────────────────────────────────────────────
   const tbodyEl = document.getElementById('analyticsScreenTable');
   if (!screens.length) {
@@ -23121,6 +23175,57 @@ function renderAnalytics() {
   }).join('');
 }
 
+function capAlertKey(event) {
+  return event.alertId || `${event.event || event.headline || 'Emergency Alert'}|${event.severity || 'Unknown'}|${event.expiresAt || ''}`;
+}
+
+function capAlertLabel(event) {
+  return event.headline || event.event || event.alertId || 'Emergency Alert';
+}
+
+function capSeverityClass(severity) {
+  return String(severity || 'unknown').toLowerCase().replace(/[^a-z0-9-]/g, '');
+}
+
+function formatAnalyticsDateTime(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleString([], { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+}
+
+function renderCapAuditTable(capEvents, screens) {
+  const tbodyEl = document.getElementById('analyticsCapTable');
+  if (!tbodyEl) return;
+
+  if (!capEvents.length) {
+    tbodyEl.innerHTML = '<tr><td colspan="7" class="analytics-empty">No CAP alert renders yet</td></tr>';
+    return;
+  }
+
+  const screenMap = {};
+  screens.forEach(sc => { screenMap[sc.id] = sc.name || sc.id; });
+
+  const sorted = capEvents.slice()
+    .sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0))
+    .slice(0, 50);
+
+  tbodyEl.innerHTML = sorted.map(event => {
+    const severity = event.severity || 'Unknown';
+    const screen = screenMap[event.screenId] || event.screenId || 'Unknown screen';
+    const area = event.areaDesc || '';
+    return `<tr>
+      <td>${formatAnalyticsDateTime(event.timestamp) || '—'}</td>
+      <td class="analytics-tight" title="${escHtml(capAlertLabel(event))}">${escHtml(capAlertLabel(event))}</td>
+      <td><span class="cap-severity-pill ${capSeverityClass(severity)}">${escHtml(severity)}</span></td>
+      <td class="analytics-tight" title="${escHtml(screen)}">${escHtml(screen)}</td>
+      <td class="analytics-tight" title="${escHtml(area)}">${escHtml(area || '—')}</td>
+      <td>${formatAnalyticsDateTime(event.expiresAt) || '—'}</td>
+      <td>${escHtml(event.source || 'NWS')}</td>
+    </tr>`;
+  }).join('');
+}
+
 function calcUptimeByScreen(onlineEvts, offlineEvts, screens) {
   const windowMs = analyticsDays * 86400000;
   const result   = {};
@@ -23148,7 +23253,7 @@ function exportAnalyticsCSV() {
   const screenMap = {};
   screens.forEach(sc => { screenMap[sc.id] = sc.name || sc.id; });
 
-  const rows = [['Type','Screen','Slideshow','Slide Name','Timestamp','Duration(s)']];
+  const rows = [['Type','Screen','Slideshow','Slide Name','Timestamp','Duration(s)','Alert','Severity','Area','Expires']];
   events.forEach(e => {
     rows.push([
       e.type || '',
@@ -23157,6 +23262,10 @@ function exportAnalyticsCSV() {
       e.slideName   || '',
       e.timestamp   || '',
       e.duration    || '',
+      e.type === 'cap_alert_rendered' ? capAlertLabel(e) : '',
+      e.type === 'cap_alert_rendered' ? (e.severity || '') : '',
+      e.type === 'cap_alert_rendered' ? (e.areaDesc || '') : '',
+      e.type === 'cap_alert_rendered' ? (e.expiresAt || '') : '',
     ]);
   });
 

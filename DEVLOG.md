@@ -4,6 +4,18 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-01 — Codex — CAP alert audit reporting UX
+
+Continued Phase 5.2 emergency CAP hardening with a compliance-oriented audit view.
+
+- **Analytics UI**: added CAP alert summary cards for total emergency overlays rendered and unique screens reached.
+- **CAP audit table**: added a latest-render table with time, alert headline/event, severity, screen, area, expiry, and source. The table uses severity pills and horizontal overflow for narrower viewports.
+- **CSV export**: extended Analytics CSV with alert, severity, area, and expiry columns so CAP render history can be exported with proof-of-play data.
+- **Display analytics payload**: enriched future `cap_alert_rendered` events with headline, area description, expiry, and source while preserving existing event fields.
+- **Verification**: extracted and compiled the `admin.html` and `display.html` module scripts after stripping CDN imports; both passed syntax checks.
+
+---
+
 ## 2026-04-30 — Codex — Slideshow subcollection cleanup complete
 
 Completed the final cleanup pass after manual production verification succeeded.
