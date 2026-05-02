@@ -4,6 +4,14 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-02 — Codex — Harden login async and error handling
+
+Closed the next audit backlog batch for `login.html`.
+
+- **Async button guards (#36/#37/#38)**: Google, Microsoft, email sign-in, registration, password reset, and link-account flows now share a busy guard that disables auth buttons during in-flight Firebase calls.
+- **Redirect/error handling (#41/#42)**: redirect sign-in failures are no longer console-only; they surface in the login card with friendlier auth error messages used consistently across auth flows.
+- **Link account prompt (#40)**: rebuilt the Google link-account prompt with DOM nodes and `textContent` for the email so the prompt no longer interpolates untrusted email text into `innerHTML`.
+
 ## 2026-05-02 — Codex — Repair WSL Firebase tooling and surface unknown slide types
 
 Completed the next safe post-migration tasks.

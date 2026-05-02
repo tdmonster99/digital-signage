@@ -128,6 +128,15 @@
   }
   .provider-btn:hover { background: #f9fafb; border-color: #d1d5db; }
   .provider-btn svg { flex-shrink: 0; }
+  .provider-btn:disabled, .submit-btn:disabled, #linkPwBtn:disabled {
+    opacity: .58;
+    cursor: not-allowed;
+  }
+  .provider-btn:disabled:hover {
+    background: #fff;
+    border-color: #e5e7eb;
+  }
+  .submit-btn:disabled:hover { background: #0043ce; }
 
   .divider {
     display: flex; align-items: center; gap: 10px;
@@ -334,7 +343,7 @@
 <script type="module">
 import { initializeApp }   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getAuth, GoogleAuthProvider, OAuthProvider,
-         signInWithPopup, signInWithRedirect, getRedirectResult,
+         signInWithPopup, getRedirectResult,
          linkWithCredential,
          onAuthStateChanged,
          createUserWithEmailAndPassword, signInWithEmailAndPassword,
@@ -351,17 +360,77 @@ const app  = initializeApp({
 });
 const auth = getAuth(app);
 
-// Complete any pending redirect sign-in
-getRedirectResult(auth).catch(e => console.warn('Redirect sign-in error:', e.message));
-
 // Redirect to app when signed in (handles both popup and redirect flows)
 onAuthStateChanged(auth, user => { if (user) window.location.replace('/'); });
+
+let authBusy = false;
+
+function setAuthBusy(busy) {
+  authBusy = busy;
+  document.querySelectorAll('.provider-btn, .submit-btn, #linkPwBtn').forEach(btn => {
+    btn.disabled = busy;
+    btn.setAttribute('aria-busy', busy ? 'true' : 'false');
+  });
+}
+
+async function runAuthAction(action) {
+  if (authBusy) return;
+  setAuthBusy(true);
+  try {
+    await action();
+  } finally {
+    setAuthBusy(false);
+  }
+}
+
+function clearMessages() {
+  ['authError', 'regError', 'resetMsg'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.className = id === 'resetMsg' ? 'error' : el.className;
+    el.textContent = '';
+  });
+}
+
+function showError(el, message) {
+  el.innerHTML = '';
+  el.textContent = message;
+  el.style.display = 'block';
+}
+
+function authErrorMessage(error, fallback = 'Authentication failed. Please try again.') {
+  if (!error) return fallback;
+  switch (error.code) {
+    case 'auth/invalid-credential':
+      return 'Incorrect email or password.';
+    case 'auth/email-already-in-use':
+      return 'An account with this email already exists. Try signing in.';
+    case 'auth/popup-closed-by-user':
+      return 'Sign-in was closed before it finished.';
+    case 'auth/popup-blocked':
+      return 'Your browser blocked the sign-in popup. Allow popups for Zigns and try again.';
+    case 'auth/account-exists-with-different-credential':
+      return 'This email already uses a different sign-in method.';
+    case 'auth/too-many-requests':
+      return 'Too many attempts. Please wait a moment and try again.';
+    default:
+      return error.message || fallback;
+  }
+}
+
+// Complete any pending redirect sign-in and surface failures in the page.
+getRedirectResult(auth).catch(e => {
+  console.warn('Redirect sign-in error:', e.message);
+  show('signInView');
+  showError(document.getElementById('authError'), authErrorMessage(e, 'Could not complete redirect sign-in. Please try again.'));
+});
 
 // View switching
 function show(viewId) {
   ['signInView','registerView','resetView'].forEach(id => {
     document.getElementById(id).style.display = id === viewId ? '' : 'none';
   });
+  clearMessages();
 }
 
 document.getElementById('toRegister').onclick = () => show('registerView');
@@ -391,43 +460,75 @@ function showProviderConflict() {
 }
 
 async function signInWithGoogle() {
-  const provider = new GoogleAuthProvider();
-  provider.setCustomParameters({ prompt: 'select_account' });
-  try { await signInWithPopup(auth, provider); }
-  catch(e) {
-    if (e.code === 'auth/account-exists-with-different-credential') {
-      showLinkAccountPrompt(e.customData?.email, GoogleAuthProvider.credentialFromError(e));
-    } else {
-      document.getElementById('authError').textContent = e.message;
+  await runAuthAction(async () => {
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
+    try { await signInWithPopup(auth, provider); }
+    catch(e) {
+      if (e.code === 'auth/account-exists-with-different-credential') {
+        showLinkAccountPrompt(e.customData?.email, GoogleAuthProvider.credentialFromError(e));
+      } else {
+        showError(document.getElementById('authError'), authErrorMessage(e));
+      }
     }
-  }
+  });
 }
 
 function showLinkAccountPrompt(email, pendingCred) {
   const errEl = document.getElementById('authError');
-  errEl.innerHTML = `
-    <p style="font-size:13px;font-weight:600;color:#111;margin:0 0 6px">Link your Google account</p>
-    <p style="font-size:12px;color:#6b7280;margin:0 0 10px;line-height:1.5">
-      <strong>${email || 'This email'}</strong> already has a password account.
-      Enter your password once to link Google sign-in permanently.
-    </p>
-    <input id="linkPwInput" type="password" placeholder="Your password"
-      style="width:100%;margin-bottom:8px;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box">
-    <button id="linkPwBtn" style="width:100%;padding:9px;background:#111;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer">Link &amp; Sign In</button>
-    <p id="linkPwErr" style="font-size:12px;color:#dc2626;margin:6px 0 0"></p>`;
+  errEl.innerHTML = '';
   errEl.style.display = 'block';
-  document.getElementById('linkPwBtn').onclick = async () => {
-    const pw = document.getElementById('linkPwInput').value;
-    const linkErr = document.getElementById('linkPwErr');
-    linkErr.textContent = '';
-    try {
-      const result = await signInWithEmailAndPassword(auth, email, pw);
-      if (pendingCred) await linkWithCredential(result.user, pendingCred);
-      // onAuthStateChanged will redirect
-    } catch(e2) {
-      linkErr.textContent = e2.code === 'auth/invalid-credential' ? 'Incorrect password.' : e2.message;
+
+  const title = document.createElement('p');
+  title.style.cssText = 'font-size:13px;font-weight:600;color:#111;margin:0 0 6px';
+  title.textContent = 'Link your Google account';
+
+  const body = document.createElement('p');
+  body.style.cssText = 'font-size:12px;color:#6b7280;margin:0 0 10px;line-height:1.5';
+  const strong = document.createElement('strong');
+  strong.textContent = email || 'This email';
+  body.appendChild(strong);
+  body.append(' already has a password account. Enter your password once to link Google sign-in permanently.');
+
+  const input = document.createElement('input');
+  input.id = 'linkPwInput';
+  input.type = 'password';
+  input.placeholder = 'Your password';
+  input.style.cssText = 'width:100%;margin-bottom:8px;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box';
+
+  const btn = document.createElement('button');
+  btn.id = 'linkPwBtn';
+  btn.style.cssText = 'width:100%;padding:9px;background:#111;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600';
+  btn.textContent = 'Link & Sign In';
+
+  const linkErr = document.createElement('p');
+  linkErr.id = 'linkPwErr';
+  linkErr.style.cssText = 'font-size:12px;color:#dc2626;margin:6px 0 0';
+
+  [title, body, input, btn, linkErr].forEach(el => errEl.appendChild(el));
+  input.focus();
+
+  btn.onclick = async () => {
+    if (!email) {
+      linkErr.textContent = 'Could not determine the email for this account. Try signing in again.';
+      return;
     }
+    const pw = document.getElementById('linkPwInput').value;
+    linkErr.textContent = '';
+    if (!pw) { linkErr.textContent = 'Enter your password to link this account.'; return; }
+    await runAuthAction(async () => {
+      try {
+        const result = await signInWithEmailAndPassword(auth, email, pw);
+        if (pendingCred) await linkWithCredential(result.user, pendingCred);
+        // onAuthStateChanged will redirect
+      } catch(e2) {
+        linkErr.textContent = authErrorMessage(e2, 'Could not link this sign-in method.');
+      }
+    });
   };
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') btn.click();
+  });
 }
 
 // Google
@@ -435,20 +536,22 @@ document.getElementById('googleBtn').onclick = signInWithGoogle;
 
 // Microsoft
 document.getElementById('microsoftBtn').onclick = async () => {
-  const provider = new OAuthProvider('microsoft.com');
-  provider.addScope('openid');
-  provider.addScope('profile');
-  provider.addScope('email');
-  provider.setCustomParameters({ prompt: 'select_account' });
-  try {
-    await signInWithPopup(auth, provider);
-  } catch(e) {
-    if (e.code === 'auth/account-exists-with-different-credential') {
-      showProviderConflict();
-    } else {
-      document.getElementById('authError').textContent = e.message;
+  await runAuthAction(async () => {
+    const provider = new OAuthProvider('microsoft.com');
+    provider.addScope('openid');
+    provider.addScope('profile');
+    provider.addScope('email');
+    provider.setCustomParameters({ prompt: 'select_account' });
+    try {
+      await signInWithPopup(auth, provider);
+    } catch(e) {
+      if (e.code === 'auth/account-exists-with-different-credential') {
+        showProviderConflict();
+      } else {
+        showError(document.getElementById('authError'), authErrorMessage(e));
+      }
     }
-  }
+  });
 };
 
 // Email sign in
@@ -457,12 +560,11 @@ document.getElementById('signInBtn').onclick = async () => {
   const password = document.getElementById('authPassword').value;
   const errEl    = document.getElementById('authError');
   errEl.textContent = '';
-  if (!email || !password) { errEl.textContent = 'Please enter your email and password.'; return; }
-  try { await signInWithEmailAndPassword(auth, email, password); }
-  catch(e) {
-    errEl.textContent = e.code === 'auth/invalid-credential'
-      ? 'Incorrect email or password.' : e.message;
-  }
+  if (!email || !password) { showError(errEl, 'Please enter your email and password.'); return; }
+  await runAuthAction(async () => {
+    try { await signInWithEmailAndPassword(auth, email, password); }
+    catch(e) { showError(errEl, authErrorMessage(e)); }
+  });
 };
 
 // Register
@@ -471,13 +573,12 @@ document.getElementById('registerBtn').onclick = async () => {
   const password = document.getElementById('regPassword').value;
   const errEl    = document.getElementById('regError');
   errEl.textContent = '';
-  if (!email || !password) { errEl.textContent = 'Please fill in all fields.'; return; }
-  if (password.length < 6) { errEl.textContent = 'Password must be at least 6 characters.'; return; }
-  try { await createUserWithEmailAndPassword(auth, email, password); }
-  catch(e) {
-    errEl.textContent = e.code === 'auth/email-already-in-use'
-      ? 'An account with this email already exists. Try signing in.' : e.message;
-  }
+  if (!email || !password) { showError(errEl, 'Please fill in all fields.'); return; }
+  if (password.length < 6) { showError(errEl, 'Password must be at least 6 characters.'); return; }
+  await runAuthAction(async () => {
+    try { await createUserWithEmailAndPassword(auth, email, password); }
+    catch(e) { showError(errEl, authErrorMessage(e)); }
+  });
 };
 
 // Password reset
@@ -486,14 +587,16 @@ document.getElementById('resetBtn').onclick = async () => {
   const msgEl  = document.getElementById('resetMsg');
   msgEl.className = 'error';
   msgEl.textContent = '';
-  if (!email) { msgEl.textContent = 'Please enter your email.'; return; }
-  try {
-    await sendPasswordResetEmail(auth, email);
-    msgEl.className = 'success';
-    msgEl.textContent = 'Reset link sent — check your inbox.';
-  } catch(e) {
-    msgEl.textContent = e.message;
-  }
+  if (!email) { showError(msgEl, 'Please enter your email.'); return; }
+  await runAuthAction(async () => {
+    try {
+      await sendPasswordResetEmail(auth, email);
+      msgEl.className = 'success';
+      msgEl.textContent = 'Reset link sent — check your inbox.';
+    } catch(e) {
+      showError(msgEl, authErrorMessage(e, 'Could not send reset link. Please try again.'));
+    }
+  });
 };
 
 // Enter key support
