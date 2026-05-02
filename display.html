@@ -616,6 +616,64 @@
     });
   }
 
+  const PLAYABLE_SLIDE_TYPES = new Set([
+    'image', 'designed', 'video', 'audio', 'youtube', 'webpage',
+    'clock', 'qr', 'weather', 'countdown', 'multizone', 'googlesheets',
+    'googlereviews', 'instagram', 'menuboard'
+  ]);
+  const URL_REQUIRED_SLIDE_TYPES = new Set(['image', 'video', 'audio', 'webpage']);
+
+  function getPlaylistSlideType(slide) {
+    if (slide?.type) return String(slide.type);
+    if (slide?.canvasJson) return 'designed';
+    return 'image';
+  }
+
+  function playlistSlideLabel(slide, index) {
+    return slide?.id || slide?.name || `index ${index}`;
+  }
+
+  function validatePlaylistSlide(slide, index) {
+    if (!slide || typeof slide !== 'object') {
+      return { ok: false, index, type: 'invalid', label: `index ${index}`, reason: 'invalid slide payload' };
+    }
+    const type = getPlaylistSlideType(slide);
+    const label = playlistSlideLabel(slide, index);
+    if (!PLAYABLE_SLIDE_TYPES.has(type)) {
+      return { ok: false, index, type, label, reason: `unknown slide type "${type}"` };
+    }
+    if (type === 'youtube' && !getYoutubeSlideId(slide)) {
+      return { ok: false, index, type, label, reason: 'missing valid YouTube video ID' };
+    }
+    if (type === 'designed' && !slide.canvasJson) {
+      return { ok: false, index, type, label, reason: 'missing canvasJson' };
+    }
+    if (URL_REQUIRED_SLIDE_TYPES.has(type) && !slide.url) {
+      return { ok: false, index, type, label, reason: 'missing url' };
+    }
+    return { ok: true, type };
+  }
+
+  function reportSkippedPlaylistSlides(skipped) {
+    if (!skipped.length) return;
+    const details = skipped.map(s => ({
+      index: s.index,
+      type: s.type,
+      slide: s.label,
+      reason: s.reason,
+    }));
+    console.warn(`[Playlist] Skipped ${skipped.length} unsupported or incomplete slide(s):`, details);
+    if (!hasScreenWriteAccess() || !analyticsOrgId) return;
+    skipped.slice(0, 10).forEach(s => queueAnalyticsEvent({
+      type: 'playlist_slide_skipped',
+      screenId,
+      slideshowId: currentSlideshowIdForAnalytics,
+      slideId: s.label,
+      slideType: s.type,
+      reason: s.reason,
+    }));
+  }
+
   function parseYoutubeVideoId(input) {
     input = String(input || '').trim();
     if (/^[A-Za-z0-9_-]{11}$/.test(input)) return input;
@@ -2140,16 +2198,21 @@
         expanded.push(s);
       }
     }
-    const incoming = expanded.filter(s => {
-      if (s.type === 'youtube') return Boolean(getYoutubeSlideId(s));
-      return s.url || s.canvasJson ||
-        s.type === 'clock' || s.type === 'weather' ||
-        s.type === 'countdown' || s.type === 'multizone' || s.type === 'googlesheets' ||
-        s.type === 'googlereviews' || s.type === 'instagram' || s.type === 'menuboard';
+    const incoming = [];
+    const skipped  = [];
+    expanded.forEach((s, index) => {
+      const validation = validatePlaylistSlide(s, index);
+      if (validation.ok) incoming.push(s);
+      else skipped.push(validation);
     });
+    reportSkippedPlaylistSlides(skipped);
 
     if (!incoming.length) {
-      showError("No active slides. Enable some slides in the Admin Panel.");
+      const unsupportedCount = skipped.filter(s => String(s.reason || '').includes('unknown slide type')).length;
+      const message = unsupportedCount
+        ? `No playable slides. ${unsupportedCount} unsupported slide type${unsupportedCount === 1 ? ' was' : 's were'} skipped. Update the display app or remove those slides in the Admin Panel.`
+        : "No active playable slides. Enable or fix slides in the Admin Panel.";
+      showError(message);
       return;
     }
 

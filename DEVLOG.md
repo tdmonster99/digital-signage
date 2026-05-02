@@ -4,6 +4,14 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-02 — Codex — Repair WSL Firebase tooling and surface unknown slide types
+
+Completed the next safe post-migration tasks.
+
+- **WSL Firebase tooling**: installed a WSL-native Node 22.22.2 + Firebase CLI 15.15.0 toolchain under `/home/jzegar/Dev/zigns/.local-tools`, copied the existing Firebase CLI account config into the WSL-local config store, and added a guarded `~/.bashrc` source hook. Interactive WSL shells now resolve Firebase with Node 22 and `firebase use` reports `digital-signage-2`.
+- **Unknown slide types (#31)**: `display.html` now validates expanded playlist slides against an explicit supported-type list instead of silently dropping unsupported or incomplete payloads.
+- **Display diagnostics**: skipped playlist entries now emit structured console warnings, paired screens queue `playlist_slide_skipped` analytics events when write access is available, and the display error state distinguishes unsupported slide types from a plain empty playlist.
+
 ## 2026-05-02 — Codex — Harden screen ID action wiring
 
 Continued the post-migration audit backlog with the low-risk screen-card XSS defense.
