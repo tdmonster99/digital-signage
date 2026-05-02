@@ -4,6 +4,14 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-02 — Codex — Harden screen ID action wiring
+
+Continued the post-migration audit backlog with the low-risk screen-card XSS defense.
+
+- **Screen action handlers (#25)**: removed `screen.id` interpolation from inline `onclick` handlers in the publish-to-screens picker and Screens page cards.
+- **Safer wiring**: screen actions now use escaped `data-screen-id` attributes with DOM event listeners, and copied display URLs encode the screen ID query value.
+- **Migration health**: WSL repo is clean on `main` at `a892b71`; key tracked files remain LF-normalized. GitHub push dry-run and Vercel auth work from WSL. Native WSL `firebase` currently needs Node 20+; Windows Firebase CLI auth is available as a fallback.
+
 ## 2026-05-01 — Codex — Continue audit hardening batch
 
 Closed the next audit batch after the screen-credential work.

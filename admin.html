@@ -10749,8 +10749,9 @@ function _renderPublishList(screens, shows) {
         ? 'Currently showing this slideshow'
         : `Currently: ${curShow}`;
       const locText    = screen.location ? ` · ${screen.location}` : '';
-      return `<label class="publish-screen-row${selected ? ' selected' : ''}" onclick="togglePublishScreen('${screen.id}', event)">
-        <input type="checkbox" ${selected ? 'checked' : ''} onclick="event.stopPropagation();togglePublishScreen('${screen.id}', event)">
+      const safeScreenId = escHtml(screen.id);
+      return `<label class="publish-screen-row${selected ? ' selected' : ''}" data-screen-id="${safeScreenId}">
+        <input type="checkbox" ${selected ? 'checked' : ''} data-screen-id="${safeScreenId}">
         <div class="screen-status-badge ${online ? 'online' : 'offline'}" style="flex-shrink:0">
           <div class="screen-status-dot"></div>
         </div>
@@ -10760,6 +10761,15 @@ function _renderPublishList(screens, shows) {
         </div>
       </label>`;
     }).join('');
+  listEl.querySelectorAll('.publish-screen-row[data-screen-id]').forEach(row => {
+    row.addEventListener('click', e => togglePublishScreen(row.dataset.screenId, e));
+  });
+  listEl.querySelectorAll('.publish-screen-row input[data-screen-id]').forEach(input => {
+    input.addEventListener('click', e => {
+      e.stopPropagation();
+      togglePublishScreen(input.dataset.screenId, e);
+    });
+  });
 }
 
 window.togglePublishScreen = function(screenId, e) {
@@ -20071,7 +20081,8 @@ function renderScreens(screens) {
         ? `<div class="screen-tag-chips">${screen.tags.map(t => `<span class="screen-tag-chip">${escHtml(t)}</span>`).join('')}</div>`
         : '';
 
-      return `<div class="screen-card" onclick="openScreenEdit('${screen.id}')">
+      const safeScreenId = escHtml(screen.id);
+      return `<div class="screen-card" data-screen-id="${safeScreenId}">
         <div class="screen-thumb">
           <div class="screen-thumb-monitor">
             <svg width="64" height="40" viewBox="0 0 64 40" fill="none" opacity="0.15">
@@ -20097,7 +20108,7 @@ function renderScreens(screens) {
             <div class="screen-card-show">${escHtml(showName)}</div>
           </div>
           <div>
-            <button class="screen-url-btn" onclick="event.stopPropagation(); copyDisplayUrl('${screen.id}', this)" title="Copy the bookmarkable URL for this screen's display">
+            <button class="screen-url-btn" data-screen-id="${safeScreenId}" title="Copy the bookmarkable URL for this screen's display">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
               Copy display URL
             </button>
@@ -20105,10 +20116,20 @@ function renderScreens(screens) {
         </div>
       </div>`;
     }).join('');
+
+  grid.querySelectorAll('.screen-card[data-screen-id]').forEach(card => {
+    card.addEventListener('click', () => openScreenEdit(card.dataset.screenId));
+  });
+  grid.querySelectorAll('.screen-url-btn[data-screen-id]').forEach(btn => {
+    btn.addEventListener('click', event => {
+      event.stopPropagation();
+      copyDisplayUrl(btn.dataset.screenId, btn);
+    });
+  });
 }
 
 window.copyDisplayUrl = function(screenId, btn) {
-  const url = `${location.origin}/display.html?screen=${screenId}`;
+  const url = `${location.origin}/display.html?screen=${encodeURIComponent(screenId)}`;
   const reset = () => {
     setTimeout(() => {
       btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copy display URL`;
