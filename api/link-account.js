@@ -78,15 +78,40 @@ module.exports = async function handler(req, res) {
 
       const userData = userSnap.data() || {};
       let org = null;
+      let slideshows = [];
       if (userData.orgId) {
         const orgSnap = await db.doc(`organizations/${userData.orgId}`).get();
         if (orgSnap.exists) org = { id: orgSnap.id, ...orgSnap.data() };
+
+        const showSnap = await db.collection('slideshows').where('orgId', '==', userData.orgId).get();
+        const orgShows = Array.isArray(org?.slideshows) ? org.slideshows : [];
+        const byId = new Map();
+        orgShows.forEach(show => {
+          if (show?.id) byId.set(show.id, show);
+        });
+        showSnap.docs.forEach(doc => {
+          const data = doc.data() || {};
+          byId.set(doc.id, {
+            ...(byId.get(doc.id) || {}),
+            id: doc.id,
+            ...(data.name && { name: data.name }),
+            ...(Array.isArray(data.tags) && { tags: data.tags }),
+            ...(Array.isArray(data.autoIncludeTags) && { autoIncludeTags: data.autoIncludeTags }),
+            ...(data.emergencyPlaylist === true && { emergencyPlaylist: true }),
+          });
+        });
+        slideshows = Array.from(byId.values()).map(show => ({
+          ...show,
+          name: show.name || show.id,
+        }));
+        if (org && slideshows.length) org.slideshows = slideshows;
       }
 
       return res.json({
         ok: true,
         user: { id: uid, ...userData },
         org,
+        slideshows,
       });
     }
 

@@ -4,6 +4,14 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-03 — Codex — Restore authenticated mobile slideshow metadata
+
+Follow-up from the live authenticated mobile smoke test.
+
+- **Mobile boot fallback**: `mobile.html` now uses the same `/api/link-account` server bootstrap fallback as admin when browser-side Firestore org reads are denied, preventing the mobile shell from loading without org/slideshow metadata.
+- **Slideshow recovery**: the bootstrap API now returns canonical slideshow metadata from `slideshows` docs, and mobile slideshow count/detail reads fall back to the server snapshot endpoint when client Firestore reads fail.
+- **Listener handling**: mobile org/screen/slideshow listeners now handle permission errors explicitly instead of surfacing noisy uncaught Firestore listener errors in the browser console.
+
 ## 2026-05-03 — Codex — Mobile polish and smoke pass
 
 Follow-up for the post-migration mobile companion cleanup.

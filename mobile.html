@@ -438,6 +438,8 @@
     let activeShowUnsub = null;
     let orgUnsub = null;
     let screensUnsub = null;
+    let _mobileBootstrapPromise = null;
+    let _mobileBootstrapUid = null;
     const MOBILE_IMAGE_MAX_BYTES = 25 * 1024 * 1024;
     const SLIDE_STORAGE_VERSION = 2;
     const PUBLISHED_SLIDES_COLLECTION = 'slides';
@@ -453,6 +455,82 @@
       activeShowUnsub = stopMobileListener(activeShowUnsub);
       orgUnsub = stopMobileListener(orgUnsub);
       screensUnsub = stopMobileListener(screensUnsub);
+    }
+
+    function isAuthReadFailure(error) {
+      const code = error?.code || '';
+      const msg = String(error?.message || '');
+      return code === 'permission-denied'
+        || code === 'unauthenticated'
+        || msg.includes('Missing or insufficient permissions');
+    }
+
+    function bootstrapSnap(data) {
+      return {
+        exists: () => !!data,
+        data: () => data || {},
+      };
+    }
+
+    function normalizeShowMeta(shows) {
+      const byId = new Map();
+      (Array.isArray(shows) ? shows : []).forEach(show => {
+        if (!show?.id) return;
+        byId.set(show.id, { ...show, name: show.name || show.id });
+      });
+      return Array.from(byId.values());
+    }
+
+    function setOrgData(nextOrg) {
+      org = nextOrg;
+      showMeta = normalizeShowMeta(nextOrg?.slideshows);
+    }
+
+    async function loadMobileBootstrap() {
+      if (!me) return null;
+      if (_mobileBootstrapPromise && _mobileBootstrapUid === me.uid) return _mobileBootstrapPromise;
+      _mobileBootstrapUid = me.uid;
+      _mobileBootstrapPromise = (async () => {
+        const idToken = await me.getIdToken(true);
+        const resp = await fetch('/api/link-account', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'bootstrap', idToken }),
+        });
+        const result = await resp.json().catch(() => ({}));
+        if (!resp.ok || result.ok !== true) {
+          throw new Error(result.error || `HTTP ${resp.status}`);
+        }
+        if (result.org && Array.isArray(result.slideshows) && result.slideshows.length) {
+          result.org.slideshows = result.slideshows;
+        }
+        return result;
+      })().catch(e => {
+        console.warn('[Mobile] Server bootstrap failed:', e.message);
+        return null;
+      });
+      return _mobileBootstrapPromise;
+    }
+
+    async function getMobileDoc(ref, label) {
+      try {
+        return await getDoc(ref);
+      } catch(e) {
+        if (!isAuthReadFailure(e)) throw e;
+        try {
+          await me.getIdToken(true);
+          return await getDoc(ref);
+        } catch(retryErr) {
+          if (!isAuthReadFailure(retryErr)) throw retryErr;
+          const boot = await loadMobileBootstrap();
+          if (!boot) throw retryErr;
+          if (label === 'user document') return bootstrapSnap(boot.user || null);
+          if (label === 'organization document' && boot.org && ref.path.endsWith('/' + boot.org.id)) {
+            return bootstrapSnap(boot.org);
+          }
+          return bootstrapSnap(null);
+        }
+      }
     }
 
     function formatBytes(n) {
@@ -505,40 +583,93 @@
         data.publishedStorage === 'subcollection';
     }
 
-    async function loadShowWithSlides(showId, data = {}) {
-      const [publishedSub, draftSub] = await Promise.all([
-        shouldLoadSubcollection(data, PUBLISHED_SLIDES_COLLECTION)
-          ? loadSlideCollection(showId, PUBLISHED_SLIDES_COLLECTION)
-          : Promise.resolve(null),
-        shouldLoadSubcollection(data, DRAFT_SLIDES_COLLECTION)
-          ? loadSlideCollection(showId, DRAFT_SLIDES_COLLECTION)
-          : Promise.resolve(null),
-      ]);
+    function hasPublishedSlideCount(data = {}) {
+      return Number.isFinite(data.publishedSlidesCount) && data.publishedSlidesCount > 0;
+    }
 
-      const publishedSlides = Array.isArray(publishedSub)
-        ? publishedSub
-        : (Array.isArray(data.slides) ? data.slides : []);
-      const draftSlides = Array.isArray(draftSub)
-        ? draftSub
-        : (Array.isArray(data.draftSlides) ? data.draftSlides : undefined);
-
+    function composeLoadedShowData(data = {}, publishedSlides = [], draftSlides) {
       return {
         ...data,
-        slides: publishedSlides,
+        slides: Array.isArray(publishedSlides) ? publishedSlides : [],
         ...(draftSlides !== undefined && { draftSlides }),
         _hasDraftSlides: draftSlides !== undefined,
       };
     }
 
+    async function loadShowSnapshotFromServer(showId, reason = '') {
+      if (!me || !showId) return null;
+      try {
+        const idToken = await me.getIdToken(true);
+        const resp = await fetch('/api/link-account', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'showSnapshot', idToken, showId }),
+        });
+        const result = await resp.json().catch(() => ({}));
+        if (!resp.ok || result.ok !== true) {
+          throw new Error(result.error || `HTTP ${resp.status}`);
+        }
+        console.warn(`[Mobile] Loaded ${showId} through server fallback${reason ? ` (${reason})` : ''}.`);
+        return composeLoadedShowData(result.data || {}, result.slides || [], result.draftSlides);
+      } catch(e) {
+        console.warn(`[Mobile] Server slideshow fallback failed for ${showId}:`, e.message);
+        return null;
+      }
+    }
+
+    async function loadShowWithSlides(showId, data = {}) {
+      try {
+        const [publishedSub, draftSub] = await Promise.all([
+          shouldLoadSubcollection(data, PUBLISHED_SLIDES_COLLECTION)
+            ? loadSlideCollection(showId, PUBLISHED_SLIDES_COLLECTION)
+            : Promise.resolve(null),
+          shouldLoadSubcollection(data, DRAFT_SLIDES_COLLECTION)
+            ? loadSlideCollection(showId, DRAFT_SLIDES_COLLECTION)
+            : Promise.resolve(null),
+        ]);
+
+        const publishedSlides = Array.isArray(publishedSub)
+          ? publishedSub
+          : (Array.isArray(data.slides) ? data.slides : []);
+        const draftSlides = Array.isArray(draftSub)
+          ? draftSub
+          : (Array.isArray(data.draftSlides) ? data.draftSlides : undefined);
+        const loaded = composeLoadedShowData(data, publishedSlides, draftSlides);
+
+        if (!loaded._hasDraftSlides && !loaded.slides.length && hasPublishedSlideCount(data)) {
+          const fallback = await loadShowSnapshotFromServer(showId, 'client returned empty published slides');
+          if (fallback) return fallback;
+        }
+
+        return loaded;
+      } catch(e) {
+        const fallback = await loadShowSnapshotFromServer(showId, e.message);
+        if (fallback) return fallback;
+        throw e;
+      }
+    }
+
     async function loadEffectiveSlides(showId) {
-      const snap = await getDoc(doc(db, 'slideshows', showId));
-      if (!snap.exists()) return { data: {}, slides: [], draftSlides: undefined };
-      const data = await loadShowWithSlides(showId, snap.data());
-      return {
-        data,
-        slides: data.slides || [],
-        draftSlides: data._hasDraftSlides ? data.draftSlides : undefined,
-      };
+      try {
+        const snap = await getDoc(doc(db, 'slideshows', showId));
+        if (!snap.exists()) return { data: {}, slides: [], draftSlides: undefined };
+        const data = await loadShowWithSlides(showId, snap.data());
+        return {
+          data,
+          slides: data.slides || [],
+          draftSlides: data._hasDraftSlides ? data.draftSlides : undefined,
+        };
+      } catch(e) {
+        const fallback = await loadShowSnapshotFromServer(showId, e.message);
+        if (fallback) {
+          return {
+            data: fallback,
+            slides: fallback.slides || [],
+            draftSlides: fallback._hasDraftSlides ? fallback.draftSlides : undefined,
+          };
+        }
+        throw e;
+      }
     }
 
     async function commitOpsInChunks(ops) {
@@ -694,19 +825,23 @@
 
     async function boot() {
       try {
-        const uSnap = await getDoc(doc(db, 'users', me.uid));
+        const uSnap = await getMobileDoc(doc(db, 'users', me.uid), 'user document');
         if (!uSnap.exists()) throw new Error('User record missing.');
         orgId = uSnap.data().orgId;
         if (!orgId) throw new Error('No organization linked to this account.');
+
+        const orgSnap = await getMobileDoc(doc(db, 'organizations', orgId), 'organization document');
+        if (orgSnap.exists()) setOrgData({ id: orgId, ...orgSnap.data() });
 
         // Org subscription
         orgUnsub = stopMobileListener(orgUnsub);
         orgUnsub = onSnapshot(doc(db, 'organizations', orgId), snap => {
           if (!snap.exists()) return;
-          org      = { id: snap.id, ...snap.data() };
-          showMeta = Array.isArray(org.slideshows) ? org.slideshows : [];
+          setOrgData({ id: snap.id, ...snap.data() });
           if (activeTab === 'content' && !activeShowId) renderSlideshows();
           if (activeTab === 'account') renderAccount();
+        }, err => {
+          console.warn('[Mobile] Organization listener unavailable:', err.message);
         });
 
         // Screens subscription
@@ -716,6 +851,9 @@
           snap => {
             screens = snap.docs.map(d => ({ id: d.id, ...d.data() }));
             if (activeTab === 'screens') renderScreens();
+          },
+          err => {
+            console.warn('[Mobile] Screens listener unavailable:', err.message);
           }
         );
 
@@ -855,9 +993,7 @@
       const el = document.getElementById(`swm-${id}`);
       if (!el) return;
       try {
-        const snap = await getDoc(doc(db, 'slideshows', id));
-        if (!snap.exists()) { el.textContent = 'Not found'; return; }
-        const d = await loadShowWithSlides(id, snap.data());
+        const { data: d } = await loadEffectiveSlides(id);
         const slides = showSlidesForEditor(d);
         const count = slides.filter(s => s.active !== false).length;
         const draft = showHasDraft(d);
@@ -887,8 +1023,16 @@
         } catch(e) {
           toast('Could not load slideshow: ' + e.message);
         }
-      }, err => {
-        if (activeShowId === id) toast('Could not load slideshow: ' + err.message);
+      }, async err => {
+        if (activeShowId !== id) return;
+        const fallback = await loadShowSnapshotFromServer(id, err.message);
+        if (fallback && activeShowId === id) {
+          activeShowData = fallback;
+          renderSlides(activeShowData);
+          syncPublishBtn(activeShowData);
+          return;
+        }
+        toast('Could not load slideshow: ' + err.message);
       });
     };
 
