@@ -4,6 +4,14 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-03 — Codex — Restore dashboard slideshow boot state
+
+Follow-up for a dashboard that loaded successfully after auth recovery but showed 0 slides and a stale preview target.
+
+- **Dashboard slideshow load**: `admin.html` now selects the org's first slideshow during boot without relying on a live slideshow listener on the Dashboard page.
+- **One-shot slide hydration**: the selected show is read once from Firestore, including subcollection-backed slides, so the dashboard count and preview selector reflect existing slideshow content.
+- **List count fallback**: slideshow list badges now load subcollection slides when parent count metadata is missing, avoiding false "0 slides" labels after the slide storage migration.
+
 ## 2026-05-03 — Codex — Add server bootstrap fallback for admin auth
 
 Follow-up for a login loop where Google sign-in briefly showed the dashboard, then returned to login without a visible error.

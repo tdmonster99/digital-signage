@@ -9493,16 +9493,37 @@ function applyRole(role) {
 async function loadShowsFromOrg() {
   if (!currentOrg) { listenToShow('main'); return; }
 
-  const shows    = currentOrg.slideshows || [{ id: 'main', name: 'Main Slideshow' }];
+  const shows    = Array.isArray(currentOrg.slideshows) && currentOrg.slideshows.length
+    ? currentOrg.slideshows
+    : [{ id: 'main', name: 'Main Slideshow' }];
   const showList = document.getElementById('showList');
+  const slideshowsActive = document.getElementById('page-slideshows')?.classList.contains('active');
   showList.innerHTML = '';
 
+  let firstItem = null;
   shows.forEach((s, i) => {
     const item = makeShowItem(s);
     showList.appendChild(item);
-    if (i === 0) item.click();
+    if (i === 0) firstItem = item;
   });
-  if (!document.getElementById('page-slideshows')?.classList.contains('active')) {
+
+  const firstShow = shows[0];
+  if (firstShow && firstItem) {
+    if (slideshowsActive) {
+      firstItem.click();
+    } else {
+      selectShowListItem(firstItem, firstShow);
+      slides = [];
+      await loadCurrentShowSnapshot(firstShow.id);
+    }
+  } else {
+    slides = [];
+    updateCount();
+    updateDashboard();
+    syncPreviewSelect();
+  }
+
+  if (!slideshowsActive) {
     stopActiveShowListener();
   }
 
@@ -9511,7 +9532,13 @@ async function loadShowsFromOrg() {
     try {
       const snap = await getDoc(doc(db, 'slideshows', s.id));
       if (!snap.exists()) return;
-      updateShowItemMeta(s.id, snap.data());
+      let data = snap.data();
+      const hasCount = Number.isFinite(data.draftSlidesCount) || Number.isFinite(data.publishedSlidesCount);
+      const hasInlineSlides = Array.isArray(data.draftSlides) || Array.isArray(data.slides);
+      if (!hasCount && !hasInlineSlides) {
+        data = await loadShowWithSlides(s.id, data);
+      }
+      updateShowItemMeta(s.id, data);
     } catch(e) { /* non-critical */ }
   });
   loadApprovalQueue();
@@ -10615,6 +10642,45 @@ function updateReviewStatusBanner(data = {}) {
   }
 }
 
+function selectShowListItem(item, show = {}) {
+  document.querySelectorAll('.show-item').forEach(el => el.classList.remove('active'));
+  if (item) item.classList.add('active');
+  currentShowId = show.id || item?.dataset.id || currentShowId;
+  currentShowName = show.name || item?.querySelector('.show-item-name')?.textContent || currentShowId;
+  const title = document.getElementById("showTitle");
+  if (title) title.textContent = currentShowName;
+}
+
+async function loadCurrentShowSnapshot(showId) {
+  if (!showId) return;
+  const requestedShowId = showId;
+  try {
+    const { data, slides: publishedSlides, draftSlides } = await loadEffectiveSlides(showId);
+    const slideshowsActive = document.getElementById('page-slideshows')?.classList.contains('active');
+    if (currentShowId !== requestedShowId || slideshowsActive) return;
+
+    slides = Array.isArray(draftSlides) ? draftSlides : (publishedSlides || []);
+    document.getElementById("defaultDwell").value  = data.draftDwell      ?? data.defaultDwell  ?? 6;
+    document.getElementById("fitMode").value       = data.draftFitMode    ?? data.fitMode       ?? "contain";
+    document.getElementById("transition").value    = data.draftTransition ?? data.transition    ?? "crossfade";
+    currentShowReviewStatus = data.status || 'published';
+    currentShowReviewData = data;
+    updateReviewStatusBanner(data);
+    updateShowItemMeta(showId, data);
+    setPushVisible(data._hasDraftSlides || data.draftStorage === 'subcollection');
+    renderGrid();
+  } catch(e) {
+    console.warn('Current slideshow snapshot load failed:', e.message);
+  } finally {
+    const slideshowsActive = document.getElementById('page-slideshows')?.classList.contains('active');
+    if (currentShowId === requestedShowId && !slideshowsActive) {
+      updateCount();
+      updateDashboard();
+      syncPreviewSelect();
+    }
+  }
+}
+
 function syncPublishButtonState(hasDraft = false) {
   const editorReview = approvalRequired() && currentRole === 'editor';
   const pending = currentShowReviewStatus === 'pending_review';
@@ -10651,10 +10717,9 @@ function makeShowItem(s) {
     startListItemRename(s.id, item);
   });
   item.addEventListener('click', () => {
-    document.querySelectorAll('.show-item').forEach(el => el.classList.remove('active'));
-    item.classList.add('active');
     slides = [];
     const currentName = item.querySelector('.show-item-name')?.textContent || s.id;
+    selectShowListItem(item, { id: s.id, name: currentName });
     listenToShow(s.id, currentName);
   });
   return item;
@@ -10755,6 +10820,7 @@ function listenToShow(id, name) {
       }
       renderGrid();
       updateCount();
+      updateDashboard();
       syncPreviewSelect();
     } catch(e) {
       if (currentShowId !== id) return;
