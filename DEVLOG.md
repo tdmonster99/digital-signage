@@ -4,6 +4,14 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-03 — Codex — Add server fallback for admin slideshow loads
+
+Follow-up for published slides rendering in the dashboard preview while the Slideshows editor still showed an empty list.
+
+- **Authenticated slideshow fallback**: `api/link-account.js` now supports a `showSnapshot` action that verifies the Firebase ID token, confirms the slideshow belongs to the caller's org, and returns parent metadata plus ordered published/draft slide docs through Admin SDK.
+- **Admin load recovery**: `admin.html` now falls back to that server snapshot if browser-side Firestore reads fail or return empty published slides while the parent count says slides exist.
+- **Listener resilience**: the Slideshows editor listener now has an error handler that hydrates the editor from the same server snapshot instead of staying empty.
+
 ## 2026-05-03 — Codex — Restore dashboard slideshow boot state
 
 Follow-up for a dashboard that loaded successfully after auth recovery but showed 0 slides and a stale preview target.

@@ -10432,6 +10432,40 @@ async function loadSlideCollection(showId, collectionName) {
   return snap.docs.map(normalizeSlideDoc);
 }
 
+function hasPublishedSlideCount(data = {}) {
+  return Number.isFinite(data.publishedSlidesCount) && data.publishedSlidesCount > 0;
+}
+
+function composeLoadedShowData(data = {}, publishedSlides = [], draftSlides) {
+  return {
+    ...data,
+    slides: Array.isArray(publishedSlides) ? publishedSlides : [],
+    ...(draftSlides !== undefined && { draftSlides }),
+    _hasDraftSlides: draftSlides !== undefined,
+  };
+}
+
+async function loadShowSnapshotFromServer(showId, reason = '') {
+  if (!auth.currentUser || !showId) return null;
+  try {
+    const idToken = await auth.currentUser.getIdToken(true);
+    const resp = await fetch('/api/link-account', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'showSnapshot', idToken, showId }),
+    });
+    const result = await resp.json().catch(() => ({}));
+    if (!resp.ok || result.ok !== true) {
+      throw new Error(result.error || `HTTP ${resp.status}`);
+    }
+    console.warn(`[Slides] Loaded ${showId} through server fallback${reason ? ` (${reason})` : ''}.`);
+    return composeLoadedShowData(result.data || {}, result.slides || [], result.draftSlides);
+  } catch(e) {
+    console.warn(`[Slides] Server fallback failed for ${showId}:`, e.message);
+    return null;
+  }
+}
+
 function shouldLoadSubcollection(data = {}, collectionName) {
   if (collectionName === DRAFT_SLIDES_COLLECTION) {
     return data.draftStorage === 'subcollection';
@@ -10441,28 +10475,35 @@ function shouldLoadSubcollection(data = {}, collectionName) {
 }
 
 async function loadShowWithSlides(showId, data = {}) {
-  const [publishedSub, draftSub] = await Promise.all([
-    shouldLoadSubcollection(data, PUBLISHED_SLIDES_COLLECTION)
-      ? loadSlideCollection(showId, PUBLISHED_SLIDES_COLLECTION)
-      : Promise.resolve(null),
-    shouldLoadSubcollection(data, DRAFT_SLIDES_COLLECTION)
-      ? loadSlideCollection(showId, DRAFT_SLIDES_COLLECTION)
-      : Promise.resolve(null),
-  ]);
+  try {
+    const [publishedSub, draftSub] = await Promise.all([
+      shouldLoadSubcollection(data, PUBLISHED_SLIDES_COLLECTION)
+        ? loadSlideCollection(showId, PUBLISHED_SLIDES_COLLECTION)
+        : Promise.resolve(null),
+      shouldLoadSubcollection(data, DRAFT_SLIDES_COLLECTION)
+        ? loadSlideCollection(showId, DRAFT_SLIDES_COLLECTION)
+        : Promise.resolve(null),
+    ]);
 
-  const publishedSlides = Array.isArray(publishedSub)
-    ? publishedSub
-    : (Array.isArray(data.slides) ? data.slides : []);
-  const draftSlides = Array.isArray(draftSub)
-    ? draftSub
-    : (Array.isArray(data.draftSlides) ? data.draftSlides : undefined);
+    const publishedSlides = Array.isArray(publishedSub)
+      ? publishedSub
+      : (Array.isArray(data.slides) ? data.slides : []);
+    const draftSlides = Array.isArray(draftSub)
+      ? draftSub
+      : (Array.isArray(data.draftSlides) ? data.draftSlides : undefined);
+    const loaded = composeLoadedShowData(data, publishedSlides, draftSlides);
 
-  return {
-    ...data,
-    slides: publishedSlides,
-    ...(draftSlides !== undefined && { draftSlides }),
-    _hasDraftSlides: draftSlides !== undefined,
-  };
+    if (!loaded._hasDraftSlides && !loaded.slides.length && hasPublishedSlideCount(data)) {
+      const fallback = await loadShowSnapshotFromServer(showId, 'client returned empty published slides');
+      if (fallback) return fallback;
+    }
+
+    return loaded;
+  } catch(e) {
+    const fallback = await loadShowSnapshotFromServer(showId, e.message);
+    if (fallback) return fallback;
+    throw e;
+  }
 }
 
 async function commitOpsInChunks(ops) {
@@ -10543,14 +10584,26 @@ async function publishSlidesToFirestore(showId, publishedSlides, patch = {}) {
 }
 
 async function loadEffectiveSlides(showId) {
-  const snap = await getDoc(doc(db, 'slideshows', showId));
-  if (!snap.exists()) return { data: {}, slides: [], draftSlides: undefined };
-  const data = await loadShowWithSlides(showId, snap.data());
-  return {
-    data,
-    slides: data.slides || [],
-    draftSlides: data._hasDraftSlides ? data.draftSlides : undefined,
-  };
+  try {
+    const snap = await getDoc(doc(db, 'slideshows', showId));
+    if (!snap.exists()) return { data: {}, slides: [], draftSlides: undefined };
+    const data = await loadShowWithSlides(showId, snap.data());
+    return {
+      data,
+      slides: data.slides || [],
+      draftSlides: data._hasDraftSlides ? data.draftSlides : undefined,
+    };
+  } catch(e) {
+    const fallback = await loadShowSnapshotFromServer(showId, e.message);
+    if (fallback) {
+      return {
+        data: fallback,
+        slides: fallback.slides || [],
+        draftSlides: fallback._hasDraftSlides ? fallback.draftSlides : undefined,
+      };
+    }
+    throw e;
+  }
 }
 
 function approvalRequired() {
@@ -10786,6 +10839,23 @@ function setPushVisible(visible) {
   syncPublishButtonState(visible);
 }
 
+function applyLoadedShowData(id, data = {}) {
+  slides = data._hasDraftSlides ? data.draftSlides : (data.slides || []);
+  document.getElementById("defaultDwell").value  = data.draftDwell      ?? data.defaultDwell  ?? 6;
+  document.getElementById("fitMode").value       = data.draftFitMode    ?? data.fitMode       ?? "contain";
+  document.getElementById("transition").value    = data.draftTransition ?? data.transition    ?? "crossfade";
+  currentShowReviewStatus = data.status || 'published';
+  currentShowReviewData = data;
+  updateReviewStatusBanner(data);
+  updateShowItemMeta(id, data);
+  const hasUnpublished = data._hasDraftSlides || data.draftStorage === 'subcollection';
+  setPushVisible(hasUnpublished);
+  renderGrid();
+  updateCount();
+  updateDashboard();
+  syncPreviewSelect();
+}
+
 function listenToShow(id, name) {
   if (unsubscribe) unsubscribe();
   currentShowId = id;
@@ -10798,18 +10868,7 @@ function listenToShow(id, name) {
       if (snap.exists()) {
         const data = await loadShowWithSlides(id, snap.data());
         if (currentShowId !== id) return;
-        // Load draft if present, fall back to published slides (backward compat)
-        slides = data._hasDraftSlides ? data.draftSlides : (data.slides || []);
-        document.getElementById("defaultDwell").value  = data.draftDwell      ?? data.defaultDwell  ?? 6;
-        document.getElementById("fitMode").value       = data.draftFitMode    ?? data.fitMode       ?? "contain";
-        document.getElementById("transition").value    = data.draftTransition ?? data.transition    ?? "crossfade";
-        currentShowReviewStatus = data.status || 'published';
-        currentShowReviewData = data;
-        updateReviewStatusBanner(data);
-        updateShowItemMeta(id, data);
-        // Show push button whenever there are unpublished changes
-        const hasUnpublished = data._hasDraftSlides || data.draftStorage === 'subcollection';
-        setPushVisible(hasUnpublished);
+        applyLoadedShowData(id, data);
         loadApprovalQueue();
       } else {
         slides = [];
@@ -10817,16 +10876,25 @@ function listenToShow(id, name) {
         currentShowReviewData = {};
         updateReviewStatusBanner({});
         setPushVisible(false);
+        renderGrid();
+        updateCount();
+        updateDashboard();
+        syncPreviewSelect();
       }
-      renderGrid();
-      updateCount();
-      updateDashboard();
-      syncPreviewSelect();
     } catch(e) {
       if (currentShowId !== id) return;
       console.warn('Slideshow load failed:', e.message);
       toast('Could not load slideshow: ' + e.message, true);
     }
+  }, async err => {
+    if (currentShowId !== id) return;
+    console.warn('Slideshow listener failed:', err.message);
+    const fallback = await loadShowSnapshotFromServer(id, err.message);
+    if (fallback && currentShowId === id) {
+      applyLoadedShowData(id, fallback);
+      return;
+    }
+    toast('Could not load slideshow: ' + err.message, true);
   });
 }
 

@@ -1,5 +1,16 @@
 const { getAuth, getFirestore } = require('./_lib/firebase-admin');
 
+function normalizeSlideDoc(doc) {
+  const data = doc.data() || {};
+  const { order, updatedAt, ...slide } = data;
+  return { id: slide.id || doc.id, ...slide };
+}
+
+async function loadSlideCollection(showRef, collectionName) {
+  const snap = await showRef.collection(collectionName).orderBy('order', 'asc').get();
+  return snap.docs.map(normalizeSlideDoc);
+}
+
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -15,6 +26,51 @@ module.exports = async function handler(req, res) {
     const db = getFirestore();
     const { uid, email } = decoded;
     if (!email) return res.json({ merged: false });
+
+    if (req.body.action === 'showSnapshot') {
+      const { showId } = req.body || {};
+      if (!showId || typeof showId !== 'string') {
+        return res.status(400).json({ error: 'showId required' });
+      }
+
+      const userSnap = await db.doc(`users/${uid}`).get();
+      if (!userSnap.exists) return res.status(404).json({ error: 'User not found' });
+
+      const userData = userSnap.data() || {};
+      if (!userData.orgId) return res.status(403).json({ error: 'User has no organization' });
+
+      const showRef = db.doc(`slideshows/${showId}`);
+      const showSnap = await showRef.get();
+      if (!showSnap.exists) return res.status(404).json({ error: 'Slideshow not found' });
+
+      const showData = showSnap.data() || {};
+      if (showData.orgId !== userData.orgId) {
+        return res.status(403).json({ error: 'Slideshow is not in your organization' });
+      }
+
+      const loadPublished =
+        showData.slideStorageVersion >= 2 ||
+        showData.publishedStorage === 'subcollection';
+      const loadDraft =
+        showData.draftStorage === 'subcollection' &&
+        ['admin', 'editor'].includes(userData.role);
+
+      const [publishedSlides, draftSlides] = await Promise.all([
+        loadPublished
+          ? loadSlideCollection(showRef, 'slides')
+          : Promise.resolve(Array.isArray(showData.slides) ? showData.slides : []),
+        loadDraft
+          ? loadSlideCollection(showRef, 'draftSlides')
+          : Promise.resolve(Array.isArray(showData.draftSlides) ? showData.draftSlides : undefined),
+      ]);
+
+      return res.json({
+        ok: true,
+        data: { id: showSnap.id, ...showData },
+        slides: publishedSlides,
+        ...(draftSlides !== undefined && { draftSlides }),
+      });
+    }
 
     if (req.body.action === 'bootstrap') {
       const userSnap = await db.doc(`users/${uid}`).get();
