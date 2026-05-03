@@ -412,7 +412,7 @@
     import { getAuth, onAuthStateChanged, signOut as fbSignOut }
       from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
     import { getFirestore, doc, collection, query, where,
-             onSnapshot, setDoc, getDoc, deleteField, runTransaction }
+             onSnapshot, setDoc, getDoc, getDocs, deleteField, writeBatch, orderBy, runTransaction }
       from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
     const fbApp = initializeApp({
@@ -439,6 +439,9 @@
     let orgUnsub = null;
     let screensUnsub = null;
     const MOBILE_IMAGE_MAX_BYTES = 25 * 1024 * 1024;
+    const SLIDE_STORAGE_VERSION = 2;
+    const PUBLISHED_SLIDES_COLLECTION = 'slides';
+    const DRAFT_SLIDES_COLLECTION = 'draftSlides';
 
     function stopMobileListener(unsub) {
       if (!unsub) return null;
@@ -466,6 +469,220 @@
       if (file.size > MOBILE_IMAGE_MAX_BYTES) {
         throw new Error(`Images must be ${formatBytes(MOBILE_IMAGE_MAX_BYTES)} or smaller.`);
       }
+    }
+
+    function clampInt(value, min, max, fallback) {
+      const n = parseInt(value, 10);
+      if (!Number.isFinite(n)) return fallback;
+      return Math.min(max, Math.max(min, n));
+    }
+
+    function slideDocId(slide, index) {
+      const raw = String(slide?.id || `slide-${index + 1}`);
+      const safe = raw.replace(/[\/?#\[\]*]/g, '-').slice(0, 120);
+      return safe || `slide-${index + 1}`;
+    }
+
+    function normalizeSlideDoc(docSnap) {
+      const data = docSnap.data() || {};
+      const { order, updatedAt, ...slide } = data;
+      return { id: slide.id || docSnap.id, ...slide };
+    }
+
+    async function loadSlideCollection(showId, collectionName) {
+      const snap = await getDocs(query(
+        collection(db, 'slideshows', showId, collectionName),
+        orderBy('order', 'asc')
+      ));
+      return snap.docs.map(normalizeSlideDoc);
+    }
+
+    function shouldLoadSubcollection(data = {}, collectionName) {
+      if (collectionName === DRAFT_SLIDES_COLLECTION) {
+        return data.draftStorage === 'subcollection';
+      }
+      return data.slideStorageVersion >= SLIDE_STORAGE_VERSION ||
+        data.publishedStorage === 'subcollection';
+    }
+
+    async function loadShowWithSlides(showId, data = {}) {
+      const [publishedSub, draftSub] = await Promise.all([
+        shouldLoadSubcollection(data, PUBLISHED_SLIDES_COLLECTION)
+          ? loadSlideCollection(showId, PUBLISHED_SLIDES_COLLECTION)
+          : Promise.resolve(null),
+        shouldLoadSubcollection(data, DRAFT_SLIDES_COLLECTION)
+          ? loadSlideCollection(showId, DRAFT_SLIDES_COLLECTION)
+          : Promise.resolve(null),
+      ]);
+
+      const publishedSlides = Array.isArray(publishedSub)
+        ? publishedSub
+        : (Array.isArray(data.slides) ? data.slides : []);
+      const draftSlides = Array.isArray(draftSub)
+        ? draftSub
+        : (Array.isArray(data.draftSlides) ? data.draftSlides : undefined);
+
+      return {
+        ...data,
+        slides: publishedSlides,
+        ...(draftSlides !== undefined && { draftSlides }),
+        _hasDraftSlides: draftSlides !== undefined,
+      };
+    }
+
+    async function loadEffectiveSlides(showId) {
+      const snap = await getDoc(doc(db, 'slideshows', showId));
+      if (!snap.exists()) return { data: {}, slides: [], draftSlides: undefined };
+      const data = await loadShowWithSlides(showId, snap.data());
+      return {
+        data,
+        slides: data.slides || [],
+        draftSlides: data._hasDraftSlides ? data.draftSlides : undefined,
+      };
+    }
+
+    async function commitOpsInChunks(ops) {
+      for (let i = 0; i < ops.length; i += 450) {
+        const batch = writeBatch(db);
+        ops.slice(i, i + 450).forEach(op => op(batch));
+        await batch.commit();
+      }
+    }
+
+    async function ensureSlideshowParent(showId) {
+      if (!showId || !orgId) return;
+      await setDoc(doc(db, 'slideshows', showId), { orgId }, { merge: true });
+    }
+
+    async function clearSlideCollection(showId, collectionName) {
+      const snap = await getDocs(collection(db, 'slideshows', showId, collectionName));
+      await commitOpsInChunks(snap.docs.map(d => batch => batch.delete(d.ref)));
+    }
+
+    async function replaceSlideCollection(showId, collectionName, nextSlides) {
+      const now = new Date().toISOString();
+      const cleanSlides = Array.isArray(nextSlides) ? nextSlides : [];
+      await ensureSlideshowParent(showId);
+      await clearSlideCollection(showId, collectionName);
+      const setOps = cleanSlides.map((slide, index) => batch => {
+        const id = slideDocId(slide, index);
+        const ref = doc(db, 'slideshows', showId, collectionName, id);
+        batch.set(ref, {
+          ...slide,
+          id: slide.id || id,
+          order: index,
+          updatedAt: now,
+        });
+      });
+      await commitOpsInChunks(setOps);
+    }
+
+    async function saveDraftSlidesToFirestore(showId, nextSlides, patch = {}) {
+      const now = new Date().toISOString();
+      const cleanSlides = Array.isArray(nextSlides) ? nextSlides : [];
+      await replaceSlideCollection(showId, DRAFT_SLIDES_COLLECTION, cleanSlides);
+      await setDoc(doc(db, 'slideshows', showId), {
+        ...patch,
+        slideStorageVersion: SLIDE_STORAGE_VERSION,
+        draftStorage: 'subcollection',
+        draftSlidesCount: cleanSlides.length,
+        draftRevision: now,
+        draftUpdatedAt: now,
+        draftSlides: deleteField(),
+        orgId,
+      }, { merge: true });
+    }
+
+    async function publishSlidesToFirestore(showId, publishedSlides, patch = {}) {
+      const now = new Date().toISOString();
+      const cleanSlides = Array.isArray(publishedSlides) ? publishedSlides : [];
+      await replaceSlideCollection(showId, PUBLISHED_SLIDES_COLLECTION, cleanSlides);
+      await clearSlideCollection(showId, DRAFT_SLIDES_COLLECTION);
+      await setDoc(doc(db, 'slideshows', showId), {
+        ...patch,
+        slideStorageVersion: SLIDE_STORAGE_VERSION,
+        publishedStorage: 'subcollection',
+        publishedSlidesCount: cleanSlides.length,
+        publishedRevision: now,
+        draftStorage: deleteField(),
+        draftSlidesCount: deleteField(),
+        draftRevision: deleteField(),
+        slides: deleteField(),
+        draftSlides: deleteField(),
+        draftDwell: deleteField(),
+        draftFitMode: deleteField(),
+        draftTransition: deleteField(),
+        draftUpdatedAt: deleteField(),
+        draftBy: deleteField(),
+        orgId,
+      }, { merge: true });
+    }
+
+    async function appendDraftSlideToFirestore(showId, slide, data = {}, publishedSlides = [], draftSlides) {
+      const current = (draftSlides ?? publishedSlides ?? []).slice();
+      const hasExistingDraft = data._hasDraftSlides ||
+        data.draftStorage === 'subcollection' ||
+        Array.isArray(draftSlides);
+
+      if (!hasExistingDraft) {
+        const nextSlides = [...current, slide];
+        await saveDraftSlidesToFirestore(showId, nextSlides, {
+          draftDwell:      data.draftDwell      ?? data.defaultDwell ?? 6,
+          draftFitMode:    data.draftFitMode    ?? data.fitMode      ?? 'contain',
+          draftTransition: data.draftTransition ?? data.transition   ?? 'crossfade',
+          draftBy: { uid: me.uid, email: me.email },
+        });
+        return nextSlides;
+      }
+
+      const now = new Date().toISOString();
+      const id = slideDocId(slide, current.length);
+      const parentRef = doc(db, 'slideshows', showId);
+      const slideRef = doc(db, 'slideshows', showId, DRAFT_SLIDES_COLLECTION, id);
+      await runTransaction(db, async tx => {
+        const parentSnap = await tx.get(parentRef);
+        const parent = parentSnap.exists() ? parentSnap.data() : {};
+        const baseCount = Number.isFinite(parent.draftSlidesCount)
+          ? parent.draftSlidesCount
+          : current.length;
+        tx.set(slideRef, {
+          ...slide,
+          id: slide.id || id,
+          order: Date.now(),
+          updatedAt: now,
+        });
+        tx.set(parentRef, {
+          slideStorageVersion: SLIDE_STORAGE_VERSION,
+          draftStorage: 'subcollection',
+          draftSlidesCount: baseCount + 1,
+          draftRevision: now,
+          draftUpdatedAt: now,
+          draftSlides: deleteField(),
+          orgId,
+          draftBy: { uid: me.uid, email: me.email },
+        }, { merge: true });
+      });
+      return [...current, { ...slide, id: slide.id || id }];
+    }
+
+    function showSlidesForEditor(data = {}) {
+      return data._hasDraftSlides ? (data.draftSlides || []) : (data.slides || []);
+    }
+
+    function showHasDraft(data = {}) {
+      return data._hasDraftSlides || data.draftStorage === 'subcollection' || Array.isArray(data.draftSlides);
+    }
+
+    function initialsFor(name, email) {
+      const source = String(name || email || 'User').trim();
+      const nameParts = source.split(/\s+/).filter(Boolean);
+      const parts = nameParts.length > 1 ? nameParts : [source.split('@')[0]];
+      return parts
+        .filter(Boolean)
+        .slice(0, 2)
+        .map(part => part[0])
+        .join('')
+        .toUpperCase() || 'U';
     }
 
     // ── Auth guard ───────────────────────────────────────────────────────────
@@ -556,7 +773,7 @@
         return;
       }
 
-      el.innerHTML = screens
+      el.innerHTML = [...screens]
         .sort((a, b) => (a.registeredAt || '') > (b.registeredAt || '') ? 1 : -1)
         .map(s => {
           const on = online(s.lastSeen);
@@ -640,9 +857,10 @@
       try {
         const snap = await getDoc(doc(db, 'slideshows', id));
         if (!snap.exists()) { el.textContent = 'Not found'; return; }
-        const d = snap.data();
-        const count = (d.slides || []).length;
-        const draft = !!d.draftSlides;
+        const d = await loadShowWithSlides(id, snap.data());
+        const slides = showSlidesForEditor(d);
+        const count = slides.filter(s => s.active !== false).length;
+        const draft = showHasDraft(d);
         el.innerHTML = `${count} slide${count !== 1 ? 's' : ''}` +
           (draft ? ' &nbsp;<span class="draft-chip">DRAFT</span>' : '');
       } catch(_) { el.textContent = '—'; }
@@ -657,11 +875,20 @@
       setFab(true);
 
       if (activeShowUnsub) { activeShowUnsub(); }
-      activeShowUnsub = onSnapshot(doc(db, 'slideshows', id), snap => {
+      activeShowUnsub = onSnapshot(doc(db, 'slideshows', id), async snap => {
+        if (activeShowId !== id) return;
         if (!snap.exists()) return;
-        activeShowData = snap.data();
-        renderSlides(activeShowData);
-        syncPublishBtn(activeShowData);
+        try {
+          const data = await loadShowWithSlides(id, snap.data());
+          if (activeShowId !== id) return;
+          activeShowData = data;
+          renderSlides(activeShowData);
+          syncPublishBtn(activeShowData);
+        } catch(e) {
+          toast('Could not load slideshow: ' + e.message);
+        }
+      }, err => {
+        if (activeShowId === id) toast('Could not load slideshow: ' + err.message);
       });
     };
 
@@ -677,8 +904,8 @@
 
     function renderSlides(data) {
       const el = document.getElementById('slidesList');
-      const slides = data.draftSlides ?? data.slides ?? [];
-      const hasDraft = !!data.draftSlides;
+      const slides = showSlidesForEditor(data);
+      const hasDraft = showHasDraft(data);
 
       if (!slides.length) {
         el.innerHTML = `<div class="empty"><p>No slides yet.<br>Tap <strong>+</strong> to add one.</p></div>`;
@@ -722,45 +949,58 @@
 
     function syncPublishBtn(data) {
       const btn = document.getElementById('publishBtn');
-      const hasDraft = !!data.draftSlides;
+      if (btn.dataset.busy === 'true') return;
+      const hasDraft = showHasDraft(data);
       btn.disabled = !hasDraft;
       btn.textContent = hasDraft ? 'Publish' : 'Up to date';
     }
 
+    function setPublishBusy(isBusy) {
+      const btn = document.getElementById('publishBtn');
+      btn.dataset.busy = isBusy ? 'true' : 'false';
+      btn.disabled = isBusy;
+      if (isBusy) btn.textContent = 'Publishing…';
+      else syncPublishBtn(activeShowData || {});
+    }
+
+    async function refreshActiveShow(showId = activeShowId) {
+      if (!showId) return null;
+      const { data } = await loadEffectiveSlides(showId);
+      if (activeShowId === showId) {
+        activeShowData = data;
+        renderSlides(activeShowData);
+        syncPublishBtn(activeShowData);
+      }
+      return data;
+    }
+
     window.publishActive = async function() {
       if (!activeShowId) return;
-      const btn = document.getElementById('publishBtn');
-      btn.disabled = true; btn.textContent = 'Publishing…';
+      setPublishBusy(true);
       try {
         await doPublish(activeShowId);
+        await refreshActiveShow(activeShowId);
         toast('Published successfully');
       } catch(e) {
         toast('Publish failed: ' + e.message);
-        btn.disabled = false; btn.textContent = 'Publish';
+      } finally {
+        setPublishBusy(false);
       }
     };
 
     // ── Publish logic ────────────────────────────────────────────────────────
     async function doPublish(showId) {
-      const snap = await getDoc(doc(db, 'slideshows', showId));
-      if (!snap.exists()) throw new Error('Slideshow not found');
-      const d = snap.data();
-      await setDoc(doc(db, 'slideshows', showId), {
-        slides:          d.draftSlides    ?? d.slides    ?? [],
-        defaultDwell:    d.draftDwell     ?? d.defaultDwell ?? 6,
-        fitMode:         d.draftFitMode   ?? d.fitMode   ?? 'contain',
-        transition:      d.draftTransition ?? d.transition ?? 'crossfade',
+      const { data, slides, draftSlides } = await loadEffectiveSlides(showId);
+      const publishedSlides = Array.isArray(draftSlides) ? draftSlides : slides;
+      await publishSlidesToFirestore(showId, publishedSlides, {
+        defaultDwell:    data.draftDwell      ?? data.defaultDwell ?? 6,
+        fitMode:         data.draftFitMode    ?? data.fitMode      ?? 'contain',
+        transition:      data.draftTransition ?? data.transition   ?? 'crossfade',
         status:          'published',
         publishedAt:     new Date().toISOString(),
         publishedBy:     { uid: me.uid, email: me.email },
         orgId,
-        draftSlides:     deleteField(),
-        draftDwell:      deleteField(),
-        draftFitMode:    deleteField(),
-        draftTransition: deleteField(),
-        draftUpdatedAt:  deleteField(),
-        draftBy:         deleteField(),
-      }, { merge: true });
+      });
     }
 
     // ── Add slide ────────────────────────────────────────────────────────────
@@ -818,36 +1058,59 @@
 
     window.addYTSlide = async function() {
       const url   = document.getElementById('ytUrl').value.trim();
-      const dwell = parseInt(document.getElementById('ytDwell').value, 10) || 30;
+      const dwell = clampInt(document.getElementById('ytDwell').value, 5, 3600, 30);
       if (!url) { toast('Enter a YouTube URL'); return; }
       const videoId = ytId(url);
       if (!videoId) { toast('Could not find a YouTube video ID in that URL'); return; }
       closeYTSheet();
       try {
-        await appendDraft({ id: crypto.randomUUID(), type: 'youtube', videoId, url, name: 'YouTube Video', dwell, active: true });
+        await appendDraft({ id: crypto.randomUUID(), type: 'youtube', videoId, name: 'YouTube Video', dwell, active: true });
         document.getElementById('ytUrl').value = '';
+        document.getElementById('ytDwell').value = String(dwell);
         toast('YouTube slide added — tap Publish to go live');
       } catch(e) { toast('Failed: ' + e.message); }
     };
 
     async function appendDraft(slide) {
-      const ref = doc(db, 'slideshows', activeShowId);
-      // Use a transaction so concurrent uploads (or concurrent edits in admin.html)
-      // don't lose slides via read-modify-write race conditions.
-      await runTransaction(db, async (tx) => {
-        const snap = await tx.get(ref);
-        const d    = snap.exists() ? snap.data() : {};
-        const current = d.draftSlides ?? d.slides ?? [];
-        tx.set(ref, {
-          draftSlides:    [...current, slide],
-          draftUpdatedAt: new Date().toISOString(),
-          orgId,
-          draftBy: { uid: me.uid, email: me.email },
-        }, { merge: true });
-      });
+      const showId = activeShowId;
+      const { data, slides, draftSlides } = await loadEffectiveSlides(showId);
+      const nextSlides = await appendDraftSlideToFirestore(showId, slide, data, slides, draftSlides);
+      if (activeShowId !== showId) return;
+      activeShowData = {
+        ...data,
+        slides: data.slides || slides || [],
+        draftSlides: nextSlides,
+        _hasDraftSlides: true,
+        draftStorage: 'subcollection',
+        draftSlidesCount: nextSlides.length,
+      };
+      renderSlides(activeShowData);
+      syncPublishBtn(activeShowData);
     }
 
-    function ytId(url) {
+    function validYoutubeId(id) {
+      return /^[A-Za-z0-9_-]{11}$/.test(id || '');
+    }
+
+    function ytId(raw) {
+      const input = String(raw || '').trim();
+      if (validYoutubeId(input)) return input;
+      try {
+        const url = new URL(input);
+        const host = url.hostname.replace(/^www\./, '').toLowerCase();
+        let id = '';
+        if (host === 'youtu.be') {
+          id = url.pathname.split('/').filter(Boolean)[0] || '';
+        } else if (host === 'youtube.com' || host === 'm.youtube.com' || host === 'music.youtube.com') {
+          if (url.pathname === '/watch') id = url.searchParams.get('v') || '';
+          else {
+            const parts = url.pathname.split('/').filter(Boolean);
+            if (['embed', 'shorts', 'v'].includes(parts[0])) id = parts[1] || '';
+          }
+        }
+        if (validYoutubeId(id)) return id;
+      } catch(_) {}
+
       const pats = [
         /youtu\.be\/([^?&\s]+)/,
         /youtube\.com\/watch\?.*v=([^&\s]+)/,
@@ -855,7 +1118,10 @@
         /youtube\.com\/shorts\/([^?&\s]+)/,
         /youtube\.com\/v\/([^?&\s]+)/,
       ];
-      for (const p of pats) { const m = url.match(p); if (m) return m[1]; }
+      for (const p of pats) {
+        const m = input.match(p);
+        if (m && validYoutubeId(m[1])) return m[1];
+      }
       return null;
     }
 
@@ -864,7 +1130,7 @@
       if (!me || !org) return;
       const el   = document.getElementById('accountContent');
       const name = me.displayName || me.email || 'User';
-      const init = name.split(' ').slice(0,2).map(n => n[0]).join('').toUpperCase();
+      const init = initialsFor(name, me.email);
       const plan = org.subscription?.plan || 'free';
       const planLabels = { free: 'Free', standard: 'Standard', premium: 'Premium', 'early-adopter': 'Early Adopter', enterprise: 'Enterprise' };
       const screensAllowed = org.subscription?.screensAllowed ?? 1;

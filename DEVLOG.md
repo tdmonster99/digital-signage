@@ -4,6 +4,14 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-03 — Codex — Mobile polish and smoke pass
+
+Follow-up for the post-migration mobile companion cleanup.
+
+- **Subcollection compatibility**: `mobile.html` now reads published/draft slide subcollections, shows accurate slideshow counts, writes mobile-added slides into draft subcollections, and publishes by replacing the published slide subcollection instead of reviving legacy parent arrays.
+- **Mobile polish fixes**: the Content publish button no longer depends on a delayed snapshot to leave "Publishing…"; screen sorting no longer mutates the live array; YouTube dwell is clamped to 5–3600 seconds; new mobile YouTube slides store the canonical `videoId` without a redundant URL field; account initials handle extra whitespace and single-token names safely.
+- **Smoke checks**: extracted module syntax checks passed for mobile/admin/display pages, representative API syntax checks passed, diff whitespace and secret scans were clean, and local HTTP smoke requests returned 200 for mobile, admin, display, and login.
+
 ## 2026-05-03 — Codex — Add server fallback for admin slideshow loads
 
 Follow-up for published slides rendering in the dashboard preview while the Slideshows editor still showed an empty list.
