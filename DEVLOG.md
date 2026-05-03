@@ -11,6 +11,7 @@ Started Phase 5.4.1 Android platform support.
 - **Native Android shell**: added `player-android/`, a no-dependency Android WebView app that opens the hosted Zigns display player with fullscreen signage behavior, keep-awake handling, boot launch receiver, network recovery, renderer recovery, and a reset/reload maintenance menu.
 - **Shell diagnostics**: Android WebView loads now tag `display.html` with native shell version details, and the admin Screen diagnostics panel surfaces `Shell: android <version>` from player capability events.
 - **Platform docs**: roadmap, gap analysis, handoff context, and Android build/sideload notes now reflect the Android player foundation and the remaining production-readiness work.
+- **Deployment hygiene**: `.vercelignore` excludes the Android source project from the hosted web app deployment.
 
 ## 2026-05-03 — Codex — Surface player diagnostics in screen details
 
