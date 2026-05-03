@@ -9198,6 +9198,46 @@ function showBootError(message) {
   document.getElementById('bootErrReload').onclick = () => location.reload();
 }
 
+function isAuthReadFailure(error) {
+  const code = error?.code || '';
+  const msg = String(error?.message || '');
+  return code === 'permission-denied'
+    || code === 'unauthenticated'
+    || msg.includes('Missing or insufficient permissions');
+}
+
+async function redirectToLoginAfterBootAuthFailure(label, error) {
+  console.warn(`[Boot] ${label} read failed with auth error; clearing session.`, error?.message || error);
+  cleanupRealtimeListeners();
+  await signOut(auth).catch(() => {});
+  window.location.replace('/login');
+}
+
+async function getBootDocWithAuthRecovery(ref, user, label, fallbackMessage) {
+  try {
+    return await getDoc(ref);
+  } catch(e) {
+    if (isAuthReadFailure(e)) {
+      try {
+        await user.getIdToken(true);
+        return await getDoc(ref);
+      } catch(retryErr) {
+        if (isAuthReadFailure(retryErr)) {
+          await redirectToLoginAfterBootAuthFailure(label, retryErr);
+        } else {
+          console.error(`Failed to load ${label} after token refresh:`, retryErr);
+          showBootError(fallbackMessage);
+        }
+        return null;
+      }
+    }
+
+    console.error(`Failed to load ${label}:`, e);
+    showBootError(fallbackMessage);
+    return null;
+  }
+}
+
 async function initUserAndOrg(user) {
   // Check for invite link first
   const inviteId = new URLSearchParams(window.location.search).get('invite');
@@ -9205,14 +9245,13 @@ async function initUserAndOrg(user) {
   // Step 1: load the user doc. A missing doc means a brand new user; any other
   // error is transient (network, permission, throttle) and must NOT trigger
   // createOrg — that would orphan the user from their existing organization.
-  let userSnap;
-  try {
-    userSnap = await getDoc(doc(db, 'users', user.uid));
-  } catch(e) {
-    console.error('Failed to load user document:', e);
-    showBootError('Could not load your account. Check your internet connection and reload.');
-    return;
-  }
+  const userSnap = await getBootDocWithAuthRecovery(
+    doc(db, 'users', user.uid),
+    user,
+    'user document',
+    'Could not load your account. Check your internet connection and reload.'
+  );
+  if (!userSnap) return;
 
   if (userSnap.exists()) {
     const userData = userSnap.data();
@@ -9227,14 +9266,14 @@ async function initUserAndOrg(user) {
       else          { await createOrg(user); }
     } else {
     // Step 2: load the organization doc. Same rule — don't auto-create on error.
-    try {
-      const orgSnap = await getDoc(doc(db, 'organizations', currentOrgId));
-      currentOrg    = orgSnap.exists() ? { id: currentOrgId, ...orgSnap.data() } : null;
-    } catch(e) {
-      console.error('Failed to load organization document:', e);
-      showBootError('Could not load your organization. Please reload.');
-      return;
-    }
+    const orgSnap = await getBootDocWithAuthRecovery(
+      doc(db, 'organizations', currentOrgId),
+      user,
+      'organization document',
+      'Could not load your organization. Please reload.'
+    );
+    if (!orgSnap) return;
+    currentOrg = orgSnap.exists() ? { id: currentOrgId, ...orgSnap.data() } : null;
 
     // Claim any pending subscription from the marketing site (best-effort)
     try {

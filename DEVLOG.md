@@ -4,6 +4,13 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-03 — Codex — Recover from stale admin auth sessions
+
+Follow-up for the production organization-load boot error.
+
+- **Boot recovery**: `admin.html` now force-refreshes the Firebase ID token and retries account/org document reads when Firestore reports auth or permission failures.
+- **Stale session cleanup**: if the retry is still denied, the app clears the persisted Auth session and redirects to login instead of leaving the user stuck on the organization reload overlay.
+
 ## 2026-05-02 — Codex — Isolate display screen auth from admin login
 
 Fixed a production boot issue where a browser that had opened a paired display could later load the admin app with the display's Firebase custom-token session.
