@@ -8983,6 +8983,17 @@ onAuthStateChanged(auth, async user => {
   const btn   = document.getElementById("authBtn");
 
   if (user) {
+    const tokenResult = await user.getIdTokenResult().catch(e => {
+      console.warn('Could not inspect auth token:', e.message);
+      return null;
+    });
+    if (tokenResult?.claims?.screen === true || !user.email) {
+      cleanupRealtimeListeners();
+      await signOut(auth).catch(() => {});
+      window.location.replace('/login');
+      return;
+    }
+
     currentUser        = user;
     badge.textContent  = "Live";
     badge.className    = "live-badge";

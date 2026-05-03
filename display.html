@@ -16,7 +16,8 @@
 <script type="module">
   import { initializeApp }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getAuth, onAuthStateChanged, signInWithCustomToken }
+  import { getAuth, onAuthStateChanged, signInWithCustomToken,
+           setPersistence, inMemoryPersistence }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
   import { getFirestore, doc, collection, onSnapshot, setDoc, addDoc, getDocs, query, orderBy }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -30,15 +31,26 @@
     appId: "1:1004548485661:web:b3ab204d94943716674cf4"
   };
 
-  const app = initializeApp(firebaseConfig);
-  const db  = getFirestore(app);
-  const screenAuth = getAuth(app);
-
-  // ── Screen identity ───────────────────────────────────────────────────────
-  // ?slideshow=xxx in URL = preview iframe from admin panel (skip screen registration)
-  // Otherwise: assign a persistent screenId and get slideshow assignment from Firestore
+  // ?slideshow=xxx in URL = preview iframe from admin panel. Preview mode must
+  // use the default app/auth session so signed-in admins can read protected
+  // slideshow docs. Paired displays use a named Firebase app with in-memory
+  // auth so custom screen tokens cannot overwrite the admin login on this origin.
   const urlParams = new URLSearchParams(window.location.search);
   const previewId = urlParams.get("slideshow");
+  const isPreviewMode = Boolean(previewId);
+  const app = isPreviewMode
+    ? initializeApp(firebaseConfig)
+    : initializeApp(firebaseConfig, "zigns-display-screen");
+  const db  = getFirestore(app);
+  const screenAuth = getAuth(app);
+  const screenAuthReady = isPreviewMode
+    ? Promise.resolve()
+    : setPersistence(screenAuth, inMemoryPersistence).catch(e => {
+        console.warn('[Screen] Could not set in-memory auth persistence:', e.message);
+      });
+
+  // ── Screen identity ───────────────────────────────────────────────────────
+  // Otherwise: assign a persistent screenId and get slideshow assignment from Firestore
 
   // ?slot=2 (or any value) uses a separate localStorage key so two windows on the
   // same computer can each maintain an independent screen identity and pairing.
@@ -130,6 +142,7 @@
       body: JSON.stringify({ screenId, secret: screenSecret }),
     })
       .then(async res => {
+        await screenAuthReady;
         const data = await res.json().catch(() => ({}));
         if (!res.ok || !data.token) {
           throw new Error(data.error || `HTTP ${res.status}`);

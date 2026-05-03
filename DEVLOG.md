@@ -4,6 +4,13 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-02 — Codex — Isolate display screen auth from admin login
+
+Fixed a production boot issue where a browser that had opened a paired display could later load the admin app with the display's Firebase custom-token session.
+
+- **Display auth isolation**: non-preview `display.html` now uses a named Firebase app with in-memory Auth persistence, so screen tokens no longer replace the default admin/login session for `app.zigns.io`.
+- **Admin recovery**: `admin.html` now detects persisted screen-token sessions or email-less Firebase users, signs them out, and redirects to login instead of trying to load an organization with the wrong identity.
+
 ## 2026-05-02 — Codex — Guard screen-limit and display background races
 
 Closed audit items #24 and #34 from the remaining recommended batch.
