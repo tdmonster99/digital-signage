@@ -4,6 +4,13 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-03 — Codex — Add server bootstrap fallback for admin auth
+
+Follow-up for a login loop where Google sign-in briefly showed the dashboard, then returned to login without a visible error.
+
+- **Server bootstrap fallback**: `api/link-account.js` now supports an authenticated `bootstrap` action that verifies the Firebase ID token and returns the caller's user/org docs through Admin SDK.
+- **Admin boot resilience**: `admin.html` now uses that server bootstrap as a fallback when client-side Firestore account/org reads still report auth or permission failures after an ID-token refresh.
+
 ## 2026-05-03 — Codex — Recover from stale admin auth sessions
 
 Follow-up for the production organization-load boot error.

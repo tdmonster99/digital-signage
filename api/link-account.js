@@ -16,6 +16,24 @@ module.exports = async function handler(req, res) {
     const { uid, email } = decoded;
     if (!email) return res.json({ merged: false });
 
+    if (req.body.action === 'bootstrap') {
+      const userSnap = await db.doc(`users/${uid}`).get();
+      if (!userSnap.exists) return res.json({ ok: true, user: null, org: null });
+
+      const userData = userSnap.data() || {};
+      let org = null;
+      if (userData.orgId) {
+        const orgSnap = await db.doc(`organizations/${userData.orgId}`).get();
+        if (orgSnap.exists) org = { id: orgSnap.id, ...orgSnap.data() };
+      }
+
+      return res.json({
+        ok: true,
+        user: { id: uid, ...userData },
+        org,
+      });
+    }
+
     // Nothing to do if this UID already has a users doc
     const mySnap = await db.doc(`users/${uid}`).get();
     if (mySnap.exists) return res.json({ merged: false });

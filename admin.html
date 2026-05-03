@@ -9213,6 +9213,50 @@ async function redirectToLoginAfterBootAuthFailure(label, error) {
   window.location.replace('/login');
 }
 
+let _bootAccountPromise = null;
+let _bootAccountUid = null;
+
+function bootstrapSnap(data) {
+  return {
+    exists: () => !!data,
+    data: () => data || {},
+  };
+}
+
+async function loadAccountBootstrap(user) {
+  if (_bootAccountPromise && _bootAccountUid === user.uid) return _bootAccountPromise;
+  _bootAccountUid = user.uid;
+  _bootAccountPromise = (async () => {
+    const idToken = await user.getIdToken(true);
+    const resp = await fetch('/api/link-account', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'bootstrap', idToken }),
+    });
+    const result = await resp.json().catch(() => ({}));
+    if (!resp.ok || result.ok !== true) {
+      throw new Error(result.error || `HTTP ${resp.status}`);
+    }
+    return result;
+  })().catch(e => {
+    console.warn('[Boot] Server bootstrap failed:', e.message);
+    return null;
+  });
+  return _bootAccountPromise;
+}
+
+async function getBootstrapFallbackSnap(ref, user, label) {
+  const boot = await loadAccountBootstrap(user);
+  if (!boot) return null;
+  if (label === 'user document') return bootstrapSnap(boot.user || null);
+  if (label === 'organization document') {
+    const refPath = ref?.path || '';
+    if (boot.org && refPath.endsWith('/' + boot.org.id)) return bootstrapSnap(boot.org);
+    return bootstrapSnap(null);
+  }
+  return null;
+}
+
 async function getBootDocWithAuthRecovery(ref, user, label, fallbackMessage) {
   try {
     return await getDoc(ref);
@@ -9223,6 +9267,8 @@ async function getBootDocWithAuthRecovery(ref, user, label, fallbackMessage) {
         return await getDoc(ref);
       } catch(retryErr) {
         if (isAuthReadFailure(retryErr)) {
+          const fallbackSnap = await getBootstrapFallbackSnap(ref, user, label);
+          if (fallbackSnap) return fallbackSnap;
           await redirectToLoginAfterBootAuthFailure(label, retryErr);
         } else {
           console.error(`Failed to load ${label} after token refresh:`, retryErr);
