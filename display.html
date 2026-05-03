@@ -94,6 +94,101 @@
   let watchdogHandle    = null;
   let debugVisible      = false;
   const PAGE_LOAD_TIME  = Date.now();
+  const ZIGNS_PLAYER_VERSION = "2026.05.03.1";
+
+  // ── Player platform diagnostics ───────────────────────────────────────────
+  let playerBootDiagnosticsSent = false;
+
+  function safeStorageAvailable() {
+    try {
+      const key = "__zigns_storage_probe__";
+      localStorage.setItem(key, "1");
+      localStorage.removeItem(key);
+      return true;
+    } catch(_) {
+      return false;
+    }
+  }
+
+  function canPlay(mime) {
+    try {
+      const video = document.createElement("video");
+      const audio = document.createElement("audio");
+      return video.canPlayType(mime) || audio.canPlayType(mime) || "";
+    } catch(_) {
+      return "";
+    }
+  }
+
+  function detectPlayerPlatform() {
+    const ua = navigator.userAgent || "";
+    const platform = navigator.userAgentData?.platform || navigator.platform || "";
+    const uaLower = ua.toLowerCase();
+    const platformLower = platform.toLowerCase();
+    let family = "unknown";
+    if (/tizen|samsung/.test(uaLower)) family = "tizen";
+    else if (/web0s|webos|netcast/.test(uaLower)) family = "webos";
+    else if (/aft|fire tv|silk/.test(uaLower)) family = "fire-tv";
+    else if (/android/.test(uaLower) && (/tv|bravia|shield|mibox/.test(uaLower))) family = "android-tv";
+    else if (/android/.test(uaLower)) family = "android";
+    else if (/cros/.test(uaLower) || platformLower.includes("chrome")) family = "chromeos";
+    else if (/appletv|tvos/.test(uaLower)) family = "tvos";
+    else if (/mac/.test(platformLower)) family = "macos";
+    else if (/win/.test(platformLower)) family = "windows";
+    else if (/linux/.test(platformLower)) family = "linux";
+    else if (/iphone|ipad|ipod/.test(uaLower)) family = "ios";
+    return {
+      family,
+      userAgent: ua.slice(0, 320),
+      platform: platform || "",
+      brands: Array.isArray(navigator.userAgentData?.brands)
+        ? navigator.userAgentData.brands.map(b => ({ brand: b.brand, version: b.version })).slice(0, 6)
+        : [],
+    };
+  }
+
+  function collectPlayerCapabilities() {
+    const root = document.documentElement;
+    return {
+      playerVersion: ZIGNS_PLAYER_VERSION,
+      platform: detectPlayerPlatform(),
+      viewport: {
+        width: window.innerWidth || 0,
+        height: window.innerHeight || 0,
+        dpr: window.devicePixelRatio || 1,
+      },
+      screen: {
+        width: screen?.width || 0,
+        height: screen?.height || 0,
+        availWidth: screen?.availWidth || 0,
+        availHeight: screen?.availHeight || 0,
+        colorDepth: screen?.colorDepth || 0,
+      },
+      features: {
+        cacheApi: "caches" in window,
+        fullscreen: Boolean(root?.requestFullscreen || root?.webkitRequestFullscreen),
+        indexedDb: "indexedDB" in window,
+        localStorage: safeStorageAvailable(),
+        mediaSession: "mediaSession" in navigator,
+        online: navigator.onLine !== false,
+        serviceWorker: "serviceWorker" in navigator,
+        touch: navigator.maxTouchPoints > 0 || "ontouchstart" in window,
+        wakeLock: "wakeLock" in navigator,
+        webSocket: "WebSocket" in window,
+      },
+      hardware: {
+        concurrency: navigator.hardwareConcurrency || null,
+        deviceMemory: navigator.deviceMemory || null,
+      },
+      media: {
+        h264Mp4: canPlay('video/mp4; codecs="avc1.42E01E, mp4a.40.2"'),
+        h265Mp4: canPlay('video/mp4; codecs="hvc1.1.6.L93.B0"'),
+        webmVp9: canPlay('video/webm; codecs="vp9, opus"'),
+        mp3: canPlay('audio/mpeg'),
+        aac: canPlay('audio/mp4; codecs="mp4a.40.2"'),
+      },
+    };
+  }
 
   // ── Analytics batch queue ─────────────────────────────────────────────────
   let analyticsQueue  = [];
@@ -111,6 +206,54 @@
     analyticsQueue.push({ ...event, timestamp: new Date().toISOString() });
   }
 
+  function queuePlayerEvent(type, data = {}) {
+    queueAnalyticsEvent({
+      type,
+      screenId,
+      playerVersion: ZIGNS_PLAYER_VERSION,
+      slideshowId: currentSlideshowIdForAnalytics || activeSlideshowId || null,
+      uptimeSec: Math.round((Date.now() - PAGE_LOAD_TIME) / 1000),
+      online: navigator.onLine !== false,
+      offlineCacheMode: isOffline,
+      ...data,
+    });
+  }
+
+  function flushAnalyticsSoon() {
+    flushAnalytics().catch(() => {});
+  }
+
+  function emitPlayerBootDiagnostics() {
+    if (playerBootDiagnosticsSent || !hasScreenWriteAccess() || !analyticsOrgId) return;
+    playerBootDiagnosticsSent = true;
+    queuePlayerEvent("player_boot", {
+      path: location.pathname,
+      screenSlot: screenSlot || null,
+      previewMode: isPreviewMode,
+      platformFamily: detectPlayerPlatform().family,
+    });
+    queuePlayerEvent("player_capabilities", {
+      capabilities: collectPlayerCapabilities(),
+    });
+    flushAnalyticsSoon();
+  }
+
+  function emitPlayerConnectivity(type, source) {
+    if (!hasScreenWriteAccess() || !analyticsOrgId) return;
+    queuePlayerEvent(type, { source });
+    flushAnalyticsSoon();
+  }
+
+  function emitPlayerSlideshowError(reason, message, data = {}) {
+    if (!hasScreenWriteAccess() || !analyticsOrgId) return;
+    queuePlayerEvent("player_slideshow_error", {
+      reason,
+      message: String(message || "").slice(0, 300),
+      ...data,
+    });
+    flushAnalyticsSoon();
+  }
+
   async function flushAnalytics() {
     if (!hasScreenWriteAccess()) return;
     if (!analyticsOrgId || !analyticsQueue.length) return;
@@ -122,6 +265,8 @@
   }
 
   setInterval(flushAnalytics, 60 * 1000);
+  window.addEventListener("online", () => emitPlayerConnectivity("player_online", "browser"));
+  window.addEventListener("offline", () => emitPlayerConnectivity("player_offline", "browser"));
 
   async function ensureScreenWriteAccess() {
     if (!ownsScreenIdentity) {
@@ -1741,9 +1886,16 @@
 
   // ── Offline indicator ─────────────────────────────────────────────────────
   function setOffline(offline) {
+    const changed = isOffline !== offline;
     isOffline = offline;
     const dot = document.getElementById('offlineDot');
     if (dot) dot.style.display = offline ? 'flex' : 'none';
+    if (changed) {
+      emitPlayerConnectivity(
+        offline ? "player_offline" : "player_online",
+        offline ? "slideshow_listener_cache" : "slideshow_listener_live"
+      );
+    }
   }
 
   // ── Next-slide preloading (called during current slide's dwell) ───────────
@@ -1768,11 +1920,8 @@
       console.warn('[Watchdog] Playback stalled — forcing advance');
       try {
         if (hasScreenWriteAccess() && analyticsOrgId) {
-          await addDoc(collection(db, 'organizations', analyticsOrgId, 'analytics'), {
-            type: 'watchdog_restart', screenId,
-            slideshowId: currentSlideshowIdForAnalytics,
-            timestamp:   new Date().toISOString(),
-          });
+          queuePlayerEvent("player_watchdog_restart", { reason: "stall_timeout" });
+          await flushAnalytics();
         }
       } catch(_) {}
       advance();
@@ -1805,7 +1954,10 @@
     const uptimeStr = uptimeMs < 3600000
       ? Math.round(uptimeMs / 60000) + ' min'
       : (uptimeMs / 3600000).toFixed(1) + ' h';
+    const platform = detectPlayerPlatform();
     const rows = [
+      ['Player',           ZIGNS_PLAYER_VERSION],
+      ['Platform',         platform.family],
       ['Screen ID',        screenId || '—'],
       ['Slideshow ID',     activeSlideshowId || '—'],
       ['Slide',            slides.length
@@ -2175,6 +2327,9 @@
 
     // Every slide failed
     console.error('[Error] All', slides.length, 'slides failed to display');
+    emitPlayerSlideshowError("all_slides_failed", "All slides failed to display", {
+      slideCount: slides.length,
+    });
     showError('All slides failed to load. Check your content in the Admin Panel.');
   }
 
@@ -2201,6 +2356,7 @@
 
   async function applyPlaylist(data) {
     if (!data || !data.slides || !data.slides.length) {
+      emitPlayerSlideshowError("empty_playlist", "No slides configured");
       showError("No slides configured. Open the Admin Panel to add images.");
       return;
     }
@@ -2238,6 +2394,10 @@
       const message = unsupportedCount
         ? `No playable slides. ${unsupportedCount} unsupported slide type${unsupportedCount === 1 ? ' was' : 's were'} skipped. Update the display app or remove those slides in the Admin Panel.`
         : "No active playable slides. Enable or fix slides in the Admin Panel.";
+      emitPlayerSlideshowError("no_playable_slides", message, {
+        skippedCount: skipped.length,
+        unsupportedCount,
+      });
       showError(message);
       return;
     }
@@ -2299,6 +2459,7 @@
           applyPlaylist(resolved);
         } else {
           loader.style.display = "none";
+          emitPlayerSlideshowError("slideshow_not_found", `Slideshow '${slideshowId}' not found`, { slideshowId });
           showError("Slideshow '" + slideshowId + "' not found. Create it in the Admin Panel.");
         }
       },
@@ -2312,6 +2473,10 @@
           setOffline(true);
           applyPlaylist(cached);
         } else {
+          emitPlayerSlideshowError("slideshow_listener_error", err.message, {
+            code: err.code || "",
+            slideshowId,
+          });
           showError("Firebase connection error: " + err.message);
         }
 
@@ -2537,10 +2702,13 @@
       addDoc(collection(db, 'organizations', orgId, 'analytics'), {
         type: 'screen_online', screenId, timestamp: new Date().toISOString(),
       }).catch(() => {});
+      queuePlayerEvent("player_online", { source: "screen_boot" });
+      emitPlayerBootDiagnostics();
     }
     window.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'hidden' && hasScreenWriteAccess() && analyticsOrgId) {
         // Best-effort flush + offline event when tab is hidden/closed
+        queuePlayerEvent("player_offline", { source: "visibility_hidden" });
         flushAnalytics();
         addDoc(collection(db, 'organizations', analyticsOrgId, 'analytics'), {
           type: 'screen_offline', screenId, timestamp: new Date().toISOString(),

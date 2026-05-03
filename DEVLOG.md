@@ -4,6 +4,14 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-03 — Codex — Add display player diagnostics foundation
+
+Started Phase 5.4.0 player compatibility work.
+
+- **Player identity**: `display.html` now carries a stable player version and exposes it in the debug overlay alongside detected platform family.
+- **Capability telemetry**: paired displays now emit `player_boot` and `player_capabilities` analytics events with platform, viewport/screen metrics, storage/cache/fullscreen/WebSocket/service worker support, basic hardware hints, and common media codec probes.
+- **Reliability events**: display playback now emits `player_online`, `player_offline`, `player_watchdog_restart`, and `player_slideshow_error` events through the existing screen-token analytics path without widening screen-document write permissions.
+
 ## 2026-05-03 — Codex — Retarget platform compatibility roadmap
 
 Captured the agreed 5.4 platform rollout order.
