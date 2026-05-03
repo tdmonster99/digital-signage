@@ -8,11 +8,11 @@ Two parallel tracks have been running today:
 
 **Track 1 — Code-review audit.** A `superpowers:code-reviewer` pass on `admin.html`, `mobile.html`, `login.html`, `display.html` found **5 Critical, 6 High, 9 Medium, 20+ Low** bugs. **17 / 40+ fixed** (all Critical + all High + 6 Medium across sessions 40–42). Backlog below.
 
-**Track 2 — Kitcast competitive gaps.** A side-by-side comparison vs Kitcast Pro lives in `app/KITCAST_GAP_ANALYSIS.md`. Closed since the doc was written: audio playback (sessions 44–45). Multi-user is broadly shipping; rough edges tightened in session 43. Top remaining gaps: platform compatibility wave, SSO/SAML, MDM/Zero-Touch, and remaining emergency/CAP polish.
+**Track 2 — Kitcast competitive gaps.** A side-by-side comparison vs Kitcast Pro lives in `app/KITCAST_GAP_ANALYSIS.md`. Closed since the doc was written: audio playback (sessions 44–45). Multi-user is broadly shipping; rough edges tightened in session 43. Platform compatibility is now underway: 5.4.0 diagnostics shipped and 5.4.1 Android has an initial WebView shell. Top remaining gaps: ChromeOS kiosk/Tizen/webOS/tvOS, SSO/SAML, MDM/Zero-Touch, and remaining emergency/CAP polish.
 
 **Resume points:**
 - Audit: continue Medium batch — items below.
-- Kitcast → **Phase 5 in `ROADMAP.md`** is the next focus. Tags/priority/emergency playlist and CAP foundations are mostly shipped. Platform sequence agreed 2026-05-03: 5.4.0 player compatibility foundation → 5.4.1 Android → 5.4.2 ChromeOS Kiosk → 5.4.3 Tizen → 5.4.4 webOS → 5.4.5 tvOS → later Fire/BrightSign.
+- Kitcast → **Phase 5 in `ROADMAP.md`** is the next focus. Tags/priority/emergency playlist and CAP foundations are mostly shipped. Platform sequence agreed 2026-05-03: 5.4.0 player compatibility foundation → 5.4.1 Android → 5.4.2 ChromeOS Kiosk → 5.4.3 Tizen → 5.4.4 webOS → 5.4.5 tvOS → later Fire/BrightSign. Next likely work: Android build/install smoke on real hardware or emulator, then ChromeOS kiosk docs.
 
 ## Sessions This Day (2026-04-27)
 
@@ -98,7 +98,7 @@ These remain from earlier days:
 1. **Mark Vercel env vars as Sensitive** (5 min, manual in dashboard) — `GOOGLE_PLACES_API_KEY`, `CRON_SECRET`, `CLOUDCONVERT_API_KEY`, `GOOGLE_SHEETS_API_KEY`, `OPENWEATHER_API_KEY`
 2. **Delete duplicate Vercel `app` project** (2 min, manual in dashboard)
 3. **Slideshow subcollection migration** — `slides[]` will hit 1MB limit at scale; needs migration script + admin/display rewrites
-4. **Phase 5.4 platform work** — agreed sequence: player compatibility foundation, Android, ChromeOS Kiosk, Tizen, webOS, tvOS, later Fire/BrightSign. First implementation slice should add player version/platform/capability diagnostics without breaking current screen-token rules.
+4. **Phase 5.4 platform work** — agreed sequence: player compatibility foundation, Android, ChromeOS Kiosk, Tizen, webOS, tvOS, later Fire/BrightSign. 5.4.0 diagnostics are shipped. 5.4.1 Android has an initial `player-android/` WebView shell with fullscreen, wake behavior, boot receiver, network/renderer recovery, reset/reload menu, and native shell diagnostics; remaining Android work is build/install smoke, signing, and kiosk provisioning docs.
 5. **Analytics daily rollup** — aggregation cron to prevent expensive dashboard queries at scale
 6. **Google Cloud OAuth verification** — user is mid-flow; needs to verify `zigns.io` ownership in Search Console (TXT record on `@`) before branding goes through
 7. **CRON_SECRET in URL query** — currently logged. Switch to `Authorization: Bearer` header only.

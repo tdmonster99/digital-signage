@@ -9,6 +9,13 @@
 # Dependencies
 node_modules/
 
+# Android local/build output
+player-android/.gradle/
+player-android/local.properties
+player-android/**/build/
+*.apk
+*.aab
+
 # OS
 .DS_Store
 Thumbs.db

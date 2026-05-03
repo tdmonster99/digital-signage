@@ -93,7 +93,7 @@ Zigns is a browser-based player. Runs anywhere there's a browser + internet, but
 | Apple TV / macOS | macOS ✅ · Apple TV ❌ | tvOS has no browser. Native tvOS player is now planned after Android, ChromeOS kiosk, Tizen, and webOS. |
 | **Samsung Tizen** | ❌ | No native Tizen app. |
 | **LG webOS** | ❌ | No native webOS app. |
-| Android TV / Android signage boxes | ⚠ | Browser/WebView path is plausible, but there is no native APK, auto-start shell, wake lock, or deployment guide yet. |
+| Android TV / Android signage boxes | ⚠ | Initial native WebView shell exists under `player-android/` with boot launch, wake behavior, recovery, and diagnostics. Still needs device build/install smoke, signing, kiosk provisioning docs, and hardware validation. |
 | ChromeOS kiosk | ⚠ | Browser-compatible today, but not yet documented/certified as a managed kiosk deployment path. |
 | Amazon signage / Fire sticks | ⚠ | Works via Fire OS Silk/browser. Future support should inherit from Android, but consumer Fire devices have autostart/fleet-management caveats. |
 | **BrightSign** | ❌ | No native BrightSign app. Deferred until customer/RFP demand justifies a separate BrightScript/HTML5 validation track. |

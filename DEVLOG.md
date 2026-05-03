@@ -4,6 +4,14 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-03 — Codex — Add Android player shell foundation
+
+Started Phase 5.4.1 Android platform support.
+
+- **Native Android shell**: added `player-android/`, a no-dependency Android WebView app that opens the hosted Zigns display player with fullscreen signage behavior, keep-awake handling, boot launch receiver, network recovery, renderer recovery, and a reset/reload maintenance menu.
+- **Shell diagnostics**: Android WebView loads now tag `display.html` with native shell version details, and the admin Screen diagnostics panel surfaces `Shell: android <version>` from player capability events.
+- **Platform docs**: roadmap, gap analysis, handoff context, and Android build/sideload notes now reflect the Android player foundation and the remaining production-readiness work.
+
 ## 2026-05-03 — Codex — Surface player diagnostics in screen details
 
 Follow-up for Phase 5.4.0 player compatibility diagnostics.

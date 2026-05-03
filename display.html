@@ -94,7 +94,7 @@
   let watchdogHandle    = null;
   let debugVisible      = false;
   const PAGE_LOAD_TIME  = Date.now();
-  const ZIGNS_PLAYER_VERSION = "2026.05.03.1";
+  const ZIGNS_PLAYER_VERSION = "2026.05.03.2";
 
   // ── Player platform diagnostics ───────────────────────────────────────────
   let playerBootDiagnosticsSent = false;
@@ -125,12 +125,19 @@
     const platform = navigator.userAgentData?.platform || navigator.platform || "";
     const uaLower = ua.toLowerCase();
     const platformLower = platform.toLowerCase();
+    const nativePlatform = (urlParams.get("nativePlatform") || "").trim().toLowerCase().slice(0, 40);
+    const nativeVersion = (urlParams.get("nativeVersion") || "").trim().slice(0, 40);
+    const androidShellMatch = ua.match(/ZignsAndroidPlayer\/([0-9A-Za-z._-]+)/i);
+    const shell = androidShellMatch
+      ? { type: "android", version: androidShellMatch[1] || nativeVersion || "" }
+      : (nativePlatform ? { type: nativePlatform, version: nativeVersion } : null);
     let family = "unknown";
     if (/tizen|samsung/.test(uaLower)) family = "tizen";
     else if (/web0s|webos|netcast/.test(uaLower)) family = "webos";
     else if (/aft|fire tv|silk/.test(uaLower)) family = "fire-tv";
     else if (/android/.test(uaLower) && (/tv|bravia|shield|mibox/.test(uaLower))) family = "android-tv";
     else if (/android/.test(uaLower)) family = "android";
+    else if (shell?.type === "android") family = "android";
     else if (/cros/.test(uaLower) || platformLower.includes("chrome")) family = "chromeos";
     else if (/appletv|tvos/.test(uaLower)) family = "tvos";
     else if (/mac/.test(platformLower)) family = "macos";
@@ -144,6 +151,7 @@
       brands: Array.isArray(navigator.userAgentData?.brands)
         ? navigator.userAgentData.brands.map(b => ({ brand: b.brand, version: b.version })).slice(0, 6)
         : [],
+      shell,
     };
   }
 
@@ -1955,9 +1963,13 @@
       ? Math.round(uptimeMs / 60000) + ' min'
       : (uptimeMs / 3600000).toFixed(1) + ' h';
     const platform = detectPlayerPlatform();
+    const shellLabel = platform.shell?.type
+      ? `${platform.shell.type}${platform.shell.version ? ' ' + platform.shell.version : ''}`
+      : '';
     const rows = [
       ['Player',           ZIGNS_PLAYER_VERSION],
       ['Platform',         platform.family],
+      ...(shellLabel ? [['Shell', shellLabel]] : []),
       ['Screen ID',        screenId || '—'],
       ['Slideshow ID',     activeSlideshowId || '—'],
       ['Slide',            slides.length
@@ -1973,8 +1985,8 @@
     ];
     el.innerHTML = '<div class="dbg-title">Debug  ·  Ctrl+Shift+D to close</div>'
       + rows.map(([k, v, cls]) =>
-          `<div class="dbg-row"><span>${k}</span>`
-        + `<span${cls ? ` class="${cls}"` : ''}>${v}</span></div>`
+          `<div class="dbg-row"><span>${esc(k)}</span>`
+        + `<span${cls ? ` class="${cls}"` : ''}>${esc(v)}</span></div>`
         ).join('');
   }
 

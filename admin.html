@@ -20373,6 +20373,8 @@ function renderPlayerDiagnostics(screenId, events) {
   const media = caps.media || {};
   const version = caps.playerVersion || capsEvent.playerVersion || bootEvent.playerVersion || '—';
   const platformFamily = platform.family || bootEvent.platformFamily || '—';
+  const shell = platform.shell || {};
+  const shellLabel = shell.type ? `${shell.type}${shell.version ? ' ' + shell.version : ''}` : '';
   const lastIssue = latest.player_slideshow_error || latest.player_watchdog_restart || null;
 
   if (!Object.keys(latest).length) {
@@ -20389,6 +20391,7 @@ function renderPlayerDiagnostics(screenId, events) {
   el.innerHTML = `
     ${playerDiagRow('Player', escHtml(version))}
     ${playerDiagRow('Platform', escHtml(platformFamily))}
+    ${shellLabel ? playerDiagRow('Shell', escHtml(shellLabel)) : ''}
     ${playerDiagRow('Viewport', escHtml(dimensionLabel(viewport.width, viewport.height, ` @ ${Number(viewport.dpr) || 1}x`)))}
     ${playerDiagRow('Screen', escHtml(dimensionLabel(screen.width, screen.height)))}
     ${playerDiagRow('Last boot', escHtml(formatPlayerDiagTime(bootEvent.timestamp || capsEvent.timestamp)))}
