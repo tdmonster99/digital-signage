@@ -4,6 +4,15 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-02 — Codex — Guard screen-limit and display background races
+
+Closed audit items #24 and #34 from the remaining recommended batch.
+
+- **Admin enforcement**: `admin.html` now coalesces overlapping screen-limit enforcement runs and uses Firestore transactions to re-check each screen before toggling `suspended`, preventing duplicate writes from multiple open admin tabs.
+- **Deterministic ordering**: admin and cron enforcement now share oldest-first behavior with screen ID as the tie-breaker when registration timestamps are missing or equal.
+- **YouTube fallback hardening**: `display.html` now rejects non-canonical YouTube IDs inside thumbnail/embed helpers before constructing fallback image or iframe URLs.
+- **Background URL cleanup**: multi-zone image backgrounds now use the shared CSS URL sanitizer instead of interpolating raw image URLs into a shorthand style string.
+
 ## 2026-05-02 — Codex — Retarget WSL tooling path
 
 Aligned the local Firebase tooling metadata with the post-migration canonical workspace path.

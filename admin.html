@@ -8852,7 +8852,7 @@ body.role-editor .admin-action {
 import { initializeApp }              from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, doc, collection, setDoc, onSnapshot, getDoc, deleteDoc,
          updateDoc, arrayUnion, arrayRemove, query, where, getDocs,
-         addDoc, writeBatch, orderBy, limit, deleteField }
+         addDoc, writeBatch, orderBy, limit, deleteField, runTransaction }
                                        from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, GoogleAuthProvider, OAuthProvider,
          signInWithPopup, signInWithRedirect, getRedirectResult,
@@ -19974,6 +19974,8 @@ let pairingTimerInterval = null;
 let _cachedScreens  = [];
 let _screensReady   = false;
 let _pendingPublishModal = false;
+let _screenLimitEnforceInFlight = false;
+let _screenLimitEnforcePending  = false;
 
 function initScreensPage() {
   if (screensUnsub) { renderScreens(_cachedScreens); return; }
@@ -19996,27 +19998,67 @@ function initScreensPage() {
   );
 }
 
+function _screenRegisteredAtMs(screen) {
+  const ms = screen.registeredAt ? new Date(screen.registeredAt).getTime() : 0;
+  return Number.isFinite(ms) ? ms : 0;
+}
+
+function _sortScreensForLimit(screens) {
+  return [...screens].sort((a, b) => {
+    const byDate = _screenRegisteredAtMs(a) - _screenRegisteredAtMs(b);
+    if (byDate !== 0) return byDate;
+    return String(a.id || '').localeCompare(String(b.id || ''));
+  });
+}
+
+function _desiredScreenLimitUpdates(screens, screenLimit) {
+  return _sortScreensForLimit(screens)
+    .map((screen, index) => ({
+      screen,
+      shouldSuspend: index >= screenLimit,
+    }))
+    .filter(({ screen, shouldSuspend }) => (screen.suspended === true) !== shouldSuspend);
+}
+
+async function _setScreenSuspendedStateIfNeeded(screenId, orgId, shouldSuspend) {
+  const screenRef = doc(db, 'screens', screenId);
+  await runTransaction(db, async tx => {
+    const snap = await tx.get(screenRef);
+    if (!snap.exists()) return;
+    const data = snap.data();
+    if (data.orgId !== orgId) return;
+    if ((data.suspended === true) === shouldSuspend) return;
+    tx.update(screenRef, { suspended: shouldSuspend });
+  });
+}
+
 // Suspend screens that exceed the current plan's screensAllowed. Oldest-first
 // wins: screens are kept by registration order, newest overflow gets suspended.
-// Idempotent — only writes when the desired state differs from current.
+// Uses transactions so concurrent admin tabs re-check the current doc before writing.
 async function enforceScreenLimit(screens) {
   if (!currentOrgId || currentRole !== 'admin') return;
-  const sub    = getSubscription();
-  const limit  = Number(sub.screensAllowed) || 1;
-  const sorted = [...screens].sort((a, b) => {
-    const aT = a.registeredAt ? new Date(a.registeredAt).getTime() : 0;
-    const bT = b.registeredAt ? new Date(b.registeredAt).getTime() : 0;
-    return aT - bT;
-  });
-  for (let i = 0; i < sorted.length; i++) {
-    const screen    = sorted[i];
-    const shouldSuspend = i >= limit;
-    const isSuspended   = screen.suspended === true;
-    if (shouldSuspend === isSuspended) continue;
-    try {
-      await updateDoc(doc(db, 'screens', screen.id), { suspended: shouldSuspend });
-    } catch (e) {
-      console.warn('enforceScreenLimit write failed for', screen.id, e.message);
+  const orgId = currentOrgId;
+  const sub = getSubscription();
+  const screenLimit = Number(sub.screensAllowed) || 1;
+  const updates = _desiredScreenLimitUpdates(screens, screenLimit);
+  if (!updates.length) return;
+
+  if (_screenLimitEnforceInFlight) {
+    _screenLimitEnforcePending = true;
+    return;
+  }
+
+  _screenLimitEnforceInFlight = true;
+  try {
+    await Promise.all(updates.map(({ screen, shouldSuspend }) =>
+      _setScreenSuspendedStateIfNeeded(screen.id, orgId, shouldSuspend)
+        .catch(e => console.warn('enforceScreenLimit write failed for', screen.id, e.message))
+    ));
+  } finally {
+    _screenLimitEnforceInFlight = false;
+    if (_screenLimitEnforcePending) {
+      _screenLimitEnforcePending = false;
+      enforceScreenLimit(_cachedScreens);
     }
   }
 }

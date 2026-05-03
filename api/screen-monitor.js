@@ -12,6 +12,17 @@ const { getFirestore } = require('./_lib/firebase-admin');
 
 const OFFLINE_THRESHOLD_MS = 10 * 60 * 1000; // 10 minutes
 
+function registeredAtMs(screen) {
+  const ms = screen.registeredAt ? new Date(screen.registeredAt).getTime() : 0;
+  return Number.isFinite(ms) ? ms : 0;
+}
+
+function compareScreensForLimit(a, b) {
+  const byDate = registeredAtMs(a) - registeredAtMs(b);
+  if (byDate !== 0) return byDate;
+  return String(a.id || '').localeCompare(String(b.id || ''));
+}
+
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   if (req.method === 'OPTIONS') return res.status(200).end();
@@ -108,11 +119,7 @@ async function enforceAllScreenLimits(allScreenDocs, orgMap) {
     const sub = orgData.subscription || {};
     const screensAllowed = Number(sub.screensAllowed) || 1;
 
-    screens.sort((a, b) => {
-      const aT = a.registeredAt ? new Date(a.registeredAt).getTime() : 0;
-      const bT = b.registeredAt ? new Date(b.registeredAt).getTime() : 0;
-      return aT - bT;
-    });
+    screens.sort(compareScreensForLimit);
 
     const writePromises = [];
     for (let i = 0; i < screens.length; i++) {

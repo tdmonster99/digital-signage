@@ -674,18 +674,24 @@
     }));
   }
 
+  const YOUTUBE_VIDEO_ID_RE = /^[A-Za-z0-9_-]{11}$/;
+
+  function isYoutubeVideoId(value) {
+    return YOUTUBE_VIDEO_ID_RE.test(String(value || ''));
+  }
+
   function parseYoutubeVideoId(input) {
     input = String(input || '').trim();
-    if (/^[A-Za-z0-9_-]{11}$/.test(input)) return input;
+    if (isYoutubeVideoId(input)) return input;
     try {
       const url = new URL(input.includes('://') ? input : `https://${input}`);
       const host = url.hostname.replace(/^www\./, '').replace(/^m\./, '');
       if (host === 'youtu.be') {
         const id = url.pathname.slice(1).split('/')[0];
-        return /^[A-Za-z0-9_-]{11}$/.test(id) ? id : null;
+        return isYoutubeVideoId(id) ? id : null;
       }
       const v = url.searchParams.get('v');
-      if (/^[A-Za-z0-9_-]{11}$/.test(v || '')) return v;
+      if (isYoutubeVideoId(v)) return v;
       const m = url.pathname.match(/\/(?:embed|shorts|live|v)\/([A-Za-z0-9_-]{11})/);
       if (m) return m[1];
     } catch {}
@@ -698,6 +704,7 @@
   }
 
   function youtubeThumbUrl(videoId) {
+    if (!isYoutubeVideoId(videoId)) return null;
     return `https://i.ytimg.com/vi/${encodeURIComponent(videoId)}/hqdefault.jpg`;
   }
 
@@ -723,6 +730,7 @@
   }
 
   function youtubeEmbedUrl(videoId) {
+    if (!isYoutubeVideoId(videoId)) return 'about:blank';
     const params = new URLSearchParams({
       autoplay: '1',
       mute: '1',
@@ -738,7 +746,8 @@
   }
 
   function showYoutubeFallback(slide, videoId, status = 'Loading YouTube video...') {
-    if (youtubeFallbackBg) youtubeFallbackBg.style.setProperty('background-image', safeCssBgUrl(youtubeThumbUrl(videoId)));
+    const thumbUrl = youtubeThumbUrl(videoId);
+    if (youtubeFallbackBg) youtubeFallbackBg.style.setProperty('background-image', safeCssBgUrl(thumbUrl));
     if (youtubeFallbackTitle) youtubeFallbackTitle.textContent = slide?.name || 'YouTube Video';
     if (youtubeFallbackStatus) youtubeFallbackStatus.textContent = status;
   }
@@ -1058,7 +1067,11 @@
     const c    = zone.content || {};
 
     if (type === 'image') {
-      zoneEl.style.background = `url('${c.url}') center / ${c.fit || 'cover'} no-repeat #000`;
+      zoneEl.style.backgroundColor = '#000';
+      zoneEl.style.backgroundPosition = 'center';
+      zoneEl.style.backgroundRepeat = 'no-repeat';
+      zoneEl.style.backgroundSize = c.fit === 'contain' ? 'contain' : 'cover';
+      zoneEl.style.setProperty('background-image', safeCssBgUrl(c.url));
 
     } else if (type === 'video') {
       const v = document.createElement('video');
