@@ -253,21 +253,23 @@ Sourced from `KITCAST_GAP_ANALYSIS.md` (2026-04-27), plus the 2026-04-28 Vercel 
 
 ---
 
-### 5.4 Native Players for Tizen / webOS / BrightSign
+### 5.4 Player Platform Compatibility
 
-**Why:** Biggest competitive moat for Kitcast — proprietary signage OS support is the primary procurement filter for buyers replacing existing fleets (most commercial displays in the wild are Samsung Tizen or LG webOS). Without native players, Zigns is locked out of every "we already have Samsung commercial displays" conversation.
+**Why:** Biggest competitive moat for Kitcast — proprietary signage OS support is the primary procurement filter for buyers replacing existing fleets, while Android and ChromeOS are the fastest path to reliable low-cost signage hardware. Browser playback already works on Windows, macOS, Linux, ChromeOS, and Raspberry Pi-class devices, but unattended signage needs more than a URL: auto-start, kiosk lockdown, watchdog recovery, platform diagnostics, offline behavior, and store/sideload packaging.
 
-**Status:** Not started. Hero chip and Hardware page already say "more platforms on the way" — committing now means making good on that.
+**Status:** Agreed sequence as of 2026-05-03. Not started beyond browser player foundations. BrightSign is deferred until a customer/RFP requires it.
 
 **What to build:**
 
-- **Samsung Tizen** — Tizen Studio app wrapping `display.html` in a Tizen WebApplication (essentially a kiosk WebView). Sign with a Samsung partner cert. Submit to Samsung Smart Signage app store. Auto-launch on boot, USB sideload supported for non-store deployments.
-- **LG webOS** — webOS TV/Signage SDK app with the same WebView wrapper pattern. Submit to LG webOS Signage Marketplace. Older webOS Signage versions need a different SDK target — pick a floor (e.g. webOS 4.0+ / 2018 panels onward).
-- **BrightSign** — different beast. BrightScript/HTML5 hybrid, no full Chromium. Likely path: a thin BrightScript shell that loads `display.html` in their HTML5 player widget, with platform shims for any Web APIs BrightSign's renderer doesn't support. Validate which `display.html` features actually work there before scoping.
-- **Shared work** — pull the screen-pairing flow into a thin native shell so the same QR/code pairing works without keyboard input. Investigate whether Firestore websockets work on each platform's network stack (some commercial-display firewalls block them).
-- **Decision gate** — if engineering investment is too high, lean explicitly into "BYOD / runs on hardware you already have" positioning on the marketing site instead. This is a real fork: Tizen + webOS + BrightSign is a multi-month effort, not a sprint.
+- **5.4.0 Player compatibility foundation** — before platform-specific shells, make `display.html` report a stable player version, detected platform, viewport/screen metrics, feature probes (WebView/browser engine, media codecs where practical, fullscreen/kiosk hints, localStorage/cache support), watchdog restarts, boot failures, and online/offline transitions. Prefer analytics/diagnostic events first; writing rich device metadata onto `screens/{id}` requires a deliberate Firestore rules change because screen tokens currently only update `lastSeen`.
+- **5.4.1 Android TV / Android signage APK** — fastest true native win. Thin Android shell around the player URL/WebView, auto-launch support, wake lock, network recovery, optional local cache hooks, and sideload/Play distribution notes. This also creates the likely base for later Fire OS support.
+- **5.4.2 ChromeOS kiosk profile** — formalize the already-browser-compatible path: managed kiosk setup guide, recommended Chromebox/ChromeOS Flex hardware, full-screen launch URL, policy checklist, power/reboot guidance, and smoke-test matrix. This is a quick credibility win even without a custom app binary.
+- **5.4.3 Samsung Tizen** — Tizen Studio WebApplication wrapper for `display.html`; test on Samsung commercial signage hardware, package/sign, support USB sideload first, then evaluate Samsung Smart Signage store/partner requirements. Focus on auto-start, remote-control-free pairing, and whether Firestore realtime/WebSocket behavior is reliable on target firmware.
+- **5.4.4 LG webOS Signage** — webOS TV/Signage SDK wrapper using the same player URL pattern. Pick a supported floor (for example webOS Signage 4.0+ / 2018 panels onward) after hardware testing, then document sideload/store deployment paths.
+- **5.4.5 Apple TV / tvOS** — native tvOS player. Apple TV has no normal browser path, so this is a real native shell rather than a packaged web page. Valuable for SMB reliability and premium hardware, but lower priority than Android/Tizen/webOS for existing signage fleets.
+- **Later: Fire TV / BrightSign** — Fire OS should inherit as much as possible from Android, but consumer Fire Stick deployment/autostart limitations keep it behind the core wave. BrightSign remains future Enterprise/RFP-driven work because it is a distinct BrightScript/HTML5 ecosystem and needs separate renderer validation.
 
-**Files:** New repos / build pipelines per platform — outside the `app/` codebase. Coordinate with marketing site (`site/`) Hardware page once any one platform ships.
+**Files:** `display.html`, `service-worker.js`, Firestore rules/schema for player diagnostics, then new platform projects/build pipelines outside the current no-bundler web app. Coordinate with marketing site (`site/`) Hardware page once any one platform ships.
 
 ---
 

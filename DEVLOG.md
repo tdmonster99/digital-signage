@@ -4,6 +4,14 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-03 — Codex — Retarget platform compatibility roadmap
+
+Captured the agreed 5.4 platform rollout order.
+
+- **Platform sequence**: `ROADMAP.md` now scopes 5.4 as player compatibility foundation, Android, ChromeOS Kiosk, Samsung Tizen, LG webOS, tvOS, then later Fire/BrightSign.
+- **Gap analysis alignment**: `KITCAST_GAP_ANALYSIS.md` now calls out Android TV/signage boxes and ChromeOS kiosk as first-class platform gaps, while BrightSign is explicitly deferred until RFP/customer demand.
+- **Handoff update**: `NEXT_CHAT_CONTEXT.md` now points the next platform session at 5.4.0 diagnostics/player foundation before native shells.
+
 ## 2026-05-03 — Codex — Restore authenticated mobile slideshow metadata
 
 Follow-up from the live authenticated mobile smoke test.
