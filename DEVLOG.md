@@ -4,6 +4,13 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-03 — Codex — Surface player diagnostics in screen details
+
+Follow-up for Phase 5.4.0 player compatibility diagnostics.
+
+- **Screen details visibility**: `admin.html` now shows the latest player version, platform family, viewport/screen metrics, feature probes, media support, and recent player issues in the Screen edit panel.
+- **Analytics-backed lookup**: diagnostics load from recent `player_*` analytics events and filter client-side by screen, avoiding new Firestore indexes or screen-document write-rule changes.
+
 ## 2026-05-03 — Codex — Add display player diagnostics foundation
 
 Started Phase 5.4.0 player compatibility work.

@@ -4957,6 +4957,12 @@ body.role-editor .admin-action {
           </div>
         </div>
       </div>
+      <div class="sep-field">
+        <label>Player Diagnostics</label>
+        <div id="sepPlayerDiagnostics" style="padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--muted)">
+          Open this screen to load player diagnostics.
+        </div>
+      </div>
     </div>
     <div class="sep-footer">
       <button class="btn-danger" onclick="confirmDeleteScreen()">Delete</button>
@@ -20306,6 +20312,123 @@ function isOnline(lastSeen) {
   return (Date.now() - new Date(lastSeen)) < 3 * 60 * 1000;
 }
 
+const PLAYER_DIAGNOSTIC_TYPES = new Set([
+  'player_boot',
+  'player_capabilities',
+  'player_online',
+  'player_offline',
+  'player_watchdog_restart',
+  'player_slideshow_error',
+]);
+
+function formatPlayerDiagTime(value) {
+  if (!value) return '—';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '—';
+  return date.toLocaleString([], { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+}
+
+function yesNoBadge(value) {
+  const isYes = value === true;
+  return `<span style="display:inline-flex;align-items:center;border-radius:999px;padding:2px 6px;background:${isYes ? 'rgba(34,197,94,.12)' : 'var(--surface)'};color:${isYes ? '#16a34a' : 'var(--muted)'};font-size:10px;font-weight:700">${isYes ? 'YES' : 'NO'}</span>`;
+}
+
+function mediaSupportLabel(value) {
+  const v = String(value || '').toLowerCase();
+  if (!v) return 'No';
+  return v === 'probably' ? 'Probably' : 'Maybe';
+}
+
+function dimensionLabel(width, height, suffix = '') {
+  const w = Number(width);
+  const h = Number(height);
+  if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) return '—';
+  return `${w} × ${h}${suffix}`;
+}
+
+function playerDiagRow(label, value) {
+  return `<div style="display:flex;justify-content:space-between;gap:12px;padding:5px 0;border-bottom:1px solid var(--border)">
+    <span style="color:var(--muted)">${escHtml(label)}</span>
+    <span style="font-weight:600;color:var(--text);text-align:right;min-width:0;overflow:hidden;text-overflow:ellipsis">${value}</span>
+  </div>`;
+}
+
+function renderPlayerDiagnostics(screenId, events) {
+  const el = document.getElementById('sepPlayerDiagnostics');
+  if (!el || editingScreenId !== screenId) return;
+
+  const latest = {};
+  events
+    .filter(e => e.screenId === screenId && PLAYER_DIAGNOSTIC_TYPES.has(e.type))
+    .sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0))
+    .forEach(e => { if (!latest[e.type]) latest[e.type] = e; });
+
+  const capsEvent = latest.player_capabilities || {};
+  const bootEvent = latest.player_boot || {};
+  const caps = capsEvent.capabilities || {};
+  const platform = caps.platform || {};
+  const viewport = caps.viewport || {};
+  const screen = caps.screen || {};
+  const features = caps.features || {};
+  const media = caps.media || {};
+  const version = caps.playerVersion || capsEvent.playerVersion || bootEvent.playerVersion || '—';
+  const platformFamily = platform.family || bootEvent.platformFamily || '—';
+  const lastIssue = latest.player_slideshow_error || latest.player_watchdog_restart || null;
+
+  if (!Object.keys(latest).length) {
+    el.innerHTML = `<div style="color:var(--muted);line-height:1.5">
+      No player diagnostics yet. Reload the paired display after the latest deployment and check back here.
+    </div>`;
+    return;
+  }
+
+  const featureChips = ['webSocket','cacheApi','fullscreen','localStorage','serviceWorker','touch','wakeLock']
+    .map(k => `<span style="display:inline-flex;align-items:center;gap:4px;margin:3px 4px 3px 0;color:var(--muted)">${escHtml(k)} ${yesNoBadge(features[k])}</span>`)
+    .join('');
+
+  el.innerHTML = `
+    ${playerDiagRow('Player', escHtml(version))}
+    ${playerDiagRow('Platform', escHtml(platformFamily))}
+    ${playerDiagRow('Viewport', escHtml(dimensionLabel(viewport.width, viewport.height, ` @ ${Number(viewport.dpr) || 1}x`)))}
+    ${playerDiagRow('Screen', escHtml(dimensionLabel(screen.width, screen.height)))}
+    ${playerDiagRow('Last boot', escHtml(formatPlayerDiagTime(bootEvent.timestamp || capsEvent.timestamp)))}
+    ${playerDiagRow('Last online', escHtml(formatPlayerDiagTime((latest.player_online || {}).timestamp)))}
+    ${playerDiagRow('Last offline', escHtml(formatPlayerDiagTime((latest.player_offline || {}).timestamp)))}
+    ${lastIssue ? playerDiagRow('Last issue', escHtml(lastIssue.reason || lastIssue.type || 'Issue')) : ''}
+    <div style="padding-top:10px">
+      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Features</div>
+      <div>${featureChips || '—'}</div>
+    </div>
+    <div style="padding-top:10px">
+      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Media</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        <span>H.264: <strong style="color:var(--text)">${escHtml(mediaSupportLabel(media.h264Mp4))}</strong></span>
+        <span>H.265: <strong style="color:var(--text)">${escHtml(mediaSupportLabel(media.h265Mp4))}</strong></span>
+        <span>VP9: <strong style="color:var(--text)">${escHtml(mediaSupportLabel(media.webmVp9))}</strong></span>
+        <span>MP3: <strong style="color:var(--text)">${escHtml(mediaSupportLabel(media.mp3))}</strong></span>
+        <span>AAC: <strong style="color:var(--text)">${escHtml(mediaSupportLabel(media.aac))}</strong></span>
+      </div>
+    </div>`;
+}
+
+async function loadScreenPlayerDiagnostics(screenId) {
+  const el = document.getElementById('sepPlayerDiagnostics');
+  if (!el || !currentOrgId) return;
+  el.innerHTML = '<div style="color:var(--muted)">Loading player diagnostics…</div>';
+  try {
+    const snap = await getDocs(query(
+      collection(db, 'organizations', currentOrgId, 'analytics'),
+      orderBy('timestamp', 'desc'),
+      limit(500)
+    ));
+    const events = snap.docs.map(d => d.data());
+    renderPlayerDiagnostics(screenId, events);
+  } catch(e) {
+    if (editingScreenId !== screenId) return;
+    el.innerHTML = `<div style="color:#dc2626">Could not load diagnostics: ${escHtml(e.message)}</div>`;
+  }
+}
+
 function renderScreens(screens) {
   const list = document.getElementById('screensList');
 
@@ -20937,10 +21060,13 @@ window.openScreenEdit = function(screenId) {
     + allSchedules.map(s => `<option value="${s.id}" ${s.id === screen.scheduleId ? 'selected' : ''}>${escHtml(s.name)}</option>`).join('');
 
   document.getElementById('screenEditPanel').classList.add('open');
+  loadScreenPlayerDiagnostics(screenId);
 };
 
 window.closeScreenEdit = function() {
   document.getElementById('screenEditPanel').classList.remove('open');
+  const diagEl = document.getElementById('sepPlayerDiagnostics');
+  if (diagEl) diagEl.innerHTML = 'Open this screen to load player diagnostics.';
   editingScreenId = null;
 };
 
