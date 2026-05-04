@@ -11,6 +11,9 @@
 //   → proxies Google Places reviews for a Place ID
 //   → Required env var: GOOGLE_PLACES_API_KEY or GOOGLE_MAPS_API_KEY
 //
+// GET /api/proxy?type=embedcheck&url=WEB_PAGE_URL&origin=https://app.zigns.io
+//   → checks whether a webpage advertises iframe-blocking headers
+//
 // POST /api/proxy?type=instagram
 //   body: { accessToken, accountId?, maxPosts? }
 //   → proxies Instagram API media for a professional account or Instagram Login token
@@ -25,6 +28,52 @@ module.exports = async function handler(req, res) {
   const { type } = req.query;
   if (req.method === 'POST' && type !== 'instagram') {
     return res.status(405).json({ error: 'POST is only supported for Instagram' });
+  }
+
+  // ── Webpage embed preflight ──────────────────────────────────────────────
+  if (type === 'embedcheck') {
+    const { url, origin = 'https://app.zigns.io' } = req.query;
+    if (!url) return res.status(400).json({ error: 'url is required' });
+
+    let parsed;
+    let appOrigin;
+    try {
+      parsed = new URL(url);
+      appOrigin = new URL(origin).origin;
+      if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error('bad protocol');
+    } catch {
+      return res.status(400).json({ error: 'Invalid URL' });
+    }
+
+    try {
+      const upstream = await fetchHeadersOnly(parsed.href);
+      const finalUrl = upstream.url || parsed.href;
+      const finalOrigin = new URL(finalUrl).origin;
+      const xFrameOptions = (upstream.headers.get('x-frame-options') || '').trim();
+      const csp = (upstream.headers.get('content-security-policy') || '').trim();
+      const policy = analyzeFramePolicy({ xFrameOptions, csp, appOrigin, finalOrigin });
+      if (!upstream.ok && policy.embeddable !== false) {
+        policy.embeddable = null;
+        policy.reason = `Page returned HTTP ${upstream.status}`;
+      }
+      res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=60');
+      return res.status(200).json({
+        ok: true,
+        url: finalUrl,
+        status: upstream.status,
+        embeddable: policy.embeddable,
+        reason: policy.reason,
+        xFrameOptions: xFrameOptions ? xFrameOptions.slice(0, 120) : '',
+        frameAncestors: policy.frameAncestors || '',
+      });
+    } catch (e) {
+      return res.status(200).json({
+        ok: true,
+        url: parsed.href,
+        embeddable: null,
+        reason: e.message || 'Could not check embed permissions',
+      });
+    }
   }
 
   // ── RSS proxy ─────────────────────────────────────────────────────────────
@@ -243,8 +292,80 @@ module.exports = async function handler(req, res) {
     }
   }
 
-  return res.status(400).json({ error: 'type must be "rss", "weather", "googlereviews", or "instagram"' });
+  return res.status(400).json({ error: 'type must be "rss", "weather", "googlereviews", "embedcheck", or "instagram"' });
 };
+
+async function fetchHeadersOnly(url) {
+  const headers = { 'User-Agent': 'Zigns/1.0 Webpage Embed Check (+https://zigns.io)' };
+  let upstream = await fetch(url, {
+    method: 'HEAD',
+    headers,
+    redirect: 'follow',
+    signal: AbortSignal.timeout(8000),
+  });
+  if ([405, 501].includes(upstream.status)) {
+    upstream = await fetch(url, {
+      method: 'GET',
+      headers: { ...headers, Range: 'bytes=0-0' },
+      redirect: 'follow',
+      signal: AbortSignal.timeout(8000),
+    });
+  }
+  try { await upstream.body?.cancel?.(); } catch {}
+  return upstream;
+}
+
+function analyzeFramePolicy({ xFrameOptions = '', csp = '', appOrigin, finalOrigin }) {
+  const xfo = xFrameOptions.toLowerCase();
+  if (/\bdeny\b/.test(xfo)) {
+    return { embeddable: false, reason: 'The page sends X-Frame-Options: DENY.' };
+  }
+  if (/\bsameorigin\b/.test(xfo) && appOrigin !== finalOrigin) {
+    return { embeddable: false, reason: 'The page only allows same-origin embedding.' };
+  }
+
+  const frameAncestors = extractFrameAncestors(csp);
+  if (frameAncestors) {
+    const sources = frameAncestors.split(/\s+/).filter(Boolean);
+    if (sources.includes("'none'")) {
+      return { embeddable: false, reason: 'The page blocks all iframe embedding.', frameAncestors };
+    }
+    const allowsApp = sources.some(source => frameSourceAllows(source, appOrigin, finalOrigin));
+    if (!allowsApp) {
+      return { embeddable: false, reason: 'The page does not allow Zigns as an iframe parent.', frameAncestors };
+    }
+  }
+
+  return {
+    embeddable: true,
+    reason: '',
+    frameAncestors: frameAncestors || '',
+  };
+}
+
+function extractFrameAncestors(csp) {
+  if (!csp) return '';
+  const directive = csp.split(';').map(part => part.trim()).find(part => /^frame-ancestors\b/i.test(part));
+  return directive ? directive.replace(/^frame-ancestors\s+/i, '').trim().slice(0, 240) : '';
+}
+
+function frameSourceAllows(source, appOrigin, finalOrigin) {
+  const src = String(source || '').trim().replace(/^"|"$/g, '');
+  if (!src) return false;
+  if (src === '*') return true;
+  if (src === "'self'") return appOrigin === finalOrigin;
+  if (src === 'https:' || src === 'http:') return appOrigin.startsWith(src);
+  try {
+    if (src.includes('*')) {
+      const app = new URL(appOrigin);
+      const pattern = src.replace(/^\*:/, app.protocol).replace(/\./g, '\\.').replace(/\*/g, '[^.]+');
+      return new RegExp('^' + pattern + '$', 'i').test(app.origin);
+    }
+    return new URL(src).origin === appOrigin;
+  } catch {
+    return false;
+  }
+}
 
 async function readJsonBody(req) {
   if (Buffer.isBuffer(req.body)) return req.body.length ? JSON.parse(req.body.toString('utf8')) : {};

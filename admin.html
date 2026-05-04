@@ -6817,13 +6817,14 @@ body.role-editor .admin-action {
       <label>Page URL</label>
       <input type="url" id="webpageUrl" placeholder="https://example.com" autocomplete="off">
     </div>
+    <div id="webpageEmbedWarning" style="display:none;margin:-4px 0 14px;padding:10px 12px;border-radius:10px;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.35);color:var(--text);font-size:12px;line-height:1.45"></div>
     <div class="field" style="margin-bottom:22px">
       <label>Slide Name</label>
       <input type="text" id="webpageName" placeholder="My Web Page">
     </div>
     <div style="display:flex;gap:10px;justify-content:flex-end">
       <button class="btn btn-secondary" onclick="closeWebpageModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="saveWebpageSlide()">Add Slide</button>
+      <button class="btn btn-primary" id="webpageSaveBtn" onclick="saveWebpageSlide()">Add Slide</button>
     </div>
   </div>
 </div>
@@ -11975,6 +11976,8 @@ document.getElementById('youtubeInput')?.addEventListener('input', updateYoutube
 window.openWebpageModal = function() {
   document.getElementById('webpageUrl').value  = '';
   document.getElementById('webpageName').value = '';
+  const warn = document.getElementById('webpageEmbedWarning');
+  if (warn) { warn.style.display = 'none'; warn.textContent = ''; }
   document.getElementById('webpageModal').style.display = 'flex';
   setTimeout(() => document.getElementById('webpageUrl').focus(), 50);
 };
@@ -11983,16 +11986,54 @@ window.closeWebpageModal = function() {
   document.getElementById('webpageModal').style.display = 'none';
 };
 
+async function checkWebpageEmbedStatus(url) {
+  const params = new URLSearchParams({ type: 'embedcheck', url, origin: window.location.origin });
+  const res = await fetch('/api/proxy?' + params.toString());
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || data.ok !== true) throw new Error(data.error || `HTTP ${res.status}`);
+  return data;
+}
+
 window.saveWebpageSlide = async function() {
   const url  = document.getElementById('webpageUrl').value.trim();
   const name = document.getElementById('webpageName').value.trim() || 'Web Page';
+  const saveBtn = document.getElementById('webpageSaveBtn');
+  const warning = document.getElementById('webpageEmbedWarning');
   if (!url) { toast('Please enter a URL.', true); return; }
   let parsed;
   try { parsed = new URL(url); } catch { toast('Please enter a valid URL (include https://).', true); return; }
   if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
     toast('URL must start with http:// or https://', true); return;
   }
-  slides.push({ id: crypto.randomUUID(), type: 'webpage', url, name, active: true });
+  let embedCheck = null;
+  try {
+    if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Checking...'; }
+    embedCheck = await checkWebpageEmbedStatus(parsed.href);
+    if (embedCheck.embeddable === false) {
+      const reason = embedCheck.reason || 'This site blocks iframe embedding.';
+      if (warning) {
+        warning.textContent = reason + ' The slide can be saved, but the display will show a blocked-page message unless the site allows iframe embedding.';
+        warning.style.display = 'block';
+      }
+      if (!confirm(`${reason}\n\nSave this web page slide anyway?`)) return;
+    }
+  } catch(e) {
+    console.warn('Could not check webpage embed policy:', e.message);
+  } finally {
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Add Slide'; }
+  }
+  slides.push({
+    id: crypto.randomUUID(),
+    type: 'webpage',
+    url: parsed.href,
+    name,
+    active: true,
+    ...(embedCheck && {
+      embedStatus: embedCheck.embeddable === false ? 'blocked' : embedCheck.embeddable === true ? 'ok' : 'unknown',
+      embedBlockReason: embedCheck.reason || '',
+      embedCheckedAt: new Date().toISOString(),
+    }),
+  });
   renderGrid();
   updateCount();
   await pushToFirestore();

@@ -97,7 +97,7 @@
   let watchdogHandle    = null;
   let debugVisible      = false;
   const PAGE_LOAD_TIME  = Date.now();
-  const ZIGNS_PLAYER_VERSION = "2026.05.04.3";
+  const ZIGNS_PLAYER_VERSION = "2026.05.04.4";
 
   // ── Player platform diagnostics ───────────────────────────────────────────
   let playerBootDiagnosticsSent = false;
@@ -463,6 +463,10 @@
   const youtubeFallbackStatus = document.getElementById("youtubeFallbackStatus");
   const stageWebpage  = document.getElementById("stageWebpage");
   const iframeWebpage = document.getElementById("iframeWebpage");
+  const webpageFallback = document.getElementById("webpageFallback");
+  const webpageFallbackTitle = document.getElementById("webpageFallbackTitle");
+  const webpageFallbackUrl = document.getElementById("webpageFallbackUrl");
+  const webpageFallbackStatus = document.getElementById("webpageFallbackStatus");
   const stageClock    = document.getElementById("stageClock");
   const clockEl       = document.getElementById("clockEl");
   const stageQr       = document.getElementById("stageQr");
@@ -891,6 +895,62 @@
     } catch { return 'about:blank'; }
   }
 
+  function webpageHostLabel(url) {
+    try { return new URL(url).hostname.replace(/^www\./, ''); }
+    catch { return 'web page'; }
+  }
+
+  function showWebpageFallback(slide, reason) {
+    stageWebpage.classList.add('webpage-error');
+    if (webpageFallbackTitle) webpageFallbackTitle.textContent = slide?.name || 'Web Page';
+    if (webpageFallbackUrl) webpageFallbackUrl.textContent = webpageHostLabel(slide?.url || '');
+    if (webpageFallbackStatus) {
+      webpageFallbackStatus.textContent = reason || 'This page cannot be displayed inside an iframe.';
+    }
+  }
+
+  function hideWebpageFallback() {
+    stageWebpage.classList.remove('webpage-error');
+  }
+
+  async function checkWebpageEmbed(url) {
+    const safeUrl = safeIframeUrl(url);
+    if (safeUrl === 'about:blank') return { embeddable: false, reason: 'Invalid webpage URL.' };
+    const cached = webpageEmbedCheckCache.get(safeUrl);
+    if (cached && Date.now() - cached.checkedAt < 5 * 60 * 1000) return cached.result;
+    try {
+      const params = new URLSearchParams({ type: 'embedcheck', url: safeUrl, origin: window.location.origin });
+      const res = await fetch('/api/proxy?' + params.toString(), { signal: AbortSignal.timeout(9000) });
+      const result = await res.json().catch(() => ({}));
+      if (!res.ok || result.ok !== true) throw new Error(result.error || `HTTP ${res.status}`);
+      webpageEmbedCheckCache.set(safeUrl, { checkedAt: Date.now(), result });
+      return result;
+    } catch(e) {
+      return { embeddable: null, reason: e.message || 'Could not check embed permissions.' };
+    }
+  }
+
+  function renderWebpageZone(zoneEl, content = {}) {
+    const safeUrl = safeIframeUrl(content.url);
+    if (safeUrl === 'about:blank') {
+      zoneEl.innerHTML = '<div class="webpage-zone-fallback">Invalid webpage URL</div>';
+      return;
+    }
+    const ifr = document.createElement('iframe');
+    ifr.src = safeUrl;
+    ifr.style.cssText = 'width:100%;height:100%;border:none;';
+    zoneEl.appendChild(ifr);
+    checkWebpageEmbed(safeUrl).then(check => {
+      if (!zoneEl.isConnected || check.embeddable !== false) return;
+      ifr.src = 'about:blank';
+      zoneEl.innerHTML = '';
+      const fallback = document.createElement('div');
+      fallback.className = 'webpage-zone-fallback';
+      fallback.textContent = check.reason || 'This page blocks iframe embedding.';
+      zoneEl.appendChild(fallback);
+    });
+  }
+
   // Returns a CSS background-image value (`url("…")`) for a known-safe http(s) URL,
   // or '' for anything else. Quotes inside the URL are escaped so the CSS string
   // cannot break out and inject extra declarations.
@@ -927,6 +987,8 @@
   }
 
   let youtubeRenderSeq = 0;
+  let webpageRenderSeq = 0;
+  const webpageEmbedCheckCache = new Map();
 
   // ── Clock slide ───────────────────────────────────────────────────────────
   const CLOCK_FONTS = {
@@ -1267,10 +1329,7 @@
       zoneEl.appendChild(ifr);
 
     } else if (type === 'webpage') {
-      const ifr = document.createElement('iframe');
-      ifr.src = safeIframeUrl(c.url);
-      ifr.style.cssText = 'width:100%;height:100%;border:none;';
-      zoneEl.appendChild(ifr);
+      renderWebpageZone(zoneEl, c);
 
     } else {
       // Widget zone: render at 1920×1080 then scale to cover (fill zone, clip overflow)
@@ -2198,8 +2257,28 @@
 
     } else if (slide.type === "webpage") {
       _hideAllStages();
-      iframeWebpage.src          = safeIframeUrl(slide.url);
+      const webpageSeq = ++webpageRenderSeq;
+      const safeUrl = safeIframeUrl(slide.url);
+      hideWebpageFallback();
+      iframeWebpage.onload = null;
+      iframeWebpage.onerror = null;
+      iframeWebpage.src = "about:blank";
       stageWebpage.style.opacity = "1";
+      if (safeUrl === "about:blank") {
+        showWebpageFallback(slide, 'Invalid webpage URL.');
+        return true;
+      }
+      const check = await checkWebpageEmbed(safeUrl);
+      if (webpageSeq !== webpageRenderSeq) return true;
+      if (check.embeddable === false) {
+        showWebpageFallback(slide, check.reason || 'This page blocks iframe embedding.');
+        return true;
+      }
+      iframeWebpage.onerror = () => {
+        if (webpageSeq !== webpageRenderSeq) return;
+        showWebpageFallback(slide, 'This page could not be loaded in the display browser.');
+      };
+      iframeWebpage.src = safeUrl;
 
     } else if (slide.type === "clock") {
       _hideAllStages();
@@ -3245,7 +3324,7 @@
   #stageAudio .audio-subtitle { font-size: 1.6vw; font-weight: 600; letter-spacing: 0.18em;
     text-transform: uppercase; opacity: 0.6; }
   #stageYoutube  { z-index: 5; background: #000; overflow: hidden; }
-  #stageWebpage  { z-index: 6; background: #000; }
+  #stageWebpage  { z-index: 6; background: #000; overflow: hidden; }
   #stageClock    { z-index: 7; background: #000; }
   #stageQr       { z-index: 8; background: #fff; }
   #stageWeather  { z-index: 9; background: #0f172a; }
@@ -3374,6 +3453,35 @@
     position: absolute; inset: 0;
     width: 100%; height: 100%;
     border: none;
+  }
+  #stageWebpage.webpage-error #iframeWebpage { opacity: 0; }
+  .webpage-fallback {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: #111827; color: #f9fafb;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.2s ease;
+    font-family: 'Segoe UI', Arial, sans-serif;
+  }
+  #stageWebpage.webpage-error .webpage-fallback { opacity: 1; }
+  .webpage-fallback-panel {
+    width: min(72vw, 1120px);
+    display: flex; flex-direction: column; align-items: center; gap: 2vh;
+    text-align: center; padding: 5vw;
+  }
+  .webpage-fallback-mark {
+    width: clamp(76px, 8vw, 140px); height: clamp(76px, 8vw, 140px);
+    border-radius: 999px; display: flex; align-items: center; justify-content: center;
+    background: rgba(239,68,68,.14); border: 2px solid rgba(239,68,68,.55);
+    color: #fca5a5; font-size: clamp(42px, 5vw, 88px); font-weight: 800;
+  }
+  .webpage-fallback-title { font-size: clamp(34px, 4vw, 72px); font-weight: 800; line-height: 1.1; }
+  .webpage-fallback-url { font-size: clamp(18px, 1.8vw, 30px); font-weight: 700; color: #93c5fd; word-break: break-word; }
+  .webpage-fallback-status { font-size: clamp(18px, 1.7vw, 28px); color: rgba(249,250,251,.72); line-height: 1.45; max-width: 900px; }
+  .webpage-zone-fallback {
+    width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+    background: #111827; color: #f9fafb; font: 600 18px Segoe UI, Arial, sans-serif;
+    text-align: center; padding: 24px; box-sizing: border-box;
   }
   .youtube-fallback {
     position: absolute; inset: 0;
@@ -3705,6 +3813,14 @@
 <!-- Web page slide stage -->
 <div id="stageWebpage" class="stage">
   <iframe id="iframeWebpage" src="about:blank"></iframe>
+  <div id="webpageFallback" class="webpage-fallback">
+    <div class="webpage-fallback-panel">
+      <div class="webpage-fallback-mark">!</div>
+      <div id="webpageFallbackTitle" class="webpage-fallback-title">Web Page</div>
+      <div id="webpageFallbackUrl" class="webpage-fallback-url"></div>
+      <div id="webpageFallbackStatus" class="webpage-fallback-status">This page cannot be displayed inside an iframe.</div>
+    </div>
+  </div>
 </div>
 
 <!-- Clock slide stage -->

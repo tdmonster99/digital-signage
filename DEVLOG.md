@@ -4,6 +4,14 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-04 — Codex — Clarify blocked webpage slides
+
+Follow-up for webpage URL slides showing the browser blocked-frame icon.
+
+- **Embed preflight**: `/api/proxy` now checks webpage `X-Frame-Options` and `frame-ancestors` headers so blocked embeds can be identified before playback.
+- **Player fallback**: `display.html` shows a branded blocked-page message instead of the browser's generic iframe error when a site refuses embedding.
+- **Save warning**: adding a Web Page slide now warns when the target site advertises that it cannot be embedded.
+
 ## 2026-05-04 — Codex — Add slideshow deletion
 
 Follow-up for missing slideshow-level delete controls.
