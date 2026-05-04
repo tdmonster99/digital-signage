@@ -4,6 +4,14 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-04 — Codex — Refresh live preview after publish
+
+Follow-up for publish modal state and stale dashboard previews.
+
+- **Publish button reset**: the Publish to Screens modal now resets the confirm button to `Publish` every time it opens or closes, preventing stale `Publishing...` state.
+- **Preview cache bypass**: `display.html` preview mode no longer renders local cached player content before the live published snapshot arrives.
+- **Post-publish refresh**: successful publishes now force-refresh the dashboard live preview with a cache-busting preview revision.
+
 ## 2026-05-04 — Codex — Interrupt stale display content on playlist updates
 
 Follow-up for Android/live preview continuing to play a deleted YouTube slide after publish.

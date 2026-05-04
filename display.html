@@ -2509,8 +2509,9 @@
     clearTimeout(reconnectTimer);
     activeSlideshowId = slideshowId;
 
-    // Serve cached content immediately so TV never goes black
-    const cached = loadCache(slideshowId);
+    // Serve cached content immediately so TVs never go black. Admin preview mode
+    // should show the current published state, so it bypasses local player cache.
+    const cached = isPreviewMode ? null : loadCache(slideshowId);
     if (cached) {
       loader.style.display = "none";
       errBox.style.display = "none";
@@ -2532,7 +2533,7 @@
             slides: await loadPublishedSlides(slideshowId, data),
           };
           if (activeSlideshowId !== slideshowId) return; // stale after subcollection load
-          saveCache(slideshowId, resolved);
+          if (!isPreviewMode) saveCache(slideshowId, resolved);
           applyPlaylist(resolved);
         } else {
           loader.style.display = "none";

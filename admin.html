@@ -11035,6 +11035,17 @@ async function pushToFirestore() {
 let _publishSelectedIds = new Set();
 let _reopenPublishAfterPairing = false;
 
+function publishButtonHtml(label = 'Publish') {
+  return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 2 11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> ${label}`;
+}
+
+function resetPublishConfirmButton() {
+  const btn = document.getElementById('publishConfirmBtn');
+  if (!btn) return;
+  btn.innerHTML = publishButtonHtml('Publish');
+  btn.disabled = _publishSelectedIds.size === 0;
+}
+
 window.publishToScreens = function() {
   if (!auth.currentUser) { toast("Sign in first.", true); return; }
   if (approvalRequired() && currentRole === 'editor') {
@@ -11056,6 +11067,7 @@ function _openPublishModal() {
     listEl.innerHTML = `<div class="publish-empty"><div class="pairing-spinner" style="margin:0 auto"></div></div>`;
     _publishSelectedIds = new Set();
     _updatePublishFooter();
+    resetPublishConfirmButton();
     document.getElementById('publishModal').classList.add('open');
     return;
   }
@@ -11078,6 +11090,7 @@ function _openPublishModal() {
   }
 
   _updatePublishFooter();
+  resetPublishConfirmButton();
   document.getElementById('publishModal').classList.add('open');
 }
 
@@ -11174,6 +11187,7 @@ async function resolveSmartPlaylistSlides(baseSlides, showId = currentShowId) {
 
 window.closePublishModal = function() {
   document.getElementById('publishModal').classList.remove('open');
+  resetPublishConfirmButton();
 };
 
 window.confirmPublish = async function() {
@@ -11215,11 +11229,12 @@ window.confirmPublish = async function() {
     logActivity(`Slideshow "${currentShowId}" published to ${n} screen${n !== 1 ? 's' : ''} (${publishedSlides.length} slide${publishedSlides.length !== 1 ? 's' : ''})`);
     toast(`Published to ${n} screen${n !== 1 ? 's' : ''} ✓`);
     setPushVisible(false);
+    refreshLivePreviewAfterPublish(currentShowId);
     closePublishModal();
   } catch(e) {
     toast("Publish failed: " + e.message, true);
     btn.disabled = false;
-    btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 2 11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Publish`;
+    btn.innerHTML = publishButtonHtml('Publish');
   }
 };
 
@@ -20137,6 +20152,7 @@ let _previewLoadTimer = null;
 let _previewWatchTimer = null;
 let _previewHideTimer = null;
 let _previewFrameEventsBound = false;
+let _previewRefreshNonce = '';
 
 function _setPreviewStatus(type, text, persist = false) {
   const badge = document.getElementById('previewStatus');
@@ -20218,7 +20234,13 @@ function _ensurePreviewFrameEvents() {
   _previewFrameEventsBound = true;
 }
 
-window.updatePreviewFrame = function() {
+function previewFrameSrc(showId) {
+  const params = new URLSearchParams({ slideshow: showId });
+  if (_previewRefreshNonce) params.set('previewRev', _previewRefreshNonce);
+  return 'display.html?' + params.toString();
+}
+
+window.updatePreviewFrame = function(forceReload = false) {
   const sel = document.getElementById('previewShowSelect');
   const frame = document.getElementById('previewFrame');
   _ensurePreviewFrameEvents();
@@ -20236,7 +20258,8 @@ window.updatePreviewFrame = function() {
     return;
   }
 
-  const nextSrc = 'display.html?slideshow=' + encodeURIComponent(sel.value);
+  if (forceReload) _previewRefreshNonce = String(Date.now());
+  const nextSrc = previewFrameSrc(sel.value);
   const showName = sel.selectedOptions?.[0]?.textContent?.trim() || sel.value;
   if (frame.getAttribute('src') === nextSrc) {
     const state = _inspectPreviewFrameState();
@@ -20256,6 +20279,12 @@ window.updatePreviewFrame = function() {
   }, 9000);
   frame.src = nextSrc;
 };
+
+function refreshLivePreviewAfterPublish(showId = currentShowId) {
+  const sel = document.getElementById('previewShowSelect');
+  if (sel && showId) sel.value = showId;
+  updatePreviewFrame(true);
+}
 
 function syncPreviewSelect() {
   const sel = document.getElementById('previewShowSelect');
@@ -20284,7 +20313,7 @@ function syncPreviewSelect() {
       else sel.value = sel.options[0].value;
     }
 
-    const expectedSrc = 'display.html?slideshow=' + encodeURIComponent(sel.value);
+    const expectedSrc = previewFrameSrc(sel.value);
     if (!frame || frame.getAttribute('src') !== expectedSrc) updatePreviewFrame();
     else _inspectPreviewFrameState();
     return;
