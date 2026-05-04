@@ -2546,7 +2546,7 @@
         loader.style.display = "none";
         console.warn('[Firebase] Listener error:', err.code, err.message);
 
-        const cached = loadCache(slideshowId);
+        const cached = isPreviewMode ? null : loadCache(slideshowId);
         if (cached) {
           setOffline(true);
           applyPlaylist(cached);

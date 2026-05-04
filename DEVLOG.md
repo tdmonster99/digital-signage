@@ -4,6 +4,13 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-04 — Codex — Disable preview cache fallback on listener errors
+
+Follow-up for dashboard Live Preview still showing the `CACHED` badge with stale slides.
+
+- **Preview cache guard**: `display.html` now bypasses local playlist cache in preview mode for both initial load and listener-error fallback.
+- **Truthful preview errors**: admin preview will show the live Firestore error instead of silently rendering stale cached slides.
+
 ## 2026-05-04 — Codex — Refresh live preview after publish
 
 Follow-up for publish modal state and stale dashboard previews.
