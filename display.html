@@ -82,6 +82,9 @@
   let timer         = null;
   let defaultDwell  = 6000;
   let clockInterval = null;
+  let playlistSignature = "";
+  let renderedSlide = null;
+  let renderedSlideSignature = "";
 
   // ── Resilience state ──────────────────────────────────────────────────────
   let isOffline         = false;
@@ -94,7 +97,7 @@
   let watchdogHandle    = null;
   let debugVisible      = false;
   const PAGE_LOAD_TIME  = Date.now();
-  const ZIGNS_PLAYER_VERSION = "2026.05.03.2";
+  const ZIGNS_PLAYER_VERSION = "2026.05.04.1";
 
   // ── Player platform diagnostics ───────────────────────────────────────────
   let playerBootDiagnosticsSent = false;
@@ -2286,6 +2289,46 @@
   }
 
   // ── Playback ──────────────────────────────────────────────────────────────
+  function stableStringify(value) {
+    if (value === null || typeof value !== "object") return JSON.stringify(value);
+    if (Array.isArray(value)) return "[" + value.map(stableStringify).join(",") + "]";
+    return "{" + Object.keys(value)
+      .filter(key => value[key] !== undefined)
+      .sort()
+      .map(key => JSON.stringify(key) + ":" + stableStringify(value[key]))
+      .join(",") + "}";
+  }
+
+  function hashString(value) {
+    let hash = 2166136261;
+    for (let i = 0; i < value.length; i++) {
+      hash ^= value.charCodeAt(i);
+      hash = Math.imul(hash, 16777619);
+    }
+    return (hash >>> 0).toString(36);
+  }
+
+  function slideRenderSignature(slide) {
+    return hashString(stableStringify(slide || {}));
+  }
+
+  function recordCurrentSlideView() {
+    if (slideViewStart === null) return;
+    const prev = renderedSlide || slides[current];
+    if (prev && hasScreenWriteAccess() && analyticsOrgId) {
+      const duration = Math.round((Date.now() - slideViewStart) / 1000);
+      queueAnalyticsEvent({
+        type:        'slide_view',
+        screenId,
+        slideshowId: currentSlideshowIdForAnalytics,
+        slideId:     prev.id   || prev.name || String(current),
+        slideName:   prev.name || prev.id   || 'Slide ' + (current + 1),
+        duration,
+      });
+    }
+    slideViewStart = null;
+  }
+
   function getSlideDwellMs(slide) {
     const raw = Number(slide?.dwell);
     if (!Number.isFinite(raw) || raw <= 0) return defaultDwell;
@@ -2305,20 +2348,9 @@
     if (!slides.length) return;
 
     // Record duration of slide that just finished
-    if (slideViewStart !== null) {
-      const prev = slides[current];
-      if (prev && hasScreenWriteAccess() && analyticsOrgId) {
-        const duration = Math.round((Date.now() - slideViewStart) / 1000);
-        queueAnalyticsEvent({
-          type:        'slide_view',
-          screenId,
-          slideshowId: currentSlideshowIdForAnalytics,
-          slideId:     prev.id   || prev.name || String(current),
-          slideName:   prev.name || prev.id   || 'Slide ' + (current + 1),
-          duration,
-        });
-      }
-    }
+    recordCurrentSlideView();
+    renderedSlide = null;
+    renderedSlideSignature = "";
 
     // Try slides in order until one renders successfully.
     // Bounded to slides.length attempts so we can never loop forever.
@@ -2331,6 +2363,8 @@
       }
       const ok       = await crossfadeTo(slide);
       if (ok) {
+        renderedSlide = slide;
+        renderedSlideSignature = slideRenderSignature(slide);
         scheduleNext(getSlideDwellMs(slide));
         return;
       }
@@ -2366,8 +2400,21 @@
     return snap.docs.map(normalizeStoredSlide);
   }
 
+  function clearCurrentPlaylistForError() {
+    clearTimeout(timer);
+    clearTimeout(watchdogHandle);
+    recordCurrentSlideView();
+    slides = [];
+    current = 0;
+    playlistSignature = "";
+    renderedSlide = null;
+    renderedSlideSignature = "";
+    _hideAllStages();
+  }
+
   async function applyPlaylist(data) {
     if (!data || !data.slides || !data.slides.length) {
+      clearCurrentPlaylistForError();
       emitPlayerSlideshowError("empty_playlist", "No slides configured");
       showError("No slides configured. Open the Admin Panel to add images.");
       return;
@@ -2402,6 +2449,7 @@
     reportSkippedPlaylistSlides(skipped);
 
     if (!incoming.length) {
+      clearCurrentPlaylistForError();
       const unsupportedCount = skipped.filter(s => String(s.reason || '').includes('unknown slide type')).length;
       const message = unsupportedCount
         ? `No playable slides. ${unsupportedCount} unsupported slide type${unsupportedCount === 1 ? ' was' : 's were'} skipped. Update the display app or remove those slides in the Admin Panel.`
@@ -2416,19 +2464,36 @@
 
     defaultDwell = (data.defaultDwell ?? 6) * 1000;
     const wasEmpty = slides.length === 0;
-    if (current >= incoming.length) current = 0;
+    const incomingSignatures = incoming.map(slideRenderSignature);
+    const nextPlaylistSignature = incomingSignatures.join("|");
+    const playlistChanged = nextPlaylistSignature !== playlistSignature;
+    const renderedNextIndex = renderedSlideSignature
+      ? incomingSignatures.indexOf(renderedSlideSignature)
+      : -1;
+    const shouldInterrupt = wasEmpty || (playlistChanged && renderedNextIndex === -1);
+
+    if (renderedNextIndex >= 0) current = renderedNextIndex;
+    else if (current >= incoming.length || shouldInterrupt) current = 0;
+
     slides = incoming;
+    playlistSignature = nextPlaylistSignature;
 
     // Surface the audio unlock overlay if (a) the new playlist contains audio
     // slides and (b) this screen hasn't been unlocked yet. Hides itself when
     // the playlist no longer needs sound.
     maybeShowAudioUnlock(incoming);
 
-    if (wasEmpty) {
+    if (shouldInterrupt) {
       clearTimeout(timer);
+      clearTimeout(watchdogHandle);
+      recordCurrentSlideView();
+      renderedSlide = null;
+      renderedSlideSignature = "";
       slideViewStart = Date.now();
       const ok = await crossfadeTo(slides[current]);
       if (ok) {
+        renderedSlide = slides[current];
+        renderedSlideSignature = slideRenderSignature(slides[current]);
         scheduleNext(getSlideDwellMs(slides[current]));
       } else {
         advance(); // first slide failed — find one that works

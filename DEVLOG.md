@@ -4,6 +4,14 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-04 — Codex — Interrupt stale display content on playlist updates
+
+Follow-up for Android/live preview continuing to play a deleted YouTube slide after publish.
+
+- **Immediate player refresh**: `display.html` now fingerprints the active playlist and interrupts playback when the currently rendered slide is removed or changed.
+- **YouTube cleanup**: playlist updates that replace a YouTube slide now clear the old YouTube iframe instead of waiting for the prior dwell timer.
+- **Player version**: bumped the display player version to surface the playlist-refresh fix in diagnostics.
+
 ## 2026-05-04 — Codex — Route designer saves through server helper
 
 Follow-up for permission errors while saving designed slides.
