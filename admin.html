@@ -721,6 +721,8 @@ section.content {
 }
 .toolbar-overflow-item:hover { background: var(--surface2); }
 .toolbar-overflow-item.danger { color: var(--danger); }
+.toolbar-overflow-item:disabled { opacity: .45; cursor: not-allowed; }
+.toolbar-overflow-item:disabled:hover { background: transparent; }
 .toolbar-overflow-sep { height: 1px; background: var(--border); margin: 4px 0; }
 .toolbar-overflow-wrap { position: relative; }
 
@@ -4146,6 +4148,13 @@ body.role-editor .admin-action {
             </svg>
             Clear All
           </button>
+          <button class="btn btn-danger toolbar-hide-mobile admin-action" onclick="deleteCurrentSlideshow()" id="btnDeleteShow">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+              <path d="M10 11v6"/><path d="M14 11v6"/>
+            </svg>
+            Delete Slideshow
+          </button>
           <div class="toolbar-overflow-wrap" style="display:none">
             <div class="toolbar-overflow-menu" id="toolbarOverflowMenu">
               <button class="toolbar-overflow-item" onclick="closeToolbarOverflow();openDesigner()">
@@ -4176,6 +4185,14 @@ body.role-editor .admin-action {
                   <path d="M10 11v6"/><path d="M14 11v6"/>
                 </svg>
                 Clear All
+              </button>
+              <div class="toolbar-overflow-sep" id="btnDeleteShowSep"></div>
+              <button class="toolbar-overflow-item danger admin-action" id="btnDeleteShowMobile" onclick="closeToolbarOverflow();deleteCurrentSlideshow()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                  <path d="M10 11v6"/><path d="M14 11v6"/>
+                </svg>
+                Delete Slideshow
               </button>
             </div>
           </div>
@@ -9560,6 +9577,7 @@ async function loadShowsFromOrg() {
     showList.appendChild(item);
     if (i === 0) firstItem = item;
   });
+  updateDeleteSlideshowState();
 
   const firstShow = shows[0];
   if (firstShow && firstItem) {
@@ -10617,6 +10635,25 @@ async function createSlideshowOnServer(name, showId) {
   return result;
 }
 
+async function deleteSlideshowOnServer(showId) {
+  if (!auth.currentUser || !showId) throw new Error('Sign in first to delete a slideshow.');
+  const idToken = await auth.currentUser.getIdToken(true);
+  const resp = await fetch('/api/link-account', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      action: 'deleteSlideshow',
+      idToken,
+      showId,
+    }),
+  });
+  const result = await resp.json().catch(() => ({}));
+  if (!resp.ok || result.ok !== true) {
+    throw new Error(result.error || `HTTP ${resp.status}`);
+  }
+  return result;
+}
+
 function shouldLoadSubcollection(data = {}, collectionName) {
   if (collectionName === DRAFT_SLIDES_COLLECTION) {
     return data.draftStorage === 'subcollection';
@@ -10869,6 +10906,7 @@ function selectShowListItem(item, show = {}) {
   currentShowName = show.name || item?.querySelector('.show-item-name')?.textContent || currentShowId;
   const title = document.getElementById("showTitle");
   if (title) title.textContent = currentShowName;
+  updateDeleteSlideshowState();
 }
 
 async function loadCurrentShowSnapshot(showId) {
@@ -10924,6 +10962,33 @@ function syncPublishButtonState(hasDraft = false) {
   }
   const badgeEl = document.getElementById('unpublishedBadge');
   if (badgeEl) badgeEl.textContent = badge;
+}
+
+function knownSlideshows() {
+  const fromOrg = Array.isArray(currentOrg?.slideshows) && currentOrg.slideshows.length
+    ? currentOrg.slideshows
+    : [];
+  if (fromOrg.length) return fromOrg.filter(show => show?.id);
+  return Array.from(document.querySelectorAll('#showList .show-item')).map(el => ({
+    id: el.dataset.id,
+    name: el.querySelector('.show-item-name')?.textContent || el.dataset.id,
+  })).filter(show => show.id);
+}
+
+function canDeleteCurrentSlideshow() {
+  const shows = knownSlideshows();
+  return Boolean(currentShowId && shows.length > 1 && shows.some(show => show.id === currentShowId));
+}
+
+function updateDeleteSlideshowState() {
+  const canDelete = canDeleteCurrentSlideshow();
+  const title = canDelete ? 'Delete slideshow' : 'You must keep at least one slideshow';
+  ['btnDeleteShow', 'btnDeleteShowMobile'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    btn.disabled = !canDelete;
+    btn.title = title;
+  });
 }
 
 function makeShowItem(s) {
@@ -13759,6 +13824,69 @@ window.newShowPrompt = async () => {
   } catch(e) {
     console.warn('Could not create slideshow:', e.message);
     toast('Could not create slideshow: ' + e.message, true);
+  }
+};
+
+window.deleteCurrentSlideshow = async () => {
+  const shows = knownSlideshows();
+  const show = shows.find(s => s.id === currentShowId);
+  if (!show || !currentShowId) {
+    toast('Select a slideshow to delete.', true);
+    return;
+  }
+  if (shows.length <= 1) {
+    toast('You must keep at least one slideshow.', true);
+    updateDeleteSlideshowState();
+    return;
+  }
+  if (!confirm(`Delete "${show.name || currentShowName || currentShowId}"?\n\nThis removes the slideshow and its slides. Screens using it will be moved to another slideshow.`)) return;
+
+  const desktopBtn = document.getElementById('btnDeleteShow');
+  const mobileBtn = document.getElementById('btnDeleteShowMobile');
+  const oldDesktop = desktopBtn?.innerHTML;
+  const oldMobile = mobileBtn?.innerHTML;
+  if (desktopBtn) { desktopBtn.disabled = true; desktopBtn.innerHTML = 'Deleting...'; }
+  if (mobileBtn) { mobileBtn.disabled = true; mobileBtn.innerHTML = 'Deleting...'; }
+
+  const deletingId = currentShowId;
+  try {
+    const result = await deleteSlideshowOnServer(deletingId);
+    const nextShows = Array.isArray(result.slideshows)
+      ? result.slideshows
+      : shows.filter(s => s.id !== deletingId);
+    currentOrg = { ...(currentOrg || {}), slideshows: nextShows };
+
+    document.querySelector(`#showList .show-item[data-id="${CSS.escape(deletingId)}"]`)?.remove();
+    stopActiveShowListener();
+
+    const fallbackShowId = result.fallbackShowId || nextShows[0]?.id;
+    const fallbackItem = fallbackShowId
+      ? document.querySelector(`#showList .show-item[data-id="${CSS.escape(fallbackShowId)}"]`)
+      : null;
+    if (fallbackItem) {
+      fallbackItem.click();
+    } else if (nextShows.length) {
+      await loadShowsFromOrg();
+    } else {
+      slides = [];
+      currentShowId = '';
+      currentShowName = '';
+      renderGrid();
+      updateCount();
+      updateDashboard();
+      syncPreviewSelect();
+    }
+    updateDeleteSlideshowState();
+    toast('Slideshow deleted ✓');
+    logActivity(`Slideshow "${show.name || deletingId}" deleted`);
+  } catch(e) {
+    console.warn('Could not delete slideshow:', e.message);
+    toast('Could not delete slideshow: ' + e.message, true);
+    updateDeleteSlideshowState();
+  } finally {
+    if (desktopBtn && oldDesktop) desktopBtn.innerHTML = oldDesktop;
+    if (mobileBtn && oldMobile) mobileBtn.innerHTML = oldMobile;
+    updateDeleteSlideshowState();
   }
 };
 

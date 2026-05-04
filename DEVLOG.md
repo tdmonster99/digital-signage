@@ -4,6 +4,14 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-04 — Codex — Add slideshow deletion
+
+Follow-up for missing slideshow-level delete controls.
+
+- **Delete control**: added desktop and mobile toolbar actions for deleting the selected slideshow, distinct from `Clear All` slide deletion.
+- **Server cleanup**: `/api/link-account` now deletes slideshow parent/subcollection data, removes the org list entry, and keeps at least one slideshow per organization.
+- **Reference repair**: screens and schedules pointing at the deleted slideshow are reassigned to the next remaining slideshow.
+
 ## 2026-05-04 — Codex — Fix new slideshow creation race
 
 Follow-up for new slideshows showing `Missing or insufficient permissions` and stale slides.

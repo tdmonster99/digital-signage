@@ -175,6 +175,24 @@ async function replaceSlideCollection(db, showRef, collectionName, nextSlides) {
   await commitOpsInChunks(db, [...deleteOps, ...setOps]);
 }
 
+async function deleteSlideshowStorage(db, showRef) {
+  const ops = [];
+  for (const collectionName of [PUBLISHED_SLIDES_COLLECTION, DRAFT_SLIDES_COLLECTION]) {
+    const snap = await showRef.collection(collectionName).get();
+    snap.docs.forEach(docSnap => ops.push(batch => batch.delete(docSnap.ref)));
+  }
+
+  const versionRoots = await showRef.collection('slideVersions').get();
+  for (const rootDoc of versionRoots.docs) {
+    const versions = await rootDoc.ref.collection('versions').get();
+    versions.docs.forEach(docSnap => ops.push(batch => batch.delete(docSnap.ref)));
+    ops.push(batch => batch.delete(rootDoc.ref));
+  }
+
+  ops.push(batch => batch.delete(showRef));
+  await commitOpsInChunks(db, ops);
+}
+
 async function assertScreensInOrg(db, screenIds, orgId) {
   await Promise.all(screenIds.map(async screenId => {
     const screenSnap = await db.doc(`screens/${screenId}`).get();
@@ -462,6 +480,89 @@ module.exports = async function handler(req, res) {
       });
 
       return res.json({ ok: true, ...result });
+    }
+
+    if (req.body.action === 'deleteSlideshow') {
+      const { orgId, role } = await loadUserContext(db, uid);
+      requireRole(role, ['admin']);
+
+      const showId = normalizeShowId(req.body.showId);
+      const orgRef = db.doc(`organizations/${orgId}`);
+      const showRef = db.doc(`slideshows/${showId}`);
+
+      const txResult = await db.runTransaction(async tx => {
+        const [orgSnap, showSnap] = await Promise.all([tx.get(orgRef), tx.get(showRef)]);
+        if (!orgSnap.exists) {
+          const error = new Error('Organization not found');
+          error.statusCode = 404;
+          throw error;
+        }
+
+        const orgData = orgSnap.data() || {};
+        const shows = Array.isArray(orgData.slideshows) ? orgData.slideshows : [];
+        const remainingShows = shows.filter(show => show && show.id !== showId);
+        if (shows.length <= 1 || remainingShows.length === 0) {
+          const error = new Error('Cannot delete the only slideshow in an organization.');
+          error.statusCode = 400;
+          throw error;
+        }
+        if (!shows.some(show => show && show.id === showId)) {
+          const error = new Error('Slideshow is not in your organization list.');
+          error.statusCode = 404;
+          throw error;
+        }
+
+        const showData = showSnap.exists ? (showSnap.data() || {}) : null;
+        if (showData && showData.orgId !== orgId) {
+          const error = new Error('Slideshow is not in your organization');
+          error.statusCode = 403;
+          throw error;
+        }
+
+        tx.set(orgRef, { slideshows: remainingShows }, { merge: true });
+        return {
+          fallbackShowId: remainingShows[0]?.id || '',
+          slideshows: remainingShows,
+        };
+      });
+
+      const fallbackShowId = txResult.fallbackShowId;
+      const screenSnap = await db.collection('screens').where('orgId', '==', orgId).get();
+      const screenOps = screenSnap.docs
+        .filter(docSnap => (docSnap.data() || {}).slideshowId === showId)
+        .map(docSnap => batch => batch.set(docSnap.ref, { slideshowId: fallbackShowId }, { merge: true }));
+
+      const scheduleSnap = await orgRef.collection('schedules').get();
+      const scheduleOps = scheduleSnap.docs.map(docSnap => {
+        const schedule = docSnap.data() || {};
+        let changed = false;
+        const nextSchedule = { ...schedule };
+        if (nextSchedule.fillerSlideshowId === showId) {
+          nextSchedule.fillerSlideshowId = fallbackShowId;
+          changed = true;
+        }
+        if (Array.isArray(nextSchedule.events)) {
+          nextSchedule.events = nextSchedule.events.map(event => {
+            if (event?.slideshowId !== showId) return event;
+            changed = true;
+            return { ...event, slideshowId: fallbackShowId };
+          });
+        }
+        if (!changed) return null;
+        nextSchedule.updatedAt = new Date().toISOString();
+        return batch => batch.set(docSnap.ref, nextSchedule, { merge: true });
+      }).filter(Boolean);
+
+      await commitOpsInChunks(db, [...screenOps, ...scheduleOps]);
+      await deleteSlideshowStorage(db, showRef);
+
+      return res.json({
+        ok: true,
+        slideshows: txResult.slideshows,
+        fallbackShowId,
+        reassignedScreensCount: screenOps.length,
+        updatedSchedulesCount: scheduleOps.length,
+      });
     }
 
     if (req.body.action === 'saveDraftSlides') {
