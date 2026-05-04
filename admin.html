@@ -241,6 +241,23 @@ body {
 .quick-action-btn:hover { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); }
 .quick-action-btn svg { color: var(--muted); flex-shrink: 0; transition: color 0.15s; }
 .quick-action-btn:hover svg { color: var(--accent); }
+.player-setup-copy {
+  display: inline-block;
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: none;
+  word-break: break-all;
+}
+.player-setup-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.player-setup-actions .quick-action-btn {
+  justify-content: center;
+  padding: 8px 10px;
+  font-size: 12px;
+}
 
 /* ── Preview iframe ─────────────────────────────────────────────────────── */
 .preview-wrap {
@@ -674,6 +691,49 @@ aside {
 }
 .btn-save:hover { opacity: 0.85; }
 .btn-save:disabled { opacity: 0.4; cursor: not-allowed; }
+.player-setup-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.player-setup-url {
+  display: block;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--text);
+  word-break: break-all;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+.player-setup-qr {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.player-setup-qr img {
+  width: 88px;
+  height: 88px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: #fff;
+  padding: 4px;
+  flex-shrink: 0;
+}
+.player-setup-side-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.player-setup-side-actions .btn {
+  justify-content: center;
+  padding: 7px 8px;
+  font-size: 12px;
+}
 
 /* ── Content area ───────────────────────────────────────────────────────── */
 section.content {
@@ -3744,16 +3804,16 @@ body.role-editor .admin-action {
       <div class="ob-step" id="obStep2">
         <div class="ob-emoji">📺</div>
         <div class="ob-title">Connect your display</div>
-        <div class="ob-sub">Open this URL on any TV or monitor connected to a computer:</div>
-        <div class="ob-screen-url">app.zigns.io/display.html</div>
+        <div class="ob-sub">Open this URL on your TV, kiosk, or display device:</div>
+        <div class="ob-screen-url">https://app.zigns.io/display.html</div>
         <div class="ob-qr">
           <img id="obQrCode" src="" width="160" height="160" alt="QR Code">
-          <div style="font-size:12px;color:var(--muted);margin-top:8px">Scan with your phone to open on a TV</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:8px">Scan to open the player URL</div>
         </div>
         <ul class="ob-instructions">
-          <li>Open the URL in <strong>your browser</strong></li>
-          <li>Press <strong>F11</strong> for full screen</li>
-          <li>Your content will appear automatically</li>
+          <li>A <strong>6-character pairing code</strong> will appear</li>
+          <li>In Zigns, go to <strong>Screens &rarr; Add Screen</strong> and enter the code</li>
+          <li>Press <strong>F11</strong> for fullscreen on Windows, Linux, or ChromeOS</li>
         </ul>
       </div>
 
@@ -3964,9 +4024,9 @@ body.role-editor .admin-action {
         </button>
       </div>
 
-      <!-- Screen Status -->
+      <!-- Display Setup -->
       <div class="dash-card">
-        <div class="dash-card-title">Screen Status</div>
+        <div class="dash-card-title">Display Setup</div>
         <div class="dash-stat">
           <div class="dash-stat-icon">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
@@ -3980,7 +4040,21 @@ body.role-editor .admin-action {
           </div>
         </div>
         <div style="font-size:12px;color:var(--muted);line-height:1.6">
-          Open <strong style="color:var(--text)">display.html</strong> on your TV in full-screen (F11). It connects automatically.
+          Set up a display by opening <a class="player-setup-copy" href="https://app.zigns.io/display.html" target="_blank" rel="noopener">https://app.zigns.io/display.html</a> on the device. Enter the pairing code under Screens &rarr; Add Screen. Use F11 for fullscreen on Windows, Linux, or ChromeOS.
+        </div>
+        <div class="player-setup-actions">
+          <button class="quick-action-btn" onclick="copyPlayerSetupUrl(this)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+            </svg>
+            Copy URL
+          </button>
+          <button class="quick-action-btn" onclick="showPage('screens');setTimeout(openAddScreenModal,50)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Add Screen
+          </button>
         </div>
       </div>
 
@@ -4085,10 +4159,19 @@ body.role-editor .admin-action {
     </div>
 
     <div style="margin-top:auto">
-      <div class="section-label">Display URL</div>
-      <code style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);word-break:break-all;line-height:1.6">
-        Open <strong style="color:var(--text)">display.html</strong> on each TV PC in full-screen (F11). It connects automatically.
-      </code>
+      <div class="section-label">Player Setup URL</div>
+      <div class="player-setup-panel">
+        <span>Open this URL on your TV, kiosk, or display device.</span>
+        <a class="player-setup-url" href="https://app.zigns.io/display.html" target="_blank" rel="noopener">https://app.zigns.io/display.html</a>
+        <div class="player-setup-side-actions">
+          <button class="btn btn-secondary" onclick="copyPlayerSetupUrl(this)">Copy URL</button>
+          <button class="btn btn-secondary" onclick="showPage('screens');setTimeout(openAddScreenModal,50)">Add Screen</button>
+        </div>
+        <div class="player-setup-qr">
+          <img src="https://api.qrserver.com/v1/create-qr-code/?size=112x112&amp;color=000000&amp;bgcolor=ffffff&amp;data=https%3A%2F%2Fapp.zigns.io%2Fdisplay.html" width="88" height="88" alt="QR code for https://app.zigns.io/display.html">
+          <span>A 6-character code appears on the display. Pair it under Screens &rarr; Add Screen. Press F11 for fullscreen on Windows, Linux, or ChromeOS.</span>
+        </div>
+      </div>
     </div>
   </aside>
 
@@ -4808,7 +4891,11 @@ body.role-editor .admin-action {
       </button>
       <div id="pairingPendingSection">
         <div class="pairing-modal-title">Add a Screen</div>
-        <div class="pairing-modal-sub">Open Zigns on your display device — it will show a 6-character code. Enter it below.</div>
+        <div class="pairing-modal-sub">Open the player URL on your display device. A 6-character code will appear; enter it below.</div>
+        <div class="pairing-url-box">
+          <div class="pairing-url-text">https://app.zigns.io/display.html</div>
+          <button class="pairing-copy-btn" onclick="copyPlayerSetupUrl(this)">Copy URL</button>
+        </div>
         <div class="pairing-code-box" style="padding:20px 24px">
           <input id="pairingCodeInput" type="text" maxlength="6"
             placeholder="A B C 1 2 3"
@@ -10079,6 +10166,7 @@ let obStep          = 0;
 let obTotalSteps    = 4;
 let obChoice        = null;   // 'template' | 'upload' | 'later'
 let obPickedTemplate = null;
+const PLAYER_SETUP_URL = 'https://app.zigns.io/display.html';
 
 function showOnboarding() {
   obStep = 0;
@@ -10089,10 +10177,9 @@ function showOnboarding() {
   document.getElementById('onboardingOverlay').classList.add('active');
   renderObStep();
   // Set QR code image
-  const displayUrl = 'https://app.zigns.io/display.html';
   document.getElementById('obQrCode').src =
     'https://api.qrserver.com/v1/create-qr-code/?size=160x160&color=000000&bgcolor=ffffff&data=' +
-    encodeURIComponent(displayUrl);
+    encodeURIComponent(PLAYER_SETUP_URL);
 }
 
 function renderObStep() {
@@ -21033,6 +21120,38 @@ window.copyDisplayUrl = function(screenId, btn) {
     try { document.execCommand('copy'); btn.textContent = 'Copied!'; } catch(_) { btn.textContent = 'Copy failed'; }
     document.body.removeChild(ta);
     reset();
+  });
+};
+
+function copyTextToClipboard(text) {
+  if (navigator.clipboard?.writeText) {
+    return navigator.clipboard.writeText(text);
+  }
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  let ok = false;
+  try { ok = document.execCommand('copy'); } finally { document.body.removeChild(ta); }
+  return ok ? Promise.resolve() : Promise.reject(new Error('copy failed'));
+}
+
+window.copyPlayerSetupUrl = function(btn) {
+  const originalHtml = btn?.innerHTML;
+  copyTextToClipboard(PLAYER_SETUP_URL).then(() => {
+    if (btn) {
+      btn.textContent = 'Copied!';
+      setTimeout(() => { btn.innerHTML = originalHtml; }, 1800);
+    }
+    toast('Player setup URL copied ✓');
+  }).catch(() => {
+    if (btn) {
+      btn.textContent = 'Copy failed';
+      setTimeout(() => { btn.innerHTML = originalHtml; }, 1800);
+    }
+    toast('Could not copy the player setup URL.', true);
   });
 };
 

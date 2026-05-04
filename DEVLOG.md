@@ -4,6 +4,15 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-04 — Codex — Clarify display setup instructions
+
+Follow-up for vague `display.html` setup copy in the dashboard and Slideshows sidebar.
+
+- **Full player URL**: replaced shorthand `display.html` references with `https://app.zigns.io/display.html`.
+- **Setup actions**: added Copy URL and Add Screen actions near the dashboard setup guidance and sidebar player setup block.
+- **Pairing clarity**: updated onboarding and the Add Screen modal to explain the 6-character pairing code and F11 fullscreen step.
+- **QR helper**: added a sidebar QR code for the hosted player URL.
+
 ## 2026-05-04 — Codex — Add Novares pilot user grants
 
 Prepared production pilot access for `astacy@novaresteam.com` and `tpaul@novaresteam.com`.
