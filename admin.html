@@ -3468,6 +3468,7 @@ body.role-editor .admin-action {
 .plan-badge.premium  { background: rgba(124,58,237,.12);    color: #7c3aed; }
 .plan-badge.ea,
 .plan-badge.early-adopter { background: rgba(15,27,41,.12); color: #0f1b29; }
+.plan-badge.pilot { background: rgba(14,165,233,.12); color: #0284c7; }
 .plan-badge.enterprise { background: rgba(16,185,129,.12);  color: #059669; }
 .plan-badge.pro::before,
 .plan-badge.premium::before { content: '✦ '; }
@@ -9393,21 +9394,6 @@ async function initUserAndOrg(user) {
     if (!orgSnap) return;
     currentOrg = orgSnap.exists() ? { id: currentOrgId, ...orgSnap.data() } : null;
 
-    // Claim any pending subscription from the marketing site (best-effort)
-    try {
-      const pendingSnap = await getDoc(doc(db, 'pending_subscriptions', user.email.toLowerCase()));
-      if (pendingSnap.exists()) {
-        const pending = pendingSnap.data();
-        const { email: _email, updatedAt: _updatedAt, ...subscriptionData } = pending;
-        await updateDoc(doc(db, 'organizations', currentOrgId), { subscription: { ...subscriptionData, updatedAt: new Date().toISOString() } });
-        await deleteDoc(doc(db, 'pending_subscriptions', user.email.toLowerCase()));
-        if (currentOrg) currentOrg.subscription = subscriptionData;
-        window._pendingBillingSuccess = subscriptionData.plan;
-      }
-    } catch(e) {
-      console.warn('Could not claim pending subscription:', e.message);
-    }
-
     // Resume onboarding if not completed
     if (!userData.onboardingComplete) setTimeout(showOnboarding, 200);
     }
@@ -9420,6 +9406,8 @@ async function initUserAndOrg(user) {
 
   // Remove invite param from URL without reload
   if (inviteId) window.history.replaceState({}, '', window.location.pathname);
+
+  await claimPendingSubscription(user);
 
   // Load subscription from org doc
   currentSubscription = currentOrg?.subscription || null;
@@ -9441,12 +9429,37 @@ async function initUserAndOrg(user) {
     const wasTrial = window._pendingBillingTrial === true;
     window._pendingBillingSuccess = null;
     window._pendingBillingTrial   = false;
-    const labelled = planName.charAt(0).toUpperCase() + planName.slice(1);
+    const labelled = planLabel(planName);
     setTimeout(() => toast(
       wasTrial
         ? `Your 14-day ${labelled} trial is active. 🎉`
         : `You're now on the ${labelled} plan! 🎉`
     ), 800);
+  }
+}
+
+async function claimPendingSubscription(user) {
+  if (!user || !currentOrgId) return null;
+  try {
+    const idToken = await user.getIdToken();
+    const resp = await fetch('/api/link-account', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idToken, action: 'claimPendingSubscription' }),
+    });
+    const result = await resp.json().catch(() => ({}));
+    if (!resp.ok) throw new Error(result.error || `HTTP ${resp.status}`);
+    if (!result.claimed || !result.subscription) return null;
+
+    const subscriptionData = result.subscription;
+    if (currentOrg) currentOrg.subscription = subscriptionData;
+    currentSubscription = subscriptionData;
+    window._pendingBillingSuccess = subscriptionData.plan;
+    window._pendingBillingTrial = subscriptionData.status === 'trialing';
+    return subscriptionData;
+  } catch (e) {
+    console.warn('Could not claim pending subscription:', e.message);
+    return null;
   }
 }
 
@@ -9492,22 +9505,6 @@ async function createOrg(user) {
 
   await setDoc(doc(db, 'organizations', orgId), orgData);
   await setDoc(doc(db, 'users', user.uid), { orgId, role: 'admin', email: user.email, displayName: user.displayName || '' });
-
-  // Claim any pending subscription from the marketing site
-  try {
-    const pendingSnap = await getDoc(doc(db, 'pending_subscriptions', user.email.toLowerCase()));
-    if (pendingSnap.exists()) {
-      const pending = pendingSnap.data();
-      const { email: _email, updatedAt: _updatedAt, ...subscriptionData } = pending;
-      await updateDoc(doc(db, 'organizations', orgId), { subscription: { ...subscriptionData, updatedAt: new Date().toISOString() } });
-      await deleteDoc(doc(db, 'pending_subscriptions', user.email.toLowerCase()));
-      orgData.subscription = subscriptionData;
-      window._pendingBillingSuccess = subscriptionData.plan;
-    }
-  } catch(e) {
-    console.warn('Could not claim pending subscription:', e.message);
-  }
-
 
   currentOrg = { id: orgId, ...orgData };
   // Will show onboarding after loadShowsFromOrg + loadBrandKit complete
@@ -9624,6 +9621,7 @@ const PLAN_LIMITS = {
   standard:        { screensAllowed: 9999, usersAllowed: 3,    storageGb: 10  },
   premium:         { screensAllowed: 9999, usersAllowed: 10,   storageGb: 50  },
   'early-adopter': { screensAllowed: 9999, usersAllowed: 9999, storageGb: 50  },
+  pilot:           { screensAllowed: 9999, usersAllowed: 9999, storageGb: 100 },
   enterprise:      { screensAllowed: 9999, usersAllowed: 9999, storageGb: 100 },
   // Legacy keys kept so existing org subscription documents continue to render correctly.
   starter:         { screensAllowed: 9999, usersAllowed: 3,    storageGb: 10  },
@@ -9665,6 +9663,17 @@ const PLAN_FEATURES = {
     approvalWorkflow: true,
   },
   'early-adopter': {
+    starterApps: true,
+    standardApps: true,
+    premiumApps: true,
+    standardTemplates: true,
+    premiumTemplates: true,
+    scheduling: true,
+    analytics: true,
+    brandKit: true,
+    approvalWorkflow: true,
+  },
+  pilot: {
     starterApps: true,
     standardApps: true,
     premiumApps: true,
@@ -9733,6 +9742,7 @@ function planLabel(plan) {
     standard: 'Standard',
     premium: 'Premium',
     'early-adopter': 'Early Adopter',
+    pilot: 'Pilot',
     enterprise: 'Enterprise',
   })[canonicalPlanKey(plan)] || 'Starter';
 }
@@ -9916,6 +9926,8 @@ function renderBillingSection() {
     actions.standard = `<button class="plan-upgrade-btn outline" onclick="openBillingPortal()">Change</button>`;
     actions.premium  = `<button class="plan-upgrade-btn outline" onclick="openBillingPortal()">Change</button>`;
     actions.free     = `<button class="plan-upgrade-btn outline" onclick="openBillingPortal()">Downgrade</button>`;
+  } else if (plan === 'pilot') {
+    actions.enterprise = `<span style="font-size:12px;color:var(--accent)">Pilot account</span>`;
   } else if (plan === 'enterprise') {
     actions.enterprise = `<span style="font-size:12px;color:var(--accent)">Current</span>`;
   }

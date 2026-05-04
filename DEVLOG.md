@@ -4,6 +4,15 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-04 — Codex — Add Novares pilot user grants
+
+Prepared production pilot access for `astacy@novaresteam.com` and `tpaul@novaresteam.com`.
+
+- **Pilot plan**: added a first-class internal `Pilot` plan with all premium features, unlimited screens/users, and 100 GB storage.
+- **Signup claim**: moved pending plan claim through `/api/link-account` so grants work despite Firestore rules blocking client access to `pending_subscriptions`.
+- **Novares allowlist**: the two Novares emails are recognized server-side and upgraded to Pilot when they create or sign into an organization.
+- **Admin utility**: added `scripts/grant-pilot-users.js` for future manual pilot grants when Firebase Admin credentials are available locally.
+
 ## 2026-05-04 — Codex — Shorten slideshow activity names
 
 Follow-up for Recent Activity showing raw org-prefixed slideshow IDs.

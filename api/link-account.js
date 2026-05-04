@@ -13,6 +13,29 @@ const PLAYER_DIAGNOSTIC_TYPES = new Set([
 const SLIDE_STORAGE_VERSION = 2;
 const PUBLISHED_SLIDES_COLLECTION = 'slides';
 const DRAFT_SLIDES_COLLECTION = 'draftSlides';
+const PILOT_EMAILS = new Set(
+  (process.env.PILOT_EMAILS || 'astacy@novaresteam.com,tpaul@novaresteam.com')
+    .split(',')
+    .map(email => email.trim().toLowerCase())
+    .filter(Boolean)
+);
+const PILOT_LIMITS = {
+  screensAllowed: 9999,
+  usersAllowed: 9999,
+  storageGb: 100,
+};
+
+function pilotSubscription(now) {
+  return {
+    plan: 'pilot',
+    status: 'active',
+    ...PILOT_LIMITS,
+    pilot: true,
+    source: 'email-allowlist',
+    grantedAt: now,
+    updatedAt: now,
+  };
+}
 
 function normalizeSlideDoc(doc) {
   const data = doc.data() || {};
@@ -39,6 +62,43 @@ async function loadUserContext(db, uid) {
     throw error;
   }
   return { userSnap, userData, orgId: userData.orgId, role: userData.role || 'viewer' };
+}
+
+function normalizeEmail(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+async function claimPendingSubscription(db, email, orgId) {
+  const cleanEmail = normalizeEmail(email);
+  if (!cleanEmail || !orgId) return null;
+
+  const pendingRef = db.collection('pending_subscriptions').doc(cleanEmail);
+  const orgRef = db.collection('organizations').doc(orgId);
+  const now = new Date().toISOString();
+
+  return db.runTransaction(async tx => {
+    const pendingSnap = await tx.get(pendingRef);
+    if (!pendingSnap.exists) {
+      if (!PILOT_EMAILS.has(cleanEmail)) return null;
+      const orgSnap = await tx.get(orgRef);
+      const existingSub = orgSnap.exists ? (orgSnap.data() || {}).subscription : null;
+      if (existingSub?.plan === 'pilot' && existingSub.pilot === true) return null;
+      const claimedPilot = pilotSubscription(now);
+      tx.set(orgRef, { subscription: claimedPilot }, { merge: true });
+      return claimedPilot;
+    }
+
+    const pending = pendingSnap.data() || {};
+    const { email: _email, updatedAt: _updatedAt, ...subscriptionData } = pending;
+    const claimedSubscription = {
+      ...subscriptionData,
+      updatedAt: now,
+    };
+
+    tx.set(orgRef, { subscription: claimedSubscription }, { merge: true });
+    tx.delete(pendingRef);
+    return claimedSubscription;
+  });
 }
 
 function requireRole(role, allowed) {
@@ -268,6 +328,12 @@ module.exports = async function handler(req, res) {
     const db = getFirestore();
     const { uid, email } = decoded;
     if (!email) return res.json({ merged: false });
+
+    if (req.body.action === 'claimPendingSubscription') {
+      const { userData, orgId } = await loadUserContext(db, uid);
+      const subscription = await claimPendingSubscription(db, userData.email || email, orgId);
+      return res.json({ ok: true, claimed: !!subscription, subscription });
+    }
 
     if (req.body.action === 'pairScreen') {
       const code = normalizePairingCode(req.body.code);

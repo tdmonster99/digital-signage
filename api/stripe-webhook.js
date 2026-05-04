@@ -25,6 +25,7 @@ const PLAN_LIMITS = {
   standard:        { screensAllowed: 1,    usersAllowed: 3,    storageGb: 10  },
   premium:         { screensAllowed: 1,    usersAllowed: 10,   storageGb: 50  },
   'early-adopter': { screensAllowed: 9999, usersAllowed: 9999, storageGb: 50 },
+  pilot:           { screensAllowed: 9999, usersAllowed: 9999, storageGb: 100 },
   enterprise:      { screensAllowed: 9999, usersAllowed: 9999, storageGb: 100 },
   // Legacy plan keys map to the new public pricing structure.
   starter:         { screensAllowed: 1,    usersAllowed: 3,    storageGb: 10  },
@@ -38,6 +39,7 @@ const PLAN_LABELS = {
   'pro':           'Premium',
   'premium':       'Premium',
   'early-adopter': 'Early Adopter',
+  'pilot':         'Pilot',
   'enterprise':    'Enterprise',
 };
 
