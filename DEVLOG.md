@@ -4,6 +4,14 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-04 — Codex — Add live preview server fallback
+
+Follow-up for dashboard Live Preview failing on webpage slides with Firestore permission errors.
+
+- **Preview recovery**: `display.html` preview mode now falls back to the authenticated `/api/link-account` slideshow snapshot when direct Firestore slideshow or slide-subcollection reads are denied/blocked.
+- **No stale cache**: preview mode still avoids local player cache, but now renders the current server-side published snapshot instead of the red Firebase error when browser Firestore reads fail.
+- **Preview shell resilience**: `display-sw.js` now falls back to the cached base `display.html` shell for query-string preview URLs.
+
 ## 2026-05-04 — Codex — Harden Dropbox chooser launch path
 
 Follow-up for Dropbox Chooser showing Dropbox's "widget is not configured properly" screen.

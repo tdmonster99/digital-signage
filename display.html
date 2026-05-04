@@ -97,7 +97,7 @@
   let watchdogHandle    = null;
   let debugVisible      = false;
   const PAGE_LOAD_TIME  = Date.now();
-  const ZIGNS_PLAYER_VERSION = "2026.05.04.2";
+  const ZIGNS_PLAYER_VERSION = "2026.05.04.3";
 
   // ── Player platform diagnostics ───────────────────────────────────────────
   let playerBootDiagnosticsSent = false;
@@ -2405,6 +2405,48 @@
     return snap.docs.map(normalizeStoredSlide);
   }
 
+  async function loadPreviewSlideshowFromServer(slideshowId, reason = "") {
+    if (!isPreviewMode || !slideshowId) return null;
+    const user = screenAuth.currentUser || await waitForSignedInUser(2500);
+    if (!user) return null;
+
+    try {
+      const idToken = await user.getIdToken();
+      const resp = await fetch('/api/link-account', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'showSnapshot', idToken, showId: slideshowId }),
+      });
+      const result = await resp.json().catch(() => ({}));
+      if (!resp.ok || result.ok !== true) {
+        throw new Error(result.error || `HTTP ${resp.status}`);
+      }
+      console.warn(`[Preview] Loaded ${slideshowId} through server fallback${reason ? ` (${reason})` : ''}.`);
+      return {
+        ...(result.data || {}),
+        slides: Array.isArray(result.slides) ? result.slides : [],
+      };
+    } catch (e) {
+      console.warn(`[Preview] Server fallback failed for ${slideshowId}:`, e.message);
+      return null;
+    }
+  }
+
+  async function resolvePublishedSlideshow(slideshowId, data = {}) {
+    try {
+      return {
+        ...data,
+        slides: await loadPublishedSlides(slideshowId, data),
+      };
+    } catch (e) {
+      if (isPreviewMode) {
+        const fallback = await loadPreviewSlideshowFromServer(slideshowId, e.message || String(e));
+        if (fallback) return fallback;
+      }
+      throw e;
+    }
+  }
+
   function clearCurrentPlaylistForError() {
     clearTimeout(timer);
     clearTimeout(watchdogHandle);
@@ -2533,10 +2575,19 @@
         setOffline(false);
         if (snap.exists()) {
           const data = snap.data();
-          const resolved = {
-            ...data,
-            slides: await loadPublishedSlides(slideshowId, data),
-          };
+          let resolved;
+          try {
+            resolved = await resolvePublishedSlideshow(slideshowId, data);
+          } catch (e) {
+            if (activeSlideshowId !== slideshowId) return;
+            console.warn('[Firebase] Published slide load error:', e.code, e.message);
+            emitPlayerSlideshowError("slideshow_slide_load_error", e.message, {
+              code: e.code || "",
+              slideshowId,
+            });
+            showError("Firebase connection error: " + e.message);
+            return;
+          }
           if (activeSlideshowId !== slideshowId) return; // stale after subcollection load
           if (!isPreviewMode) saveCache(slideshowId, resolved);
           applyPlaylist(resolved);
@@ -2546,10 +2597,21 @@
           showError("Slideshow '" + slideshowId + "' not found. Create it in the Admin Panel.");
         }
       },
-      err => {
+      async err => {
         if (activeSlideshowId !== slideshowId) return; // stale callback
         loader.style.display = "none";
         console.warn('[Firebase] Listener error:', err.code, err.message);
+
+        if (isPreviewMode) {
+          const fallback = await loadPreviewSlideshowFromServer(slideshowId, err.message || String(err));
+          if (activeSlideshowId !== slideshowId) return;
+          if (fallback) {
+            setOffline(false);
+            errBox.style.display = "none";
+            applyPlaylist(fallback);
+            return;
+          }
+        }
 
         const cached = isPreviewMode ? null : loadCache(slideshowId);
         if (cached) {

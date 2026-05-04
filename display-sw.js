@@ -34,7 +34,7 @@ self.addEventListener('fetch', e => {
 
   // display.html shell — network-first, cache fallback
   if (url.pathname === '/display.html') {
-    e.respondWith(networkFirst(e.request, SHELL_CACHE));
+    e.respondWith(networkFirstDisplayShell(e.request));
     return;
   }
 
@@ -47,16 +47,16 @@ self.addEventListener('fetch', e => {
 
 // ── Strategies ────────────────────────────────────────────────────────────────
 
-async function networkFirst(req, cacheName) {
+async function networkFirstDisplayShell(req) {
   try {
     const res = await fetch(req);
     if (res.ok) {
-      const cache = await caches.open(cacheName);
-      cache.put(req, res.clone());
+      const cache = await caches.open(SHELL_CACHE);
+      await cache.put('/display.html', res.clone());
     }
     return res;
   } catch (_) {
-    const cached = await caches.match(req);
+    const cached = await caches.match('/display.html') || await caches.match(req, { ignoreSearch: true });
     return cached || Response.error();
   }
 }
