@@ -4,6 +4,15 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-04 — Codex — Harden Android player for production pilots
+
+Continuation of Phase 5.4.1 Android player readiness.
+
+- **Release packaging**: Android build now supports a configurable hosted player URL, release signing via local env/ignored keystore properties, and bumped the native shell to `0.2.0`.
+- **Kiosk mode**: added a device-admin receiver and optional device-owner lock-task flow, including maintenance menu enter/exit handling and modern predictive-back handling.
+- **Data safety/docs**: disabled Android backup/device-transfer data extraction for player identity storage and expanded Android README with signing, device-owner, and production smoke-test guidance.
+- **Verification**: `:app:lintDebug` and `:app:assembleDebug :app:assembleRelease` pass; release artifact remains unsigned until a real production keystore is provided.
+
 ## 2026-05-04 — Codex — Disable preview cache fallback on listener errors
 
 Follow-up for dashboard Live Preview still showing the `CACHED` badge with stale slides.

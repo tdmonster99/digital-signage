@@ -2,13 +2,15 @@ package io.zigns.player;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.ActivityManager;
 import android.app.AlertDialog;
+import android.app.admin.DevicePolicyManager;
+import android.content.ComponentName;
 import android.content.Context;
 import android.graphics.Color;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
-import android.net.NetworkRequest;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -36,10 +38,12 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
 import android.widget.TextView;
+import android.window.OnBackInvokedCallback;
+import android.window.OnBackInvokedDispatcher;
 
 public class MainActivity extends Activity {
     private static final String TAG = "ZignsPlayer";
-    private static final String DISPLAY_URL = "https://app.zigns.io/display.html";
+    private static final String DISPLAY_URL = BuildConfig.PLAYER_URL;
     private static final long LOAD_TIMEOUT_MS = 90_000L;
     private static final long WATCHDOG_INTERVAL_MS = 30_000L;
     private static final long BASE_RELOAD_DELAY_MS = 15_000L;
@@ -52,6 +56,9 @@ public class MainActivity extends Activity {
     private TextView statusView;
     private ConnectivityManager connectivityManager;
     private ConnectivityManager.NetworkCallback networkCallback;
+    private DevicePolicyManager devicePolicyManager;
+    private ComponentName deviceAdmin;
+    private OnBackInvokedCallback backCallback;
     private PowerManager.WakeLock wakeLock;
     private boolean destroyed;
     private boolean pageLoading;
@@ -110,9 +117,14 @@ public class MainActivity extends Activity {
         );
         root.addView(statusView, statusParams);
 
+        devicePolicyManager = (DevicePolicyManager) getSystemService(Context.DEVICE_POLICY_SERVICE);
+        deviceAdmin = new ComponentName(this, ZignsDeviceAdminReceiver.class);
+
         createWebView();
         registerNetworkWatcher();
+        registerBackHandler();
         enterImmersiveMode();
+        enterKioskIfManaged();
         loadPlayer(false);
         handler.postDelayed(watchdogRunnable, WATCHDOG_INTERVAL_MS);
     }
@@ -121,6 +133,7 @@ public class MainActivity extends Activity {
     protected void onResume() {
         super.onResume();
         enterImmersiveMode();
+        enterKioskIfManaged();
         acquireWakeLock();
         if (webView != null) webView.onResume();
     }
@@ -136,6 +149,7 @@ public class MainActivity extends Activity {
     protected void onDestroy() {
         destroyed = true;
         handler.removeCallbacksAndMessages(null);
+        unregisterBackHandler();
         unregisterNetworkWatcher();
         destroyWebView();
         releaseWakeLock();
@@ -156,10 +170,14 @@ public class MainActivity extends Activity {
             showMaintenanceMenu();
             return true;
         }
-        if (event.getKeyCode() == KeyEvent.KEYCODE_BACK) {
-            return true;
-        }
         return super.dispatchKeyEvent(event);
+    }
+
+    @SuppressLint("GestureBackNavigation")
+    @SuppressWarnings("deprecation")
+    @Override
+    public void onBackPressed() {
+        enterImmersiveMode();
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -183,13 +201,9 @@ public class MainActivity extends Activity {
         settings.setAllowFileAccess(false);
         settings.setAllowContentAccess(false);
         settings.setCacheMode(WebSettings.LOAD_DEFAULT);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
-            CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true);
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            settings.setSafeBrowsingEnabled(true);
-        }
+        settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
+        CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true);
+        settings.setSafeBrowsingEnabled(true);
 
         String userAgent = settings.getUserAgentString();
         settings.setUserAgentString(userAgent + " ZignsAndroidPlayer/" + BuildConfig.VERSION_NAME);
@@ -258,7 +272,12 @@ public class MainActivity extends Activity {
 
     private void showMaintenanceMenu() {
         enterImmersiveMode();
-        String[] actions = {"Reload player", "Reset pairing", "Cancel"};
+        boolean managedKiosk = isManagedKioskAvailable();
+        boolean lockTaskActive = isLockTaskActive();
+        String kioskAction = lockTaskActive ? "Exit kiosk" : "Enter kiosk";
+        String[] actions = managedKiosk
+                ? new String[]{"Reload player", "Reset pairing", kioskAction, "Cancel"}
+                : new String[]{"Reload player", "Reset pairing", "Cancel"};
         new AlertDialog.Builder(this)
                 .setTitle("Zigns Player")
                 .setItems(actions, (dialog, which) -> {
@@ -267,6 +286,12 @@ public class MainActivity extends Activity {
                         loadPlayer(false);
                     } else if (which == 1) {
                         resetPairing();
+                    } else if (managedKiosk && which == 2) {
+                        if (lockTaskActive) {
+                            exitKioskIfActive();
+                        } else {
+                            enterKioskIfManaged();
+                        }
                     }
                 })
                 .show();
@@ -302,6 +327,56 @@ public class MainActivity extends Activity {
         wakeLock = null;
     }
 
+    private boolean isManagedKioskAvailable() {
+        return devicePolicyManager != null
+                && deviceAdmin != null
+                && devicePolicyManager.isDeviceOwnerApp(getPackageName());
+    }
+
+    private boolean isLockTaskActive() {
+        ActivityManager activityManager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+        return activityManager != null
+                && activityManager.getLockTaskModeState() != ActivityManager.LOCK_TASK_MODE_NONE;
+    }
+
+    private void enterKioskIfManaged() {
+        if (!isManagedKioskAvailable()) return;
+        try {
+            devicePolicyManager.setLockTaskPackages(deviceAdmin, new String[]{getPackageName()});
+            if (!isLockTaskActive()) {
+                startLockTask();
+            }
+        } catch (RuntimeException e) {
+            Log.w(TAG, "Could not enter managed kiosk mode", e);
+        }
+    }
+
+    private void exitKioskIfActive() {
+        if (!isLockTaskActive()) return;
+        try {
+            stopLockTask();
+        } catch (RuntimeException e) {
+            Log.w(TAG, "Could not exit kiosk mode", e);
+        } finally {
+            enterImmersiveMode();
+        }
+    }
+
+    private void registerBackHandler() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU || backCallback != null) return;
+        backCallback = () -> enterImmersiveMode();
+        getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
+                OnBackInvokedDispatcher.PRIORITY_DEFAULT,
+                backCallback
+        );
+    }
+
+    private void unregisterBackHandler() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU || backCallback == null) return;
+        getOnBackInvokedDispatcher().unregisterOnBackInvokedCallback(backCallback);
+        backCallback = null;
+    }
+
     private void registerNetworkWatcher() {
         connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
         if (connectivityManager == null) return;
@@ -322,14 +397,7 @@ public class MainActivity extends Activity {
             }
         };
         try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                connectivityManager.registerDefaultNetworkCallback(networkCallback);
-            } else {
-                NetworkRequest request = new NetworkRequest.Builder()
-                        .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-                        .build();
-                connectivityManager.registerNetworkCallback(request, networkCallback);
-            }
+            connectivityManager.registerDefaultNetworkCallback(networkCallback);
         } catch (RuntimeException e) {
             Log.w(TAG, "Network callback registration failed", e);
         }

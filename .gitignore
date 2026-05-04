@@ -12,6 +12,9 @@ node_modules/
 # Android local/build output
 player-android/.gradle/
 player-android/local.properties
+player-android/keystore.properties
+player-android/**/*.jks
+player-android/**/*.keystore
 player-android/**/build/
 *.apk
 *.aab

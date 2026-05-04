@@ -12,7 +12,7 @@ Two parallel tracks have been running today:
 
 **Resume points:**
 - Audit: continue Medium batch — items below.
-- Kitcast → **Phase 5 in `ROADMAP.md`** is the next focus. Tags/priority/emergency playlist and CAP foundations are mostly shipped. Platform sequence agreed 2026-05-03: 5.4.0 player compatibility foundation → 5.4.1 Android → 5.4.2 ChromeOS Kiosk → 5.4.3 Tizen → 5.4.4 webOS → 5.4.5 tvOS → later Fire/BrightSign. Next likely work: Android build/install smoke on real hardware or emulator, then ChromeOS kiosk docs.
+- Kitcast → **Phase 5 in `ROADMAP.md`** is the next focus. Tags/priority/emergency playlist and CAP foundations are mostly shipped. Platform sequence agreed 2026-05-03: 5.4.0 player compatibility foundation → 5.4.1 Android → 5.4.2 ChromeOS Kiosk → 5.4.3 Tizen → 5.4.4 webOS → 5.4.5 tvOS → later Fire/BrightSign. Android now has release-signing hooks, configurable player URL, optional device-owner lock-task mode, and production smoke/kiosk docs; next likely work is emulator plus real Android TV/signage hardware release-build validation, then ChromeOS kiosk docs.
 
 ## Sessions This Day (2026-04-27)
 
@@ -98,7 +98,7 @@ These remain from earlier days:
 1. **Mark Vercel env vars as Sensitive** (5 min, manual in dashboard) — `GOOGLE_PLACES_API_KEY`, `CRON_SECRET`, `CLOUDCONVERT_API_KEY`, `GOOGLE_SHEETS_API_KEY`, `OPENWEATHER_API_KEY`
 2. **Delete duplicate Vercel `app` project** (2 min, manual in dashboard)
 3. **Slideshow subcollection migration** — `slides[]` will hit 1MB limit at scale; needs migration script + admin/display rewrites
-4. **Phase 5.4 platform work** — agreed sequence: player compatibility foundation, Android, ChromeOS Kiosk, Tizen, webOS, tvOS, later Fire/BrightSign. 5.4.0 diagnostics are shipped. 5.4.1 Android has an initial `player-android/` WebView shell with fullscreen, wake behavior, boot receiver, network/renderer recovery, reset/reload menu, and native shell diagnostics; remaining Android work is build/install smoke, signing, and kiosk provisioning docs.
+4. **Phase 5.4 platform work** — agreed sequence: player compatibility foundation, Android, ChromeOS Kiosk, Tizen, webOS, tvOS, later Fire/BrightSign. 5.4.0 diagnostics are shipped. 5.4.1 Android has a `player-android/` WebView shell with fullscreen, wake behavior, boot receiver, network/renderer recovery, reset/reload menu, native shell diagnostics, configurable player URL, release-signing hooks, optional device-owner lock-task mode, and production smoke/kiosk docs; remaining Android work is release-key creation plus emulator/real-device validation.
 5. **Analytics daily rollup** — aggregation cron to prevent expensive dashboard queries at scale
 6. **Google Cloud OAuth verification** — user is mid-flow; needs to verify `zigns.io` ownership in Search Console (TXT record on `@`) before branding goes through
 7. **CRON_SECRET in URL query** — currently logged. Switch to `Authorization: Bearer` header only.

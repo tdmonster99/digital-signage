@@ -2,6 +2,41 @@ plugins {
     id 'com.android.application'
 }
 
+def escapeBuildConfigString = { String value ->
+    value.replace('\\', '\\\\').replace('"', '\\"')
+}
+
+def optionalGradleOrEnv = { String propertyName, String environmentName ->
+    providers.gradleProperty(propertyName)
+            .orElse(providers.environmentVariable(environmentName))
+            .getOrNull()
+}
+
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file('keystore.properties')
+if (keystorePropertiesFile.exists()) {
+    keystorePropertiesFile.withInputStream { stream ->
+        keystoreProperties.load(stream)
+    }
+}
+
+def playerUrl = optionalGradleOrEnv('zignsPlayerUrl', 'ZIGNS_ANDROID_PLAYER_URL')
+        ?: 'https://app.zigns.io/display.html'
+def releaseStoreFile = optionalGradleOrEnv('zignsReleaseStoreFile', 'ZIGNS_ANDROID_KEYSTORE')
+        ?: keystoreProperties.getProperty('storeFile')
+def releaseStorePassword = optionalGradleOrEnv('zignsReleaseStorePassword', 'ZIGNS_ANDROID_KEYSTORE_PASSWORD')
+        ?: keystoreProperties.getProperty('storePassword')
+def releaseKeyAlias = optionalGradleOrEnv('zignsReleaseKeyAlias', 'ZIGNS_ANDROID_KEY_ALIAS')
+        ?: keystoreProperties.getProperty('keyAlias')
+def releaseKeyPassword = optionalGradleOrEnv('zignsReleaseKeyPassword', 'ZIGNS_ANDROID_KEY_PASSWORD')
+        ?: keystoreProperties.getProperty('keyPassword')
+def hasReleaseSigning = [releaseStoreFile, releaseStorePassword, releaseKeyAlias, releaseKeyPassword]
+        .every { value -> value != null && !value.trim().isEmpty() }
+def resolveSigningFile = { String signingPath ->
+    def candidate = file(signingPath)
+    candidate.isAbsolute() ? candidate : rootProject.file(signingPath)
+}
+
 android {
     namespace = 'io.zigns.player'
     compileSdk = 36
@@ -11,12 +46,32 @@ android {
         applicationId = 'io.zigns.player'
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = '0.1.0'
+        versionCode = 2
+        versionName = '0.2.0'
+        buildConfigField 'String', 'PLAYER_URL', "\"${escapeBuildConfigString(playerUrl)}\""
     }
 
     buildFeatures {
         buildConfig = true
+    }
+
+    signingConfigs {
+        release {
+            if (hasReleaseSigning) {
+                storeFile = resolveSigningFile(releaseStoreFile)
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.release
+            }
+        }
     }
 
     compileOptions {
