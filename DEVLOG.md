@@ -4,6 +4,14 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-04 — Codex — Polish cloud picker logos and OneDrive cancel
+
+Follow-up for Add Media provider polish.
+
+- **Provider logos**: refreshed OneDrive and Dropbox marks in the Add Media flows to use consistent white logo tiles matching the Yodeck-style visual treatment.
+- **Shared usage**: applied the refreshed OneDrive/Dropbox marks in dashboard upload, slideshow Add Media, and the slide designer image popover.
+- **OneDrive picker**: handled the picker v8 `close`/`cancel` command so the popup Cancel button closes the picker instead of requiring the window X.
+
 ## 2026-05-04 — Codex — Add ChromeOS, Tizen, and webOS platform starts
 
 Continued Phase 5.4 player platform compatibility after Android hardening.

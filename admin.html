@@ -766,6 +766,18 @@ section.content {
   line-height: 1.3;
 }
 .add-media-btn:hover { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); }
+.provider-logo {
+  width: 40px; height: 40px; border-radius: 10px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: #fff; border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  flex-shrink: 0;
+}
+.provider-logo svg { width: 28px; height: 28px; display: block; }
+.provider-logo-sm {
+  width: 24px; height: 24px; border-radius: 7px;
+}
+.provider-logo-sm svg { width: 17px; height: 17px; }
 .add-media-row {
   display: flex; flex-direction: column; gap: 2px; padding: 0 22px 18px;
 }
@@ -1608,6 +1620,7 @@ section.content {
 }
 .popover-item:hover { background: var(--surface); }
 .popover-item svg { flex-shrink: 0; color: var(--muted); }
+.popover-item .provider-logo svg { color: inherit; }
 
 /* Swatch inside background button */
 .bg-swatch {
@@ -5913,10 +5926,14 @@ body.role-editor .admin-action {
           Google Drive
         </button>
         <button class="add-media-btn" onclick="dashGoToShow();setTimeout(()=>_openOneDrivePicker('slides'),80)">
-          <svg width="26" height="26" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-            <path d="M29 15c-5.52 0-10.26 3.25-12.6 8h-.4a9 9 0 0 0 0 18h21a7 7 0 0 0 0-14c-.16 0-.32 0-.48.01A10 10 0 0 0 29 15z" fill="#1f9de2"/>
-            <path d="M17 24c-4.97 0-9 4.03-9 9s4.03 9 9 9h20a6 6 0 0 0 0-12c-.12 0-.24 0-.36.01A8 8 0 0 0 17 24z" fill="#0078d4"/>
-          </svg>
+          <span class="provider-logo" aria-hidden="true">
+            <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+              <path d="M20.7 19.2c2.1-4.2 6.5-7.1 11.5-7.1 6 0 11.1 4.1 12.5 9.7a9.2 9.2 0 0 0-4.2-1h-.8A15.7 15.7 0 0 0 20.7 19.2z" fill="#0364b8"/>
+              <path d="M18.4 20.4A11.2 11.2 0 0 1 34.8 25a8.7 8.7 0 0 1 5.7-2.1 8.9 8.9 0 0 1 0 17.8H16.7a10.8 10.8 0 0 1 1.7-20.3z" fill="#0078d4"/>
+              <path d="M8.8 25.7a10.1 10.1 0 0 1 9.6-6.8 10.3 10.3 0 0 1 9.8 7.4 9.2 9.2 0 0 0-5.6-1.9c-4.1 0-7.6 2.6-8.8 6.3H8.9a5.1 5.1 0 0 1-.1-5z" fill="#1490df"/>
+              <path d="M8.9 30.7h5c1.2-3.7 4.7-6.3 8.8-6.3a9.2 9.2 0 0 1 8 4.6 8.7 8.7 0 0 1 4.2-4 11.2 11.2 0 0 0-21.3-2.1 8 8 0 0 0-4.7 7.8z" fill="#28a8ea"/>
+            </svg>
+          </span>
           OneDrive
         </button>
         <button class="add-media-btn" onclick="dashGoToShow();setTimeout(()=>openGslidesModal(),80)">
@@ -5924,14 +5941,15 @@ body.role-editor .admin-action {
           Google Slides
         </button>
         <button class="add-media-btn" onclick="closeDashUpload();dashGoToShow();setTimeout(()=>addFromDropbox(),80)">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
-            <path d="M12 2.5L6.5 6.25 12 10 17.5 6.25 12 2.5z" fill="#0061ff"/>
-            <path d="M6.5 6.25L1 10l5.5 3.75L12 10 6.5 6.25z" fill="#0061ff"/>
-            <path d="M12 10l5.5 3.75L23 10l-5.5-3.75L12 10z" fill="#0061ff"/>
-            <path d="M6.5 13.75L12 17.5l5.5-3.75L12 10 6.5 13.75z" fill="#0061ff"/>
-            <path d="M12 17.5v4" stroke="#0061ff" stroke-width="1.8" stroke-linecap="round"/>
-            <path d="M9 21.5h6" stroke="#0061ff" stroke-width="1.8" stroke-linecap="round"/>
-          </svg>
+          <span class="provider-logo" aria-hidden="true">
+            <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+              <path d="M14 6 3.5 12.9 14 19.8l10.5-6.9L14 6z" fill="#0061ff"/>
+              <path d="M34 6 23.5 12.9 34 19.8l10.5-6.9L34 6z" fill="#0061ff"/>
+              <path d="M14 20.8 3.5 27.7 14 34.6l10.5-6.9L14 20.8z" fill="#0061ff"/>
+              <path d="M34 20.8 23.5 27.7 34 34.6l10.5-6.9L34 20.8z" fill="#0061ff"/>
+              <path d="M24 31.5 13.5 38.4 24 45.3l10.5-6.9L24 31.5z" fill="#0061ff"/>
+            </svg>
+          </span>
           Dropbox
         </button>
       </div>
@@ -5990,18 +6008,26 @@ body.role-editor .admin-action {
           Google Drive
         </button>
         <button class="add-media-btn" onclick="closeAddMediaModal();addFromOneDrive()">
-          <svg width="26" height="26" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-            <path d="M29 15c-5.52 0-10.26 3.25-12.6 8h-.4a9 9 0 0 0 0 18h21a7 7 0 0 0 0-14c-.16 0-.32 0-.48.01A10 10 0 0 0 29 15z" fill="#1f9de2"/>
-            <path d="M17 24c-4.97 0-9 4.03-9 9s4.03 9 9 9h20a6 6 0 0 0 0-12c-.12 0-.24 0-.36.01A8 8 0 0 0 17 24z" fill="#0078d4"/>
-          </svg>
+          <span class="provider-logo" aria-hidden="true">
+            <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+              <path d="M20.7 19.2c2.1-4.2 6.5-7.1 11.5-7.1 6 0 11.1 4.1 12.5 9.7a9.2 9.2 0 0 0-4.2-1h-.8A15.7 15.7 0 0 0 20.7 19.2z" fill="#0364b8"/>
+              <path d="M18.4 20.4A11.2 11.2 0 0 1 34.8 25a8.7 8.7 0 0 1 5.7-2.1 8.9 8.9 0 0 1 0 17.8H16.7a10.8 10.8 0 0 1 1.7-20.3z" fill="#0078d4"/>
+              <path d="M8.8 25.7a10.1 10.1 0 0 1 9.6-6.8 10.3 10.3 0 0 1 9.8 7.4 9.2 9.2 0 0 0-5.6-1.9c-4.1 0-7.6 2.6-8.8 6.3H8.9a5.1 5.1 0 0 1-.1-5z" fill="#1490df"/>
+              <path d="M8.9 30.7h5c1.2-3.7 4.7-6.3 8.8-6.3a9.2 9.2 0 0 1 8 4.6 8.7 8.7 0 0 1 4.2-4 11.2 11.2 0 0 0-21.3-2.1 8 8 0 0 0-4.7 7.8z" fill="#28a8ea"/>
+            </svg>
+          </span>
           OneDrive
         </button>
         <button class="add-media-btn" onclick="closeAddMediaModal();addFromDropbox()">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#0061ff" stroke-width="1.6" stroke-linecap="round">
-            <path d="M12 2l-5 4 5 4 5-4-5-4z"/>
-            <path d="M2 10l5 4 5-4"/><path d="M12 10l5 4 5-4"/>
-            <path d="M7 18l5 4 5-4"/><line x1="12" y1="14" x2="12" y2="22"/>
-          </svg>
+          <span class="provider-logo" aria-hidden="true">
+            <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+              <path d="M14 6 3.5 12.9 14 19.8l10.5-6.9L14 6z" fill="#0061ff"/>
+              <path d="M34 6 23.5 12.9 34 19.8l10.5-6.9L34 6z" fill="#0061ff"/>
+              <path d="M14 20.8 3.5 27.7 14 34.6l10.5-6.9L14 20.8z" fill="#0061ff"/>
+              <path d="M34 20.8 23.5 27.7 34 34.6l10.5-6.9L34 20.8z" fill="#0061ff"/>
+              <path d="M24 31.5 13.5 38.4 24 45.3l10.5-6.9L24 31.5z" fill="#0061ff"/>
+            </svg>
+          </span>
           Dropbox
         </button>
       </div>
@@ -7048,20 +7074,26 @@ body.role-editor .admin-action {
             From Google Drive
           </button>
           <button class="popover-item" onclick="designerImageFromOneDrive()">
-            <svg width="14" height="14" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-              <path d="M29 15c-5.52 0-10.26 3.25-12.6 8h-.4a9 9 0 0 0 0 18h21a7 7 0 0 0 0-14c-.16 0-.32 0-.48.01A10 10 0 0 0 29 15z" fill="#1f9de2"/>
-              <path d="M17 24c-4.97 0-9 4.03-9 9s4.03 9 9 9h20a6 6 0 0 0 0-12c-.12 0-.24 0-.36.01A8 8 0 0 0 17 24z" fill="#0078d4"/>
-            </svg>
+            <span class="provider-logo provider-logo-sm" aria-hidden="true">
+              <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                <path d="M20.7 19.2c2.1-4.2 6.5-7.1 11.5-7.1 6 0 11.1 4.1 12.5 9.7a9.2 9.2 0 0 0-4.2-1h-.8A15.7 15.7 0 0 0 20.7 19.2z" fill="#0364b8"/>
+                <path d="M18.4 20.4A11.2 11.2 0 0 1 34.8 25a8.7 8.7 0 0 1 5.7-2.1 8.9 8.9 0 0 1 0 17.8H16.7a10.8 10.8 0 0 1 1.7-20.3z" fill="#0078d4"/>
+                <path d="M8.8 25.7a10.1 10.1 0 0 1 9.6-6.8 10.3 10.3 0 0 1 9.8 7.4 9.2 9.2 0 0 0-5.6-1.9c-4.1 0-7.6 2.6-8.8 6.3H8.9a5.1 5.1 0 0 1-.1-5z" fill="#1490df"/>
+                <path d="M8.9 30.7h5c1.2-3.7 4.7-6.3 8.8-6.3a9.2 9.2 0 0 1 8 4.6 8.7 8.7 0 0 1 4.2-4 11.2 11.2 0 0 0-21.3-2.1 8 8 0 0 0-4.7 7.8z" fill="#28a8ea"/>
+              </svg>
+            </span>
             From OneDrive
           </button>
           <button class="popover-item" onclick="designerImageFromDropbox()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 2l-5 4 5 4 5-4-5-4z"/>
-              <path d="M2 10l5 4 5-4"/>
-              <path d="M12 10l5 4 5-4"/>
-              <path d="M7 18l5 4 5-4"/>
-              <line x1="12" y1="14" x2="12" y2="22"/>
-            </svg>
+            <span class="provider-logo provider-logo-sm" aria-hidden="true">
+              <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                <path d="M14 6 3.5 12.9 14 19.8l10.5-6.9L14 6z" fill="#0061ff"/>
+                <path d="M34 6 23.5 12.9 34 19.8l10.5-6.9L34 6z" fill="#0061ff"/>
+                <path d="M14 20.8 3.5 27.7 14 34.6l10.5-6.9L14 20.8z" fill="#0061ff"/>
+                <path d="M34 20.8 23.5 27.7 34 34.6l10.5-6.9L34 20.8z" fill="#0061ff"/>
+                <path d="M24 31.5 13.5 38.4 24 45.3l10.5-6.9L24 31.5z" fill="#0061ff"/>
+              </svg>
+            </span>
             From Dropbox
           </button>
         </div>
@@ -12875,8 +12907,57 @@ function _openOneDrivePicker(mode) {
           if (pm?.type === 'command') {
             // Acknowledge immediately so the picker doesn't time out
             port.postMessage({ type: 'acknowledge', id: pm.id });
-            const items = pm.data?.items ?? pm.items;
-            if (items?.length) { cleanup(); await _handleOneDriveItems(items, mode); }
+            const command = pm.data || {};
+            const commandName = command.command || pm.command || '';
+            const items = command.items ?? command.data?.items ?? pm.items;
+
+            if (commandName === 'close' || commandName === 'cancel') {
+              cleanup();
+              return;
+            }
+
+            if (commandName === 'pick' || items?.length) {
+              let resultSent = false;
+              try {
+                if (pm.id) {
+                  port.postMessage({ type: 'result', id: pm.id, data: { result: 'success' } });
+                  resultSent = true;
+                }
+                cleanup();
+                if (items?.length) await _handleOneDriveItems(items, mode);
+              } catch (error) {
+                if (pm.id && !resultSent) {
+                  port.postMessage({
+                    type: 'result',
+                    id: pm.id,
+                    data: {
+                      result: 'error',
+                      error: {
+                        code: 'unusableItem',
+                        message: error?.message || 'Could not import selected OneDrive item'
+                      }
+                    }
+                  });
+                }
+                cleanup();
+                toast(error?.message || 'Could not import selected OneDrive item', true);
+              }
+              return;
+            }
+
+            if (pm.id) {
+              port.postMessage({
+                type: 'result',
+                id: pm.id,
+                data: {
+                  result: 'error',
+                  error: {
+                    code: 'unsupportedCommand',
+                    message: commandName || 'Unsupported OneDrive picker command'
+                  }
+                }
+              });
+            }
           } else if (pm?.type === 'result') {
             cleanup();
             if (pm.items?.length) await _handleOneDriveItems(pm.items, mode);
