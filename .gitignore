@@ -19,6 +19,13 @@ player-android/**/build/
 *.apk
 *.aab
 
+# Platform player package output
+player-tizen/.buildResult/
+player-tizen/.metadata/
+player-tizen/.sign/
+player-tizen/*.wgt
+player-webos/*.ipk
+
 # OS
 .DS_Store
 Thumbs.db

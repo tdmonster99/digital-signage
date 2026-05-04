@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<widget xmlns="http://www.w3.org/ns/widgets"
+        xmlns:tizen="http://tizen.org/ns/widgets"
+        id="https://zigns.io/player/tizen"
+        version="0.1.0"
+        viewmodes="maximized">
+    <tizen:application
+        id="iozignsplayer.ZignsPlayer"
+        package="iozignsplayer"
+        required_version="6.0" />
+    <tizen:profile name="tv" />
+    <tizen:setting
+        background-support="disable"
+        context-menu="disable"
+        encryption="disable"
+        hwkey-event="enable"
+        install-location="auto"
+        screen-orientation="landscape" />
+    <tizen:privilege name="http://tizen.org/privilege/internet" />
+
+    <access origin="*" subdomains="true" />
+    <content src="index.html" />
+    <icon src="icon.svg" />
+    <name>Zigns Player</name>
+    <description>Zigns cloud signage player for Samsung Tizen.</description>
+    <author href="https://www.zigns.io" email="support@zigns.io">Zigns</author>
+    <license href="https://app.zigns.io/terms.html">Proprietary</license>
+</widget>

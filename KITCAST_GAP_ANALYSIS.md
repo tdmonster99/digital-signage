@@ -91,10 +91,10 @@ Zigns is a browser-based player. Runs anywhere there's a browser + internet, but
 | Kitcast | Zigns | Notes |
 |---|---|---|
 | Apple TV / macOS | macOS ✅ · Apple TV ❌ | tvOS has no browser. Native tvOS player is now planned after Android, ChromeOS kiosk, Tizen, and webOS. |
-| **Samsung Tizen** | ❌ | No native Tizen app. |
-| **LG webOS** | ❌ | No native webOS app. |
-| Android TV / Android signage boxes | ⚠ | Initial native WebView shell exists under `player-android/` with boot launch, wake behavior, recovery, and diagnostics. Still needs device build/install smoke, signing, kiosk provisioning docs, and hardware validation. |
-| ChromeOS kiosk | ⚠ | Browser-compatible today, but not yet documented/certified as a managed kiosk deployment path. |
+| **Samsung Tizen** | ⚠ | First Web Application wrapper scaffold exists under `player-tizen/`; still needs Tizen Studio packaging/signing and real Samsung signage validation. |
+| **LG webOS** | ⚠ | First Web App wrapper scaffold exists under `player-webos/`; still needs webOS CLI packaging and real LG signage validation. |
+| Android TV / Android signage boxes | ⚠ | Native WebView shell exists under `player-android/` with boot launch, wake behavior, recovery, diagnostics, release-signing hooks, and kiosk docs. Still needs release key plus emulator/real-device validation. |
+| ChromeOS kiosk | ⚠ | Managed kiosk runbook exists under `player-chromeos/`; still needs Google Admin validation on enrolled ChromeOS hardware. |
 | Amazon signage / Fire sticks | ⚠ | Works via Fire OS Silk/browser. Future support should inherit from Android, but consumer Fire devices have autostart/fleet-management caveats. |
 | **BrightSign** | ❌ | No native BrightSign app. Deferred until customer/RFP demand justifies a separate BrightScript/HTML5 validation track. |
 | Windows | ✅ | |
@@ -116,7 +116,7 @@ Zigns is a browser-based player. Runs anywhere there's a browser + internet, but
 
 1. ~~Tags + Priority Overrides + Emergency Playlist (pre-built)~~ — mostly shipped 2026-04-28. Remaining: emergency playlist governance/polish and advanced dynamic scheduling.
 2. ~~Audio playback~~ (shipped 2026-04-27) + ~~Emergency CAP foundation~~ (shipped 2026-04-28) — remaining CAP work is audit/testing/polish, not initial playback.
-3. **Player platform wave** — agreed sequence: 5.4.0 player compatibility foundation, 5.4.1 Android, 5.4.2 ChromeOS kiosk, 5.4.3 Tizen, 5.4.4 webOS, 5.4.5 tvOS, with Fire/BrightSign deferred.
+3. **Player platform wave** — agreed sequence: 5.4.0 player compatibility foundation, 5.4.1 Android, 5.4.2 ChromeOS kiosk, 5.4.3 Tizen, 5.4.4 webOS, 5.4.5 tvOS, with Fire/BrightSign deferred. Android and ChromeOS now have deployment docs; Tizen/webOS have initial wrapper scaffolds but need hardware validation.
 4. **SSO/SAML** — required to win mid-market and enterprise deals.
 5. **MDM + Zero-Touch + Kiosk mode** — table-stakes for IT-led rollouts (>50 screens).
 6. **Time Machine, multi-workspace, data residency, white-label** — fold into an Enterprise tier later.

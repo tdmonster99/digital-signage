@@ -1,0 +1,14 @@
+{
+  "id": "io.zigns.player",
+  "title": "Zigns Player",
+  "main": "index.html",
+  "icon": "icon.png",
+  "largeIcon": "largeicon.png",
+  "type": "web",
+  "vendor": "Zigns",
+  "version": "0.1.0",
+  "appDescription": "Cloud digital signage player",
+  "resolution": "1920x1080",
+  "bgColor": "#070B16",
+  "iconColor": "#0043CE"
+}

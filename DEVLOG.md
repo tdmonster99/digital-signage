@@ -4,6 +4,16 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-04 — Codex — Add ChromeOS, Tizen, and webOS platform starts
+
+Continued Phase 5.4 player platform compatibility after Android hardening.
+
+- **ChromeOS kiosk**: added `player-chromeos/` with managed kiosk launch URL, hardware guidance, Google Admin policy checklist, support intake checklist, and production smoke matrix.
+- **Samsung Tizen**: added `player-tizen/` technical scaffold with `config.xml`, redirect wrapper, icon source, package/install notes, and real-panel validation checklist.
+- **LG webOS**: added `player-webos/` technical scaffold with `appinfo.json`, redirect wrapper, icon source, package/install notes, and real-panel validation checklist.
+- **Diagnostics**: `display.html` now maps native shell hints for Tizen, webOS, ChromeOS kiosk, and tvOS into platform-family diagnostics even when the device user agent is ambiguous.
+- **Roadmap alignment**: updated roadmap, gap analysis, handoff context, and Vercel ignore rules so platform scaffolds are tracked but not deployed as app routes.
+
 ## 2026-05-04 — Codex — Harden Android player for production pilots
 
 Continuation of Phase 5.4.1 Android player readiness.

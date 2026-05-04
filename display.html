@@ -97,7 +97,7 @@
   let watchdogHandle    = null;
   let debugVisible      = false;
   const PAGE_LOAD_TIME  = Date.now();
-  const ZIGNS_PLAYER_VERSION = "2026.05.04.1";
+  const ZIGNS_PLAYER_VERSION = "2026.05.04.2";
 
   // ── Player platform diagnostics ───────────────────────────────────────────
   let playerBootDiagnosticsSent = false;
@@ -134,13 +134,18 @@
     const shell = androidShellMatch
       ? { type: "android", version: androidShellMatch[1] || nativeVersion || "" }
       : (nativePlatform ? { type: nativePlatform, version: nativeVersion } : null);
+    const shellType = shell?.type || "";
     let family = "unknown";
     if (/tizen|samsung/.test(uaLower)) family = "tizen";
     else if (/web0s|webos|netcast/.test(uaLower)) family = "webos";
     else if (/aft|fire tv|silk/.test(uaLower)) family = "fire-tv";
     else if (/android/.test(uaLower) && (/tv|bravia|shield|mibox/.test(uaLower))) family = "android-tv";
     else if (/android/.test(uaLower)) family = "android";
-    else if (shell?.type === "android") family = "android";
+    else if (shellType === "android") family = "android";
+    else if (shellType === "tizen") family = "tizen";
+    else if (shellType === "webos") family = "webos";
+    else if (shellType === "chromeos" || shellType === "chromeos-kiosk") family = "chromeos";
+    else if (shellType === "tvos") family = "tvos";
     else if (/cros/.test(uaLower) || platformLower.includes("chrome")) family = "chromeos";
     else if (/appletv|tvos/.test(uaLower)) family = "tvos";
     else if (/mac/.test(platformLower)) family = "macos";

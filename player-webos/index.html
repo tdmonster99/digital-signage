@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://app.zigns.io; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; connect-src https://app.zigns.io">
+  <title>Zigns Player</title>
+  <style>
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      background: #070b16;
+      color: #fff;
+      font: 600 22px Arial, sans-serif;
+      overflow: hidden;
+    }
+
+    body {
+      display: grid;
+      place-items: center;
+    }
+  </style>
+</head>
+<body>
+  <main>Loading Zigns...</main>
+  <script>
+    const PLAYER_URL = 'https://app.zigns.io/display.html';
+    const params = new URLSearchParams(window.location.search);
+    params.set('nativePlatform', 'webos');
+    params.set('nativeVersion', '0.1.0');
+    window.location.replace(`${PLAYER_URL}?${params.toString()}`);
+  </script>
+</body>
+</html>
