@@ -4,6 +4,14 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-04 — Codex — Route designer saves through server helper
+
+Follow-up for permission errors while saving designed slides.
+
+- **Server-first draft saves**: `admin.html` now saves slideshow draft slide lists through `/api/link-account` first, with direct Firestore kept only as a recovery fallback.
+- **Missing show bootstrap**: `api/link-account.js` can initialize a missing slideshow document when the caller's organization already lists that slideshow, preventing first-save permission failures.
+- **Designer autosave boundary**: designer canvas autosave and draft cleanup now use the server helper instead of direct browser writes to `slideshows/{showId}`.
+
 ## 2026-05-04 — Codex — Fix Android post-pairing black screen race
 
 Follow-up for the Android APK showing a black screen immediately after pairing.

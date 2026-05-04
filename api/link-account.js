@@ -182,13 +182,32 @@ async function loadEditableShow(db, showId, orgId) {
 
   const showRef = db.doc(`slideshows/${id}`);
   const showSnap = await showRef.get();
+  let showData = showSnap.exists ? (showSnap.data() || {}) : null;
   if (!showSnap.exists) {
-    const error = new Error('Slideshow not found');
-    error.statusCode = 404;
-    throw error;
+    const orgSnap = await db.doc(`organizations/${orgId}`).get();
+    const orgData = orgSnap.exists ? (orgSnap.data() || {}) : {};
+    const orgShows = Array.isArray(orgData.slideshows) ? orgData.slideshows : [];
+    const showMeta = orgShows.find(show => show && show.id === id);
+    const legacyMain = id === 'main' && orgShows.length === 0;
+
+    if (!showMeta && !legacyMain) {
+      const error = new Error('Slideshow not found');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const now = new Date().toISOString();
+    showData = {
+      orgId,
+      name: showMeta?.name || 'Main Slideshow',
+      createdAt: now,
+      slideStorageVersion: SLIDE_STORAGE_VERSION,
+      publishedStorage: 'subcollection',
+      publishedSlidesCount: 0,
+    };
+    await showRef.set(showData, { merge: true });
   }
 
-  const showData = showSnap.data() || {};
   if (showData.orgId !== orgId) {
     const error = new Error('Slideshow is not in your organization');
     error.statusCode = 403;
@@ -395,6 +414,41 @@ module.exports = async function handler(req, res) {
       }, { merge: true });
 
       return res.json({ ok: true, draftSlidesCount: cleanSlides.length, draftRevision: now });
+    }
+
+    if (req.body.action === 'saveDesignerDraft') {
+      const { showId, clear } = req.body || {};
+      const { orgId, role } = await loadUserContext(db, uid);
+      requireRole(role, ['admin', 'editor']);
+
+      const { showRef } = await loadEditableShow(db, showId, orgId);
+      const now = new Date().toISOString();
+
+      if (clear === true) {
+        await showRef.set({
+          draftCanvasJson: null,
+          draftSlideId: null,
+          draftAt: null,
+        }, { merge: true });
+        return res.json({ ok: true, cleared: true });
+      }
+
+      const canvasJson = typeof req.body.canvasJson === 'string' ? req.body.canvasJson : '';
+      const slideId = String(req.body.slideId || '').trim();
+      if (!canvasJson || !slideId) {
+        return res.status(400).json({ error: 'canvasJson and slideId required' });
+      }
+      if (canvasJson.length > 900000) {
+        return res.status(413).json({ error: 'Designer draft is too large to autosave' });
+      }
+
+      await showRef.set({
+        draftCanvasJson: canvasJson,
+        draftSlideId: slideId.slice(0, 120),
+        draftAt: now,
+      }, { merge: true });
+
+      return res.json({ ok: true, draftAt: now });
     }
 
     if (req.body.action === 'publishSlideshow') {

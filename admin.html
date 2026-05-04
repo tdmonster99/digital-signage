@@ -10504,9 +10504,34 @@ async function saveDraftSlidesToServer(showId, nextSlides, patch = {}, reason = 
   });
   const result = await resp.json().catch(() => ({}));
   if (!resp.ok || result.ok !== true) {
-    throw new Error(result.error || `HTTP ${resp.status}`);
+    const error = new Error(result.error || `HTTP ${resp.status}`);
+    error.status = resp.status;
+    throw error;
   }
-  console.warn(`[Slides] Saved ${showId} through server fallback${reason ? ` (${reason})` : ''}.`);
+  console.warn(`[Slides] Saved ${showId} through server${reason ? ` (${reason})` : ''}.`);
+  return result;
+}
+
+async function saveDesignerDraftToServer(showId, payload = {}, reason = '') {
+  if (!auth.currentUser || !showId) throw new Error('Sign in first to save changes.');
+  const idToken = await auth.currentUser.getIdToken(true);
+  const resp = await fetch('/api/link-account', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      action: 'saveDesignerDraft',
+      idToken,
+      showId,
+      ...payload,
+    }),
+  });
+  const result = await resp.json().catch(() => ({}));
+  if (!resp.ok || result.ok !== true) {
+    const error = new Error(result.error || `HTTP ${resp.status}`);
+    error.status = resp.status;
+    throw error;
+  }
+  console.warn(`[Designer] Saved canvas draft through server${reason ? ` (${reason})` : ''}.`);
   return result;
 }
 
@@ -10619,6 +10644,16 @@ async function replaceSlideCollection(showId, collectionName, nextSlides) {
 async function saveDraftSlidesToFirestore(showId, nextSlides, patch = {}) {
   const now = new Date().toISOString();
   const cleanSlides = Array.isArray(nextSlides) ? nextSlides : [];
+  let serverError = null;
+  try {
+    await saveDraftSlidesToServer(showId, cleanSlides, patch, 'primary write path');
+    return;
+  } catch(e) {
+    serverError = e;
+    if (serverError.status && serverError.status < 500) throw serverError;
+    console.warn(`[Slides] Server draft save failed for ${showId}; trying direct Firestore write:`, e.message);
+  }
+
   try {
     await replaceSlideCollection(showId, DRAFT_SLIDES_COLLECTION, cleanSlides);
     await setDoc(doc(db, 'slideshows', showId), {
@@ -10632,7 +10667,8 @@ async function saveDraftSlidesToFirestore(showId, nextSlides, patch = {}) {
       ...(currentOrgId && { orgId: currentOrgId }),
     }, { merge: true });
   } catch(e) {
-    if (!isAuthReadFailure(e)) throw e;
+    if (serverError && serverError.status && serverError.status < 500) throw serverError;
+    if (!isAuthReadFailure(e)) throw (serverError || e);
     await saveDraftSlidesToServer(showId, cleanSlides, patch, e.message);
   }
 }
@@ -14080,16 +14116,12 @@ async function autoSaveDesigner() {
   if (!designerDirty || !fabricCanvas || !auth.currentUser) return;
   updateDesignerStatus('saving');
   try {
-    const canvasJson = JSON.stringify(fabricCanvas.toJSON(CANVAS_EXTRA_PROPS));
+    const canvasJson = sanitizeCanvasJson(JSON.stringify(fabricCanvas.toJSON(CANVAS_EXTRA_PROPS)));
     // Determine which slide ID to key the draft to
     const slideId = editingSlideIdx !== null
       ? slides[editingSlideIdx].id
       : (autoSaveNewSlideId ??= crypto.randomUUID());
-    await setDoc(doc(db, 'slideshows', currentShowId), {
-      draftCanvasJson: canvasJson,
-      draftSlideId:    slideId,
-      draftAt:         new Date().toISOString(),
-    }, { merge: true });
+    await saveDesignerDraftToServer(currentShowId, { canvasJson, slideId }, 'autosave');
     designerDirty = false;
     updateDesignerStatus('saved');
   } catch(e) {
@@ -20032,7 +20064,7 @@ window.saveDesignedSlide = async function() {
       renderGrid();
       updateCount();
       await pushToFirestore();
-      try { await setDoc(doc(db, 'slideshows', currentShowId), { draftCanvasJson: null, draftSlideId: null }, { merge: true }); } catch(_) {}
+      saveDesignerDraftToServer(currentShowId, { clear: true }, 'clear group draft').catch(() => {});
       designerDirty = false;
       updateDesignerStatus('saved');
       toast('Slide saved ✓');
@@ -20064,10 +20096,7 @@ window.saveDesignedSlide = async function() {
     updateCount();
     await pushToFirestore();
     // Clear the draft from Firestore now that the live version is saved
-    try {
-      await setDoc(doc(db, 'slideshows', currentShowId),
-        { draftCanvasJson: null, draftSlideId: null }, { merge: true });
-    } catch(_) {}
+    saveDesignerDraftToServer(currentShowId, { clear: true }, 'clear saved draft').catch(() => {});
     // Fire-and-forget version snapshot — uses already-captured data, never blocks save
     saveSlideVersion(slide.id, canvasJson, thumbnailUrl).catch(() => {});
     designerDirty = false;
