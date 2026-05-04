@@ -1,4 +1,5 @@
 const { getAuth, getFirestore } = require('./_lib/firebase-admin');
+const admin = require('firebase-admin');
 
 const PLAYER_DIAGNOSTIC_TYPES = new Set([
   'player_boot',
@@ -8,6 +9,9 @@ const PLAYER_DIAGNOSTIC_TYPES = new Set([
   'player_watchdog_restart',
   'player_slideshow_error',
 ]);
+
+const SLIDE_STORAGE_VERSION = 2;
+const DRAFT_SLIDES_COLLECTION = 'draftSlides';
 
 function normalizeSlideDoc(doc) {
   const data = doc.data() || {};
@@ -46,6 +50,102 @@ function requireRole(role, allowed) {
 
 function normalizePairingCode(code) {
   return String(code || '').trim().toUpperCase();
+}
+
+function slideDocId(slide, index) {
+  const raw = String(slide && slide.id ? slide.id : `slide-${index + 1}`);
+  const safe = raw.replace(/[\/?#\[\]*]/g, '-').slice(0, 120);
+  return safe || `slide-${index + 1}`;
+}
+
+function stripUndefined(value) {
+  if (Array.isArray(value)) return value.map(stripUndefined);
+  if (!value || typeof value !== 'object') return value;
+  const clean = {};
+  for (const [key, child] of Object.entries(value)) {
+    if (child === undefined || key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
+    clean[key] = stripUndefined(child);
+  }
+  return clean;
+}
+
+function sanitizeSlides(value) {
+  if (!Array.isArray(value)) {
+    const error = new Error('slides must be an array');
+    error.statusCode = 400;
+    throw error;
+  }
+  if (value.length > 500) {
+    const error = new Error('Too many slides in one save');
+    error.statusCode = 413;
+    throw error;
+  }
+  return stripUndefined(value);
+}
+
+function sanitizeDraftPatch(patch = {}) {
+  const clean = {};
+  if (Number.isFinite(Number(patch.draftDwell))) {
+    clean.draftDwell = Math.min(3600, Math.max(1, Number(patch.draftDwell)));
+  }
+  if (typeof patch.draftFitMode === 'string') {
+    clean.draftFitMode = patch.draftFitMode.slice(0, 40);
+  }
+  if (typeof patch.draftTransition === 'string') {
+    clean.draftTransition = patch.draftTransition.slice(0, 40);
+  }
+  return clean;
+}
+
+async function commitOpsInChunks(db, ops) {
+  for (let i = 0; i < ops.length; i += 450) {
+    const batch = db.batch();
+    ops.slice(i, i + 450).forEach(op => op(batch));
+    await batch.commit();
+  }
+}
+
+async function replaceSlideCollection(db, showRef, collectionName, nextSlides) {
+  const now = new Date().toISOString();
+  const cleanSlides = Array.isArray(nextSlides) ? nextSlides : [];
+  const snap = await showRef.collection(collectionName).get();
+  const deleteOps = snap.docs.map(d => batch => batch.delete(d.ref));
+  const setOps = cleanSlides.map((slide, index) => batch => {
+    const id = slideDocId(slide, index);
+    const ref = showRef.collection(collectionName).doc(id);
+    batch.set(ref, {
+      ...slide,
+      id: slide.id || id,
+      order: index,
+      updatedAt: now,
+    });
+  });
+  await commitOpsInChunks(db, [...deleteOps, ...setOps]);
+}
+
+async function loadEditableShow(db, showId, orgId) {
+  const id = String(showId || '').trim();
+  if (!id) {
+    const error = new Error('showId required');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const showRef = db.doc(`slideshows/${id}`);
+  const showSnap = await showRef.get();
+  if (!showSnap.exists) {
+    const error = new Error('Slideshow not found');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const showData = showSnap.data() || {};
+  if (showData.orgId !== orgId) {
+    const error = new Error('Slideshow is not in your organization');
+    error.statusCode = 403;
+    throw error;
+  }
+  return { showRef, showData };
 }
 
 module.exports = async function handler(req, res) {
@@ -219,6 +319,33 @@ module.exports = async function handler(req, res) {
         slides: publishedSlides,
         ...(draftSlides !== undefined && { draftSlides }),
       });
+    }
+
+    if (req.body.action === 'saveDraftSlides') {
+      const { showId, slides: rawSlides, patch: rawPatch } = req.body || {};
+      const { userData, orgId, role } = await loadUserContext(db, uid);
+      requireRole(role, ['admin', 'editor']);
+
+      const { showRef } = await loadEditableShow(db, showId, orgId);
+      const cleanSlides = sanitizeSlides(rawSlides);
+      const cleanPatch = sanitizeDraftPatch(rawPatch);
+      const now = new Date().toISOString();
+      const deleteField = admin.firestore.FieldValue.delete();
+
+      await replaceSlideCollection(db, showRef, DRAFT_SLIDES_COLLECTION, cleanSlides);
+      await showRef.set({
+        ...cleanPatch,
+        slideStorageVersion: SLIDE_STORAGE_VERSION,
+        draftStorage: 'subcollection',
+        draftSlidesCount: cleanSlides.length,
+        draftRevision: now,
+        draftUpdatedAt: now,
+        draftSlides: deleteField,
+        draftBy: { uid, email: userData.email || email || '' },
+        orgId,
+      }, { merge: true });
+
+      return res.json({ ok: true, draftSlidesCount: cleanSlides.length, draftRevision: now });
     }
 
     if (req.body.action === 'bootstrap') {

@@ -4,6 +4,14 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-04 — Codex — Add server fallback for draft slide saves
+
+Follow-up for admin users hitting Firestore permission errors while creating slides.
+
+- **Draft save recovery**: `admin.html` now retries draft slideshow saves through the authenticated `/api/link-account` helper when direct browser Firestore writes are denied.
+- **Server-side guardrails**: `api/link-account.js` now verifies the caller's org and admin/editor role before replacing `draftSlides` subcollection docs and updating draft metadata through Admin SDK.
+- **Template/YouTube coverage**: template insert, YouTube slide saves, and other slide-creation paths that use the shared draft-save helper now get the same permission-denied fallback.
+
 ## 2026-05-04 — Codex — Route screen admin actions through server fallback
 
 Follow-up for production permission errors during Android pairing and screen deletion.

@@ -10488,6 +10488,28 @@ async function loadShowSnapshotFromServer(showId, reason = '') {
   }
 }
 
+async function saveDraftSlidesToServer(showId, nextSlides, patch = {}, reason = '') {
+  if (!auth.currentUser || !showId) throw new Error('Sign in first to save changes.');
+  const idToken = await auth.currentUser.getIdToken(true);
+  const resp = await fetch('/api/link-account', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      action: 'saveDraftSlides',
+      idToken,
+      showId,
+      slides: Array.isArray(nextSlides) ? nextSlides : [],
+      patch,
+    }),
+  });
+  const result = await resp.json().catch(() => ({}));
+  if (!resp.ok || result.ok !== true) {
+    throw new Error(result.error || `HTTP ${resp.status}`);
+  }
+  console.warn(`[Slides] Saved ${showId} through server fallback${reason ? ` (${reason})` : ''}.`);
+  return result;
+}
+
 function shouldLoadSubcollection(data = {}, collectionName) {
   if (collectionName === DRAFT_SLIDES_COLLECTION) {
     return data.draftStorage === 'subcollection';
@@ -10567,17 +10589,22 @@ async function replaceSlideCollection(showId, collectionName, nextSlides) {
 async function saveDraftSlidesToFirestore(showId, nextSlides, patch = {}) {
   const now = new Date().toISOString();
   const cleanSlides = Array.isArray(nextSlides) ? nextSlides : [];
-  await replaceSlideCollection(showId, DRAFT_SLIDES_COLLECTION, cleanSlides);
-  await setDoc(doc(db, 'slideshows', showId), {
-    ...patch,
-    slideStorageVersion: SLIDE_STORAGE_VERSION,
-    draftStorage: 'subcollection',
-    draftSlidesCount: cleanSlides.length,
-    draftRevision: now,
-    draftUpdatedAt: now,
-    draftSlides: deleteField(),
-    ...(currentOrgId && { orgId: currentOrgId }),
-  }, { merge: true });
+  try {
+    await replaceSlideCollection(showId, DRAFT_SLIDES_COLLECTION, cleanSlides);
+    await setDoc(doc(db, 'slideshows', showId), {
+      ...patch,
+      slideStorageVersion: SLIDE_STORAGE_VERSION,
+      draftStorage: 'subcollection',
+      draftSlidesCount: cleanSlides.length,
+      draftRevision: now,
+      draftUpdatedAt: now,
+      draftSlides: deleteField(),
+      ...(currentOrgId && { orgId: currentOrgId }),
+    }, { merge: true });
+  } catch(e) {
+    if (!isAuthReadFailure(e)) throw e;
+    await saveDraftSlidesToServer(showId, cleanSlides, patch, e.message);
+  }
 }
 
 async function publishSlidesToFirestore(showId, publishedSlides, patch = {}) {
