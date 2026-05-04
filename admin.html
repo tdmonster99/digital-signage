@@ -4141,10 +4141,31 @@ body.role-editor .admin-action {
         <input type="number" id="defaultDwell" value="6" min="1" max="300">
       </div>
       <div class="field">
-        <label>Transition</label>
+        <label>Transition type</label>
         <select id="transition">
+          <option value="none">None (off)</option>
           <option value="crossfade">Crossfade</option>
           <option value="fade">Fade to black</option>
+          <option value="slide-left">Slide left</option>
+          <option value="slide-right">Slide right</option>
+          <option value="slide-up">Slide up</option>
+          <option value="slide-down">Slide down</option>
+          <option value="wipe-left">Wipe left</option>
+          <option value="wipe-right">Wipe right</option>
+          <option value="zoom-in">Zoom in</option>
+          <option value="zoom-out">Zoom out</option>
+          <option value="blur">Blur</option>
+          <option value="grayscale">Fade grayscale</option>
+          <option value="burn">Burn</option>
+          <option value="random">Random</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Transition speed</label>
+        <select id="transitionSpeed">
+          <option value="fast">Fast</option>
+          <option value="medium" selected>Medium</option>
+          <option value="slow">Slow</option>
         </select>
       </div>
       <div class="field">
@@ -10700,6 +10721,7 @@ async function publishSlideshowToServer(showId, publishedSlides, patch = {}, scr
         defaultDwell: patch.defaultDwell,
         fitMode: patch.fitMode,
         transition: patch.transition,
+        transitionSpeed: patch.transitionSpeed,
         tags: patch.tags,
         autoIncludeTags: patch.autoIncludeTags,
         emergencyPlaylist: patch.emergencyPlaylist === true,
@@ -10881,6 +10903,7 @@ async function publishSlidesToFirestore(showId, publishedSlides, patch = {}) {
     draftDwell: deleteField(),
     draftFitMode: deleteField(),
     draftTransition: deleteField(),
+    draftTransitionSpeed: deleteField(),
     draftUpdatedAt: deleteField(),
     draftBy: deleteField(),
     ...(currentOrgId && { orgId: currentOrgId }),
@@ -11009,6 +11032,31 @@ function selectShowListItem(item, show = {}) {
   updateDeleteSlideshowState();
 }
 
+function selectedTransitionType() {
+  return document.getElementById("transition")?.value || "crossfade";
+}
+
+function selectedTransitionSpeed() {
+  return document.getElementById("transitionSpeed")?.value || "medium";
+}
+
+function setTransitionControls(data = {}) {
+  const transitionEl = document.getElementById("transition");
+  const speedEl = document.getElementById("transitionSpeed");
+  if (transitionEl) {
+    transitionEl.value = data.draftTransition ?? data.transition ?? "crossfade";
+    if (transitionEl.value !== (data.draftTransition ?? data.transition ?? "crossfade")) {
+      transitionEl.value = "crossfade";
+    }
+  }
+  if (speedEl) {
+    speedEl.value = data.draftTransitionSpeed ?? data.transitionSpeed ?? "medium";
+    if (speedEl.value !== (data.draftTransitionSpeed ?? data.transitionSpeed ?? "medium")) {
+      speedEl.value = "medium";
+    }
+  }
+}
+
 async function loadCurrentShowSnapshot(showId) {
   if (!showId) return;
   const requestedShowId = showId;
@@ -11020,7 +11068,7 @@ async function loadCurrentShowSnapshot(showId) {
     slides = Array.isArray(draftSlides) ? draftSlides : (publishedSlides || []);
     document.getElementById("defaultDwell").value  = data.draftDwell      ?? data.defaultDwell  ?? 6;
     document.getElementById("fitMode").value       = data.draftFitMode    ?? data.fitMode       ?? "contain";
-    document.getElementById("transition").value    = data.draftTransition ?? data.transition    ?? "crossfade";
+    setTransitionControls(data);
     currentShowReviewStatus = data.status || 'published';
     currentShowReviewData = data;
     updateReviewStatusBanner(data);
@@ -11175,7 +11223,7 @@ function applyLoadedShowData(id, data = {}) {
   slides = data._hasDraftSlides ? data.draftSlides : (data.slides || []);
   document.getElementById("defaultDwell").value  = data.draftDwell      ?? data.defaultDwell  ?? 6;
   document.getElementById("fitMode").value       = data.draftFitMode    ?? data.fitMode       ?? "contain";
-  document.getElementById("transition").value    = data.draftTransition ?? data.transition    ?? "crossfade";
+  setTransitionControls(data);
   currentShowReviewStatus = data.status || 'published';
   currentShowReviewData = data;
   updateReviewStatusBanner(data);
@@ -11240,12 +11288,14 @@ async function pushToFirestore() {
   if (!auth.currentUser) { toast("Sign in first to save changes.", true); return; }
   const dwell      = parseInt(document.getElementById("defaultDwell").value) || 6;
   const fit        = document.getElementById("fitMode").value;
-  const transition = document.getElementById("transition").value;
+  const transition = selectedTransitionType();
+  const transitionSpeed = selectedTransitionSpeed();
 
   await saveDraftSlidesToFirestore(currentShowId, slides, {
     draftDwell:      dwell,
     draftFitMode:    fit,
     draftTransition: transition,
+    draftTransitionSpeed: transitionSpeed,
     ...(currentUser  && { draftBy: { uid: currentUser.uid, email: currentUser.email } }),
   });
   logActivity(`${getShowActivityName(currentShowId)} draft saved (${slides.length} slide${slides.length !== 1 ? 's' : ''})`);
@@ -11421,7 +11471,8 @@ window.confirmPublish = async function() {
   try {
     const dwell      = parseInt(document.getElementById("defaultDwell").value) || 6;
     const fit        = document.getElementById("fitMode").value;
-    const transition = document.getElementById("transition").value;
+    const transition = selectedTransitionType();
+    const transitionSpeed = selectedTransitionSpeed();
     const now        = new Date().toISOString();
     const showMeta   = showMetaFromOrg(currentShowId) || {};
     const publishedSlides = await resolveSmartPlaylistSlides(slides, currentShowId);
@@ -11429,6 +11480,7 @@ window.confirmPublish = async function() {
       defaultDwell: dwell,
       fitMode: fit,
       transition,
+      transitionSpeed,
       tags: normalizeTagsFromInput(showMeta.tags || []),
       autoIncludeTags: normalizeTagsFromInput(showMeta.autoIncludeTags || []),
       emergencyPlaylist: showMeta.emergencyPlaylist === true,
@@ -11555,6 +11607,7 @@ window.approveSlideshowReview = async function(showId) {
       defaultDwell: data.draftDwell ?? data.defaultDwell ?? 6,
       fitMode: data.draftFitMode ?? data.fitMode ?? 'contain',
       transition: data.draftTransition ?? data.transition ?? 'crossfade',
+      transitionSpeed: data.draftTransitionSpeed ?? data.transitionSpeed ?? 'medium',
       tags: normalizeTagsFromInput(showMeta.tags || []),
       autoIncludeTags: normalizeTagsFromInput(showMeta.autoIncludeTags || []),
       emergencyPlaylist: showMeta.emergencyPlaylist === true,
@@ -22798,6 +22851,7 @@ async function _addSlidesToShow(showId, newSlides) {
     draftDwell: data.draftDwell ?? data.defaultDwell ?? 6,
     draftFitMode: data.draftFitMode ?? data.fitMode ?? 'contain',
     draftTransition: data.draftTransition ?? data.transition ?? 'crossfade',
+    draftTransitionSpeed: data.draftTransitionSpeed ?? data.transitionSpeed ?? 'medium',
   });
   const el = document.querySelector(`#showList .show-item[data-id="${CSS.escape(showId)}"] .show-item-count`);
   if (el) el.textContent = nextSlides.filter(s => s.active !== false).length + ' slides';

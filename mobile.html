@@ -743,6 +743,7 @@
         draftDwell: deleteField(),
         draftFitMode: deleteField(),
         draftTransition: deleteField(),
+        draftTransitionSpeed: deleteField(),
         draftUpdatedAt: deleteField(),
         draftBy: deleteField(),
         orgId,
@@ -761,6 +762,7 @@
           draftDwell:      data.draftDwell      ?? data.defaultDwell ?? 6,
           draftFitMode:    data.draftFitMode    ?? data.fitMode      ?? 'contain',
           draftTransition: data.draftTransition ?? data.transition   ?? 'crossfade',
+          draftTransitionSpeed: data.draftTransitionSpeed ?? data.transitionSpeed ?? 'medium',
           draftBy: { uid: me.uid, email: me.email },
         });
         return nextSlides;
@@ -1140,6 +1142,7 @@
         defaultDwell:    data.draftDwell      ?? data.defaultDwell ?? 6,
         fitMode:         data.draftFitMode    ?? data.fitMode      ?? 'contain',
         transition:      data.draftTransition ?? data.transition   ?? 'crossfade',
+        transitionSpeed: data.draftTransitionSpeed ?? data.transitionSpeed ?? 'medium',
         status:          'published',
         publishedAt:     new Date().toISOString(),
         publishedBy:     { uid: me.uid, email: me.email },

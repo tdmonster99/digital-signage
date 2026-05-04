@@ -4,6 +4,14 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-04 — Codex — Expand slideshow transitions
+
+Follow-up for Yodeck-style transition controls.
+
+- **Transition controls**: expanded slideshow settings with an off option, slide/wipe/zoom/filter/random transition types, and fast/medium/slow speed.
+- **Persistence**: saved transition speed through draft, publish, review approval, mobile publish, and server-backed slideshow creation.
+- **Player rendering**: `display.html` now applies the selected transition and speed during playback while honoring reduced-motion preferences.
+
 ## 2026-05-04 — Codex — Clarify display setup instructions
 
 Follow-up for vague `display.html` setup copy in the dashboard and Slideshows sidebar.

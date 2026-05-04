@@ -81,6 +81,8 @@
   let current       = 0;
   let timer         = null;
   let defaultDwell  = 6000;
+  let transitionType = "crossfade";
+  let transitionSpeed = "medium";
   let clockInterval = null;
   let playlistSignature = "";
   let renderedSlide = null;
@@ -97,7 +99,7 @@
   let watchdogHandle    = null;
   let debugVisible      = false;
   const PAGE_LOAD_TIME  = Date.now();
-  const ZIGNS_PLAYER_VERSION = "2026.05.04.4";
+  const ZIGNS_PLAYER_VERSION = "2026.05.04.5";
 
   // ── Player platform diagnostics ───────────────────────────────────────────
   let playerBootDiagnosticsSent = false;
@@ -2142,6 +2144,165 @@
     stageMultizone.innerHTML = '';
   }
 
+  const TRANSITION_SPEED_MS = { fast: 500, medium: 1000, slow: 1600 };
+  const TRANSITION_TYPES = new Set([
+    "none", "crossfade", "fade",
+    "slide-left", "slide-right", "slide-up", "slide-down",
+    "wipe-left", "wipe-right",
+    "zoom-in", "zoom-out", "blur", "grayscale", "burn", "random",
+  ]);
+  const RANDOM_TRANSITIONS = [
+    "crossfade", "slide-left", "slide-right", "slide-up", "slide-down",
+    "wipe-left", "wipe-right", "zoom-in", "zoom-out", "blur", "grayscale", "burn",
+  ];
+
+  function normalizeTransitionType(value) {
+    const clean = String(value || "crossfade").trim();
+    return TRANSITION_TYPES.has(clean) ? clean : "crossfade";
+  }
+
+  function normalizeTransitionSpeed(value) {
+    const clean = String(value || "medium").trim();
+    return Object.prototype.hasOwnProperty.call(TRANSITION_SPEED_MS, clean) ? clean : "medium";
+  }
+
+  function transitionDurationMs() {
+    return TRANSITION_SPEED_MS[normalizeTransitionSpeed(transitionSpeed)] || TRANSITION_SPEED_MS.medium;
+  }
+
+  function effectiveTransitionType() {
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches) return "none";
+    const type = normalizeTransitionType(transitionType);
+    if (type !== "random") return type;
+    return RANDOM_TRANSITIONS[Math.floor(Math.random() * RANDOM_TRANSITIONS.length)] || "crossfade";
+  }
+
+  function allTransitionStages() {
+    return [
+      stageA, stageB, stageDesigned, stageVideo, stageAudio, stageYoutube, stageWebpage,
+      stageClock, stageQr, stageWeather, stageCountdown, stageMultizone, stageSheets,
+      stageReviews, stageInstagram, stageMenuboard,
+    ].filter(Boolean);
+  }
+
+  function isStageVisible(el) {
+    return el && Number.parseFloat(el.style.opacity || "0") > 0.01;
+  }
+
+  function resetStageMotion(el) {
+    if (!el) return;
+    el.style.transform = "";
+    el.style.filter = "";
+    el.style.clipPath = "";
+  }
+
+  function setStageTransition(el, ms) {
+    if (!el) return;
+    const seconds = Math.max(0, ms) / 1000;
+    el.style.transition = seconds
+      ? `opacity ${seconds}s ease, transform ${seconds}s ease, filter ${seconds}s ease, clip-path ${seconds}s ease`
+      : "none";
+    el.style.willChange = seconds ? "opacity, transform, filter, clip-path" : "auto";
+  }
+
+  function createStageTransition(incomingEl) {
+    const type = effectiveTransitionType();
+    const ms = type === "none" ? 0 : transitionDurationMs();
+    const outgoing = allTransitionStages()
+      .filter(el => el !== incomingEl && isStageVisible(el));
+    outgoing.forEach(el => {
+      resetStageMotion(el);
+      setStageTransition(el, ms);
+    });
+    return {
+      type,
+      ms,
+      outgoing,
+      incomingZIndex: incomingEl?.style?.zIndex || "",
+    };
+  }
+
+  function setIncomingInitial(el, type) {
+    resetStageMotion(el);
+    el.style.opacity = "0";
+    if (type === "slide-left") el.style.transform = "translateX(8%)";
+    else if (type === "slide-right") el.style.transform = "translateX(-8%)";
+    else if (type === "slide-up") el.style.transform = "translateY(8%)";
+    else if (type === "slide-down") el.style.transform = "translateY(-8%)";
+    else if (type === "wipe-left") el.style.clipPath = "inset(0 100% 0 0)";
+    else if (type === "wipe-right") el.style.clipPath = "inset(0 0 0 100%)";
+    else if (type === "zoom-in") el.style.transform = "scale(0.96)";
+    else if (type === "zoom-out") el.style.transform = "scale(1.06)";
+    else if (type === "blur") el.style.filter = "blur(22px)";
+    else if (type === "grayscale") el.style.filter = "grayscale(1)";
+    else if (type === "burn") el.style.filter = "saturate(2.4) contrast(1.35) brightness(1.35)";
+  }
+
+  function setOutgoingTarget(el, type) {
+    if (type === "slide-left") el.style.transform = "translateX(-6%)";
+    else if (type === "slide-right") el.style.transform = "translateX(6%)";
+    else if (type === "slide-up") el.style.transform = "translateY(-6%)";
+    else if (type === "slide-down") el.style.transform = "translateY(6%)";
+    else if (type === "zoom-in") el.style.transform = "scale(1.04)";
+    else if (type === "zoom-out") el.style.transform = "scale(0.98)";
+    else if (type === "blur") el.style.filter = "blur(18px)";
+    else if (type === "grayscale") el.style.filter = "grayscale(1)";
+    else if (type === "burn") el.style.filter = "saturate(1.8) contrast(1.25) brightness(0.7)";
+  }
+
+  function revealStage(incomingEl, tx) {
+    if (!incomingEl) return;
+    const transition = tx || createStageTransition(incomingEl);
+    const { type, ms, outgoing } = transition;
+    incomingEl.style.zIndex = "20";
+    setStageTransition(incomingEl, ms);
+
+    if (type === "none") {
+      resetStageMotion(incomingEl);
+      incomingEl.style.opacity = "1";
+      incomingEl.style.transition = "";
+      incomingEl.style.willChange = "";
+      incomingEl.style.zIndex = transition.incomingZIndex;
+      outgoing.forEach(el => {
+        resetStageMotion(el);
+        el.style.transition = "";
+        el.style.willChange = "";
+      });
+      return;
+    }
+
+    setIncomingInitial(incomingEl, type);
+    // Force the browser to observe the initial state before the final state.
+    void incomingEl.offsetWidth;
+
+    outgoing.forEach(el => setOutgoingTarget(el, type));
+    const reveal = () => {
+      incomingEl.style.opacity = "1";
+      incomingEl.style.transform = "";
+      incomingEl.style.filter = "";
+      incomingEl.style.clipPath = "";
+    };
+    if (type === "fade") setTimeout(reveal, Math.round(ms * 0.45));
+    else reveal();
+
+    setTimeout(() => {
+      resetStageMotion(incomingEl);
+      incomingEl.style.transition = "";
+      incomingEl.style.willChange = "";
+      incomingEl.style.zIndex = transition.incomingZIndex;
+      outgoing.forEach(el => {
+        resetStageMotion(el);
+        el.style.transition = "";
+        el.style.willChange = "";
+      });
+    }, ms + (type === "fade" ? Math.round(ms * 0.45) : 0) + 120);
+  }
+
+  function transitionAnimationDelayMs(tx) {
+    if (!tx || tx.type === "none") return 0;
+    return tx.ms + (tx.type === "fade" ? Math.round(tx.ms * 0.45) : 0);
+  }
+
   function _hideAllStages() {
     active.style.opacity         = "0";
     stageDesigned.style.opacity  = "0";
@@ -2169,32 +2330,16 @@
 
   async function crossfadeTo(slide) {
     if (slide.type === "designed" && slide.canvasJson) {
+      const tx = createStageTransition(stageDesigned);
       try {
         await loadDesignedSlide(slide.canvasJson);
       } catch(e) {
         console.error('[Skip] Designed slide failed:', e.message);
         return false;
       }
-      stageDesigned.style.opacity = "1";
-      active.style.opacity        = "0";
-      stageVideo.style.opacity    = "0"; videoEl.pause(); videoEl.src = "";
-      stageAudio.style.opacity    = "0"; audioEl.pause(); audioEl.removeAttribute('src'); audioEl.load();
-      stageYoutube.classList.remove("youtube-pending", "youtube-error");
-      iframeYoutube.onload = null;
-      iframeYoutube.onerror = null;
-      stageYoutube.style.opacity  = "0"; iframeYoutube.src = "about:blank";
-      stageWebpage.style.opacity  = "0"; iframeWebpage.src = "about:blank";
-      stageQr.style.opacity       = "0";
-      stageWeather.style.opacity  = "0";
-      stageCountdown.style.opacity = "0";
-      stageMultizone.style.opacity = "0"; stopMultizone();
-      stageSheets.style.opacity    = "0"; stopSheets();
-      stageReviews.style.opacity   = "0"; stopGoogleReviews();
-      stageInstagram.style.opacity = "0"; stopInstagram();
-      stageMenuboard.style.opacity = "0";
-      stopClock();    stageClock.style.opacity   = "0";
-      stopWeather();
-      // Fire entrance animations after crossfade transition (1.2s CSS)
+      _hideAllStages();
+      revealStage(stageDesigned, tx);
+      // Fire entrance animations after the selected transition completes.
       if (pendingAnimations.length) {
         const batch = pendingAnimations.slice();
         pendingAnimations = [];
@@ -2202,16 +2347,18 @@
           batch.forEach(({ obj, type, delay, duration, orig }) => {
             setTimeout(() => _runObjAnim(displayFabric, obj, type, duration * 1000, orig), delay * 1000);
           });
-        }, 1200);
+        }, transitionAnimationDelayMs(tx));
       }
 
     } else if (slide.type === "video") {
+      const tx = createStageTransition(stageVideo);
       _hideAllStages();
       videoEl.src              = slide.url;
       videoEl.play();
-      stageVideo.style.opacity = "1";
+      revealStage(stageVideo, tx);
 
     } else if (slide.type === "audio") {
+      const tx = createStageTransition(stageAudio);
       _hideAllStages();
       audioTitleEl.textContent = slide.name || 'Audio';
       audioEl.src              = slide.url;
@@ -2220,7 +2367,7 @@
       // any rejection here is logged but doesn't fail the slide (the visual
       // "Now Playing" card still shows).
       audioEl.play().catch(e => console.warn('Audio autoplay blocked:', e.message));
-      stageAudio.style.opacity = "1";
+      revealStage(stageAudio, tx);
 
     } else if (slide.type === "youtube") {
       const videoId = getYoutubeSlideId(slide);
@@ -2228,6 +2375,7 @@
         console.error('[Skip] YouTube slide is missing a valid video ID:', slide);
         return false;
       }
+      const tx = createStageTransition(stageYoutube);
       _hideAllStages();
       const youtubeSeq = ++youtubeRenderSeq;
       stageYoutube.classList.add("youtube-pending");
@@ -2253,23 +2401,29 @@
         showYoutubeFallback(slide, videoId, 'Could not load the YouTube embed. Check video privacy, embedding permissions, or network blocking.');
       };
       iframeYoutube.src          = youtubeEmbedUrl(videoId);
-      stageYoutube.style.opacity = "1";
+      revealStage(stageYoutube, tx);
 
     } else if (slide.type === "webpage") {
-      _hideAllStages();
+      const tx = createStageTransition(stageWebpage);
       const webpageSeq = ++webpageRenderSeq;
       const safeUrl = safeIframeUrl(slide.url);
-      hideWebpageFallback();
-      iframeWebpage.onload = null;
-      iframeWebpage.onerror = null;
-      iframeWebpage.src = "about:blank";
-      stageWebpage.style.opacity = "1";
       if (safeUrl === "about:blank") {
+        _hideAllStages();
+        iframeWebpage.onload = null;
+        iframeWebpage.onerror = null;
+        iframeWebpage.src = "about:blank";
         showWebpageFallback(slide, 'Invalid webpage URL.');
+        revealStage(stageWebpage, tx);
         return true;
       }
       const check = await checkWebpageEmbed(safeUrl);
       if (webpageSeq !== webpageRenderSeq) return true;
+      _hideAllStages();
+      hideWebpageFallback();
+      iframeWebpage.onload = null;
+      iframeWebpage.onerror = null;
+      iframeWebpage.src = "about:blank";
+      revealStage(stageWebpage, tx);
       if (check.embeddable === false) {
         showWebpageFallback(slide, check.reason || 'This page blocks iframe embedding.');
         return true;
@@ -2281,49 +2435,58 @@
       iframeWebpage.src = safeUrl;
 
     } else if (slide.type === "clock") {
+      const tx = createStageTransition(stageClock);
       _hideAllStages();
       startClock(slide);
-      stageClock.style.opacity = "1";
+      revealStage(stageClock, tx);
 
     } else if (slide.type === "qr") {
+      const tx = createStageTransition(stageQr);
       _hideAllStages();
       renderQr(slide);
-      stageQr.style.opacity = "1";
+      revealStage(stageQr, tx);
 
     } else if (slide.type === "weather") {
-      _hideAllStages();
+      const tx = createStageTransition(stageWeather);
       await renderWeather(slide);
-      stageWeather.style.opacity = "1";
+      _hideAllStages();
+      revealStage(stageWeather, tx);
 
     } else if (slide.type === "countdown") {
+      const tx = createStageTransition(stageCountdown);
       _hideAllStages();
       renderCountdown(slide);
-      stageCountdown.style.opacity = "1";
+      revealStage(stageCountdown, tx);
 
     } else if (slide.type === "multizone") {
-      _hideAllStages();
+      const tx = createStageTransition(stageMultizone);
       await renderMultizone(slide);
-      stageMultizone.style.opacity = "1";
+      _hideAllStages();
+      revealStage(stageMultizone, tx);
 
     } else if (slide.type === "googlesheets") {
-      _hideAllStages();
+      const tx = createStageTransition(stageSheets);
       await renderGoogleSheet(slide);
-      stageSheets.style.opacity = "1";
+      _hideAllStages();
+      revealStage(stageSheets, tx);
 
     } else if (slide.type === "googlereviews") {
-      _hideAllStages();
+      const tx = createStageTransition(stageReviews);
       await renderGoogleReviews(slide);
-      stageReviews.style.opacity = "1";
+      _hideAllStages();
+      revealStage(stageReviews, tx);
 
     } else if (slide.type === "instagram") {
-      _hideAllStages();
+      const tx = createStageTransition(stageInstagram);
       await renderInstagram(slide);
-      stageInstagram.style.opacity = "1";
+      _hideAllStages();
+      revealStage(stageInstagram, tx);
 
     } else if (slide.type === "menuboard") {
-      _hideAllStages();
+      const tx = createStageTransition(stageMenuboard);
       renderMenuboard(slide);
-      stageMenuboard.style.opacity = "1";
+      _hideAllStages();
+      revealStage(stageMenuboard, tx);
 
     } else {
       stopTicker();
@@ -2336,6 +2499,7 @@
       inactive.style.setProperty('background-image', safeCssBgUrl(url));
       inactive.style.backgroundSize  = fit;
       inactive.style.backgroundColor = bg;
+      const tx = createStageTransition(inactive);
 
       try {
         await preload(url);
@@ -2344,25 +2508,8 @@
         return false;
       }
 
-      inactive.style.opacity      = "1";
-      active.style.opacity        = "0";
-      stageDesigned.style.opacity = "0";
-      stageVideo.style.opacity    = "0"; videoEl.pause(); videoEl.src = "";
-      stageYoutube.classList.remove("youtube-pending", "youtube-error");
-      iframeYoutube.onload = null;
-      iframeYoutube.onerror = null;
-      stageYoutube.style.opacity  = "0"; iframeYoutube.src = "about:blank";
-      stageWebpage.style.opacity  = "0"; iframeWebpage.src = "about:blank";
-      stageQr.style.opacity       = "0";
-      stageWeather.style.opacity  = "0";
-      stageCountdown.style.opacity = "0";
-      stageMultizone.style.opacity = "0"; stopMultizone();
-      stageSheets.style.opacity    = "0"; stopSheets();
-      stageReviews.style.opacity   = "0"; stopGoogleReviews();
-      stageInstagram.style.opacity = "0"; stopInstagram();
-      stageMenuboard.style.opacity = "0";
-      stageAudio.style.opacity     = "0"; audioEl.pause(); audioEl.removeAttribute('src'); audioEl.load();
-      stopClock(); stageClock.style.opacity = "0";
+      _hideAllStages();
+      revealStage(inactive, tx);
 
       const tmp = active;
       active    = inactive;
@@ -2589,6 +2736,8 @@
     }
 
     defaultDwell = (data.defaultDwell ?? 6) * 1000;
+    transitionType = normalizeTransitionType(data.transition ?? "crossfade");
+    transitionSpeed = normalizeTransitionSpeed(data.transitionSpeed ?? "medium");
     const wasEmpty = slides.length === 0;
     const incomingSignatures = incoming.map(slideRenderSignature);
     const nextPlaylistSignature = incomingSignatures.join("|");
@@ -3291,8 +3440,8 @@
     background-size: contain;
     background-color: #000;
     opacity: 0;
-    transition: opacity 1.2s ease-in-out;
-    will-change: opacity;
+    transition: opacity 1s ease, transform 1s ease, filter 1s ease, clip-path 1s ease;
+    will-change: opacity, transform, filter, clip-path;
   }
   #stageA        { z-index: 1; }
   #stageB        { z-index: 2; }

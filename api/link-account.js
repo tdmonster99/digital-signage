@@ -155,6 +155,9 @@ function sanitizeDraftPatch(patch = {}) {
   if (typeof patch.draftTransition === 'string') {
     clean.draftTransition = patch.draftTransition.slice(0, 40);
   }
+  if (typeof patch.draftTransitionSpeed === 'string') {
+    clean.draftTransitionSpeed = patch.draftTransitionSpeed.slice(0, 40);
+  }
   return clean;
 }
 
@@ -177,6 +180,9 @@ function sanitizePublishPatch(patch = {}) {
   }
   if (typeof patch.transition === 'string') {
     clean.transition = patch.transition.slice(0, 40);
+  }
+  if (typeof patch.transitionSpeed === 'string') {
+    clean.transitionSpeed = patch.transitionSpeed.slice(0, 40);
   }
   clean.tags = normalizeTags(patch.tags);
   clean.autoIncludeTags = normalizeTags(patch.autoIncludeTags);
@@ -299,6 +305,7 @@ async function loadEditableShow(db, showId, orgId) {
       defaultDwell: 6,
       fitMode: 'contain',
       transition: 'crossfade',
+      transitionSpeed: 'medium',
       status: 'published',
       publishedSlidesCount: 0,
     };
@@ -538,6 +545,7 @@ module.exports = async function handler(req, res) {
           defaultDwell: existingShowData?.defaultDwell || 6,
           fitMode: existingShowData?.fitMode || 'contain',
           transition: existingShowData?.transition || 'crossfade',
+          transitionSpeed: existingShowData?.transitionSpeed || 'medium',
           status: existingShowData?.status || 'published',
           updatedAt: now,
         };
@@ -734,6 +742,7 @@ module.exports = async function handler(req, res) {
         draftDwell: deleteField,
         draftFitMode: deleteField,
         draftTransition: deleteField,
+        draftTransitionSpeed: deleteField,
         draftUpdatedAt: deleteField,
         draftBy: deleteField,
         reviewSubmittedAt: deleteField,
