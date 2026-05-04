@@ -28,9 +28,12 @@ The checked-in project does not include a Gradle wrapper jar. Open
 `player-android/` in Android Studio or run it with a system Gradle install that
 matches the versions above.
 
+In this WSL workspace, source the local toolchain first:
+
 ```bash
+source /home/jzegar/dev/zigns/.local-tools/env.sh
 cd /home/jzegar/dev/zigns/app/player-android
-gradle :app:assembleDebug
+gradle --no-daemon :app:assembleDebug
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 

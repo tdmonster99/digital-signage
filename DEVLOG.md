@@ -4,6 +4,14 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-03 — Codex — Wire WSL Gradle for Android builds
+
+Follow-up for the Android player shell.
+
+- **Local Gradle toolchain**: installed checksum-verified Gradle 9.3.1 under `/home/jzegar/dev/zigns/.local-tools`, added `gradle-current`, `jdk17-current`, and a repo-local Gradle home to the sourced WSL toolchain env.
+- **Android build fix**: enabled generated `BuildConfig` for the Android player and removed the deprecated AndroidX opt-out flag.
+- **Build smoke**: `gradle --no-daemon :app:assembleDebug` now completes successfully and produces the debug APK under `player-android/app/build/outputs/apk/debug/`.
+
 ## 2026-05-03 — Codex — Add Android player shell foundation
 
 Started Phase 5.4.1 Android platform support.
