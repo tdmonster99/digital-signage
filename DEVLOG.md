@@ -4,6 +4,14 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-04 — Codex — Harden Dropbox chooser launch path
+
+Follow-up for Dropbox Chooser showing Dropbox's "widget is not configured properly" screen.
+
+- **Shared wrapper**: routed slideshow and designer Dropbox imports through one `openDropboxChooser()` helper with browser-support checks and synchronous error handling.
+- **Diagnostics**: surfaced the active Dropbox app key and current host in setup guidance when the Chooser cannot open, and logs unexpected hosts for quicker app-console troubleshooting.
+- **Scope note**: app-side handling is improved, but Dropbox still requires `app.zigns.io` to be registered under Chooser/Saver domains for app key `363zjxwv9mk4zij`.
+
 ## 2026-05-04 — Codex — Polish cloud picker logos and OneDrive cancel
 
 Follow-up for Add Media provider polish.

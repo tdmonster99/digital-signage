@@ -12487,16 +12487,62 @@ function _closeOverflowOutside(e) {
 }
 
 // ── Add from Dropbox ──────────────────────────────────────────────────────
-window.addFromDropbox = function() {
+const DROPBOX_APP_KEY = document.getElementById('dropboxjs')?.dataset?.appKey || '';
+const DROPBOX_CHOOSER_DOMAINS = ['app.zigns.io', 'localhost', '127.0.0.1'];
+
+function dropboxSetupMessage() {
+  const host = window.location.hostname || 'this domain';
+  return `Dropbox is not ready for ${host}. Add ${host} to Dropbox Chooser/Saver domains for app key ${DROPBOX_APP_KEY}.`;
+}
+
+function canOpenDropboxChooser() {
   if (typeof Dropbox === 'undefined') {
     toast('Dropbox picker failed to load — please refresh and try again.', true);
-    return;
+    return false;
   }
-  Dropbox.choose({
+  if (typeof Dropbox.isBrowserSupported === 'function' && !Dropbox.isBrowserSupported()) {
+    toast('Dropbox picker is not supported in this browser.', true);
+    return false;
+  }
+  return true;
+}
+
+function warnIfDropboxDomainUnknown() {
+  const host = window.location.hostname || '';
+  if (host && !DROPBOX_CHOOSER_DOMAINS.includes(host)) {
+    console.warn('[Dropbox] Host is not in the local expected Chooser/Saver domain list.', {
+      host,
+      expectedDomains: DROPBOX_CHOOSER_DOMAINS,
+      appKey: DROPBOX_APP_KEY,
+    });
+  }
+}
+
+function openDropboxChooser(options) {
+  if (!canOpenDropboxChooser()) return false;
+  warnIfDropboxDomainUnknown();
+  try {
+    Dropbox.choose({
+      linkType: options.linkType || 'direct',
+      multiselect: Boolean(options.multiselect),
+      extensions: options.extensions || ['.png', '.jpg', '.jpeg', '.gif', '.webp'],
+      folderselect: false,
+      success: options.success,
+      cancel: options.cancel || function() {}
+    });
+    return true;
+  } catch (error) {
+    console.error('[Dropbox] Chooser failed to open', error);
+    toast(error?.message || dropboxSetupMessage(), true);
+    return false;
+  }
+}
+
+window.addFromDropbox = function() {
+  openDropboxChooser({
     linkType:   'direct',
     multiselect: true,
     extensions: ['.png', '.jpg', '.jpeg', '.gif', '.webp'],
-    folderselect: false,
     success: async function(files) {
       for (const file of files) {
         const name = file.name.replace(/\.[^.]+$/, '') || 'Dropbox slide';
@@ -15417,15 +15463,10 @@ window.designerImageFromUrl = async function() {
 
 window.designerImageFromDropbox = function() {
   document.getElementById('imagePopover').classList.remove('open');
-  if (typeof Dropbox === 'undefined') {
-    toast('Dropbox picker failed to load — please refresh and try again.', true);
-    return;
-  }
-  Dropbox.choose({
+  openDropboxChooser({
     linkType:     'direct',
     multiselect:  false,
     extensions:   ['.png', '.jpg', '.jpeg', '.gif', '.webp'],
-    folderselect: false,
     success: async function(files) {
       if (files[0]) await addImageToCanvas(files[0].link);
     },
