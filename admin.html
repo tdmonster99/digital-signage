@@ -10597,6 +10597,26 @@ async function publishSlideshowToServer(showId, publishedSlides, patch = {}, scr
   return result;
 }
 
+async function createSlideshowOnServer(name, showId) {
+  if (!auth.currentUser || !showId) throw new Error('Sign in first to create a slideshow.');
+  const idToken = await auth.currentUser.getIdToken(true);
+  const resp = await fetch('/api/link-account', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      action: 'createSlideshow',
+      idToken,
+      showId,
+      name,
+    }),
+  });
+  const result = await resp.json().catch(() => ({}));
+  if (!resp.ok || result.ok !== true) {
+    throw new Error(result.error || `HTTP ${resp.status}`);
+  }
+  return result;
+}
+
 function shouldLoadSubcollection(data = {}, collectionName) {
   if (collectionName === DRAFT_SLIDES_COLLECTION) {
     return data.draftStorage === 'subcollection';
@@ -11018,6 +11038,11 @@ function listenToShow(id, name) {
         applyLoadedShowData(id, data);
         loadApprovalQueue();
       } else {
+        const fallback = await loadShowSnapshotFromServer(id, 'missing slideshow doc');
+        if (fallback && currentShowId === id) {
+          applyLoadedShowData(id, fallback);
+          return;
+        }
         slides = [];
         currentShowReviewStatus = 'published';
         currentShowReviewData = {};
@@ -13712,21 +13737,28 @@ function updateCount() {
 
 // ── New slideshow ─────────────────────────────────────────────────────────
 window.newShowPrompt = async () => {
-  const name = prompt("Slideshow name:");
+  const name = (prompt("Slideshow name:") || '').trim();
   if (!name) return;
   const id   = (currentOrgId || '') + '_' + crypto.randomUUID().slice(0, 8);
   const list = document.getElementById("showList");
-  const item = makeShowItem({ id, name });
-  list.appendChild(item);
-  item.click();
-
-  // Persist to org
-  if (currentOrgId) {
-    try {
-      await updateDoc(doc(db, 'organizations', currentOrgId), {
-        slideshows: arrayUnion({ id, name }),
-      });
-    } catch(e) { console.warn('Could not update org slideshows:', e.message); }
+  try {
+    const result = await createSlideshowOnServer(name, id);
+    currentOrg = {
+      ...(currentOrg || {}),
+      slideshows: Array.isArray(result.slideshows)
+        ? result.slideshows
+        : [...(currentOrg?.slideshows || []), { id, name }],
+    };
+    const item = makeShowItem(result.show || { id, name });
+    list.appendChild(item);
+    slides = [];
+    renderGrid();
+    updateCount();
+    item.click();
+    toast('Slideshow created ✓');
+  } catch(e) {
+    console.warn('Could not create slideshow:', e.message);
+    toast('Could not create slideshow: ' + e.message, true);
   }
 };
 

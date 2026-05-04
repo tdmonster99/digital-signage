@@ -129,6 +129,26 @@ function sanitizeScreenIds(value) {
   return Array.from(new Set(value.map(id => String(id || '').trim()).filter(Boolean))).slice(0, 200);
 }
 
+function normalizeShowId(showId) {
+  const id = String(showId || '').trim();
+  if (!id) {
+    const error = new Error('showId required');
+    error.statusCode = 400;
+    throw error;
+  }
+  if (id.length > 180 || /[\/?#\[\]*]/.test(id)) {
+    const error = new Error('Invalid slideshow id');
+    error.statusCode = 400;
+    throw error;
+  }
+  return id;
+}
+
+function sanitizeSlideshowName(value) {
+  const name = String(value || '').trim().replace(/\s+/g, ' ').slice(0, 80);
+  return name || 'Untitled Slideshow';
+}
+
 async function commitOpsInChunks(db, ops) {
   for (let i = 0; i < ops.length; i += 450) {
     const batch = db.batch();
@@ -173,12 +193,7 @@ async function assertScreensInOrg(db, screenIds, orgId) {
 }
 
 async function loadEditableShow(db, showId, orgId) {
-  const id = String(showId || '').trim();
-  if (!id) {
-    const error = new Error('showId required');
-    error.statusCode = 400;
-    throw error;
-  }
+  const id = normalizeShowId(showId);
 
   const showRef = db.doc(`slideshows/${id}`);
   const showSnap = await showRef.get();
@@ -203,6 +218,10 @@ async function loadEditableShow(db, showId, orgId) {
       createdAt: now,
       slideStorageVersion: SLIDE_STORAGE_VERSION,
       publishedStorage: 'subcollection',
+      defaultDwell: 6,
+      fitMode: 'contain',
+      transition: 'crossfade',
+      status: 'published',
       publishedSlidesCount: 0,
     };
     await showRef.set(showData, { merge: true });
@@ -346,9 +365,7 @@ module.exports = async function handler(req, res) {
 
     if (req.body.action === 'showSnapshot') {
       const { showId } = req.body || {};
-      if (!showId || typeof showId !== 'string') {
-        return res.status(400).json({ error: 'showId required' });
-      }
+      const cleanShowId = normalizeShowId(showId);
 
       const userSnap = await db.doc(`users/${uid}`).get();
       if (!userSnap.exists) return res.status(404).json({ error: 'User not found' });
@@ -356,11 +373,17 @@ module.exports = async function handler(req, res) {
       const userData = userSnap.data() || {};
       if (!userData.orgId) return res.status(403).json({ error: 'User has no organization' });
 
-      const showRef = db.doc(`slideshows/${showId}`);
-      const showSnap = await showRef.get();
-      if (!showSnap.exists) return res.status(404).json({ error: 'Slideshow not found' });
-
-      const showData = showSnap.data() || {};
+      const showRef = db.doc(`slideshows/${cleanShowId}`);
+      let showSnap = await showRef.get();
+      let showData = showSnap.exists ? (showSnap.data() || {}) : null;
+      if (!showSnap.exists) {
+        if (!['admin', 'editor'].includes(userData.role)) {
+          return res.status(404).json({ error: 'Slideshow not found' });
+        }
+        const loaded = await loadEditableShow(db, cleanShowId, userData.orgId);
+        showSnap = await loaded.showRef.get();
+        showData = loaded.showData;
+      }
       if (showData.orgId !== userData.orgId) {
         return res.status(403).json({ error: 'Slideshow is not in your organization' });
       }
@@ -387,6 +410,58 @@ module.exports = async function handler(req, res) {
         slides: publishedSlides,
         ...(draftSlides !== undefined && { draftSlides }),
       });
+    }
+
+    if (req.body.action === 'createSlideshow') {
+      const { orgId, role } = await loadUserContext(db, uid);
+      requireRole(role, ['admin', 'editor']);
+
+      const showId = normalizeShowId(req.body.showId);
+      const name = sanitizeSlideshowName(req.body.name);
+      const orgRef = db.doc(`organizations/${orgId}`);
+      const showRef = db.doc(`slideshows/${showId}`);
+      const now = new Date().toISOString();
+
+      const result = await db.runTransaction(async tx => {
+        const [orgSnap, showSnap] = await Promise.all([tx.get(orgRef), tx.get(showRef)]);
+        if (!orgSnap.exists) {
+          const error = new Error('Organization not found');
+          error.statusCode = 404;
+          throw error;
+        }
+
+        const orgData = orgSnap.data() || {};
+        const existingShows = Array.isArray(orgData.slideshows) ? orgData.slideshows : [];
+        const existingShowData = showSnap.exists ? (showSnap.data() || {}) : null;
+        if (existingShowData && existingShowData.orgId !== orgId) {
+          const error = new Error('Slideshow id is already in use');
+          error.statusCode = 409;
+          throw error;
+        }
+
+        const nextShows = existingShows.some(show => show && show.id === showId)
+          ? existingShows.map(show => show && show.id === showId ? { ...show, name } : show)
+          : [...existingShows, { id: showId, name }];
+        tx.set(orgRef, { slideshows: nextShows }, { merge: true });
+
+        const showData = {
+          orgId,
+          name,
+          createdAt: existingShowData?.createdAt || now,
+          slideStorageVersion: SLIDE_STORAGE_VERSION,
+          publishedStorage: 'subcollection',
+          publishedSlidesCount: existingShowData?.publishedSlidesCount || 0,
+          defaultDwell: existingShowData?.defaultDwell || 6,
+          fitMode: existingShowData?.fitMode || 'contain',
+          transition: existingShowData?.transition || 'crossfade',
+          status: existingShowData?.status || 'published',
+          updatedAt: now,
+        };
+        tx.set(showRef, showData, { merge: true });
+        return { show: { id: showId, name }, slideshows: nextShows };
+      });
+
+      return res.json({ ok: true, ...result });
     }
 
     if (req.body.action === 'saveDraftSlides') {

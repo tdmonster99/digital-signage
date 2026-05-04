@@ -4,6 +4,14 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-04 — Codex — Fix new slideshow creation race
+
+Follow-up for new slideshows showing `Missing or insufficient permissions` and stale slides.
+
+- **Server-backed creation**: new slideshow creation now goes through `/api/link-account`, which creates both the organization list entry and the backing `slideshows/{id}` document in one transaction.
+- **Phantom repair**: the server slideshow snapshot fallback can now bootstrap missing slideshow docs that are already listed in the caller's organization.
+- **UI cleanup**: the Slideshows grid clears immediately while switching to the newly-created empty slideshow instead of leaving the previous show visible after a failed listener.
+
 ## 2026-05-04 — Codex — Add live preview server fallback
 
 Follow-up for dashboard Live Preview failing on webpage slides with Firestore permission errors.
