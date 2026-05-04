@@ -2520,6 +2520,8 @@
     const screenRef = doc(db, "screens", screenId);
     let screenUnsub = null;
     let heartbeatTimer = null;
+    let heartbeatKickoffTimer = null;
+    let heartbeatStarted = false;
 
     function cleanupScreenScopedListeners() {
       if (_broadcastUnsub) {
@@ -2539,6 +2541,7 @@
       if (schedUnsub)   { try { schedUnsub(); } catch(_) {} schedUnsub = null; }
       if (schedMinTick) { clearInterval(schedMinTick); schedMinTick = null; }
       if (whMinTick)    { clearInterval(whMinTick); whMinTick = null; }
+      if (heartbeatKickoffTimer) { clearTimeout(heartbeatKickoffTimer); heartbeatKickoffTimer = null; }
       if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
     }
 
@@ -2560,11 +2563,15 @@
       try { await setDoc(screenRef, { lastSeen: new Date().toISOString() }, { merge: true }); }
       catch(e) {}
     }
-    if (ownsScreenIdentity) {
-      heartbeat();
+
+    function startHeartbeatAfterScreenSnapshot() {
+      if (!ownsScreenIdentity || heartbeatStarted) return;
+      heartbeatStarted = true;
       heartbeatTimer = setInterval(heartbeat, 5 * 60 * 1000);
-    } else {
-      console.warn('[Screen] Read-only display URL loaded; heartbeat and analytics disabled for', screenId);
+      heartbeatKickoffTimer = setTimeout(() => {
+        heartbeatKickoffTimer = null;
+        heartbeat();
+      }, 1000);
     }
 
     // ── Emergency Broadcast ──────────────────────────────────────────────────
@@ -2883,8 +2890,13 @@
       _whApply();
     }
 
+    if (!ownsScreenIdentity) {
+      console.warn('[Screen] Read-only display URL loaded; heartbeat and analytics disabled for', screenId);
+    }
+
     screenUnsub = onSnapshot(
       screenRef,
+      { includeMetadataChanges: true },
       snap => {
         if (!snap.exists()) {
           // Screen was deleted in admin or this is a stale localStorage identity.
@@ -2897,6 +2909,11 @@
           }
         } else {
           const data       = snap.data();
+          const pendingWrite = snap.metadata?.hasPendingWrites === true;
+          if (pendingWrite && screenNeedsPairingRefresh(data)) {
+            console.warn('[Screen] Ignoring partial pending screen snapshot while heartbeat syncs.');
+            return;
+          }
           const newBaseId  = data.slideshowId || "main";
           const newSchedId = data.scheduleId  || null;
           const newOrgId   = data.orgId       || null;
@@ -2907,6 +2924,7 @@
             leaveScreenForPairing('[Screen] Screen credential missing; returning to pairing.');
             return;
           }
+          startHeartbeatAfterScreenSnapshot();
 
           // NOTE: do NOT call heartbeat() here — it writes to screenRef which
           // re-fires this snapshot callback, causing an infinite write loop.
@@ -3001,6 +3019,8 @@
 
     document.getElementById("pairingCodeEl").textContent = code;
     const pairEl = document.getElementById("pairingScreen");
+    pairEl.style.transition = "";
+    pairEl.style.opacity = "1";
     pairEl.style.display = "flex";
 
     // Use onSnapshot instead of polling — fires immediately when admin pairs,

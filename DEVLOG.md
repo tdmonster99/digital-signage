@@ -4,6 +4,14 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-04 — Codex — Fix Android post-pairing black screen race
+
+Follow-up for the Android APK showing a black screen immediately after pairing.
+
+- **Heartbeat ordering**: `display.html` now starts screen heartbeats only after the first valid screen document snapshot, avoiding a local `lastSeen` write that could make a newly paired screen look credential-less.
+- **Pairing recovery visibility**: returning to the pairing screen now resets the pairing panel opacity and transition, preventing an invisible pairing UI over a black background.
+- **Emulator evidence**: reproduced on the Android Studio `Pixel_9` emulator; logcat showed `[Screen] Screen credential missing; returning to pairing.` immediately before the black screen.
+
 ## 2026-05-04 — Codex — Route publish-to-screens through server helper
 
 Follow-up for admin users hitting Firestore permission errors when publishing a slideshow.
