@@ -4,6 +4,14 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-04 — Codex — Route publish-to-screens through server helper
+
+Follow-up for admin users hitting Firestore permission errors when publishing a slideshow.
+
+- **Publish recovery**: `admin.html` now publishes selected slideshow content and screen assignments through `/api/link-account` instead of direct browser Firestore writes.
+- **Server-side checks**: `api/link-account.js` now verifies the caller's org, admin/editor role, slideshow ownership, and selected screen ownership before replacing published slide docs and assigning screens.
+- **Permission boundary cleanup**: the publish flow now matches the newer draft-save/pair/delete fallback pattern, reducing account-specific rule failures after the Firestore hardening work.
+
 ## 2026-05-04 — Codex — Add server fallback for draft slide saves
 
 Follow-up for admin users hitting Firestore permission errors while creating slides.

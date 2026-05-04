@@ -11,6 +11,7 @@ const PLAYER_DIAGNOSTIC_TYPES = new Set([
 ]);
 
 const SLIDE_STORAGE_VERSION = 2;
+const PUBLISHED_SLIDES_COLLECTION = 'slides';
 const DRAFT_SLIDES_COLLECTION = 'draftSlides';
 
 function normalizeSlideDoc(doc) {
@@ -97,6 +98,37 @@ function sanitizeDraftPatch(patch = {}) {
   return clean;
 }
 
+function normalizeTag(tag) {
+  return String(tag || '').trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9_-]/g, '').slice(0, 32);
+}
+
+function normalizeTags(value) {
+  if (!Array.isArray(value)) return [];
+  return Array.from(new Set(value.map(normalizeTag).filter(Boolean)));
+}
+
+function sanitizePublishPatch(patch = {}) {
+  const clean = {};
+  if (Number.isFinite(Number(patch.defaultDwell))) {
+    clean.defaultDwell = Math.min(3600, Math.max(1, Number(patch.defaultDwell)));
+  }
+  if (typeof patch.fitMode === 'string') {
+    clean.fitMode = patch.fitMode.slice(0, 40);
+  }
+  if (typeof patch.transition === 'string') {
+    clean.transition = patch.transition.slice(0, 40);
+  }
+  clean.tags = normalizeTags(patch.tags);
+  clean.autoIncludeTags = normalizeTags(patch.autoIncludeTags);
+  clean.emergencyPlaylist = patch.emergencyPlaylist === true;
+  return clean;
+}
+
+function sanitizeScreenIds(value) {
+  if (!Array.isArray(value)) return [];
+  return Array.from(new Set(value.map(id => String(id || '').trim()).filter(Boolean))).slice(0, 200);
+}
+
 async function commitOpsInChunks(db, ops) {
   for (let i = 0; i < ops.length; i += 450) {
     const batch = db.batch();
@@ -121,6 +153,23 @@ async function replaceSlideCollection(db, showRef, collectionName, nextSlides) {
     });
   });
   await commitOpsInChunks(db, [...deleteOps, ...setOps]);
+}
+
+async function assertScreensInOrg(db, screenIds, orgId) {
+  await Promise.all(screenIds.map(async screenId => {
+    const screenSnap = await db.doc(`screens/${screenId}`).get();
+    if (!screenSnap.exists) {
+      const error = new Error(`Screen ${screenId} not found`);
+      error.statusCode = 404;
+      throw error;
+    }
+    const screenData = screenSnap.data() || {};
+    if (screenData.orgId !== orgId) {
+      const error = new Error(`Screen ${screenId} is not in your organization`);
+      error.statusCode = 403;
+      throw error;
+    }
+  }));
 }
 
 async function loadEditableShow(db, showId, orgId) {
@@ -346,6 +395,71 @@ module.exports = async function handler(req, res) {
       }, { merge: true });
 
       return res.json({ ok: true, draftSlidesCount: cleanSlides.length, draftRevision: now });
+    }
+
+    if (req.body.action === 'publishSlideshow') {
+      const { showId, slides: rawSlides, patch: rawPatch, screenIds: rawScreenIds } = req.body || {};
+      const { userData, orgId, role } = await loadUserContext(db, uid);
+      requireRole(role, ['admin', 'editor']);
+
+      const orgSnap = await db.doc(`organizations/${orgId}`).get();
+      const orgData = orgSnap.exists ? (orgSnap.data() || {}) : {};
+      if (role === 'editor' && orgData.approvalRequired === true) {
+        const error = new Error('This slideshow must be submitted for admin review.');
+        error.statusCode = 403;
+        throw error;
+      }
+
+      const { showRef } = await loadEditableShow(db, showId, orgId);
+      const cleanSlides = sanitizeSlides(rawSlides);
+      const cleanPatch = sanitizePublishPatch(rawPatch);
+      const screenIds = sanitizeScreenIds(rawScreenIds);
+      await assertScreensInOrg(db, screenIds, orgId);
+
+      const now = new Date().toISOString();
+      const deleteField = admin.firestore.FieldValue.delete();
+
+      await replaceSlideCollection(db, showRef, PUBLISHED_SLIDES_COLLECTION, cleanSlides);
+      await replaceSlideCollection(db, showRef, DRAFT_SLIDES_COLLECTION, []);
+      await showRef.set({
+        ...cleanPatch,
+        slideStorageVersion: SLIDE_STORAGE_VERSION,
+        publishedStorage: 'subcollection',
+        publishedSlidesCount: cleanSlides.length,
+        publishedRevision: now,
+        status: 'published',
+        publishedAt: now,
+        publishedBy: { uid, email: userData.email || email || '' },
+        draftStorage: deleteField,
+        draftSlidesCount: deleteField,
+        draftRevision: deleteField,
+        slides: deleteField,
+        draftSlides: deleteField,
+        draftDwell: deleteField,
+        draftFitMode: deleteField,
+        draftTransition: deleteField,
+        draftUpdatedAt: deleteField,
+        draftBy: deleteField,
+        reviewSubmittedAt: deleteField,
+        reviewSubmittedBy: deleteField,
+        reviewApprovedAt: deleteField,
+        reviewApprovedBy: deleteField,
+        reviewRejectedAt: deleteField,
+        reviewRejectedBy: deleteField,
+        reviewRejectionNote: deleteField,
+        orgId,
+      }, { merge: true });
+
+      await commitOpsInChunks(db, screenIds.map(screenId => batch => {
+        batch.set(db.doc(`screens/${screenId}`), { slideshowId: showId }, { merge: true });
+      }));
+
+      return res.json({
+        ok: true,
+        publishedSlidesCount: cleanSlides.length,
+        assignedScreensCount: screenIds.length,
+        publishedRevision: now,
+      });
     }
 
     if (req.body.action === 'bootstrap') {

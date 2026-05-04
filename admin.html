@@ -10510,6 +10510,36 @@ async function saveDraftSlidesToServer(showId, nextSlides, patch = {}, reason = 
   return result;
 }
 
+async function publishSlideshowToServer(showId, publishedSlides, patch = {}, screenIds = []) {
+  if (!auth.currentUser || !showId) throw new Error('Sign in first to publish.');
+  const idToken = await auth.currentUser.getIdToken(true);
+  const resp = await fetch('/api/link-account', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      action: 'publishSlideshow',
+      idToken,
+      showId,
+      slides: Array.isArray(publishedSlides) ? publishedSlides : [],
+      patch: {
+        defaultDwell: patch.defaultDwell,
+        fitMode: patch.fitMode,
+        transition: patch.transition,
+        tags: patch.tags,
+        autoIncludeTags: patch.autoIncludeTags,
+        emergencyPlaylist: patch.emergencyPlaylist === true,
+      },
+      screenIds: Array.isArray(screenIds) ? screenIds : [],
+    }),
+  });
+  const result = await resp.json().catch(() => ({}));
+  if (!resp.ok || result.ok !== true) {
+    throw new Error(result.error || `HTTP ${resp.status}`);
+  }
+  console.warn(`[Slides] Published ${showId} through server helper.`);
+  return result;
+}
+
 function shouldLoadSubcollection(data = {}, collectionName) {
   if (collectionName === DRAFT_SLIDES_COLLECTION) {
     return data.draftStorage === 'subcollection';
@@ -11123,9 +11153,7 @@ window.confirmPublish = async function() {
     const now        = new Date().toISOString();
     const showMeta   = showMetaFromOrg(currentShowId) || {};
     const publishedSlides = await resolveSmartPlaylistSlides(slides, currentShowId);
-
-    // 1. Publish slideshow content (draft → live)
-    await publishSlidesToFirestore(currentShowId, publishedSlides, {
+    const publishPatch = {
       defaultDwell: dwell,
       fitMode: fit,
       transition,
@@ -11142,13 +11170,10 @@ window.confirmPublish = async function() {
       reviewRejectedBy:   deleteField(),
       reviewRejectionNote: deleteField(),
       ...(currentUser  && { publishedBy: { uid: currentUser.uid, email: currentUser.email } }),
-    });
+    };
+    const selectedScreenIds = [..._publishSelectedIds];
 
-    // 2. Assign selected screens to this slideshow
-    const screenUpdates = [..._publishSelectedIds].map(screenId =>
-      setDoc(doc(db, 'screens', screenId), { slideshowId: currentShowId }, { merge: true })
-    );
-    await Promise.all(screenUpdates);
+    await publishSlideshowToServer(currentShowId, publishedSlides, publishPatch, selectedScreenIds);
 
     const n = _publishSelectedIds.size;
     logActivity(`Slideshow "${currentShowId}" published to ${n} screen${n !== 1 ? 's' : ''} (${publishedSlides.length} slide${publishedSlides.length !== 1 ? 's' : ''})`);
