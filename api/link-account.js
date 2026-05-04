@@ -1,5 +1,14 @@
 const { getAuth, getFirestore } = require('./_lib/firebase-admin');
 
+const PLAYER_DIAGNOSTIC_TYPES = new Set([
+  'player_boot',
+  'player_capabilities',
+  'player_online',
+  'player_offline',
+  'player_watchdog_restart',
+  'player_slideshow_error',
+]);
+
 function normalizeSlideDoc(doc) {
   const data = doc.data() || {};
   const { order, updatedAt, ...slide } = data;
@@ -9,6 +18,34 @@ function normalizeSlideDoc(doc) {
 async function loadSlideCollection(showRef, collectionName) {
   const snap = await showRef.collection(collectionName).orderBy('order', 'asc').get();
   return snap.docs.map(normalizeSlideDoc);
+}
+
+async function loadUserContext(db, uid) {
+  const userSnap = await db.doc(`users/${uid}`).get();
+  if (!userSnap.exists) {
+    const error = new Error('User not found');
+    error.statusCode = 404;
+    throw error;
+  }
+  const userData = userSnap.data() || {};
+  if (!userData.orgId) {
+    const error = new Error('User has no organization');
+    error.statusCode = 403;
+    throw error;
+  }
+  return { userSnap, userData, orgId: userData.orgId, role: userData.role || 'viewer' };
+}
+
+function requireRole(role, allowed) {
+  if (!allowed.includes(role)) {
+    const error = new Error('Insufficient role');
+    error.statusCode = 403;
+    throw error;
+  }
+}
+
+function normalizePairingCode(code) {
+  return String(code || '').trim().toUpperCase();
 }
 
 module.exports = async function handler(req, res) {
@@ -26,6 +63,118 @@ module.exports = async function handler(req, res) {
     const db = getFirestore();
     const { uid, email } = decoded;
     if (!email) return res.json({ merged: false });
+
+    if (req.body.action === 'pairScreen') {
+      const code = normalizePairingCode(req.body.code);
+      if (!/^[A-Z0-9]{6}$/.test(code)) {
+        return res.status(400).json({ error: 'Invalid pairing code' });
+      }
+
+      const { userData, orgId, role } = await loadUserContext(db, uid);
+      requireRole(role, ['admin', 'editor']);
+
+      const orgSnap = await db.doc(`organizations/${orgId}`).get();
+      const orgData = orgSnap.exists ? (orgSnap.data() || {}) : {};
+      const defaultShowId = Array.isArray(orgData.slideshows) && orgData.slideshows[0]?.id
+        ? orgData.slideshows[0].id
+        : 'main';
+
+      const result = await db.runTransaction(async tx => {
+        const codeRef = db.doc(`pairingCodes/${code}`);
+        const codeSnap = await tx.get(codeRef);
+        if (!codeSnap.exists) {
+          const error = new Error('Code not found. Make sure the display is showing a pairing screen.');
+          error.statusCode = 404;
+          throw error;
+        }
+
+        const data = codeSnap.data() || {};
+        if (data.status !== 'pending') {
+          const error = new Error(data.status === 'paired' ? 'This code has already been used.' : 'This code is no longer valid.');
+          error.statusCode = 409;
+          throw error;
+        }
+        if (data.expiresAt && new Date() > new Date(data.expiresAt)) {
+          const error = new Error('This code has expired. The display will generate a new one shortly.');
+          error.statusCode = 410;
+          throw error;
+        }
+        const credentialHash = typeof data.screenCredentialHash === 'string' && /^[a-f0-9]{64}$/i.test(data.screenCredentialHash)
+          ? data.screenCredentialHash.toLowerCase()
+          : '';
+        if (!credentialHash) {
+          const error = new Error('This display needs to refresh before pairing. Reload the display and use the new code.');
+          error.statusCode = 400;
+          throw error;
+        }
+
+        const screenRef = db.collection('screens').doc();
+        const shortId = screenRef.id.slice(0, 6).toUpperCase();
+        const screenName = 'Screen ' + shortId;
+        const now = new Date().toISOString();
+        tx.create(screenRef, {
+          name: screenName,
+          slideshowId: defaultShowId,
+          registeredAt: now,
+          lastSeen: now,
+          credentialHash,
+          credentialVersion: 1,
+          orgId,
+          pairedBy: uid,
+          pairedByEmail: userData.email || email,
+        });
+        tx.update(codeRef, {
+          status: 'paired',
+          screenId: screenRef.id,
+          screenName,
+          pairedAt: now,
+        });
+        return { screenId: screenRef.id, screenName };
+      });
+
+      return res.json({ ok: true, ...result });
+    }
+
+    if (req.body.action === 'deleteScreen') {
+      const screenId = String(req.body.screenId || '').trim();
+      if (!screenId) return res.status(400).json({ error: 'screenId required' });
+
+      const { orgId, role } = await loadUserContext(db, uid);
+      requireRole(role, ['admin']);
+
+      const screenRef = db.doc(`screens/${screenId}`);
+      const screenSnap = await screenRef.get();
+      if (!screenSnap.exists) return res.status(404).json({ error: 'Screen not found' });
+      const screenData = screenSnap.data() || {};
+      if (screenData.orgId !== orgId) {
+        return res.status(403).json({ error: 'Screen is not in your organization' });
+      }
+
+      await screenRef.delete();
+      return res.json({ ok: true });
+    }
+
+    if (req.body.action === 'screenDiagnostics') {
+      const screenId = String(req.body.screenId || '').trim();
+      if (!screenId) return res.status(400).json({ error: 'screenId required' });
+
+      const { orgId } = await loadUserContext(db, uid);
+      const screenSnap = await db.doc(`screens/${screenId}`).get();
+      if (!screenSnap.exists) return res.status(404).json({ error: 'Screen not found' });
+      const screenData = screenSnap.data() || {};
+      if (screenData.orgId !== orgId) {
+        return res.status(403).json({ error: 'Screen is not in your organization' });
+      }
+
+      const snap = await db.collection('organizations').doc(orgId).collection('analytics')
+        .orderBy('timestamp', 'desc')
+        .limit(500)
+        .get();
+      const events = snap.docs
+        .map(doc => doc.data() || {})
+        .filter(event => event.screenId === screenId && PLAYER_DIAGNOSTIC_TYPES.has(event.type));
+      return res.json({ ok: true, events });
+    }
 
     if (req.body.action === 'showSnapshot') {
       const { showId } = req.body || {};
@@ -135,6 +284,6 @@ module.exports = async function handler(req, res) {
     return res.json({ merged: true, orgId: existingData.orgId });
   } catch (e) {
     console.error('link-account error:', e.message);
-    return res.status(500).json({ error: e.message });
+    return res.status(e.statusCode || 500).json({ error: e.message });
   }
 };

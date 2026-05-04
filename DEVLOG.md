@@ -4,6 +4,14 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-04 — Codex — Route screen admin actions through server fallback
+
+Follow-up for production permission errors during Android pairing and screen deletion.
+
+- **Screen pairing recovery**: `admin.html` now completes pairing through the authenticated `/api/link-account` server helper, and `api/link-account.js` creates the screen and marks the pairing code as paired through Admin SDK after verifying the user's org/editor role.
+- **Screen deletion recovery**: screen deletion now uses the same server helper with an admin-role and same-org check, avoiding client-side Firestore rule drift for destructive screen operations.
+- **Diagnostics fallback**: Screen edit diagnostics still tries the direct analytics query first, then falls back to the server helper when Firestore denies the browser read.
+
 ## 2026-05-03 — Codex — Wire WSL Gradle for Android builds
 
 Follow-up for the Android player shell.

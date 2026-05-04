@@ -9251,6 +9251,22 @@ async function loadAccountBootstrap(user) {
   return _bootAccountPromise;
 }
 
+async function callAccountApi(action, payload = {}, forceRefresh = false) {
+  const user = currentUser || auth.currentUser;
+  if (!user) throw new Error('Please sign in again.');
+  const idToken = await user.getIdToken(forceRefresh);
+  const resp = await fetch('/api/link-account', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, idToken, ...payload }),
+  });
+  const result = await resp.json().catch(() => ({}));
+  if (!resp.ok || result.ok === false) {
+    throw new Error(result.error || `HTTP ${resp.status}`);
+  }
+  return result;
+}
+
 async function getBootstrapFallbackSnap(ref, user, label) {
   const boot = await loadAccountBootstrap(user);
   if (!boot) return null;
@@ -20428,7 +20444,13 @@ async function loadScreenPlayerDiagnostics(screenId) {
     renderPlayerDiagnostics(screenId, events);
   } catch(e) {
     if (editingScreenId !== screenId) return;
-    el.innerHTML = `<div style="color:#dc2626">Could not load diagnostics: ${escHtml(e.message)}</div>`;
+    try {
+      const result = await callAccountApi('screenDiagnostics', { screenId }, true);
+      renderPlayerDiagnostics(screenId, Array.isArray(result.events) ? result.events : []);
+    } catch(serverErr) {
+      if (editingScreenId !== screenId) return;
+      el.innerHTML = `<div style="color:#dc2626">Could not load diagnostics: ${escHtml(serverErr.message || e.message)}</div>`;
+    }
   }
 }
 
@@ -20943,61 +20965,15 @@ window.confirmPairingCode = async function() {
   document.getElementById('pairingWaiting').style.display = 'flex';
 
   try {
-    const snap = await getDoc(doc(db, 'pairingCodes', code));
-    if (!snap.exists()) {
-      errEl.textContent = 'Code not found. Make sure the display is showing a pairing screen.';
-      return;
-    }
-    const data = snap.data();
-    if (data.status !== 'pending') {
-      errEl.textContent = data.status === 'paired' ? 'This code has already been used.' : 'This code is no longer valid.';
-      return;
-    }
-    if (data.expiresAt && new Date() > new Date(data.expiresAt)) {
-      errEl.textContent = 'This code has expired. The display will generate a new one shortly.';
-      return;
-    }
-    const credentialHash = typeof data.screenCredentialHash === 'string' && /^[a-f0-9]{64}$/i.test(data.screenCredentialHash)
-      ? data.screenCredentialHash.toLowerCase()
-      : '';
-    if (!credentialHash) {
-      errEl.textContent = 'This display needs to refresh before pairing. Reload the display and use the new code.';
-      return;
-    }
-    if (!currentOrgId) {
-      errEl.textContent = 'Your organization is still loading. Try again in a moment.';
-      return;
-    }
-
-    // Create screen doc
-    const newScreenId = crypto.randomUUID();
-    const shortId     = newScreenId.slice(0, 6).toUpperCase();
-    const screenName  = 'Screen ' + shortId;
-    const defaultShowId = currentOrg?.slideshows?.[0]?.id || currentShowId || 'main';
-    await setDoc(doc(db, 'screens', newScreenId), {
-      name:         screenName,
-      slideshowId:  defaultShowId,
-      registeredAt: new Date().toISOString(),
-      lastSeen:     new Date().toISOString(),
-      credentialHash,
-      credentialVersion: 1,
-      orgId:        currentOrgId,
-    });
-
-    // Signal the display
-    await updateDoc(doc(db, 'pairingCodes', code), {
-      status:     'paired',
-      screenId:   newScreenId,
-      screenName: screenName,
-      pairedAt:   new Date().toISOString(),
-    });
+    const result = await callAccountApi('pairScreen', { code }, true);
+    const screenName = result.screenName || 'Screen';
 
     document.getElementById('pairingPendingSection').style.display = 'none';
     document.getElementById('pairingSuccessSection').style.display = 'flex';
     document.getElementById('pairingSuccessName').textContent = `"${screenName}" is now connected.`;
     logActivity('Screen "' + screenName + '" paired successfully');
   } catch(e) {
-    errEl.textContent = 'Connection failed: ' + e.message;
+    errEl.textContent = e.message || 'Connection failed.';
   } finally {
     document.getElementById('pairingWaiting').style.display = 'none';
     btn.disabled = false;
@@ -21123,7 +21099,7 @@ window.confirmDeleteScreen = async function() {
   const name   = screen?.name || editingScreenId;
   if (!confirm(`Delete screen "${name}"? This cannot be undone.`)) return;
   try {
-    await deleteDoc(doc(db, 'screens', editingScreenId));
+    await callAccountApi('deleteScreen', { screenId: editingScreenId }, true);
     toast('Screen deleted');
     closeScreenEdit();
     logActivity('Screen "' + name + '" deleted');
