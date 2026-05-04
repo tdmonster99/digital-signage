@@ -4,6 +4,14 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-04 — Codex — Shorten slideshow activity names
+
+Follow-up for Recent Activity showing raw org-prefixed slideshow IDs.
+
+- **Friendly names**: slideshow activity entries now use the slideshow display name, such as `Main Slideshow` or `Slideshow 2`, instead of the backing document ID.
+- **Fallback cleanup**: if a name cannot be found, activity falls back to `Main Slideshow` or a compact `Slideshow abc12345` label rather than the full UUID.
+- **Activity safety**: recent activity messages are escaped before rendering.
+
 ## 2026-05-04 — Codex — Clarify blocked webpage slides
 
 Follow-up for webpage URL slides showing the browser blocked-frame icon.

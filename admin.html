@@ -11149,7 +11149,7 @@ async function pushToFirestore() {
     draftTransition: transition,
     ...(currentUser  && { draftBy: { uid: currentUser.uid, email: currentUser.email } }),
   });
-  logActivity(`Slideshow "${currentShowId}" draft saved (${slides.length} slide${slides.length !== 1 ? 's' : ''})`);
+  logActivity(`${getShowActivityName(currentShowId)} draft saved (${slides.length} slide${slides.length !== 1 ? 's' : ''})`);
   toast("Draft saved ✓");
   setPushVisible(true);
 }
@@ -11349,7 +11349,7 @@ window.confirmPublish = async function() {
     await publishSlideshowToServer(currentShowId, publishedSlides, publishPatch, selectedScreenIds);
 
     const n = _publishSelectedIds.size;
-    logActivity(`Slideshow "${currentShowId}" published to ${n} screen${n !== 1 ? 's' : ''} (${publishedSlides.length} slide${publishedSlides.length !== 1 ? 's' : ''})`);
+    logActivity(`${getShowActivityName(currentShowId)} published to ${n} screen${n !== 1 ? 's' : ''} (${publishedSlides.length} slide${publishedSlides.length !== 1 ? 's' : ''})`);
     toast(`Published to ${n} screen${n !== 1 ? 's' : ''} ✓`);
     setPushVisible(false);
     refreshLivePreviewAfterPublish(currentShowId);
@@ -11363,6 +11363,29 @@ window.confirmPublish = async function() {
 
 function getApprovalShowName(showId) {
   return (currentOrg?.slideshows || []).find(s => s.id === showId)?.name || showId || 'Slideshow';
+}
+
+function compactSlideshowId(showId) {
+  const raw = String(showId || '').trim();
+  if (!raw) return 'Slideshow';
+  const orgPrefix = currentOrgId ? `${currentOrgId}_` : '';
+  const suffix = orgPrefix && raw.startsWith(orgPrefix) ? raw.slice(orgPrefix.length) : raw;
+  if (suffix === 'main') return 'Main Slideshow';
+  if (/^[0-9a-f-]{12,}$/i.test(suffix)) return `Slideshow ${suffix.slice(0, 8)}`;
+  return suffix || 'Slideshow';
+}
+
+function getShowActivityName(showId = currentShowId) {
+  const id = showId || currentShowId;
+  const metaName = showMetaFromOrg(id)?.name?.trim();
+  if (metaName) return metaName;
+  if (id === currentShowId && currentShowName && currentShowName !== id) return currentShowName;
+  const itemName = document
+    .querySelector(`#showList .show-item[data-id="${CSS.escape(id)}"] .show-item-name`)
+    ?.textContent
+    ?.trim();
+  if (itemName && itemName !== id) return itemName;
+  return compactSlideshowId(id);
 }
 
 function getAdminEmails() {
@@ -11408,7 +11431,7 @@ async function submitCurrentShowForReview() {
     syncPublishButtonState(true);
     updateShowItemMeta(currentShowId, { ...currentShowReviewData, status: 'pending_review' });
     notifyApproval('submitted', { to: getAdminEmails(), showId: currentShowId });
-    logActivity(`Slideshow "${currentShowId}" submitted for review`);
+    logActivity(`${getShowActivityName(currentShowId)} submitted for review`);
     toast('Submitted for admin review ✓');
     loadApprovalQueue();
   } catch(e) {
@@ -11448,7 +11471,7 @@ window.approveSlideshowReview = async function(showId) {
       ...(currentUser && { publishedBy: { uid: currentUser.uid, email: currentUser.email } }),
     });
     notifyApproval('approved', { to: data.reviewSubmittedBy?.email ? [data.reviewSubmittedBy.email] : [], showId });
-    logActivity(`Approved slideshow "${showId}"`);
+    logActivity(`Approved ${getShowActivityName(showId)}`);
     toast('Slideshow approved and published ✓');
     loadApprovalQueue();
   } catch(e) {
@@ -11474,7 +11497,7 @@ window.rejectSlideshowReview = async function(showId) {
       ...(currentOrgId && { orgId: currentOrgId }),
     }, { merge: true });
     notifyApproval('rejected', { to: data.reviewSubmittedBy?.email ? [data.reviewSubmittedBy.email] : [], showId, note });
-    logActivity(`Rejected slideshow "${showId}" review`);
+    logActivity(`Rejected ${getShowActivityName(showId)} review`);
     toast('Changes requested');
     loadApprovalQueue();
   } catch(e) {
@@ -21557,7 +21580,7 @@ window.sendTestSignal = async function() {
 const activityLog = [];
 
 function logActivity(msg) {
-  activityLog.unshift({ msg, time: new Date() });
+  activityLog.unshift({ msg: String(msg || ''), time: new Date() });
   if (activityLog.length > 20) activityLog.pop();
 }
 
@@ -21586,7 +21609,7 @@ function updateDashboard() {
   }
   list.innerHTML = activityLog.slice(0, 5).map(a =>
     `<div class="activity-item">
-      <span class="activity-msg">${a.msg}</span>
+      <span class="activity-msg">${escHtml(a.msg)}</span>
       <span class="activity-time">${formatActivityTime(a.time)}</span>
     </div>`
   ).join('');
