@@ -4,6 +4,14 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-05 — Codex — Add post-pair screen naming
+
+Follow-up for pilot usability while adding physical screens.
+
+- **Pairing flow**: after a screen code connects, the Add Screen modal now prompts for a friendly screen name with the default `Screen ABC123` name prefilled.
+- **Skip path**: added a Skip button that keeps the existing default naming scheme for fast setup.
+- **Server rename**: added an authenticated `renameScreen` action to `/api/link-account` so admins/editors can name a newly paired screen through the same server-backed path as pairing.
+
 ## 2026-05-05 — Codex — Close stale audit handoff and add pilot quickstart
 
 Follow-up for the remaining recommended audit path after confirming the code fixes had already landed.

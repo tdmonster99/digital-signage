@@ -432,6 +432,31 @@ module.exports = async function handler(req, res) {
       return res.json({ ok: true });
     }
 
+    if (req.body.action === 'renameScreen') {
+      const screenId = String(req.body.screenId || '').trim();
+      const name = String(req.body.name || '').trim().replace(/\s+/g, ' ').slice(0, 80);
+      if (!screenId) return res.status(400).json({ error: 'screenId required' });
+      if (!name) return res.status(400).json({ error: 'Screen name required' });
+
+      const { orgId, role } = await loadUserContext(db, uid);
+      requireRole(role, ['admin', 'editor']);
+
+      const screenRef = db.doc(`screens/${screenId}`);
+      const screenSnap = await screenRef.get();
+      if (!screenSnap.exists) return res.status(404).json({ error: 'Screen not found' });
+      const screenData = screenSnap.data() || {};
+      if (screenData.orgId !== orgId) {
+        return res.status(403).json({ error: 'Screen is not in your organization' });
+      }
+
+      await screenRef.set({
+        name,
+        renamedAt: new Date().toISOString(),
+        renamedBy: uid,
+      }, { merge: true });
+      return res.json({ ok: true, screenId, screenName: name });
+    }
+
     if (req.body.action === 'screenDiagnostics') {
       const screenId = String(req.body.screenId || '').trim();
       if (!screenId) return res.status(400).json({ error: 'screenId required' });

@@ -440,6 +440,48 @@ body {
 @keyframes pairPop { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 .pairing-success-title { font-size: 16px; font-weight: 700; color: var(--text); }
 .pairing-success-sub   { font-size: 13px; color: var(--muted); }
+.pairing-name-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  text-align: left;
+}
+.pairing-name-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.pairing-name-input {
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface2);
+  color: var(--text);
+  font: inherit;
+  font-size: 15px;
+  padding: 0 14px;
+  outline: none;
+  box-sizing: border-box;
+}
+.pairing-name-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0, 67, 206, .12);
+}
+.pairing-name-actions {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 10px;
+}
+.pairing-name-note {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.45;
+  text-align: center;
+}
 
 /* ── Screen edit panel ───────────────────────────────────────────────── */
 #screenEditPanel {
@@ -4956,6 +4998,25 @@ body.role-editor .admin-action {
         <div class="pairing-success-title">Screen Paired!</div>
         <div class="pairing-success-sub" id="pairingSuccessName">Your display is now connected.</div>
         <button class="btn btn-primary" onclick="closePairingModal()" style="margin-top:8px">Done</button>
+      </div>
+      <div class="pairing-success" id="pairingNameSection">
+        <div class="pairing-success-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div class="pairing-success-title">Name This Screen</div>
+        <div class="pairing-success-sub" id="pairingNameSub">Give it a name you can match to the physical display.</div>
+        <div class="pairing-name-form">
+          <label class="pairing-name-label" for="pairingScreenNameInput">Screen name</label>
+          <input id="pairingScreenNameInput" class="pairing-name-input" type="text" maxlength="80"
+            placeholder="e.g. Lobby TV, Break Room, Front Desk"
+            autocomplete="off" onkeydown="if(event.key==='Enter') savePairedScreenName()">
+          <div class="pairing-name-note" id="pairingNameNote"></div>
+          <div class="pairing-name-actions">
+            <button class="btn btn-secondary" id="pairingSkipNameBtn" onclick="skipPairedScreenName()">Skip</button>
+            <button class="btn btn-primary" id="pairingSaveNameBtn" onclick="savePairedScreenName()">Save Name</button>
+          </div>
+          <div class="pairing-expires" id="pairingNameError" style="color:#f87171;min-height:18px;text-align:center"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -20927,6 +20988,8 @@ let editingScreenId = null;
 let pairingInterval = null;
 let pairingExpiry   = null;
 let pairingTimerInterval = null;
+let pendingPairedScreenId = null;
+let pendingPairedScreenDefaultName = '';
 let _cachedScreens  = [];
 let _screensReady   = false;
 let _pendingPublishModal = false;
@@ -21784,9 +21847,13 @@ window.openAddScreenModal = function() {
   }
   document.getElementById('pairingCodeInput').value = '';
   document.getElementById('pairingCodeError').textContent = '';
+  document.getElementById('pairingNameError').textContent = '';
   document.getElementById('pairingWaiting').style.display = 'none';
   document.getElementById('pairingPendingSection').style.display = 'block';
   document.getElementById('pairingSuccessSection').style.display = 'none';
+  document.getElementById('pairingNameSection').style.display = 'none';
+  pendingPairedScreenId = null;
+  pendingPairedScreenDefaultName = '';
   document.getElementById('pairingModal').style.display = 'flex';
   setTimeout(() => document.getElementById('pairingCodeInput').focus(), 100);
 };
@@ -21807,10 +21874,19 @@ window.confirmPairingCode = async function() {
   try {
     const result = await callAccountApi('pairScreen', { code }, true);
     const screenName = result.screenName || 'Screen';
+    pendingPairedScreenId = result.screenId || null;
+    pendingPairedScreenDefaultName = screenName;
 
     document.getElementById('pairingPendingSection').style.display = 'none';
-    document.getElementById('pairingSuccessSection').style.display = 'flex';
-    document.getElementById('pairingSuccessName').textContent = `"${screenName}" is now connected.`;
+    document.getElementById('pairingNameSection').style.display = 'flex';
+    document.getElementById('pairingScreenNameInput').value = screenName;
+    document.getElementById('pairingNameSub').textContent = `"${screenName}" is connected. Give it a name you can match to the physical display.`;
+    document.getElementById('pairingNameNote').textContent = `Skip keeps the default name: ${screenName}.`;
+    setTimeout(() => {
+      const input = document.getElementById('pairingScreenNameInput');
+      input.focus();
+      input.select();
+    }, 50);
     logActivity('Screen "' + screenName + '" paired successfully');
   } catch(e) {
     errEl.textContent = e.message || 'Connection failed.';
@@ -21820,9 +21896,50 @@ window.confirmPairingCode = async function() {
   }
 };
 
+function finishPairingNameStep(screenName) {
+  pendingPairedScreenId = null;
+  pendingPairedScreenDefaultName = '';
+  document.getElementById('pairingNameSection').style.display = 'none';
+  document.getElementById('pairingSuccessSection').style.display = 'flex';
+  document.getElementById('pairingSuccessName').textContent = `"${screenName}" is ready.`;
+}
+
+window.skipPairedScreenName = function() {
+  finishPairingNameStep(pendingPairedScreenDefaultName || 'Screen');
+};
+
+window.savePairedScreenName = async function() {
+  const screenId = pendingPairedScreenId;
+  const nameInput = document.getElementById('pairingScreenNameInput');
+  const errEl = document.getElementById('pairingNameError');
+  const saveBtn = document.getElementById('pairingSaveNameBtn');
+  const skipBtn = document.getElementById('pairingSkipNameBtn');
+  const name = nameInput.value.trim();
+  errEl.textContent = '';
+  if (!screenId) { finishPairingNameStep(name || pendingPairedScreenDefaultName || 'Screen'); return; }
+  if (!name) { errEl.textContent = 'Enter a screen name or choose Skip.'; return; }
+  if (saveBtn.disabled) return;
+  saveBtn.disabled = true;
+  skipBtn.disabled = true;
+  try {
+    await callAccountApi('renameScreen', { screenId, name }, true);
+    toast('Screen named ✓');
+    logActivity('Screen "' + name + '" named');
+    finishPairingNameStep(name);
+  } catch(e) {
+    errEl.textContent = e.message || 'Could not save the screen name.';
+  } finally {
+    saveBtn.disabled = false;
+    skipBtn.disabled = false;
+  }
+};
+
 window.closePairingModal = function() {
-  const successVisible = document.getElementById('pairingSuccessSection').style.display !== 'none';
+  const successVisible = document.getElementById('pairingSuccessSection').style.display !== 'none'
+    || document.getElementById('pairingNameSection').style.display !== 'none';
   document.getElementById('pairingModal').style.display = 'none';
+  pendingPairedScreenId = null;
+  pendingPairedScreenDefaultName = '';
   if (pairingInterval)      { clearInterval(pairingInterval);      pairingInterval = null; }
   if (pairingTimerInterval) { clearInterval(pairingTimerInterval); pairingTimerInterval = null; }
   if (_reopenPublishAfterPairing && successVisible) {
