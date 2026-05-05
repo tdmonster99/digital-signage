@@ -4,6 +4,14 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-05 — Codex — Add tvOS player source scaffold
+
+Started the non-Mac portion of Phase 5.4.5 Apple TV support.
+
+- **tvOS scaffold**: added `player-tvos/` with SwiftUI + `WKWebView` source files, a plist template, and the shared Zigns icon source for later Xcode import.
+- **Runbook**: documented the native-wrapper architecture, Apple Developer inputs, Xcode project settings, Apple TV pairing flow, and real-device smoke checklist.
+- **Platform status**: updated the roadmap and handoff notes to show tvOS is source-scaffolded while Xcode project creation/signing remains blocked until macOS hardware is available.
+
 ## 2026-05-05 — Codex — Verify slideshow subcollection migration state
 
 Follow-up after packaging runbook deployment before starting new platform work.

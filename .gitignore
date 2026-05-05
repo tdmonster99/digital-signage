@@ -26,6 +26,12 @@ player-tizen/.metadata/
 player-tizen/.sign/
 player-tizen/*.wgt
 player-webos/*.ipk
+player-tvos/**/build/
+player-tvos/**/*.xcuserstate
+player-tvos/**/*.xcuserdata/
+player-tvos/**/*.xcarchive/
+player-tvos/**/*.dSYM/
+player-tvos/*.ipa
 
 # OS
 .DS_Store
