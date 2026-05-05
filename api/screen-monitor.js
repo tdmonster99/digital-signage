@@ -129,8 +129,10 @@ async function enforceAllScreenLimits(allScreenDocs, orgMap) {
       if (shouldSuspend === isSuspended) continue;
 
       writePromises.push(
-        screen.ref.update({ suspended: shouldSuspend })
-          .then(() => results.push({ orgId, screenId: screen.id, suspended: shouldSuspend }))
+        setScreenSuspendedStateIfNeeded(screen.ref, orgId, shouldSuspend)
+          .then(changed => {
+            if (changed) results.push({ orgId, screenId: screen.id, suspended: shouldSuspend });
+          })
           .catch(e => console.warn('[screen-monitor] enforceLimit write failed:', screen.id, e.message))
       );
     }
@@ -139,6 +141,22 @@ async function enforceAllScreenLimits(allScreenDocs, orgMap) {
 
   await Promise.all(orgPromises);
   return results;
+}
+
+async function setScreenSuspendedStateIfNeeded(screenRef, orgId, shouldSuspend) {
+  const db = screenRef.firestore;
+
+  return db.runTransaction(async tx => {
+    const snap = await tx.get(screenRef);
+    if (!snap.exists) return false;
+
+    const data = snap.data() || {};
+    if (data.orgId !== orgId) return false;
+    if ((data.suspended === true) === shouldSuspend) return false;
+
+    tx.update(screenRef, { suspended: shouldSuspend });
+    return true;
+  });
 }
 
 async function notifyOrg(db, apiKey, orgId, screenId, screenName, event, orgMap) {

@@ -4,6 +4,15 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-05 — Codex — Harden screen-limit and YouTube fallback paths
+
+Follow-up for the remaining audit cleanup batch.
+
+- **Screen-limit concurrency**: added a short org-level enforcement lease/stamp so concurrent admin sessions do not start the same screen-limit batch, while keeping per-screen transaction re-checks before toggling `suspended`.
+- **Cron enforcement**: updated `/api/screen-monitor` screen-limit writes to use Firestore transactions, preventing duplicate stale writes when cron and admin sessions overlap.
+- **YouTube fallback defense**: tightened YouTube ID parsing so thumbnail/embed fallback URLs are only built from bare valid IDs or recognized YouTube hosts, not arbitrary URLs with a `v=` query parameter.
+- **Handoff cleanup**: removed stale `#24`, `#34`, and `CRON_SECRET` query fallback carryover notes from `NEXT_CHAT_CONTEXT.md`.
+
 ## 2026-05-05 — Codex — Add tvOS player source scaffold
 
 Started the non-Mac portion of Phase 5.4.5 Apple TV support.

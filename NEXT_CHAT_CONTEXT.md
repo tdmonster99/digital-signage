@@ -70,10 +70,8 @@ Reference: the full audit lives in conversation context; the commit log + DEVLOG
 ### Other Medium / Low items still open
 
 - #18 pairing `data.orgId` spread shadow — addressed with #33 by always using `currentOrgId` during screen pairing
-- #24 `enforceScreenLimit` runs from every admin's session — concurrent admins double-write
 - #25 CSS-injection / minor XSS via `screen.id` in inline onclick (defense-in-depth)
 - #31 `applyPlaylist` silently drops unknown slide types
-- #34 youtubeFallback background uses unescaped URL (videoId is validated, low risk)
 - #36–#42 login.html buttons not disabled during async (#36/#37/#38), `showLinkAccountPrompt` unescaped email innerHTML (#40), swallowed `getRedirectResult` errors (#41)
 
 ### Mobile.html small items
@@ -101,7 +99,7 @@ These remain from earlier days:
 4. **Phase 5.4 platform work** — agreed sequence: player compatibility foundation, Android, ChromeOS Kiosk, Tizen, webOS, tvOS, later Fire/BrightSign. 5.4.0 diagnostics are shipped. 5.4.1 Android has a `player-android/` WebView shell with fullscreen, wake behavior, boot receiver, network/renderer recovery, reset/reload menu, native shell diagnostics, configurable player URL, release-signing hooks, optional device-owner lock-task mode, and production smoke/kiosk docs; remaining Android work is release-key creation plus emulator/real-device validation. 5.4.2 ChromeOS runbook is in `player-chromeos/`. 5.4.3 Tizen is in `player-tizen/`; Windows-local `.wgt` packaging/signing succeeded with Tizen Studio at `C:\tizen-studio`, `profiles.xml` at `C:\tizen-studio-data\profile\profiles.xml`, and Samsung profile `zigns-tv-dev`. 5.4.4 webOS is in `player-webos/`; Windows-local `.ipk` packaging succeeded with `@webos-tools/cli` 3.2.3. 5.4.5 tvOS is in `player-tvos/` as a source scaffold/runbook that still needs Xcode/macOS for project creation, signing, and Apple TV validation. Remaining platform work is real-device install/launch/playback validation.
 5. **Analytics daily rollup** — aggregation cron to prevent expensive dashboard queries at scale
 6. **Google Cloud OAuth verification** — user is mid-flow; needs to verify `zigns.io` ownership in Search Console (TXT record on `@`) before branding goes through
-7. **CRON_SECRET in URL query** — currently logged. Switch to `Authorization: Bearer` header only.
+7. **CRON_SECRET query fallback** — complete for `screen-monitor.js`, `cap-poll.js`, and `analytics-rollup.js`; query-string secret requests return 401. Keep future cron endpoints header-only.
 
 ## Manual Testing Wishlist
 

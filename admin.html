@@ -12063,18 +12063,21 @@ function parseYoutubeId(input) {
   if (/^[A-Za-z0-9_-]{11}$/.test(input)) return input; // bare video ID
   try {
     const url = new URL(input.includes('://') ? input : `https://${input}`);
-    const host = url.hostname.replace(/^www\./, '').replace(/^m\./, '');
+    const host = url.hostname.toLowerCase().replace(/^www\./, '').replace(/^m\./, '');
     if (host === 'youtu.be') {
       const id = url.pathname.slice(1).split('/')[0];
       return /^[A-Za-z0-9_-]{11}$/.test(id) ? id : null;
     }
+    if (!['youtube.com', 'youtube-nocookie.com', 'music.youtube.com'].includes(host)) return null;
     const v = url.searchParams.get('v');
     if (/^[A-Za-z0-9_-]{11}$/.test(v || '')) return v;
     const m = url.pathname.match(/\/(?:embed|shorts|live|v)\/([A-Za-z0-9_-]{11})/);
     if (m) return m[1];
   } catch {}
-  const m = input.match(/(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:embed|shorts|live|v)\/|[?&]v=)([A-Za-z0-9_-]{11})/);
-  if (m) return m[1];
+  const direct = input.match(/(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:embed|shorts|live|v)\/)([A-Za-z0-9_-]{11})/i);
+  if (direct) return direct[1];
+  const watch = input.match(/youtube(?:-nocookie)?\.com\/watch\?[^#\s]*[?&]v=([A-Za-z0-9_-]{11})/i);
+  if (watch) return watch[1];
   return null;
 }
 
@@ -20929,6 +20932,12 @@ let _screensReady   = false;
 let _pendingPublishModal = false;
 let _screenLimitEnforceInFlight = false;
 let _screenLimitEnforcePending  = false;
+const SCREEN_LIMIT_ENFORCE_LEASE_MS = 30 * 1000;
+const SCREEN_LIMIT_ENFORCE_DEDUP_MS = 15 * 1000;
+const _screenLimitEnforcerId = (() => {
+  try { return crypto.randomUUID(); }
+  catch { return `admin-${Date.now()}-${Math.random().toString(36).slice(2)}`; }
+})();
 
 function initScreensPage() {
   if (screensUnsub) { renderScreens(_cachedScreens); return; }
@@ -20973,6 +20982,80 @@ function _desiredScreenLimitUpdates(screens, screenLimit) {
     .filter(({ screen, shouldSuspend }) => (screen.suspended === true) !== shouldSuspend);
 }
 
+function _screenLimitHash(input) {
+  let hash = 2166136261;
+  const text = String(input || '');
+  for (let i = 0; i < text.length; i++) {
+    hash ^= text.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(36);
+}
+
+function _screenLimitDesiredKey(screens, screenLimit) {
+  const plan = _sortScreensForLimit(screens)
+    .map((screen, index) => [
+      screen.id || '',
+      index >= screenLimit ? 'suspend' : 'active',
+      screen.suspended === true ? 'currently-suspended' : 'currently-active',
+    ].join(':'))
+    .join('|');
+  return _screenLimitHash(`${screenLimit}|${plan}`);
+}
+
+async function _claimScreenLimitEnforcement(orgId, desiredKey) {
+  const orgRef = doc(db, 'organizations', orgId);
+  const now = Date.now();
+
+  return runTransaction(db, async tx => {
+    const snap = await tx.get(orgRef);
+    if (!snap.exists()) return false;
+
+    const gate = snap.data().screenLimitEnforcement || {};
+    const leaseUntil = Date.parse(gate.leaseUntil || '');
+    const completedAt = Date.parse(gate.completedAt || '');
+    const sameRecentBatch = gate.desiredKey === desiredKey
+      && Number.isFinite(completedAt)
+      && (now - completedAt) < SCREEN_LIMIT_ENFORCE_DEDUP_MS;
+    const lockedByAnotherSession = Number.isFinite(leaseUntil)
+      && leaseUntil > now
+      && gate.owner !== _screenLimitEnforcerId;
+
+    if (sameRecentBatch || lockedByAnotherSession) return false;
+
+    tx.update(orgRef, {
+      screenLimitEnforcement: {
+        desiredKey,
+        owner: _screenLimitEnforcerId,
+        startedAt: new Date(now).toISOString(),
+        leaseUntil: new Date(now + SCREEN_LIMIT_ENFORCE_LEASE_MS).toISOString(),
+      },
+    });
+    return true;
+  });
+}
+
+async function _completeScreenLimitEnforcement(orgId, desiredKey) {
+  const orgRef = doc(db, 'organizations', orgId);
+  const nowIso = new Date().toISOString();
+
+  await runTransaction(db, async tx => {
+    const snap = await tx.get(orgRef);
+    if (!snap.exists()) return;
+
+    const gate = snap.data().screenLimitEnforcement || {};
+    if (gate.owner !== _screenLimitEnforcerId || gate.desiredKey !== desiredKey) return;
+
+    tx.update(orgRef, {
+      screenLimitEnforcement: {
+        ...gate,
+        completedAt: nowIso,
+        leaseUntil: nowIso,
+      },
+    });
+  });
+}
+
 async function _setScreenSuspendedStateIfNeeded(screenId, orgId, shouldSuspend) {
   const screenRef = doc(db, 'screens', screenId);
   await runTransaction(db, async tx => {
@@ -20987,7 +21070,8 @@ async function _setScreenSuspendedStateIfNeeded(screenId, orgId, shouldSuspend) 
 
 // Suspend screens that exceed the current plan's screensAllowed. Oldest-first
 // wins: screens are kept by registration order, newest overflow gets suspended.
-// Uses transactions so concurrent admin tabs re-check the current doc before writing.
+// Uses an org-level short lease plus per-screen transactions so concurrent admin
+// sessions and cron runs do not duplicate the same enforcement batch.
 async function enforceScreenLimit(screens) {
   if (!currentOrgId || currentRole !== 'admin') return;
   const orgId = currentOrgId;
@@ -21001,12 +21085,30 @@ async function enforceScreenLimit(screens) {
     return;
   }
 
+  const desiredKey = _screenLimitDesiredKey(screens, screenLimit);
   _screenLimitEnforceInFlight = true;
   try {
+    let claimed = false;
+    try {
+      claimed = await _claimScreenLimitEnforcement(orgId, desiredKey);
+    } catch (e) {
+      console.warn('enforceScreenLimit lock failed:', e.message);
+      return;
+    }
+    if (!claimed) return;
+
+    const failures = [];
     await Promise.all(updates.map(({ screen, shouldSuspend }) =>
       _setScreenSuspendedStateIfNeeded(screen.id, orgId, shouldSuspend)
-        .catch(e => console.warn('enforceScreenLimit write failed for', screen.id, e.message))
+        .catch(e => {
+          failures.push(screen.id);
+          console.warn('enforceScreenLimit write failed for', screen.id, e.message);
+        })
     ));
+    if (!failures.length) {
+      await _completeScreenLimitEnforcement(orgId, desiredKey)
+        .catch(e => console.warn('enforceScreenLimit completion failed:', e.message));
+    }
   } finally {
     _screenLimitEnforceInFlight = false;
     if (_screenLimitEnforcePending) {
@@ -24950,8 +25052,7 @@ function _mzCollectZones() {
     const c       = { ...state.content };
     // Parse YouTube video ID from URL
     if (type === 'youtube' && c.url) {
-      const m = c.url.match(/(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/);
-      c.videoId = m ? m[1] : c.url;
+      c.videoId = parseYoutubeId(c.url);
     }
     return { id: z.id, x: z.x, y: z.y, w: z.w, h: z.h, label: z.label, contentType: type, content: c };
   });

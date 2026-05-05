@@ -865,18 +865,21 @@
     if (isYoutubeVideoId(input)) return input;
     try {
       const url = new URL(input.includes('://') ? input : `https://${input}`);
-      const host = url.hostname.replace(/^www\./, '').replace(/^m\./, '');
+      const host = url.hostname.toLowerCase().replace(/^www\./, '').replace(/^m\./, '');
       if (host === 'youtu.be') {
         const id = url.pathname.slice(1).split('/')[0];
         return isYoutubeVideoId(id) ? id : null;
       }
+      if (!['youtube.com', 'youtube-nocookie.com', 'music.youtube.com'].includes(host)) return null;
       const v = url.searchParams.get('v');
       if (isYoutubeVideoId(v)) return v;
       const m = url.pathname.match(/\/(?:embed|shorts|live|v)\/([A-Za-z0-9_-]{11})/);
       if (m) return m[1];
     } catch {}
-    const m = input.match(/(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:embed|shorts|live|v)\/|[?&]v=)([A-Za-z0-9_-]{11})/);
-    return m ? m[1] : null;
+    const direct = input.match(/(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:embed|shorts|live|v)\/)([A-Za-z0-9_-]{11})/i);
+    if (direct) return direct[1];
+    const watch = input.match(/youtube(?:-nocookie)?\.com\/watch\?[^#\s]*[?&]v=([A-Za-z0-9_-]{11})/i);
+    return watch ? watch[1] : null;
   }
 
   function getYoutubeSlideId(slide) {
