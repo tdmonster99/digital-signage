@@ -216,9 +216,9 @@ Set in Vercel Dashboard → digital-signage project → Settings → Environment
 Production: `https://app.zigns.io` (custom subdomain, replaced `digital-signage-pi.vercel.app` on 2026-04-07).
 
 ## Slide types recognized by `display.html`
-`applyPlaylist()` in `display.html` filters out any slide type it doesn't explicitly recognize — adding a new widget type requires updating this filter or the slide will be silently dropped from the playlist.
+`applyPlaylist()` in `display.html` validates expanded playlist slides against `PLAYABLE_SLIDE_TYPES`. Unknown or incomplete slide payloads are skipped, logged, and emitted as player diagnostics so a bad slide cannot blank the whole playlist.
 
-Current recognized types: `designed`, `video`, `youtube`, `webpage`, `image` (inferred from `url`), `clock`, `qr`, `weather`, `group` (expanded to designed children).
+Current recognized types: `image`, `designed`, `video`, `audio`, `youtube`, `webpage`, `clock`, `qr`, `weather`, `countdown`, `multizone`, `googlesheets`, `googlereviews`, `instagram`, `menuboard`, plus `group` slides expanded to designed children before validation.
 
 ## Workflow docs
 - **`ROADMAP.md`** — prioritized feature list (Phase 1/2/3) that drives what to build next. Reference this when the user asks "what's next".

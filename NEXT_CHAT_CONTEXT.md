@@ -1,4 +1,4 @@
-# Next Chat Context (2026-04-27, sessions 40–45)
+# Next Chat Context (updated 2026-05-05)
 
 Use this as the first-read handoff snapshot before making new changes.
 
@@ -6,12 +6,13 @@ Use this as the first-read handoff snapshot before making new changes.
 
 Two parallel tracks have been running today:
 
-**Track 1 — Code-review audit.** A `superpowers:code-reviewer` pass on `admin.html`, `mobile.html`, `login.html`, `display.html` found **5 Critical, 6 High, 9 Medium, 20+ Low** bugs. **17 / 40+ fixed** (all Critical + all High + 6 Medium across sessions 40–42). Backlog below.
+**Track 1 — Code-review audit.** A `superpowers:code-reviewer` pass on `admin.html`, `mobile.html`, `login.html`, `display.html` found **5 Critical, 6 High, 9 Medium, 20+ Low** bugs. Critical, High, and the recommended Medium backlog are now closed, including #24, #25, #31, #33, #34, and login #36-#42. Remaining known items are smaller mobile polish/backlog entries below.
 
 **Track 2 — Kitcast competitive gaps.** A side-by-side comparison vs Kitcast Pro lives in `app/KITCAST_GAP_ANALYSIS.md`. Closed since the doc was written: audio playback (sessions 44–45). Multi-user is broadly shipping; rough edges tightened in session 43. Platform compatibility is now underway: 5.4.0 diagnostics shipped, 5.4.1 Android has a native WebView shell, 5.4.2 ChromeOS has a managed-kiosk runbook, 5.4.3/5.4.4 Tizen/webOS have first wrapper scaffolds plus proven local package builds, and 5.4.5 tvOS has a source-level SwiftUI/WKWebView scaffold/runbook ready for later Xcode import. Top remaining gaps: SSO/SAML, MDM/Zero-Touch, real-device platform validation, and remaining emergency/CAP polish.
 
 **Resume points:**
-- Audit: continue Medium batch — items below.
+- Audit: only the smaller mobile backlog below remains from the known review list.
+- Pilot: `docs/PILOT_QUICKSTART.md` is the current tester onboarding/runbook. Novares should use the explicit pending invites in the Novares org, not personal-org fallback grants.
 - Kitcast → **Phase 5 in `ROADMAP.md`** is the next focus. Tags/priority/emergency playlist and CAP foundations are mostly shipped. Platform sequence agreed 2026-05-03: 5.4.0 player compatibility foundation → 5.4.1 Android → 5.4.2 ChromeOS Kiosk → 5.4.3 Tizen → 5.4.4 webOS → 5.4.5 tvOS → later Fire/BrightSign. Android now has release-signing hooks, configurable player URL, optional device-owner lock-task mode, and production smoke/kiosk docs; ChromeOS has a managed-kiosk runbook; Tizen/webOS have redirect-wrapper scaffolds, package-spike scripts, generated PNG package icons, and Windows-local package builds; tvOS has a source-level SwiftUI/WKWebView scaffold and runbook, but Xcode project creation/signing requires a Mac. Next likely work: validate Android/ChromeOS/Tizen/webOS on hardware; for Tizen, check whether Samsung hardware requires regenerating the distributor certificate with a TV DUID; for tvOS, create the Xcode project when macOS is available.
 
 ## Sessions This Day (2026-04-27)
@@ -67,12 +68,14 @@ Reference: the full audit lives in conversation context; the commit log + DEVLOG
 - **#8/#20** mobile upload validation / zero-byte upload rejection — addressed. Mobile image uploads reject empty files, non-images, and images over 25 MB; `/api/upload-url` requires `size`, rejects zero-byte files, applies server-side caps, and keeps browser uploads under `signage/`.
 - **#23/#29** listener lifecycle cleanup — addressed. Admin/mobile slideshow listeners are torn down on page navigation/sign-out, and broadcast listeners are cleaned up/rebound by org.
 
-### Other Medium / Low items still open
+### Recently closed carryover
 
-- #18 pairing `data.orgId` spread shadow — addressed with #33 by always using `currentOrgId` during screen pairing
-- #25 CSS-injection / minor XSS via `screen.id` in inline onclick (defense-in-depth)
-- #31 `applyPlaylist` silently drops unknown slide types
-- #36–#42 login.html buttons not disabled during async (#36/#37/#38), `showLinkAccountPrompt` unescaped email innerHTML (#40), swallowed `getRedirectResult` errors (#41)
+- #18 pairing `data.orgId` spread shadow — addressed with #33 by always using `currentOrgId` during screen pairing.
+- #24 concurrent screen-limit admin double-write — addressed with org-level leases and transactional cron/admin screen updates.
+- #25 CSS-injection / minor XSS via `screen.id` in inline handlers — screen cards and publish rows use data attributes + explicit attribute escaping.
+- #31 `applyPlaylist` silently drops unknown slide types — display now validates slide payloads, skips bad entries, logs them, and emits player diagnostics.
+- #34 YouTube fallback defense-in-depth — thumbnail/embed helpers now accept only bare valid IDs or recognized YouTube hosts.
+- #36-#42 login hardening — shared async busy guard, visible redirect errors, safe link-account prompt DOM.
 
 ### Mobile.html small items
 

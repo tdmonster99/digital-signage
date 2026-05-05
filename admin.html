@@ -11423,7 +11423,7 @@ function _renderPublishList(screens, shows) {
         ? 'Currently showing this slideshow'
         : `Currently: ${curShow}`;
       const locText    = screen.location ? ` · ${screen.location}` : '';
-      const safeScreenId = escHtml(screen.id);
+      const safeScreenId = escAttr(screen.id);
       return `<label class="publish-screen-row${selected ? ' selected' : ''}" data-screen-id="${safeScreenId}">
         <input type="checkbox" ${selected ? 'checked' : ''} data-screen-id="${safeScreenId}">
         <div class="screen-status-badge ${online ? 'online' : 'offline'}" style="flex-shrink:0">
@@ -21138,6 +21138,7 @@ const PLAYER_DIAGNOSTIC_TYPES = new Set([
   'player_offline',
   'player_watchdog_restart',
   'player_slideshow_error',
+  'playlist_slide_skipped',
 ]);
 
 function formatPlayerDiagTime(value) {
@@ -21194,7 +21195,7 @@ function renderPlayerDiagnostics(screenId, events) {
   const platformFamily = platform.family || bootEvent.platformFamily || '—';
   const shell = platform.shell || {};
   const shellLabel = shell.type ? `${shell.type}${shell.version ? ' ' + shell.version : ''}` : '';
-  const lastIssue = latest.player_slideshow_error || latest.player_watchdog_restart || null;
+  const lastIssue = latest.player_slideshow_error || latest.playlist_slide_skipped || latest.player_watchdog_restart || null;
 
   if (!Object.keys(latest).length) {
     el.innerHTML = `<div style="color:var(--muted);line-height:1.5">
@@ -21304,7 +21305,7 @@ function renderScreens(screens) {
         ? `<div class="screen-tag-chips">${screen.tags.map(t => `<span class="screen-tag-chip">${escHtml(t)}</span>`).join('')}</div>`
         : '';
 
-      const safeScreenId = escHtml(screen.id);
+      const safeScreenId = escAttr(screen.id);
       return `<div class="screen-card" data-screen-id="${safeScreenId}">
         <div class="screen-thumb">
           <div class="screen-thumb-monitor">
@@ -21408,6 +21409,10 @@ function escHtml(s) {
   // is safe to interpolate into either single- or double-quoted attribute values
   // including inline onclick="foo('${escHtml(x)}')" patterns used throughout this file.
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function escAttr(s) {
+  return escHtml(s);
 }
 
 // ── Apps page filter / search ─────────────────────────────────────────────

@@ -4,6 +4,15 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-05 — Codex — Close stale audit handoff and add pilot quickstart
+
+Follow-up for the remaining recommended audit path after confirming the code fixes had already landed.
+
+- **Playlist diagnostics (#31)**: skipped unsupported/incomplete slides now flush player diagnostics immediately, and the admin Screen diagnostics panel surfaces `playlist_slide_skipped` as a last issue.
+- **Screen ID defense (#25)**: added an explicit attribute escaping helper for screen-id data attributes in screen cards and publish rows.
+- **Handoff cleanup**: updated stale `NEXT_CHAT_CONTEXT.md`, `AGENTS.md`, and `CLAUDE.md` entries so #25, #31, #36-#42, Phase 4 status, and recognized slide types match the current code.
+- **Pilot runbook**: added `docs/PILOT_QUICKSTART.md` for Novares pilot onboarding, roles, pairing, publish smoke checks, and support intake.
+
 ## 2026-05-05 — Codex — Harden screen-limit and YouTube fallback paths
 
 Follow-up for the remaining audit cleanup batch.

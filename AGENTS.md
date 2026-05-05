@@ -9,9 +9,9 @@ The authoritative architecture reference is **CLAUDE.md** — read it first and 
 - **`ROADMAP.md`** — Phase 4 feature list with completion status; check the summary table for what's done vs. remaining
 - **`DEVLOG.md`** — running session log; prepend a new entry after any session that makes changes
 
-## What's been built (Phase 4 as of 2026-04-18)
+## What's been built (Phase 4 as of 2026-05-05)
 
-All of the following are shipped and working in production:
+Phase 4 competitive parity is complete. All of the following are shipped and working in production:
 
 | Feature | Notes |
 |---|---|
@@ -20,19 +20,18 @@ All of the following are shipped and working in production:
 | Digital menu board | `menuboard` slide type, fixed 2026-04-18 |
 | PowerPoint integration | CloudConvert API → `api/import-pptx.js` |
 | Canva integration | OAuth 2.0 + Connect API → `api/canva.js` |
+| Social media feeds | Instagram + Google Reviews widgets |
+| Content templates library | Template gallery + insertion flow |
 | Google Sheets widget | `googlesheets` slide type → `api/sheets-proxy.js` |
 | Emergency broadcast override | `broadcasts/{orgId}` Firestore doc |
+| Content approval workflow | Admin review/approve/reject flow |
 | Proof of play / analytics | `organizations/{orgId}/analytics` events |
 | QR code, Weather, Clock, RSS ticker, Countdown | all widget slide types |
 | Working hours, PDF display, Media expiration | display.html enforcement |
 
-## What's still remaining (Phase 4)
+## Current focus
 
-| # | Feature | Priority |
-|---|---|---|
-| 6 | Social media feeds (Instagram + Google Reviews) | High |
-| 7 | Content templates library | High |
-| 11 | Content approval workflow | Medium |
+Phase 5 platform compatibility and pro infrastructure are underway. See `ROADMAP.md` and `NEXT_CHAT_CONTEXT.md` before choosing the next task.
 
 ## Critical rules — do not violate
 
@@ -42,7 +41,7 @@ All of the following are shipped and working in production:
 4. **Vercel plan: Pro.** The old 12-function Hobby cap no longer applies. Still count `api/` before adding functions and prefer merging small related routes when it avoids needless serverless sprawl.
 5. **Firebase SDK via CDN.** Imported from `https://www.gstatic.com/firebasejs/10.12.0/`. Do not npm-install Firebase.
 6. **Deployment is automatic.** `git push origin main` triggers Vercel. No build step needed.
-7. **New slide types must be added to the `applyPlaylist` filter in `display.html`** or they will be silently dropped from playback.
+7. **New slide types must be added to `PLAYABLE_SLIDE_TYPES` in `display.html`** plus the render/hide path, or the player will skip them and emit diagnostics.
 8. **DEVLOG.md**: prepend a new dated entry at the top after any session that makes changes. Include what was built and any required setup steps (env vars, Firestore rules, third-party accounts).
 
 ## Pattern for new widget slide types
@@ -56,4 +55,4 @@ Follow the same structure as `googlesheets` or `menuboard`:
 5. Save path: push to `slides[]` + `renderGrid()` + `pushToFirestore()` for current show; `_addSlideToShow()` for other shows
 6. `isXxx = s.type === 'xxx'` detection in `renderGrid()` (around line 10835)
 7. Edit button wired in the slide list render
-8. `display.html`: add `s.type === 'xxx'` to the `applyPlaylist` filter; add a `<div id="stageXxx" class="stage"></div>`; add render + hide logic in the crossfade block
+8. `display.html`: add `'xxx'` to `PLAYABLE_SLIDE_TYPES`; add a `<div id="stageXxx" class="stage"></div>`; add render + hide logic in the crossfade block
