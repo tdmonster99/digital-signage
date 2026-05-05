@@ -626,18 +626,19 @@ aside {
   background: rgba(245,158,11,.14); color: #b45309;
 }
 .show-item-review-badge.changes { background: rgba(239,68,68,.12); color: #dc2626; }
-.show-rename-btn { background: none; border: none; cursor: pointer; color: var(--muted); padding: 2px 4px; border-radius: 4px; opacity: 0; transition: opacity .15s; flex-shrink: 0; line-height: 0; }
-.show-item:hover .show-rename-btn, .show-item.active .show-rename-btn { opacity: 1; }
+.show-rename-btn,
+.show-delete-btn { background: none; border: none; cursor: pointer; color: var(--muted); padding: 2px 4px; border-radius: 4px; opacity: 0; transition: opacity .15s, color .15s; flex-shrink: 0; line-height: 0; }
+.show-item:hover .show-rename-btn,
+.show-item.active .show-rename-btn,
+.show-item:hover .show-delete-btn,
+.show-item.active .show-delete-btn { opacity: 1; }
 .show-rename-btn:hover { color: var(--accent); }
+.show-delete-btn:hover { color: var(--danger); }
+.show-delete-btn:disabled { display: none; }
 .show-title-wrap { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; }
 .show-title-rename-btn { background: none; border: none; cursor: pointer; color: var(--muted); padding: 2px 4px; border-radius: 4px; opacity: 0; transition: opacity .15s; line-height: 0; }
-.show-title-delete-btn { background: none; border: none; cursor: pointer; color: var(--muted); padding: 2px 4px; border-radius: 4px; opacity: 0; transition: opacity .15s, color .15s; line-height: 0; }
-.show-title-wrap:hover .show-title-rename-btn,
-.show-title-wrap:hover .show-title-delete-btn { opacity: 1; }
+.show-title-wrap:hover .show-title-rename-btn { opacity: 1; }
 .show-title-rename-btn:hover { color: var(--accent); }
-.show-title-delete-btn:hover { color: var(--danger); }
-.show-title-delete-btn:disabled { opacity: 0; cursor: not-allowed; color: var(--muted); }
-.show-title-wrap:hover .show-title-delete-btn:disabled { opacity: 0.25; }
 .show-title-input { font-size: 20px; font-weight: 600; border: none; border-bottom: 2px solid var(--accent); outline: none; background: transparent; color: var(--text); width: 100%; font-family: inherit; }
 
 .btn-new-show {
@@ -4233,12 +4234,6 @@ body.role-editor .admin-action {
         <h2 id="showTitle">Main Display</h2>
         <button class="show-title-rename-btn" onclick="startTitleRename()" title="Rename slideshow">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-        </button>
-        <button class="show-title-delete-btn admin-action" id="btnDeleteShow" onclick="deleteCurrentSlideshow()" title="Delete slideshow" aria-label="Delete slideshow">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-            <path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
-          </svg>
         </button>
       </div>
       <div class="toolbar-actions">
@@ -11152,9 +11147,7 @@ function canDeleteCurrentSlideshow() {
 function updateDeleteSlideshowState() {
   const canDelete = canDeleteCurrentSlideshow();
   const title = canDelete ? 'Delete slideshow' : 'You must keep at least one slideshow';
-  ['btnDeleteShow'].forEach(id => {
-    const btn = document.getElementById(id);
-    if (!btn) return;
+  document.querySelectorAll('.show-delete-btn').forEach(btn => {
     btn.disabled = !canDelete;
     btn.title = title;
   });
@@ -11164,11 +11157,15 @@ function makeShowItem(s) {
   const item = document.createElement('div');
   item.className  = 'show-item';
   item.dataset.id = s.id;
-  item.innerHTML  = `<div class="show-item-main"><div class="show-item-top"><span class="show-item-name">${escHtml(s.name)}</span><span class="show-item-review-badge"></span></div><div class="show-item-tags"></div></div><button class="show-rename-btn" title="Rename" tabindex="-1"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button><span class="show-item-count">0 slides</span>`;
+  item.innerHTML  = `<div class="show-item-main"><div class="show-item-top"><span class="show-item-name">${escHtml(s.name)}</span><span class="show-item-review-badge"></span></div><div class="show-item-tags"></div></div><button class="show-rename-btn" title="Rename" tabindex="-1"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button><button class="show-delete-btn admin-action" title="Delete slideshow" tabindex="-1"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button><span class="show-item-count">0 slides</span>`;
   renderShowTagsOnItem(item, s);
   item.querySelector('.show-rename-btn').addEventListener('click', e => {
     e.stopPropagation();
     startListItemRename(s.id, item);
+  });
+  item.querySelector('.show-delete-btn').addEventListener('click', e => {
+    e.stopPropagation();
+    deleteSlideshowById(s.id);
   });
   item.addEventListener('click', () => {
     slides = [];
@@ -14104,10 +14101,10 @@ window.newShowPrompt = async () => {
   }
 };
 
-window.deleteCurrentSlideshow = async () => {
+async function deleteSlideshowById(showId) {
   const shows = knownSlideshows();
-  const show = shows.find(s => s.id === currentShowId);
-  if (!show || !currentShowId) {
+  const show = shows.find(s => s.id === showId);
+  if (!show || !showId) {
     toast('Select a slideshow to delete.', true);
     return;
   }
@@ -14116,13 +14113,16 @@ window.deleteCurrentSlideshow = async () => {
     updateDeleteSlideshowState();
     return;
   }
-  if (!confirm(`Delete "${show.name || currentShowName || currentShowId}"?\n\nThis removes the slideshow and its slides. Screens using it will be moved to another slideshow.`)) return;
+  const deletingId = showId;
+  const deletingCurrent = deletingId === currentShowId;
+  const deleteName = show.name || (deletingCurrent ? currentShowName : '') || deletingId;
+  if (!confirm(`Delete "${deleteName}"?\n\nThis removes the slideshow and its slides. Screens using it will be moved to another slideshow.`)) return;
 
-  const desktopBtn = document.getElementById('btnDeleteShow');
-  const oldDesktop = desktopBtn?.innerHTML;
-  if (desktopBtn) { desktopBtn.disabled = true; desktopBtn.innerHTML = 'Deleting...'; }
+  const targetItem = document.querySelector(`#showList .show-item[data-id="${CSS.escape(deletingId)}"]`);
+  const deleteBtn = targetItem?.querySelector('.show-delete-btn');
+  const oldButtonHtml = deleteBtn?.innerHTML;
+  if (deleteBtn) { deleteBtn.disabled = true; deleteBtn.textContent = '...'; }
 
-  const deletingId = currentShowId;
   try {
     const result = await deleteSlideshowOnServer(deletingId);
     const nextShows = Array.isArray(result.slideshows)
@@ -14130,9 +14130,17 @@ window.deleteCurrentSlideshow = async () => {
       : shows.filter(s => s.id !== deletingId);
     currentOrg = { ...(currentOrg || {}), slideshows: nextShows };
 
-    document.querySelector(`#showList .show-item[data-id="${CSS.escape(deletingId)}"]`)?.remove();
-    stopActiveShowListener();
+    targetItem?.remove();
 
+    if (!deletingCurrent) {
+      updateDeleteSlideshowState();
+      syncPreviewSelect();
+      toast('Slideshow deleted ✓');
+      logActivity(`Slideshow "${deleteName}" deleted`);
+      return;
+    }
+
+    stopActiveShowListener();
     const fallbackShowId = result.fallbackShowId || nextShows[0]?.id;
     const fallbackItem = fallbackShowId
       ? document.querySelector(`#showList .show-item[data-id="${CSS.escape(fallbackShowId)}"]`)
@@ -14152,16 +14160,18 @@ window.deleteCurrentSlideshow = async () => {
     }
     updateDeleteSlideshowState();
     toast('Slideshow deleted ✓');
-    logActivity(`Slideshow "${show.name || deletingId}" deleted`);
+    logActivity(`Slideshow "${deleteName}" deleted`);
   } catch(e) {
     console.warn('Could not delete slideshow:', e.message);
     toast('Could not delete slideshow: ' + e.message, true);
     updateDeleteSlideshowState();
   } finally {
-    if (desktopBtn && oldDesktop) desktopBtn.innerHTML = oldDesktop;
+    if (deleteBtn && oldButtonHtml) deleteBtn.innerHTML = oldButtonHtml;
     updateDeleteSlideshowState();
   }
-};
+}
+
+window.deleteCurrentSlideshow = async () => deleteSlideshowById(currentShowId);
 
 window.openShowOptions = async function(showId = currentShowId) {
   if (!showId) return;

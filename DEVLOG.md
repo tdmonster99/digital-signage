@@ -4,6 +4,14 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-04 — Codex — Move slideshow delete to list rows
+
+Follow-up for slideshow deletion placement.
+
+- **Delete affordance**: moved the slideshow trash icon out of the main title area and into each slideshow row next to the rename icon.
+- **Targeted deletion**: row-level delete now deletes the clicked slideshow, even if it is not the currently selected one.
+- **Safety**: delete icons hide when the organization only has one slideshow remaining.
+
 ## 2026-05-04 — Codex — Refine slideshow controls
 
 Follow-up for slideshow toolbar clarity and per-slide duration parity.
