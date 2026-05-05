@@ -4,6 +4,14 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-05 — Codex — Verify slideshow subcollection migration state
+
+Follow-up after packaging runbook deployment before starting new platform work.
+
+- **Production audit**: ran a read-only Firestore audit across all 16 slideshow docs; no parent `slides[]` or `draftSlides[]` arrays remain and no slideshow needs subcollection backfill.
+- **Migration status**: confirmed production slideshow payloads are already using `slideshows/{id}/slides/{slideId}` and `draftSlides/{slideId}` subcollections, so no write migration was needed today.
+- **Handoff cleanup**: updated the next-chat carryover note so the completed migration is not listed as pending work.
+
 ## 2026-05-05 — Codex — Codify Tizen and webOS local packaging
 
 Follow-up after local Windows package/signing validation.
