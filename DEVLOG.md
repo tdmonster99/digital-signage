@@ -4,6 +4,13 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-05 — Codex — Leave post-pair screen name blank
+
+Small UX follow-up for the new screen naming prompt.
+
+- **Naming prompt**: the post-pair screen name input now starts blank with the example placeholder instead of prefilled with the generated default name.
+- **Skip behavior**: Skip still keeps the generated default name for fast pairing.
+
 ## 2026-05-05 — Codex — Add post-pair screen naming
 
 Follow-up for pilot usability while adding physical screens.

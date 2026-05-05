@@ -21879,13 +21879,12 @@ window.confirmPairingCode = async function() {
 
     document.getElementById('pairingPendingSection').style.display = 'none';
     document.getElementById('pairingNameSection').style.display = 'flex';
-    document.getElementById('pairingScreenNameInput').value = screenName;
+    document.getElementById('pairingScreenNameInput').value = '';
     document.getElementById('pairingNameSub').textContent = `"${screenName}" is connected. Give it a name you can match to the physical display.`;
     document.getElementById('pairingNameNote').textContent = `Skip keeps the default name: ${screenName}.`;
     setTimeout(() => {
       const input = document.getElementById('pairingScreenNameInput');
       input.focus();
-      input.select();
     }, 50);
     logActivity('Screen "' + screenName + '" paired successfully');
   } catch(e) {
