@@ -20,7 +20,7 @@
 
     <access origin="*" subdomains="true" />
     <content src="index.html" />
-    <icon src="icon.svg" />
+    <icon src="icon.png" />
     <name>Zigns Player</name>
     <description>Zigns cloud signage player for Samsung Tizen.</description>
     <author href="https://www.zigns.io" email="support@zigns.io">Zigns</author>

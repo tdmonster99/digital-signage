@@ -4,6 +4,14 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-05 — Codex — Add Tizen and webOS packaging spikes
+
+Continued Phase 5.4 platform compatibility while Android/ChromeOS wait for real hardware validation.
+
+- **Tizen packaging**: added a package-spike script, switched the Tizen manifest to a generated PNG package icon, and documented certificate/profile inputs for `.wgt` signing.
+- **webOS packaging**: added a package-spike script, generated required `icon.png` / `largeicon.png` assets, and documented device setup inputs for `.ipk` packaging/install.
+- **Tooling gate**: local preflight now stops cleanly because `tizen` and `ares-package` are not on PATH; next step is installing Tizen Studio/Samsung TV extension and LG webOS CLI.
+
 ## 2026-05-05 — Codex — Correct Novares pilot onboarding
 
 Follow-up for pilot organization setup.
