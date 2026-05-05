@@ -4,6 +4,14 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-04 — Codex — Refine slideshow controls
+
+Follow-up for slideshow toolbar clarity and per-slide duration parity.
+
+- **Slide duration**: added inline seconds controls to individual slide cards; values save as each slide's `dwell` and the player already honors them.
+- **Toolbar labels**: renamed the slideshow targeting button from `Options` to `Tags`.
+- **Delete placement**: restored the toolbar danger action to `Clear All` only and moved slideshow deletion to an icon beside the slideshow title/rename control.
+
 ## 2026-05-04 — Codex — Expand slideshow transitions
 
 Follow-up for Yodeck-style transition controls.
