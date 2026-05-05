@@ -20,6 +20,7 @@ player-android/**/build/
 *.aab
 
 # Platform player package output
+player-tizen-build/
 player-tizen/.buildResult/
 player-tizen/.metadata/
 player-tizen/.sign/

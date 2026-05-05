@@ -5,11 +5,11 @@ hosted Zigns display player.
 
 ## Status
 
-- Current state: package-ready source scaffold plus a local spike script.
+- Current state: package-ready source scaffold plus Bash and PowerShell spike
+  scripts.
 - Package target: `.ipk` Web app built with the webOS CLI.
-- Local WSL preflight on 2026-05-05: `ares-package`, `ares-install`, and
-  `ares-setup-device` were not on PATH, so package creation could not be
-  completed in this environment.
+- Windows packaging on 2026-05-05 succeeded with `@webos-tools/cli` version
+  `3.2.3`; local CLI deprecation warnings from LG dependencies were non-blocking.
 - Not production-supported until it is packaged, installed, and smoke tested on
   real LG webOS signage hardware.
 
@@ -43,6 +43,17 @@ store distribution, and future platform hooks.
   `ares-launch`, and `ares-setup-device`).
 - `icon.png` and `largeicon.png` exported from `icon.svg` before packaging.
 
+Windows setup notes from the first successful local package:
+
+- Install CLI with `npm install -g @webos-tools/cli`.
+- Verified commands: `ares -V`, `ares-package --version`, `ares-package --help`,
+  `ares-install --help`, and `ares-launch --help`.
+- `DEP0169` / `url.parse()` and older transitive package deprecation warnings
+  are emitted by LG's CLI dependencies. They are noise unless package/install
+  commands fail.
+- Use `ares-config --profile tv` for consumer LG TV testing and
+  `ares-config --profile signage` for LG commercial signage testing.
+
 The checked-in `appinfo.json` points at PNG icons because LG's app metadata docs
 define PNG icons for packaging/submission. Keep the SVG as the source asset;
 `scripts/generate-player-icons.js` exports the package PNGs.
@@ -71,6 +82,18 @@ From the repo root:
 bash player-webos/package-spike.sh
 ```
 
+From Windows PowerShell:
+
+```powershell
+.\player-webos\package-spike.ps1
+```
+
+Default output:
+
+```text
+player-webos\io.zigns.player_0.1.0_all.ipk
+```
+
 The script performs the expected CLI flow:
 
 ```bash
@@ -81,12 +104,17 @@ ares-install --device <device-name> io.zigns.player_0.1.0_all.ipk
 ares-launch --device <device-name> io.zigns.player
 ```
 
-If the script cannot find `ares-package`, it stops before modifying package
-output and prints the missing-tooling gate. Treat the exact command flags as
-spike notes until confirmed against the local webOS CLI and a real LG signage
-panel. The script stages only `appinfo.json`, `index.html`, `icon.png`, and
-`largeicon.png` into a temporary directory so README/scripts are not bundled
-into the TV package.
+If the Bash script cannot find `ares-package`, it stops before modifying package
+output and prints the missing-tooling gate. The scripts stage only
+`appinfo.json`, `index.html`, `icon.png`, and `largeicon.png` into a temporary
+directory so README/scripts are not bundled into the TV package.
+
+To install later when a device target is available:
+
+```powershell
+ares-setup-device
+.\player-webos\package-spike.ps1 -Device "lg-signage-lab" -Install
+```
 
 ## Package Artifacts
 

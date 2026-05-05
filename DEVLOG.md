@@ -4,6 +4,14 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-05 — Codex — Codify Tizen and webOS local packaging
+
+Follow-up after local Windows package/signing validation.
+
+- **Tizen repeatability**: added a PowerShell packaging script that stages files into `C:\Users\<you>\zigns-tizen-build`, configures `profiles.xml`, signs with `zigns-tv-dev`, and optionally installs to a target.
+- **webOS repeatability**: added a PowerShell packaging script for staged `.ipk` builds and optional install/launch with a configured `WEBOS_DEVICE`.
+- **Runbook updates**: documented the Tizen `https` repository fix, Certificate Manager requirement, emulator/HAXM caveat, webOS CLI warning behavior, and remaining real-device validation gates.
+
 ## 2026-05-05 — Codex — Add Tizen and webOS packaging spikes
 
 Continued Phase 5.4 platform compatibility while Android/ChromeOS wait for real hardware validation.
