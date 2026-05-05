@@ -14,7 +14,7 @@ const SLIDE_STORAGE_VERSION = 2;
 const PUBLISHED_SLIDES_COLLECTION = 'slides';
 const DRAFT_SLIDES_COLLECTION = 'draftSlides';
 const PILOT_EMAILS = new Set(
-  (process.env.PILOT_EMAILS || 'astacy@novaresteam.com,tpaul@novaresteam.com')
+  (process.env.PILOT_EMAILS || '')
     .split(',')
     .map(email => email.trim().toLowerCase())
     .filter(Boolean)

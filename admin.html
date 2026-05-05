@@ -9506,7 +9506,11 @@ async function initUserAndOrg(user) {
     // organizations/null and bail to showBootError.
     if (!currentOrgId) {
       if (inviteId) { await acceptInvitation(inviteId, user); }
-      else          { await createOrg(user); }
+      else {
+        const pendingInviteId = await findPendingInviteForUser(user);
+        if (pendingInviteId) await acceptInvitation(pendingInviteId, user);
+        else                 await createOrg(user);
+      }
     } else {
     // Step 2: load the organization doc. Same rule — don't auto-create on error.
     const orgSnap = await getBootDocWithAuthRecovery(
@@ -9524,8 +9528,13 @@ async function initUserAndOrg(user) {
   } else if (inviteId) {
     await acceptInvitation(inviteId, user);
   } else {
-    const merged = await tryMergeAccount(user);
-    if (!merged) await createOrg(user);
+    const pendingInviteId = await findPendingInviteForUser(user);
+    if (pendingInviteId) {
+      await acceptInvitation(pendingInviteId, user);
+    } else {
+      const merged = await tryMergeAccount(user);
+      if (!merged) await createOrg(user);
+    }
   }
 
   // Remove invite param from URL without reload
@@ -9669,6 +9678,23 @@ async function acceptInvitation(inviteId, user) {
   const orgSnap = await getDoc(doc(db, 'organizations', inv.orgId));
   currentOrg   = orgSnap.exists() ? { id: inv.orgId, ...orgSnap.data() } : null;
   toast('Welcome! You joined ' + (currentOrg?.name || 'the organization') + '.');
+}
+
+async function findPendingInviteForUser(user) {
+  const email = (user?.email || '').trim().toLowerCase();
+  if (!email) return null;
+  try {
+    const snap = await getDocs(query(
+      collection(db, 'invitations'),
+      where('email', '==', email),
+      limit(10)
+    ));
+    const pending = snap.docs.find(inviteDoc => (inviteDoc.data()?.status || 'pending') === 'pending');
+    return pending?.id || null;
+  } catch(e) {
+    console.warn('Could not check pending invitations:', e.message);
+    return null;
+  }
 }
 
 function applyRole(role) {

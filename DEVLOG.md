@@ -4,6 +4,14 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-05 — Codex — Correct Novares pilot onboarding
+
+Follow-up for pilot organization setup.
+
+- **Pilot routing**: removed the hardcoded global Novares pilot email fallback so pilot access is driven by explicit grants/invitations rather than any new personal org those emails create.
+- **Invite pickup**: new users now auto-accept a pending invitation for their email during first sign-in, so Novares pilot users land in the Novares organization even without manually pasting the invite link.
+- **Production data correction**: moved the three Novares pending invitations to a separate `Novares` organization and restored the mistakenly touched personal org subscription.
+
 ## 2026-05-04 — Codex — Move slideshow delete to list rows
 
 Follow-up for slideshow deletion placement.
