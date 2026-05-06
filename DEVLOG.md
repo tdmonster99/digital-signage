@@ -4,6 +4,16 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-05 — Codex — Polish pilot support and mobile publish state
+
+Follow-up for the #1-3 pilot-readiness batch.
+
+- **Pairing smoke polish**: rechecked the post-pair screen naming flow and kept the blank friendly-name prompt behavior.
+- **Mobile publish state**: after publishing from mobile, the local slideshow state now clears draft markers immediately and again after refresh, so delayed snapshots do not leave the button stuck or showing stale draft state.
+- **Admin polish**: default slideshow dwell saves now use the existing 1-3600 second clamp helper, and dashboard greetings tolerate blank/consecutive-space display names.
+- **Pilot support**: added copyable issue-report helpers in desktop Profile and mobile Account with user/org/page/browser context for faster pilot feedback.
+- **Handoff cleanup**: updated `NEXT_CHAT_CONTEXT.md` so the closed mobile/admin backlog is no longer listed as pending.
+
 ## 2026-05-05 — Codex — Leave post-pair screen name blank
 
 Small UX follow-up for the new screen naming prompt.

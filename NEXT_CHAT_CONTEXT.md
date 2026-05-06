@@ -11,7 +11,7 @@ Two parallel tracks have been running today:
 **Track 2 — Kitcast competitive gaps.** A side-by-side comparison vs Kitcast Pro lives in `app/KITCAST_GAP_ANALYSIS.md`. Closed since the doc was written: audio playback (sessions 44–45). Multi-user is broadly shipping; rough edges tightened in session 43. Platform compatibility is now underway: 5.4.0 diagnostics shipped, 5.4.1 Android has a native WebView shell, 5.4.2 ChromeOS has a managed-kiosk runbook, 5.4.3/5.4.4 Tizen/webOS have first wrapper scaffolds plus proven local package builds, and 5.4.5 tvOS has a source-level SwiftUI/WKWebView scaffold/runbook ready for later Xcode import. Top remaining gaps: SSO/SAML, MDM/Zero-Touch, real-device platform validation, and remaining emergency/CAP polish.
 
 **Resume points:**
-- Audit: only the smaller mobile backlog below remains from the known review list.
+- Audit: critical/high/recommended medium items plus the smaller mobile backlog are closed. Keep future work focused on new bugs, real-device platform validation, and Phase 5 differentiators.
 - Pilot: `docs/PILOT_QUICKSTART.md` is the current tester onboarding/runbook. Novares should use the explicit pending invites in the Novares org, not personal-org fallback grants.
 - Kitcast → **Phase 5 in `ROADMAP.md`** is the next focus. Tags/priority/emergency playlist and CAP foundations are mostly shipped. Platform sequence agreed 2026-05-03: 5.4.0 player compatibility foundation → 5.4.1 Android → 5.4.2 ChromeOS Kiosk → 5.4.3 Tizen → 5.4.4 webOS → 5.4.5 tvOS → later Fire/BrightSign. Android now has release-signing hooks, configurable player URL, optional device-owner lock-task mode, and production smoke/kiosk docs; ChromeOS has a managed-kiosk runbook; Tizen/webOS have redirect-wrapper scaffolds, package-spike scripts, generated PNG package icons, and Windows-local package builds; tvOS has a source-level SwiftUI/WKWebView scaffold and runbook, but Xcode project creation/signing requires a Mac. Next likely work: validate Android/ChromeOS/Tizen/webOS on hardware; for Tizen, check whether Samsung hardware requires regenerating the distributor certificate with a TV DUID; for tvOS, create the Xcode project when macOS is available.
 
@@ -77,13 +77,13 @@ Reference: the full audit lives in conversation context; the commit log + DEVLOG
 - #34 YouTube fallback defense-in-depth — thumbnail/embed helpers now accept only bare valid IDs or recognized YouTube hosts.
 - #36-#42 login hardening — shared async busy guard, visible redirect errors, safe link-account prompt DOM.
 
-### Mobile.html small items
+### Recently closed mobile/admin small items
 
-- #3 Publish button stuck in "Publishing…" if snapshot delayed
-- #4 `screens.sort()` mutates live array
-- #6 `parseInt(...) || 30` accepts negatives — clamp to [5, 3600]
-- #7 YouTube slide stores `url` field redundantly
-- #9 `name.split(' ')` returns `undefined` initials when consecutive spaces
+- #3 mobile publish state — mobile publish now clears local draft markers immediately and again after refresh so delayed snapshots do not leave stale button state.
+- #4 mobile screen sorting — screen render uses a copied array before sorting.
+- #6 mobile duration parsing — YouTube dwell input is clamped to 5-3600 seconds.
+- #7 mobile YouTube payload — mobile YouTube slides store the normalized `videoId` without redundant URL payload.
+- #9 mobile/admin name splitting — mobile initials tolerate consecutive spaces; dashboard greeting now trims/splits safely.
 
 ## Active Vercel Project
 

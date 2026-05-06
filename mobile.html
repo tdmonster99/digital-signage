@@ -948,7 +948,8 @@
       btn.disabled = true;
       btn.textContent = 'Publishing…';
       try {
-        await doPublish(showId);
+        const result = await doPublish(showId);
+        markShowPublishedLocally(showId, result.publishedSlides, result.patch);
         toast('Published successfully');
       } catch(e) {
         toast('Publish failed: ' + e.message);
@@ -1109,6 +1110,32 @@
       else syncPublishBtn(activeShowData || {});
     }
 
+    function markShowPublishedLocally(showId, publishedSlides, patch = {}) {
+      if (activeShowId !== showId) return;
+      const {
+        draftSlides,
+        draftStorage,
+        draftSlidesCount,
+        draftRevision,
+        draftDwell,
+        draftFitMode,
+        draftTransition,
+        draftTransitionSpeed,
+        draftUpdatedAt,
+        draftBy,
+        _hasDraftSlides,
+        ...rest
+      } = activeShowData || {};
+      activeShowData = {
+        ...rest,
+        ...patch,
+        slides: Array.isArray(publishedSlides) ? publishedSlides : [],
+        _hasDraftSlides: false,
+      };
+      renderSlides(activeShowData);
+      syncPublishBtn(activeShowData);
+    }
+
     async function refreshActiveShow(showId = activeShowId) {
       if (!showId) return null;
       const { data } = await loadEffectiveSlides(showId);
@@ -1122,10 +1149,17 @@
 
     window.publishActive = async function() {
       if (!activeShowId) return;
+      const showId = activeShowId;
       setPublishBusy(true);
       try {
-        await doPublish(activeShowId);
-        await refreshActiveShow(activeShowId);
+        const result = await doPublish(showId);
+        markShowPublishedLocally(showId, result.publishedSlides, result.patch);
+        try {
+          await refreshActiveShow(showId);
+        } catch(e) {
+          console.warn('[Mobile] Post-publish refresh failed:', e.message);
+        }
+        markShowPublishedLocally(showId, result.publishedSlides, result.patch);
         toast('Published successfully');
       } catch(e) {
         toast('Publish failed: ' + e.message);
@@ -1138,7 +1172,7 @@
     async function doPublish(showId) {
       const { data, slides, draftSlides } = await loadEffectiveSlides(showId);
       const publishedSlides = Array.isArray(draftSlides) ? draftSlides : slides;
-      await publishSlidesToFirestore(showId, publishedSlides, {
+      const patch = {
         defaultDwell:    data.draftDwell      ?? data.defaultDwell ?? 6,
         fitMode:         data.draftFitMode    ?? data.fitMode      ?? 'contain',
         transition:      data.draftTransition ?? data.transition   ?? 'crossfade',
@@ -1147,7 +1181,9 @@
         publishedAt:     new Date().toISOString(),
         publishedBy:     { uid: me.uid, email: me.email },
         orgId,
-      });
+      };
+      await publishSlidesToFirestore(showId, publishedSlides, patch);
+      return { publishedSlides, patch };
     }
 
     // ── Add slide ────────────────────────────────────────────────────────────
@@ -1272,6 +1308,63 @@
       return null;
     }
 
+    async function copyText(text) {
+      if (navigator.clipboard?.writeText) return navigator.clipboard.writeText(text);
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      let ok = false;
+      try { ok = document.execCommand('copy'); } finally { document.body.removeChild(ta); }
+      if (!ok) throw new Error('copy failed');
+    }
+
+    function buildMobileIssueReport() {
+      const show = showMeta.find(s => s.id === activeShowId);
+      return [
+        'Zigns mobile issue report',
+        '',
+        'What happened:',
+        '- ',
+        '',
+        'Steps to reproduce:',
+        '1. ',
+        '2. ',
+        '3. ',
+        '',
+        'Expected result:',
+        '- ',
+        '',
+        'Actual result:',
+        '- ',
+        '',
+        'Screenshot or screen recording attached: yes/no',
+        '',
+        'Context',
+        `- Time: ${new Date().toISOString()}`,
+        `- User: ${me?.email || 'unknown'}`,
+        `- Organization: ${org?.name || 'unknown'} (${orgId || 'unknown'})`,
+        `- Active tab: ${activeTab || 'unknown'}`,
+        `- Active slideshow: ${show?.name || activeShowId || 'none'} (${activeShowId || 'none'})`,
+        `- Screens loaded: ${screens.length}`,
+        `- Slideshows loaded: ${showMeta.length}`,
+        `- URL: ${location.href}`,
+        `- Viewport: ${window.innerWidth}x${window.innerHeight}@${window.devicePixelRatio || 1}`,
+        `- Browser: ${navigator.userAgent}`,
+      ].join('\n');
+    }
+
+    window.copyMobileIssueReport = async function() {
+      try {
+        await copyText(buildMobileIssueReport());
+        toast('Issue report copied');
+      } catch(e) {
+        toast('Could not copy issue report');
+      }
+    };
+
     // ── Account tab ──────────────────────────────────────────────────────────
     function renderAccount() {
       if (!me || !org) return;
@@ -1318,6 +1411,11 @@
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
               Open full admin
             </a>
+            <div style="height:1px;background:var(--border)"></div>
+            <button onclick="copyMobileIssueReport()" style="display:flex;align-items:center;gap:10px;padding:10px 0;color:var(--text2);font-weight:600;font-size:0.88rem">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="14" y2="13"/></svg>
+              Copy issue report
+            </button>
             <div style="height:1px;background:var(--border)"></div>
             <button onclick="doSignOut()" style="display:flex;align-items:center;gap:10px;padding:10px 0;color:var(--danger);font-weight:600;font-size:0.88rem">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
