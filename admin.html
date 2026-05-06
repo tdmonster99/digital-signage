@@ -9768,52 +9768,40 @@ async function createOrg(user) {
 }
 
 async function acceptInvitation(inviteId, user) {
-  const invSnap = await getDoc(doc(db, 'invitations', inviteId));
-  if (!invSnap.exists()) { toast('Invitation not found.', true); await createOrg(user); return; }
+  try {
+    const result = await callAccountApi('acceptInvitation', {
+      inviteId,
+      displayName: user.displayName || '',
+    }, true);
 
-  const inv = invSnap.data();
-  if (inv.status !== 'pending') { toast('This invitation has already been used.', true); await createOrg(user); return; }
+    currentOrg   = result.org || null;
+    currentOrgId = result.user?.orgId || currentOrg?.id || null;
+    currentRole  = result.user?.role || 'editor';
+    toast('Welcome! You joined ' + (currentOrg?.name || 'the organization') + '.');
+    return true;
+  } catch(e) {
+    const msg = e.message || 'Could not accept invitation.';
+    toast(msg, true);
 
-  // Verify the invitation was sent to this exact email — prevent invite-link sharing
-  const inviteEmail = (inv.email || '').trim().toLowerCase();
-  const userEmail   = (user.email || '').trim().toLowerCase();
-  if (!inviteEmail || inviteEmail !== userEmail) {
-    toast(`This invitation was sent to ${inv.email || 'a different address'}. Please sign in with that account.`, true);
-    cleanupRealtimeListeners();
-    await signOut(auth);
-    return;
+    if (msg.includes('sent to') || msg.includes('Please sign in with that account')) {
+      cleanupRealtimeListeners();
+      await signOut(auth);
+      return false;
+    }
+
+    if (msg.includes('not found') || msg.includes('already been used')) {
+      await createOrg(user);
+    }
+    return false;
   }
-
-  currentOrgId = inv.orgId;
-  currentRole  = inv.role || 'editor';
-
-  // Add to org members
-  await updateDoc(doc(db, 'organizations', inv.orgId), {
-    members: arrayUnion({ uid: user.uid, email: user.email, displayName: user.displayName || '', role: inv.role, addedAt: new Date().toISOString() }),
-  });
-
-  // Create user record
-  await setDoc(doc(db, 'users', user.uid), { orgId: inv.orgId, role: inv.role, email: user.email, displayName: user.displayName || '' });
-
-  // Mark invitation accepted
-  await updateDoc(doc(db, 'invitations', inviteId), { status: 'accepted', acceptedAt: new Date().toISOString(), acceptedBy: user.uid });
-
-  const orgSnap = await getDoc(doc(db, 'organizations', inv.orgId));
-  currentOrg   = orgSnap.exists() ? { id: inv.orgId, ...orgSnap.data() } : null;
-  toast('Welcome! You joined ' + (currentOrg?.name || 'the organization') + '.');
 }
 
 async function findPendingInviteForUser(user) {
   const email = (user?.email || '').trim().toLowerCase();
   if (!email) return null;
   try {
-    const snap = await getDocs(query(
-      collection(db, 'invitations'),
-      where('email', '==', email),
-      limit(10)
-    ));
-    const pending = snap.docs.find(inviteDoc => (inviteDoc.data()?.status || 'pending') === 'pending');
-    return pending?.id || null;
+    const result = await callAccountApi('findPendingInvite', {}, true);
+    return result.inviteId || null;
   } catch(e) {
     console.warn('Could not check pending invitations:', e.message);
     return null;
@@ -10558,20 +10546,23 @@ function renderTeamPage() {
 
 async function loadPendingInvites() {
   if (!currentOrgId) return;
+  const section = document.getElementById('pendingInvitesSection');
+  const list    = document.getElementById('pendingInvitesList');
+  if (currentRole !== 'admin') {
+    if (section) section.style.display = 'none';
+    return;
+  }
+
   try {
-    const snap = await getDocs(query(collection(db, 'invitations'),
-      where('orgId',  '==', currentOrgId),
-      where('status', '==', 'pending')));
-    const invites = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    const section = document.getElementById('pendingInvitesSection');
-    const list    = document.getElementById('pendingInvitesList');
+    const result = await callAccountApi('listPendingInvites');
+    const invites = result.invites || [];
 
     if (!invites.length) { section.style.display = 'none'; return; }
     section.style.display = '';
 
     list.innerHTML = invites.map(inv => `
       <div class="invite-row">
-        <div class="team-avatar" style="background:var(--surface2);color:var(--muted)">${inv.email[0].toUpperCase()}</div>
+        <div class="team-avatar" style="background:var(--surface2);color:var(--muted)">${(inv.email || '?')[0].toUpperCase()}</div>
         <div class="invite-email">${escHtml(inv.email)}</div>
         <span class="role-badge ${inv.role}">${inv.role}</span>
         <div class="invite-actions">
@@ -10643,41 +10634,18 @@ window.sendInvite = async function() {
   errEl.style.display = 'none';
 
   try {
-    const inviteId  = crypto.randomUUID();
-    const inviteData = {
-      email, role,
-      orgId:          currentOrgId,
-      orgName:        currentOrg?.name || '',
-      invitedBy:      currentUser.uid,
-      invitedByEmail: currentUser.email,
-      createdAt:      new Date().toISOString(),
-      status:         'pending',
-    };
-    await setDoc(doc(db, 'invitations', inviteId), inviteData);
+    const result = await callAccountApi('createInvitation', { email, role }, true);
+    if (result.emailError) console.warn('Invite email send failed:', result.emailError);
 
-    // Send email
-    fetch('/api/send-invite', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        email,
-        inviteId,
-        inviterEmail: currentUser.email,
-        orgName:      currentOrg?.name || 'our organization',
-        role,
-      }),
-    }).then(async r => {
-      const data = await r.json().catch(() => ({}));
-      if (!r.ok) console.warn('Email send failed:', r.status, data?.error);
-      else        console.log('Email sent OK');
-    }).catch(err => console.warn('Email send error:', err.message));
-
-    const link = window.location.origin + '/admin.html?invite=' + inviteId;
+    const link = result.inviteId
+      ? window.location.origin + '/admin.html?invite=' + encodeURIComponent(result.inviteId)
+      : result.inviteUrl;
     document.getElementById('inviteLinkText').textContent = link;
     document.getElementById('inviteFormSection').style.display = 'none';
     document.getElementById('inviteLinkSection').style.display = 'block';
     loadPendingInvites();
-    logActivity('Invited ' + email + ' as ' + role);
+    logActivity((result.reused ? 'Updated invite for ' : 'Invited ') + email + ' as ' + role);
+    if (result.emailSent === false) toast('Invite link created. Email was not sent, so copy the link below.', true);
   } catch(e) {
     errEl.textContent   = 'Could not send invite: ' + e.message;
     errEl.style.display = 'block';
@@ -10690,16 +10658,22 @@ window.copyInviteLink = function() {
 };
 
 window.resendInvite = async function(inviteId) {
-  const snap = await getDoc(doc(db, 'invitations', inviteId));
-  if (!snap.exists()) return;
-  const link = window.location.origin + '/admin.html?invite=' + inviteId;
-  navigator.clipboard.writeText(link).then(() => toast('Invite link copied — share it with the invitee ✓'));
+  try {
+    const result = await callAccountApi('resendInvitation', { inviteId }, true);
+    const link = window.location.origin + '/admin.html?invite=' + encodeURIComponent(inviteId);
+    if (result.emailSent) {
+      toast('Invite email sent ✓');
+    } else {
+      navigator.clipboard.writeText(link).then(() => toast('Invite email failed, but the link was copied ✓'));
+      console.warn('Invite resend failed:', result.emailError || 'unknown error');
+    }
+  } catch(e) { toast('Could not resend invite: ' + e.message, true); }
 };
 
 window.cancelInvite = async function(inviteId) {
   if (!confirm('Cancel this invitation?')) return;
   try {
-    await updateDoc(doc(db, 'invitations', inviteId), { status: 'cancelled' });
+    await callAccountApi('cancelInvitation', { inviteId }, true);
     toast('Invitation cancelled');
     loadPendingInvites();
   } catch(e) { toast('Error: ' + e.message, true); }

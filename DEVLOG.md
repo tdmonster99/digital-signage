@@ -4,6 +4,16 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-06 — Codex — Move team invites to server-backed flow
+
+Follow-up for Invite Team Member permission failures in production.
+
+- **Invite creation**: moved team invite creation through `/api/link-account` so admins no longer write `invitations` directly from the browser.
+- **Invite lifecycle**: added server-backed pending invite list, resend, cancel, and accept paths so membership writes happen through Firebase Admin instead of fragile client rule paths.
+- **Invite safety**: server-side invite creation now validates admin role, duplicate members, pending duplicate invites, and team user limits before creating or reusing an invitation.
+
+---
+
 ## 2026-05-06 — Codex — Add runnable pilot smoke checks
 
 Follow-up for the pilot QA harness.

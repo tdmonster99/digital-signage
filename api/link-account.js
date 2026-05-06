@@ -1,5 +1,6 @@
 const { getAuth, getFirestore } = require('./_lib/firebase-admin');
 const admin = require('firebase-admin');
+const crypto = require('crypto');
 
 const PLAYER_DIAGNOSTIC_TYPES = new Set([
   'player_boot',
@@ -24,6 +25,17 @@ const PILOT_LIMITS = {
   usersAllowed: 9999,
   storageGb: 100,
 };
+const PLAN_LIMITS = {
+  free: { usersAllowed: 1 },
+  standard: { usersAllowed: 3 },
+  premium: { usersAllowed: 10 },
+  'early-adopter': { usersAllowed: 9999 },
+  pilot: { usersAllowed: 9999 },
+  enterprise: { usersAllowed: 9999 },
+  starter: { usersAllowed: 3 },
+  pro: { usersAllowed: 10 },
+};
+const INVITE_ROLES = new Set(['admin', 'editor', 'viewer']);
 
 function pilotSubscription(now) {
   return {
@@ -66,6 +78,109 @@ async function loadUserContext(db, uid) {
 
 function normalizeEmail(value) {
   return String(value || '').trim().toLowerCase();
+}
+
+function validateEmail(value) {
+  const email = normalizeEmail(value);
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    const error = new Error('Valid email address required');
+    error.statusCode = 400;
+    throw error;
+  }
+  return email;
+}
+
+function sanitizeInviteRole(value) {
+  const role = String(value || 'editor').trim().toLowerCase();
+  if (!INVITE_ROLES.has(role)) {
+    const error = new Error('Invalid invite role');
+    error.statusCode = 400;
+    throw error;
+  }
+  return role;
+}
+
+function escHtmlEmail(s) {
+  return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function inviteUrl(inviteId) {
+  return `https://app.zigns.io/admin.html?invite=${encodeURIComponent(inviteId)}`;
+}
+
+function planUserLimit(subscription = {}) {
+  const plan = subscription.plan === 'ea' ? 'early-adopter' : (subscription.plan || 'free');
+  const base = PLAN_LIMITS[plan] || PLAN_LIMITS.free;
+  const limit = Number(subscription.usersAllowed ?? base.usersAllowed ?? 1);
+  return Number.isFinite(limit) && limit > 0 ? limit : 1;
+}
+
+async function sendTeamInvitationEmail({ email, inviteId, inviterEmail, orgName, role }) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return { sent: false, error: 'Email service not configured.' };
+
+  const roleLabels = { admin: 'Admin', editor: 'Editor', viewer: 'Viewer' };
+  const roleLabel = roleLabels[role] || 'Editor';
+  const url = inviteUrl(inviteId);
+  const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#f5f5f5;font-family:'Segoe UI',Arial,sans-serif">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:40px 0">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.08)">
+        <tr><td style="background:#111111;padding:28px 40px">
+          <div style="font-size:20px;font-weight:700;color:#ffffff;letter-spacing:-0.3px">Digital Signage</div>
+        </td></tr>
+        <tr><td style="padding:36px 40px">
+          <p style="margin:0 0 8px;font-size:22px;font-weight:700;color:#111111">You're invited!</p>
+          <p style="margin:0 0 24px;font-size:15px;color:#555555;line-height:1.6">
+            <strong style="color:#111111">${escHtmlEmail(inviterEmail)}</strong> has invited you to join
+            <strong style="color:#111111">${escHtmlEmail(orgName)}</strong> on Digital Signage
+            as <strong style="color:#111111">${roleLabel}</strong>.
+          </p>
+          <table cellpadding="0" cellspacing="0" style="margin:0 0 28px">
+            <tr><td style="background:#111111;border-radius:8px;padding:14px 28px">
+              <a href="${url}" style="color:#ffffff;font-size:15px;font-weight:600;text-decoration:none">Accept Invitation</a>
+            </td></tr>
+          </table>
+          <p style="margin:0 0 8px;font-size:13px;color:#888888">Or copy this link into your browser:</p>
+          <p style="margin:0;font-size:12px;color:#888888;word-break:break-all;font-family:'Courier New',monospace">${url}</p>
+        </td></tr>
+        <tr><td style="padding:20px 40px;border-top:1px solid #eeeeee">
+          <p style="margin:0;font-size:12px;color:#aaaaaa">
+            If you weren't expecting this invitation, you can ignore this email.
+          </p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
+  try {
+    const upstream = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'Digital Signage <onboarding@resend.dev>',
+        to: [email],
+        subject: `${inviterEmail} invited you to ${orgName}`,
+        html,
+      }),
+    });
+    const data = await upstream.json().catch(() => ({}));
+    if (!upstream.ok) {
+      return { sent: false, error: data?.message || `Email error ${upstream.status}` };
+    }
+    return { sent: true };
+  } catch (err) {
+    return { sent: false, error: err.message };
+  }
 }
 
 async function claimPendingSubscription(db, email, orgId) {
@@ -340,6 +455,261 @@ module.exports = async function handler(req, res) {
       const { userData, orgId } = await loadUserContext(db, uid);
       const subscription = await claimPendingSubscription(db, userData.email || email, orgId);
       return res.json({ ok: true, claimed: !!subscription, subscription });
+    }
+
+    if (req.body.action === 'findPendingInvite') {
+      const cleanEmail = validateEmail(email);
+      const snap = await db.collection('invitations')
+        .where('email', '==', cleanEmail)
+        .where('status', '==', 'pending')
+        .limit(10)
+        .get();
+      const invites = snap.docs
+        .map(doc => ({ id: doc.id, ...(doc.data() || {}) }))
+        .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+      return res.json({ ok: true, inviteId: invites[0]?.id || null });
+    }
+
+    if (req.body.action === 'acceptInvitation') {
+      const inviteId = String(req.body.inviteId || '').trim();
+      if (!inviteId) return res.status(400).json({ error: 'inviteId required' });
+      const cleanEmail = validateEmail(email);
+      const now = new Date().toISOString();
+
+      const result = await db.runTransaction(async tx => {
+        const invRef = db.doc(`invitations/${inviteId}`);
+        const invSnap = await tx.get(invRef);
+        if (!invSnap.exists) {
+          const error = new Error('Invitation not found.');
+          error.statusCode = 404;
+          throw error;
+        }
+
+        const inv = invSnap.data() || {};
+        if (inv.status !== 'pending') {
+          const error = new Error('This invitation has already been used.');
+          error.statusCode = 409;
+          throw error;
+        }
+        if (normalizeEmail(inv.email) !== cleanEmail) {
+          const error = new Error(`This invitation was sent to ${inv.email || 'a different address'}. Please sign in with that account.`);
+          error.statusCode = 403;
+          throw error;
+        }
+        if (!inv.orgId) {
+          const error = new Error('Invitation is missing an organization.');
+          error.statusCode = 400;
+          throw error;
+        }
+
+        const orgRef = db.doc(`organizations/${inv.orgId}`);
+        const userRef = db.doc(`users/${uid}`);
+        const [orgSnap, userSnap] = await Promise.all([tx.get(orgRef), tx.get(userRef)]);
+        if (!orgSnap.exists) {
+          const error = new Error('Invitation organization not found.');
+          error.statusCode = 404;
+          throw error;
+        }
+
+        const userData = userSnap.exists ? (userSnap.data() || {}) : {};
+        if (userData.orgId && userData.orgId !== inv.orgId) {
+          const error = new Error('This account already belongs to another organization.');
+          error.statusCode = 409;
+          throw error;
+        }
+
+        const orgData = orgSnap.data() || {};
+        const role = sanitizeInviteRole(inv.role);
+        const member = {
+          uid,
+          email: cleanEmail,
+          displayName: req.body.displayName || '',
+          role,
+          addedAt: now,
+        };
+        const members = Array.isArray(orgData.members) ? orgData.members : [];
+        const nextMembers = members.some(m => m && m.uid === uid)
+          ? members.map(m => m && m.uid === uid ? { ...m, ...member, addedAt: m.addedAt || now } : m)
+          : [...members, member];
+
+        tx.set(orgRef, { members: nextMembers }, { merge: true });
+        tx.set(userRef, {
+          orgId: inv.orgId,
+          role,
+          email: cleanEmail,
+          displayName: req.body.displayName || '',
+        }, { merge: true });
+        tx.set(invRef, {
+          status: 'accepted',
+          acceptedAt: now,
+          acceptedBy: uid,
+        }, { merge: true });
+
+        return {
+          user: { id: uid, orgId: inv.orgId, role, email: cleanEmail, displayName: req.body.displayName || '' },
+          org: { id: inv.orgId, ...orgData, members: nextMembers },
+        };
+      });
+
+      return res.json({ ok: true, ...result });
+    }
+
+    if (req.body.action === 'createInvitation') {
+      const { userData, orgId, role: actorRole } = await loadUserContext(db, uid);
+      requireRole(actorRole, ['admin']);
+
+      const cleanEmail = validateEmail(req.body.email);
+      const inviteRole = sanitizeInviteRole(req.body.role);
+      const now = new Date().toISOString();
+      const orgRef = db.doc(`organizations/${orgId}`);
+
+      const result = await db.runTransaction(async tx => {
+        const orgSnap = await tx.get(orgRef);
+        if (!orgSnap.exists) {
+          const error = new Error('Organization not found');
+          error.statusCode = 404;
+          throw error;
+        }
+
+        const orgData = orgSnap.data() || {};
+        const members = Array.isArray(orgData.members) ? orgData.members : [];
+        if (members.some(m => normalizeEmail(m?.email) === cleanEmail)) {
+          const error = new Error('This person is already a team member.');
+          error.statusCode = 409;
+          throw error;
+        }
+
+        const pendingSnap = await tx.get(db.collection('invitations')
+          .where('orgId', '==', orgId)
+          .where('status', '==', 'pending'));
+        const existing = pendingSnap.docs.find(doc => normalizeEmail(doc.data()?.email) === cleanEmail);
+        if (existing) {
+          tx.set(existing.ref, {
+            role: inviteRole,
+            invitedBy: uid,
+            invitedByEmail: userData.email || email,
+            updatedAt: now,
+          }, { merge: true });
+          return {
+            inviteId: existing.id,
+            orgName: orgData.name || 'our organization',
+            reused: true,
+            pendingCount: pendingSnap.size,
+          };
+        }
+
+        const userLimit = planUserLimit(orgData.subscription || {});
+        if (members.length + pendingSnap.size >= userLimit) {
+          const error = new Error(`Your plan allows ${userLimit} team member${userLimit === 1 ? '' : 's'}. Upgrade to invite more team members.`);
+          error.statusCode = 402;
+          throw error;
+        }
+
+        const inviteId = crypto.randomUUID();
+        const inviteRef = db.collection('invitations').doc(inviteId);
+        tx.create(inviteRef, {
+          email: cleanEmail,
+          role: inviteRole,
+          orgId,
+          orgName: orgData.name || '',
+          invitedBy: uid,
+          invitedByEmail: userData.email || email,
+          createdAt: now,
+          status: 'pending',
+        });
+
+        return {
+          inviteId,
+          orgName: orgData.name || 'our organization',
+          reused: false,
+          pendingCount: pendingSnap.size + 1,
+        };
+      });
+
+      const emailResult = await sendTeamInvitationEmail({
+        email: cleanEmail,
+        inviteId: result.inviteId,
+        inviterEmail: userData.email || email,
+        orgName: result.orgName,
+        role: inviteRole,
+      });
+      return res.json({
+        ok: true,
+        ...result,
+        inviteUrl: inviteUrl(result.inviteId),
+        emailSent: emailResult.sent,
+        emailError: emailResult.error || null,
+      });
+    }
+
+    if (req.body.action === 'listPendingInvites') {
+      const { orgId, role } = await loadUserContext(db, uid);
+      requireRole(role, ['admin']);
+
+      const snap = await db.collection('invitations')
+        .where('orgId', '==', orgId)
+        .where('status', '==', 'pending')
+        .get();
+      const invites = snap.docs
+        .map(doc => {
+          const data = doc.data() || {};
+          return {
+            id: doc.id,
+            email: normalizeEmail(data.email),
+            role: sanitizeInviteRole(data.role),
+            createdAt: data.createdAt || '',
+            invitedByEmail: data.invitedByEmail || '',
+          };
+        })
+        .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+      return res.json({ ok: true, invites });
+    }
+
+    if (req.body.action === 'cancelInvitation') {
+      const { orgId, role } = await loadUserContext(db, uid);
+      requireRole(role, ['admin']);
+      const inviteId = String(req.body.inviteId || '').trim();
+      if (!inviteId) return res.status(400).json({ error: 'inviteId required' });
+
+      const invRef = db.doc(`invitations/${inviteId}`);
+      const invSnap = await invRef.get();
+      if (!invSnap.exists) return res.status(404).json({ error: 'Invitation not found.' });
+      const inv = invSnap.data() || {};
+      if (inv.orgId !== orgId) return res.status(403).json({ error: 'Invitation is not in your organization.' });
+
+      await invRef.set({
+        status: 'cancelled',
+        cancelledAt: new Date().toISOString(),
+        cancelledBy: uid,
+      }, { merge: true });
+      return res.json({ ok: true });
+    }
+
+    if (req.body.action === 'resendInvitation') {
+      const { userData, orgId, role } = await loadUserContext(db, uid);
+      requireRole(role, ['admin']);
+      const inviteId = String(req.body.inviteId || '').trim();
+      if (!inviteId) return res.status(400).json({ error: 'inviteId required' });
+
+      const invSnap = await db.doc(`invitations/${inviteId}`).get();
+      if (!invSnap.exists) return res.status(404).json({ error: 'Invitation not found.' });
+      const inv = invSnap.data() || {};
+      if (inv.orgId !== orgId) return res.status(403).json({ error: 'Invitation is not in your organization.' });
+      if (inv.status !== 'pending') return res.status(409).json({ error: 'This invitation is no longer pending.' });
+
+      const emailResult = await sendTeamInvitationEmail({
+        email: validateEmail(inv.email),
+        inviteId,
+        inviterEmail: userData.email || email,
+        orgName: inv.orgName || 'our organization',
+        role: sanitizeInviteRole(inv.role),
+      });
+      return res.json({
+        ok: true,
+        inviteUrl: inviteUrl(inviteId),
+        emailSent: emailResult.sent,
+        emailError: emailResult.error || null,
+      });
     }
 
     if (req.body.action === 'pairScreen') {
