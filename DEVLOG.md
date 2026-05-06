@@ -4,6 +4,14 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-06 — Codex — Add runnable pilot smoke checks
+
+Follow-up for the pilot QA harness.
+
+- **Smoke script**: added `scripts/pilot-smoke.mjs`, a dependency-free sanity runner for static UI hooks, live public page reachability, and optional Firebase email/password bootstrap checks against a dedicated test account.
+- **Pilot harness docs**: documented static, live, JSON, and optional authenticated usage in `docs/PILOT_SMOKE_TEST.md`.
+- **Handoff cleanup**: updated `NEXT_CHAT_CONTEXT.md` so the pilot workstream points to the runnable smoke script and dedicated test-account next step.
+
 ## 2026-05-06 — Codex — Clean handoff and add pilot smoke harness
 
 Follow-up for the new pilot-first priority order.

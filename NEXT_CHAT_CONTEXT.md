@@ -23,12 +23,14 @@ This is the next recommended workstream because Novares pilot testing is beginni
 Current docs:
 - `docs/PILOT_QUICKSTART.md` — pilot onboarding, roles, pairing, and support intake
 - `docs/PILOT_SMOKE_TEST.md` — repeatable manual smoke-test harness for account, role, slideshow, pairing, playback, mobile, tags/emergency, and CAP checks
+- `scripts/pilot-smoke.mjs` — dependency-free sanity script with static checks, live public page checks, and optional Firebase email/password bootstrap checks
 
 Recommended next steps:
+- Run `node scripts/pilot-smoke.mjs --static` locally before pilot-impacting changes.
 - Run the harness against production with an Admin account and one Editor account.
 - Record failures with the in-app issue report helper: desktop Profile -> Report Issue, or mobile Account -> Copy issue report.
-- Decide whether to create a dedicated test account for future browser automation.
-- If credentials are available, add a small automated browser smoke suite for login/session, slideshow CRUD, publish, and pairing-modal sanity checks.
+- Create a dedicated Firebase email/password test account if we want `scripts/pilot-smoke.mjs` to verify org/role bootstrap automatically.
+- If browser credentials become available, add a small browser smoke suite for login/session, slideshow CRUD, publish, and pairing-modal sanity checks.
 
 ### 2. Phase 5.1 Tags / Priority / Emergency Playlist
 

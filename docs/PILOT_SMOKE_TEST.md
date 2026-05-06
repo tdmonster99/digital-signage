@@ -32,6 +32,35 @@ Issue reports copied: yes/no
 - A small image file is available for upload.
 - Optional: a YouTube URL and a webpage URL for media compatibility checks.
 
+## Scripted Sanity Checks
+
+Run the no-network static check before or after a deploy:
+
+```bash
+node scripts/pilot-smoke.mjs --static
+```
+
+Run public production reachability checks:
+
+```bash
+node scripts/pilot-smoke.mjs --base-url https://app.zigns.io
+```
+
+Optional authenticated bootstrap check for a dedicated Firebase email/password test account:
+
+```bash
+ZIGNS_SMOKE_EMAIL="pilot-test@example.com" \
+ZIGNS_SMOKE_PASSWORD="use-a-dedicated-test-password" \
+ZIGNS_SMOKE_EXPECTED_ORG="Novares" \
+ZIGNS_SMOKE_EXPECTED_ROLE="editor" \
+node scripts/pilot-smoke.mjs --base-url https://app.zigns.io
+```
+
+Notes:
+- The authenticated check supports Firebase email/password accounts. Google OAuth sign-in still needs a browser/manual run.
+- Do not use a real user's personal password for this script. Create a dedicated test account when we are ready for automated authenticated checks.
+- Add `--json` when piping results into another tool.
+
 ## Account And Role Smoke
 
 | Step | Expected Result |
