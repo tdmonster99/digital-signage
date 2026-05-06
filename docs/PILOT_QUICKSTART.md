@@ -1,6 +1,6 @@
 # Zigns Pilot Quickstart
 
-Use this runbook when onboarding a pilot customer or internal test group.
+Use this runbook when onboarding a pilot customer or internal test group. For repeatable validation runs, use `docs/PILOT_SMOKE_TEST.md`.
 
 ## Current Pilot: Novares
 
@@ -59,6 +59,8 @@ Player setup URL: https://app.zigns.io/display.html
 For native Android, Tizen, webOS, or tvOS wrappers, the app opens the same hosted player URL inside the native shell.
 
 ## Pilot Smoke Checklist
+
+Detailed harness: `docs/PILOT_SMOKE_TEST.md`
 
 For each pilot account:
 - Can sign in and remain signed in after refresh.

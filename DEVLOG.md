@@ -4,6 +4,14 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-06 — Codex — Clean handoff and add pilot smoke harness
+
+Follow-up for the new pilot-first priority order.
+
+- **Pilot QA**: added `docs/PILOT_SMOKE_TEST.md` as a repeatable manual smoke-test harness covering auth, roles, slideshow authoring, display pairing, playback, mobile publish, tags/emergency, CAP checks, and support intake.
+- **Pilot docs**: linked the detailed smoke harness from `docs/PILOT_QUICKSTART.md`.
+- **Handoff cleanup**: rewrote `NEXT_CHAT_CONTEXT.md` around the active priority order: Pilot QA, Phase 5.1 tags/priority/emergency, Phase 5.2 CAP polish, then Phase 5.3 Vercel Pro infrastructure.
+
 ## 2026-05-05 — Codex — Polish pilot support and mobile publish state
 
 Follow-up for the #1-3 pilot-readiness batch.
