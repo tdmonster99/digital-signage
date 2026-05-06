@@ -4,6 +4,14 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-06 — Codex — Neutralize Tags placeholder copy
+
+Small polish follow-up for the Slideshow Tags modal.
+
+- **Slideshow Tags**: replaced the company-specific placeholder example with neutral display-location examples (`lobby`, `hallway`, `production-floor`).
+
+---
+
 ## 2026-05-06 — Codex — Add browser smoke and Tags modal
 
 Follow-up for the pilot QA -> browser smoke -> Phase 5.1 polish path.
