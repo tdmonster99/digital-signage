@@ -1,0 +1,607 @@
+#!/usr/bin/env node
+
+import { spawn } from 'node:child_process';
+import crypto from 'node:crypto';
+import fs from 'node:fs';
+import net from 'node:net';
+import os from 'node:os';
+import path from 'node:path';
+
+function parseArgs(argv) {
+  const out = {};
+  for (let i = 0; i < argv.length; i += 1) {
+    const arg = argv[i];
+    if (arg.startsWith('--') && argv[i + 1] && !argv[i + 1].startsWith('--')) {
+      out[arg.slice(2)] = argv[i + 1];
+      i += 1;
+    } else if (arg.startsWith('--')) {
+      out[arg.slice(2)] = true;
+    }
+  }
+  return out;
+}
+
+const args = parseArgs(process.argv.slice(2));
+const config = {
+  baseUrl: String(args['base-url'] || process.env.ZIGNS_BROWSER_BASE_URL || 'https://app.zigns.io').replace(/\/+$/, ''),
+  email: args.email || process.env.ZIGNS_BROWSER_EMAIL || process.env.ZIGNS_SMOKE_EMAIL || '',
+  password: args.password || process.env.ZIGNS_BROWSER_PASSWORD || process.env.ZIGNS_SMOKE_PASSWORD || '',
+  expectedRole: args['expected-role'] || process.env.ZIGNS_BROWSER_EXPECTED_ROLE || process.env.ZIGNS_SMOKE_EXPECTED_ROLE || '',
+  expectedOrg: args['expected-org'] || process.env.ZIGNS_BROWSER_EXPECTED_ORG || process.env.ZIGNS_SMOKE_EXPECTED_ORG || '',
+  browserPath: args['browser-path'] || process.env.ZIGNS_BROWSER_PATH || '',
+  cdpUrl: args['cdp-url'] || process.env.ZIGNS_BROWSER_CDP_URL || '',
+  headed: Boolean(args.headed || process.env.ZIGNS_BROWSER_HEADED === '1'),
+  keepOpen: Boolean(args['keep-open'] || process.env.ZIGNS_BROWSER_KEEP_OPEN === '1'),
+  mutate: Boolean(args.mutate || process.env.ZIGNS_BROWSER_MUTATE === '1'),
+  timeoutMs: Number.parseInt(args.timeout || process.env.ZIGNS_BROWSER_TIMEOUT_MS || '20000', 10),
+};
+
+const results = [];
+
+function addResult(status, name, details = '') {
+  results.push({ status, name, details });
+}
+
+async function check(name, fn) {
+  try {
+    const details = await fn();
+    addResult('pass', name, details || '');
+  } catch (error) {
+    addResult('fail', name, error?.message || String(error));
+  }
+}
+
+function warn(name, details) {
+  addResult('warn', name, details);
+}
+
+function assert(condition, message) {
+  if (!condition) throw new Error(message);
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function fetchJson(url, options = {}) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), config.timeoutMs);
+  try {
+    const resp = await fetch(url, { ...options, signal: controller.signal });
+    assert(resp.ok, `${url} returned HTTP ${resp.status}`);
+    return await resp.json();
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function findOnPath(name) {
+  for (const dir of (process.env.PATH || '').split(path.delimiter)) {
+    const full = path.join(dir, name);
+    if (fs.existsSync(full)) return full;
+  }
+  return '';
+}
+
+function findPlaywrightBrowsers() {
+  const root = path.join(os.homedir(), '.cache', 'ms-playwright');
+  if (!fs.existsSync(root)) return [];
+  const out = [];
+  for (const entry of fs.readdirSync(root)) {
+    out.push(path.join(root, entry, 'chrome-linux64', 'chrome'));
+    out.push(path.join(root, entry, 'chrome-headless-shell-linux64', 'chrome-headless-shell'));
+  }
+  return out.filter(candidate => fs.existsSync(candidate));
+}
+
+function findBrowserExecutable() {
+  const candidates = [
+    config.browserPath,
+    process.env.CHROME_PATH,
+    process.env.EDGE_PATH,
+    ...findPlaywrightBrowsers(),
+    findOnPath('google-chrome'),
+    findOnPath('chromium'),
+    findOnPath('chromium-browser'),
+    findOnPath('microsoft-edge'),
+    '/usr/bin/google-chrome',
+    '/usr/bin/chromium',
+    '/usr/bin/chromium-browser',
+    '/mnt/c/Program Files/Google/Chrome/Application/chrome.exe',
+    '/mnt/c/Program Files (x86)/Google/Chrome/Application/chrome.exe',
+    '/mnt/c/Program Files/Microsoft/Edge/Application/msedge.exe',
+    '/mnt/c/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
+  ].filter(Boolean);
+  return candidates.find(candidate => fs.existsSync(candidate)) || '';
+}
+
+function getOpenPort() {
+  return new Promise((resolve, reject) => {
+    const server = net.createServer();
+    server.once('error', reject);
+    server.listen(0, '127.0.0.1', () => {
+      const { port } = server.address();
+      server.close(() => resolve(port));
+    });
+  });
+}
+
+async function waitForJsonVersion(baseUrl) {
+  const deadline = Date.now() + config.timeoutMs;
+  let lastError = null;
+  while (Date.now() < deadline) {
+    try {
+      return await fetchJson(`${baseUrl}/json/version`);
+    } catch (error) {
+      lastError = error;
+      await sleep(200);
+    }
+  }
+  throw lastError || new Error('browser did not expose a DevTools endpoint');
+}
+
+async function startBrowser() {
+  if (config.cdpUrl) {
+    return { browserBaseUrl: config.cdpUrl, cleanup: async () => {} };
+  }
+
+  const executable = findBrowserExecutable();
+  assert(executable, 'Chrome or Edge was not found. Set ZIGNS_BROWSER_PATH or ZIGNS_BROWSER_CDP_URL.');
+
+  const port = await getOpenPort();
+  const tempRoot = process.env.ZIGNS_BROWSER_TMPDIR || (fs.existsSync('/tmp') ? '/tmp' : os.tmpdir());
+  const userDataDir = fs.mkdtempSync(path.join(tempRoot, 'zigns-browser-smoke-'));
+  const browserArgs = [
+    `--remote-debugging-port=${port}`,
+    `--user-data-dir=${userDataDir}`,
+    '--no-first-run',
+    '--no-default-browser-check',
+    '--disable-background-networking',
+    '--disable-extensions',
+    '--disable-popup-blocking',
+    '--no-sandbox',
+    '--window-size=1440,1000',
+    'about:blank',
+  ];
+  if (!config.headed) browserArgs.unshift('--headless=new');
+
+  const child = spawn(executable, browserArgs, { stdio: 'ignore', detached: false });
+
+  const browserBaseUrl = `http://127.0.0.1:${port}`;
+  try {
+    await Promise.race([
+      waitForJsonVersion(browserBaseUrl),
+      new Promise((_, reject) => child.once('error', reject)),
+      new Promise((_, reject) => child.once('exit', code => reject(new Error(`browser exited before DevTools was ready (code ${code})`)))),
+    ]);
+  } catch (error) {
+    child.kill();
+    try { fs.rmSync(userDataDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }); } catch {}
+    throw error;
+  }
+
+  return {
+    browserBaseUrl,
+    cleanup: async () => {
+      if (!config.keepOpen) {
+        child.kill();
+        try {
+          fs.rmSync(userDataDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+        } catch {}
+      }
+    },
+  };
+}
+
+class RawWebSocket {
+  constructor(wsUrl) {
+    this.url = new URL(wsUrl);
+    this.buffer = Buffer.alloc(0);
+    this.connected = false;
+    this.messageHandlers = new Set();
+  }
+
+  connect() {
+    assert(this.url.protocol === 'ws:', 'Only ws:// DevTools endpoints are supported.');
+    return new Promise((resolve, reject) => {
+      const key = crypto.randomBytes(16).toString('base64');
+      const port = Number(this.url.port || 80);
+      this.socket = net.connect({ host: this.url.hostname, port }, () => {
+        this.socket.write([
+          `GET ${this.url.pathname}${this.url.search} HTTP/1.1`,
+          `Host: ${this.url.host}`,
+          'Upgrade: websocket',
+          'Connection: Upgrade',
+          `Sec-WebSocket-Key: ${key}`,
+          'Sec-WebSocket-Version: 13',
+          '',
+          '',
+        ].join('\r\n'));
+      });
+      this.socket.once('error', reject);
+      this.socket.on('data', chunk => {
+        if (!this.connected) {
+          this.buffer = Buffer.concat([this.buffer, chunk]);
+          const end = this.buffer.indexOf('\r\n\r\n');
+          if (end === -1) return;
+          const head = this.buffer.slice(0, end).toString('utf8');
+          if (!head.includes(' 101 ')) {
+            reject(new Error(`WebSocket handshake failed: ${head.split('\r\n')[0]}`));
+            return;
+          }
+          this.connected = true;
+          const rest = this.buffer.slice(end + 4);
+          this.buffer = Buffer.alloc(0);
+          if (rest.length) this.handleFrames(rest);
+          resolve();
+          return;
+        }
+        this.handleFrames(chunk);
+      });
+    });
+  }
+
+  onMessage(handler) {
+    this.messageHandlers.add(handler);
+  }
+
+  sendText(text) {
+    const payload = Buffer.from(text);
+    let header;
+    if (payload.length < 126) {
+      header = Buffer.alloc(2);
+      header[1] = payload.length | 0x80;
+    } else if (payload.length < 65536) {
+      header = Buffer.alloc(4);
+      header[1] = 126 | 0x80;
+      header.writeUInt16BE(payload.length, 2);
+    } else {
+      header = Buffer.alloc(10);
+      header[1] = 127 | 0x80;
+      header.writeBigUInt64BE(BigInt(payload.length), 2);
+    }
+    header[0] = 0x81;
+    const mask = crypto.randomBytes(4);
+    const masked = Buffer.alloc(payload.length);
+    for (let i = 0; i < payload.length; i += 1) masked[i] = payload[i] ^ mask[i % 4];
+    this.socket.write(Buffer.concat([header, mask, masked]));
+  }
+
+  handleFrames(chunk) {
+    this.buffer = Buffer.concat([this.buffer, chunk]);
+    while (this.buffer.length >= 2) {
+      const first = this.buffer[0];
+      const second = this.buffer[1];
+      const opcode = first & 0x0f;
+      const masked = Boolean(second & 0x80);
+      let length = second & 0x7f;
+      let offset = 2;
+      if (length === 126) {
+        if (this.buffer.length < 4) return;
+        length = this.buffer.readUInt16BE(2);
+        offset = 4;
+      } else if (length === 127) {
+        if (this.buffer.length < 10) return;
+        length = Number(this.buffer.readBigUInt64BE(2));
+        offset = 10;
+      }
+      let mask;
+      if (masked) {
+        if (this.buffer.length < offset + 4) return;
+        mask = this.buffer.slice(offset, offset + 4);
+        offset += 4;
+      }
+      if (this.buffer.length < offset + length) return;
+      let payload = this.buffer.slice(offset, offset + length);
+      this.buffer = this.buffer.slice(offset + length);
+      if (masked) {
+        payload = Buffer.from(payload.map((byte, index) => byte ^ mask[index % 4]));
+      }
+      if (opcode === 0x1) {
+        const text = payload.toString('utf8');
+        this.messageHandlers.forEach(handler => handler(text));
+      } else if (opcode === 0x8) {
+        this.socket.end();
+      } else if (opcode === 0x9) {
+        this.socket.write(Buffer.from([0x8a, 0]));
+      }
+    }
+  }
+
+  close() {
+    this.socket?.end();
+  }
+}
+
+class CdpClient {
+  constructor(ws) {
+    this.ws = ws;
+    this.nextId = 1;
+    this.pending = new Map();
+    this.listeners = new Set();
+    this.ws.onMessage(text => this.handleMessage(text));
+  }
+
+  handleMessage(text) {
+    const message = JSON.parse(text);
+    if (message.id && this.pending.has(message.id)) {
+      const { resolve, reject } = this.pending.get(message.id);
+      this.pending.delete(message.id);
+      if (message.error) reject(new Error(message.error.message || JSON.stringify(message.error)));
+      else resolve(message.result || {});
+      return;
+    }
+    if (message.method) {
+      for (const listener of [...this.listeners]) {
+        listener(message);
+      }
+    }
+  }
+
+  send(method, params = {}) {
+    const id = this.nextId++;
+    this.ws.sendText(JSON.stringify({ id, method, params }));
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        this.pending.delete(id);
+        reject(new Error(`${method} timed out`));
+      }, config.timeoutMs);
+      this.pending.set(id, {
+        resolve: value => {
+          clearTimeout(timeout);
+          resolve(value);
+        },
+        reject: error => {
+          clearTimeout(timeout);
+          reject(error);
+        },
+      });
+    });
+  }
+
+  waitForEvent(method, predicate = () => true, timeoutMs = config.timeoutMs) {
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        this.listeners.delete(listener);
+        reject(new Error(`${method} timed out`));
+      }, timeoutMs);
+      const listener = message => {
+        if (message.method !== method || !predicate(message.params || {})) return;
+        clearTimeout(timeout);
+        this.listeners.delete(listener);
+        resolve(message.params || {});
+      };
+      this.listeners.add(listener);
+    });
+  }
+}
+
+async function createPage(browserBaseUrl) {
+  if (browserBaseUrl.startsWith('ws://')) return browserBaseUrl;
+  const base = browserBaseUrl.replace(/\/+$/, '');
+  const target = await fetchJson(`${base}/json/new?about:blank`, { method: 'PUT' });
+  assert(target.webSocketDebuggerUrl, 'new browser target did not return a webSocketDebuggerUrl');
+  return target.webSocketDebuggerUrl;
+}
+
+async function createClient(wsUrl) {
+  const ws = new RawWebSocket(wsUrl);
+  await ws.connect();
+  const cdp = new CdpClient(ws);
+  await cdp.send('Page.enable');
+  await cdp.send('Runtime.enable');
+  return { cdp, ws };
+}
+
+async function evaluate(cdp, expression) {
+  const result = await cdp.send('Runtime.evaluate', {
+    expression,
+    awaitPromise: true,
+    returnByValue: true,
+    userGesture: true,
+  });
+  if (result.exceptionDetails) {
+    throw new Error(result.exceptionDetails.text || 'browser evaluation failed');
+  }
+  return result.result?.value;
+}
+
+async function navigate(cdp, url) {
+  const load = cdp.waitForEvent('Page.loadEventFired').catch(() => null);
+  await cdp.send('Page.navigate', { url });
+  await load;
+  await sleep(500);
+}
+
+async function waitFor(cdp, expression, label, timeoutMs = config.timeoutMs) {
+  const deadline = Date.now() + timeoutMs;
+  let lastError = null;
+  while (Date.now() < deadline) {
+    try {
+      if (await evaluate(cdp, `Boolean(${expression})`)) return;
+    } catch (error) {
+      lastError = error;
+    }
+    await sleep(250);
+  }
+  throw new Error(`Timed out waiting for ${label}${lastError ? `: ${lastError.message}` : ''}`);
+}
+
+async function fill(cdp, selector, value) {
+  const ok = await evaluate(cdp, `(() => {
+    const el = document.querySelector(${JSON.stringify(selector)});
+    if (!el) return false;
+    el.focus();
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+    if (setter) setter.call(el, ${JSON.stringify(value)});
+    else el.value = ${JSON.stringify(value)};
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+    return true;
+  })()`);
+  assert(ok, `Could not fill ${selector}`);
+}
+
+async function click(cdp, selector) {
+  const ok = await evaluate(cdp, `(() => {
+    const el = document.querySelector(${JSON.stringify(selector)});
+    if (!el) return false;
+    el.click();
+    return true;
+  })()`);
+  assert(ok, `Could not click ${selector}`);
+}
+
+async function runReadOnlyAuthenticatedChecks(cdp) {
+  await check('Authenticated login/session', async () => {
+    await fill(cdp, '#authEmail', config.email);
+    await fill(cdp, '#authPassword', config.password);
+    await click(cdp, '#signInBtn');
+    await waitFor(cdp, `location.pathname.endsWith('/admin.html') || document.querySelector('#page-dashboard')`, 'admin shell after login', 30000);
+    await waitFor(cdp, `document.querySelector('#page-dashboard') && document.body.textContent.includes('Dashboard')`, 'dashboard content', 30000);
+    const details = await evaluate(cdp, `(() => {
+      const email = document.querySelector('.sidebar-user-email')?.textContent?.trim() || '';
+      const role = document.querySelector('#roleBadge')?.textContent?.trim() || '';
+      let org = '';
+      window.showPage?.('settings');
+      window.showSettingsSub?.('org');
+      org = document.querySelector('#orgNameInput')?.value?.trim() || '';
+      window.showPage?.('dashboard');
+      return { email, role, org };
+    })()`);
+    if (config.expectedRole) assert(String(details.role || '').toLowerCase() === config.expectedRole.toLowerCase(), `expected role ${config.expectedRole}, got ${details.role || 'unknown'}`);
+    if (config.expectedOrg) assert(details.org === config.expectedOrg, `expected org ${config.expectedOrg}, got ${details.org || 'unknown'}`);
+    return `user=${details.email || config.email}; org=${details.org || 'unknown'}; role=${details.role || 'unknown'}`;
+  });
+
+  await check('Team invite modal opens', async () => {
+    await evaluate(cdp, `window.showPage('settings'); window.showSettingsSub?.('team'); window.openInviteModal?.(); true`);
+    await waitFor(cdp, `getComputedStyle(document.querySelector('#inviteModal')).display !== 'none'`, 'invite modal');
+    const role = await evaluate(cdp, `document.querySelector('#inviteRole')?.value || ''`);
+    assert(role === 'editor', `expected invite role default editor, got ${role || 'blank'}`);
+    await evaluate(cdp, `window.closeInviteModal?.(); true`);
+    return 'invite modal defaulted to editor';
+  });
+
+  await check('Slideshow tags modal opens', async () => {
+    await evaluate(cdp, `window.showPage('slideshows'); window.openShowOptions?.(); true`);
+    await waitFor(cdp, `getComputedStyle(document.querySelector('#showOptionsModal')).display !== 'none'`, 'slideshow tags modal');
+    const labels = await evaluate(cdp, `(() => ({
+      hasTags: Boolean(document.querySelector('#showOptionsTags')),
+      hasAuto: Boolean(document.querySelector('#showOptionsAutoTags')),
+      hasEmergency: Boolean(document.querySelector('#showOptionsEmergency')),
+    }))()`);
+    assert(labels.hasTags && labels.hasAuto && labels.hasEmergency, 'tags modal is missing an expected field');
+    await evaluate(cdp, `window.closeShowOptionsModal?.(); true`);
+    return 'tags, auto-include, emergency controls present';
+  });
+
+  await check('Pairing modal opens', async () => {
+    await evaluate(cdp, `window.showPage('screens'); window.openAddScreenModal?.(); true`);
+    await waitFor(cdp, `document.querySelector('#pairingModal') && (getComputedStyle(document.querySelector('#pairingModal')).display !== 'none' || document.body.textContent.includes('Screen limit reached'))`, 'pairing modal or limit prompt');
+    const opened = await evaluate(cdp, `getComputedStyle(document.querySelector('#pairingModal')).display !== 'none'`);
+    if (opened) {
+      const hasInput = await evaluate(cdp, `Boolean(document.querySelector('#pairingCodeInput'))`);
+      assert(hasInput, 'pairing code input missing');
+      await evaluate(cdp, `window.closePairingModal?.(); true`);
+      return 'pairing modal ready';
+    }
+    return 'screen limit prompt shown';
+  });
+
+  await check('Issue report modal opens', async () => {
+    await evaluate(cdp, `window.showPage('profile'); window.openIssueReportModal?.(); true`);
+    await waitFor(cdp, `getComputedStyle(document.querySelector('#issueReportModal')).display !== 'none'`, 'issue report modal');
+    const text = await evaluate(cdp, `document.querySelector('#issueReportText')?.value || ''`);
+    assert(text.includes('Zigns issue report') && text.includes('Context'), 'issue report text missing expected context');
+    await evaluate(cdp, `window.closeIssueReportModal?.(); true`);
+    return 'issue report context generated';
+  });
+}
+
+async function runMutatingChecks(cdp) {
+  await check('Slideshow CRUD smoke', async () => {
+    const name = `Smoke ${new Date().toISOString().replace(/[:.]/g, '-')}`;
+    const created = await evaluate(cdp, `(async () => {
+      const oldPrompt = window.prompt;
+      window.prompt = () => ${JSON.stringify(name)};
+      try {
+        await window.newShowPrompt();
+      } finally {
+        window.prompt = oldPrompt;
+      }
+      const active = document.querySelector('#showList .show-item.active');
+      return {
+        id: active?.dataset.id || '',
+        name: document.querySelector('#showTitle')?.textContent?.trim() || active?.querySelector('.show-item-name')?.textContent?.trim() || '',
+      };
+    })()`);
+    assert(created.name === name, `slideshow create did not select "${name}"`);
+    const tagsSaved = await evaluate(cdp, `(async () => {
+      window.openShowOptions();
+      document.querySelector('#showOptionsTags').value = 'smoke';
+      document.querySelector('#showOptionsAutoTags').value = '';
+      document.querySelector('#showOptionsEmergency').checked = false;
+      await window.saveShowOptions();
+      return document.querySelector('.show-item.active .show-item-tags')?.textContent || '';
+    })()`);
+    assert(tagsSaved.includes('smoke'), 'slideshow tag did not render after save');
+    await evaluate(cdp, `(async () => {
+      const oldConfirm = window.confirm;
+      window.confirm = () => true;
+      try {
+        await window.deleteCurrentSlideshow();
+      } finally {
+        window.confirm = oldConfirm;
+      }
+    })()`);
+    await waitFor(cdp, `!document.querySelector('.show-item.active')?.textContent?.includes(${JSON.stringify(name)})`, 'smoke slideshow deletion');
+    return `created, tagged, and deleted ${created.id}`;
+  });
+}
+
+async function main() {
+  let browser;
+  let ws;
+  try {
+    browser = await startBrowser();
+    const wsUrl = await createPage(browser.browserBaseUrl);
+    const client = await createClient(wsUrl);
+    ws = client.ws;
+    const { cdp } = client;
+
+    await check('Login page browser UI', async () => {
+      await navigate(cdp, `${config.baseUrl}/login.html`);
+      await waitFor(cdp, `document.querySelector('#authEmail') && document.querySelector('#authPassword') && document.querySelector('#signInBtn')`, 'login form controls');
+      const title = await evaluate(cdp, `document.title`);
+      return title || 'login form visible';
+    });
+
+    if (!config.email || !config.password) {
+      warn('Authenticated browser flow', 'skipped; set ZIGNS_BROWSER_EMAIL and ZIGNS_BROWSER_PASSWORD for a dedicated test account');
+    } else {
+      await runReadOnlyAuthenticatedChecks(cdp);
+      if (config.mutate) await runMutatingChecks(cdp);
+      else warn('Slideshow CRUD smoke', 'skipped; set ZIGNS_BROWSER_MUTATE=1 to create/tag/delete a temporary slideshow');
+    }
+  } finally {
+    ws?.close();
+    await browser?.cleanup?.();
+  }
+
+  const counts = results.reduce((acc, result) => {
+    acc[result.status] = (acc[result.status] || 0) + 1;
+    return acc;
+  }, {});
+  console.log(`Zigns browser smoke: ${counts.pass || 0} pass, ${counts.warn || 0} warn, ${counts.fail || 0} fail`);
+  for (const result of results) {
+    const label = result.status.toUpperCase().padEnd(4);
+    console.log(`${label} ${result.name}${result.details ? ` - ${result.details}` : ''}`);
+  }
+  if (counts.fail) process.exitCode = 1;
+}
+
+main().catch(error => {
+  console.error(error?.stack || error?.message || String(error));
+  process.exitCode = 1;
+});

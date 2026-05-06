@@ -3138,6 +3138,34 @@ body > canvas[width="1920"][height="1080"] {
   padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface2);
 }
 .tag-manager-actions { display: flex; gap: 6px; }
+#showOptionsModal {
+  display: none; position: fixed; inset: 0; z-index: 400;
+  background: rgba(0,0,0,.5); align-items: center; justify-content: center;
+  backdrop-filter: blur(4px); padding: 20px;
+}
+.show-options-sub {
+  color: var(--muted); font-size: 13px; line-height: 1.5; margin: -8px 0 18px;
+}
+.show-options-tag-bank {
+  display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;
+}
+.show-options-tag-btn {
+  border: 1px solid var(--border); border-radius: 999px; background: var(--surface2);
+  color: var(--muted); cursor: pointer; font: inherit; font-size: 11px; font-weight: 700;
+  padding: 4px 8px; transition: border-color .15s, color .15s, background .15s;
+}
+.show-options-tag-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+.show-options-help { color: var(--muted); font-size: 11px; line-height: 1.45; margin-top: 6px; }
+.show-options-emergency {
+  display: flex; align-items: flex-start; gap: 10px; padding: 12px;
+  border: 1px solid rgba(220,38,38,.22); border-radius: 10px;
+  background: rgba(220,38,38,.06); cursor: pointer;
+}
+.show-options-emergency input { margin-top: 2px; accent-color: #dc2626; }
+.show-options-emergency strong { display: block; color: var(--text); font-size: 13px; margin-bottom: 3px; }
+.show-options-emergency span { display: block; color: var(--muted); font-size: 12px; line-height: 1.45; }
+.show-options-emergency.disabled { opacity: .68; cursor: not-allowed; }
+.show-options-error { display: none; color: var(--danger); font-size: 12px; margin-top: 12px; }
 @keyframes broadcastPulse {
   0%, 100% { opacity: 1; } 50% { opacity: 0.3; }
 }
@@ -6149,6 +6177,44 @@ body.role-editor .admin-action {
         <div class="invite-modal-footer">
           <button class="btn btn-primary" onclick="closeInviteModal()">Done</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slideshow Tags modal -->
+  <div id="showOptionsModal" onclick="if(event.target===this)closeShowOptionsModal()">
+    <div class="countdown-modal-box" style="max-width:540px">
+      <button class="pairing-modal-close" onclick="closeShowOptionsModal()" aria-label="Close slideshow tags">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+      <div class="invite-modal-title" id="showOptionsTitle">Slideshow Tags</div>
+      <p class="show-options-sub">Organize this slideshow, auto-include matching tagged slides, or mark it as emergency-ready.</p>
+
+      <div class="clock-field">
+        <label for="showOptionsTags">Slideshow tags</label>
+        <input type="text" id="showOptionsTags" placeholder="e.g. lobby, sales-floor, novares">
+        <div class="show-options-help">Tags make this slideshow easier to find and target.</div>
+        <div class="show-options-tag-bank" id="showOptionsTagBank"></div>
+      </div>
+
+      <div class="clock-field">
+        <label for="showOptionsAutoTags">Auto-include slide tags</label>
+        <input type="text" id="showOptionsAutoTags" placeholder="e.g. announcement, menu, safety">
+        <div class="show-options-help">When you publish, Zigns adds published slides from other slideshows that match these tags.</div>
+      </div>
+
+      <label class="show-options-emergency" id="showOptionsEmergencyWrap">
+        <input type="checkbox" id="showOptionsEmergency">
+        <span>
+          <strong>Emergency-ready playlist</strong>
+          <span id="showOptionsEmergencyHelp">Admins can use this slideshow from Emergency Broadcast -> Saved Playlist.</span>
+        </span>
+      </label>
+      <div class="show-options-error" id="showOptionsError"></div>
+
+      <div class="clock-modal-footer">
+        <button class="btn btn-secondary" onclick="closeShowOptionsModal()">Cancel</button>
+        <button class="btn btn-primary" id="showOptionsSaveBtn" onclick="saveShowOptions()">Save Tags</button>
       </div>
     </div>
   </div>
@@ -14325,32 +14391,93 @@ async function deleteSlideshowById(showId) {
 
 window.deleteCurrentSlideshow = async () => deleteSlideshowById(currentShowId);
 
-window.openShowOptions = async function(showId = currentShowId) {
+let showOptionsTargetId = '';
+
+function addTagToInput(inputId, tag) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  const next = new Set(normalizeTagsFromInput(input.value));
+  const clean = normalizeTag(tag);
+  if (clean) next.add(clean);
+  input.value = Array.from(next).join(', ');
+  input.focus();
+}
+
+window.addShowOptionTag = function(target, encodedTag) {
+  const tag = normalizeTag(decodeURIComponent(encodedTag || ''));
+  addTagToInput(target === 'auto' ? 'showOptionsAutoTags' : 'showOptionsTags', tag);
+};
+
+function renderShowOptionsTagBank() {
+  const bank = document.getElementById('showOptionsTagBank');
+  if (!bank) return;
+  const tags = getOrgTags();
+  bank.innerHTML = tags.length
+    ? tags.map(t => `<button type="button" class="show-options-tag-btn" onclick="addShowOptionTag('show','${encodeURIComponent(t)}')">+ ${escHtml(t)}</button>`).join('')
+    : '<span class="show-options-help">No org tags yet. Saving tags here will add them to Settings -> Screen Tags.</span>';
+}
+
+window.openShowOptions = function(showId = currentShowId) {
   if (!showId) return;
   const show = showMetaFromOrg(showId) || { id: showId, name: currentShowName };
-  const tagRaw = prompt('Slideshow tags (comma separated)', (show.tags || []).join(', '));
-  if (tagRaw === null) return;
-  const autoRaw = prompt('Smart playlist: auto-include slides tagged (comma separated)', (show.autoIncludeTags || []).join(', '));
-  if (autoRaw === null) return;
-  const tags = normalizeTagsFromInput(tagRaw);
-  const autoIncludeTags = normalizeTagsFromInput(autoRaw);
+  showOptionsTargetId = showId;
+  document.getElementById('showOptionsTitle').textContent = `Slideshow Tags: ${show.name || currentShowName || showId}`;
+  document.getElementById('showOptionsTags').value = (show.tags || []).join(', ');
+  document.getElementById('showOptionsAutoTags').value = (show.autoIncludeTags || []).join(', ');
+  const emergencyInput = document.getElementById('showOptionsEmergency');
+  const emergencyWrap = document.getElementById('showOptionsEmergencyWrap');
+  const emergencyHelp = document.getElementById('showOptionsEmergencyHelp');
+  emergencyInput.checked = show.emergencyPlaylist === true;
+  emergencyInput.disabled = currentRole !== 'admin';
+  emergencyWrap.classList.toggle('disabled', currentRole !== 'admin');
+  emergencyHelp.textContent = currentRole === 'admin'
+    ? 'This makes the slideshow available in Emergency Broadcast -> Saved Playlist.'
+    : 'Only admins can change emergency playlist status.';
+  const err = document.getElementById('showOptionsError');
+  err.style.display = 'none';
+  err.textContent = '';
+  renderShowOptionsTagBank();
+  document.getElementById('showOptionsModal').style.display = 'flex';
+  setTimeout(() => document.getElementById('showOptionsTags').focus(), 80);
+};
+
+window.closeShowOptionsModal = function() {
+  document.getElementById('showOptionsModal').style.display = 'none';
+  showOptionsTargetId = '';
+};
+
+window.saveShowOptions = async function() {
+  const showId = showOptionsTargetId || currentShowId;
+  if (!showId) return;
+  const show = showMetaFromOrg(showId) || { id: showId, name: currentShowName };
+  const tags = normalizeTagsFromInput(document.getElementById('showOptionsTags').value);
+  const autoIncludeTags = normalizeTagsFromInput(document.getElementById('showOptionsAutoTags').value);
   let emergencyPlaylist = show.emergencyPlaylist === true;
   if (currentRole === 'admin') {
-    const emergencyRaw = prompt('Saved emergency playlist? yes/no', emergencyPlaylist ? 'yes' : 'no');
-    if (emergencyRaw === null) return;
-    emergencyPlaylist = /^y(es)?$/i.test(String(emergencyRaw).trim());
+    emergencyPlaylist = document.getElementById('showOptionsEmergency').checked === true;
     if (emergencyPlaylist && show.emergencyPlaylist !== true) {
       const ok = confirm('Mark this slideshow as emergency-ready? It will be available in the Emergency Broadcast saved playlist picker.');
       if (!ok) return;
     }
   }
+  const err = document.getElementById('showOptionsError');
+  const btn = document.getElementById('showOptionsSaveBtn');
+  const oldText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
   try {
     await saveShowMetadata(showId, { tags, autoIncludeTags, emergencyPlaylist });
     await syncOrgTags([...tags, ...autoIncludeTags]);
     if (showId === currentShowId) await pushToFirestore();
+    closeShowOptionsModal();
     toast('Slideshow options saved ✓');
   } catch(e) {
-    toast('Could not save slideshow options: ' + e.message, true);
+    err.textContent = 'Could not save slideshow tags: ' + e.message;
+    err.style.display = 'block';
+    toast('Could not save slideshow tags: ' + e.message, true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = oldText;
   }
 };
 

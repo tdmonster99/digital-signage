@@ -4,6 +4,16 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-06 — Codex — Add browser smoke and Tags modal
+
+Follow-up for the pilot QA -> browser smoke -> Phase 5.1 polish path.
+
+- **Pilot QA**: ran the live production sanity pass against `https://app.zigns.io`; public login/admin/display/mobile checks passed, with authenticated bootstrap still pending dedicated test credentials.
+- **Browser smoke**: added `scripts/browser-smoke.mjs` and `npm run smoke:browser` for browser-level login/session, invite modal, slideshow tags modal, pairing modal, issue report, and optional mutating slideshow CRUD checks.
+- **Slideshow Tags**: replaced the prompt-based slideshow Tags flow with a proper modal for slideshow tags, smart auto-include tags, and admin-only emergency-ready playlist marking.
+
+---
+
 ## 2026-05-06 — Codex — Add invite smoke and emergency safeguards
 
 Follow-up for pilot QA and Phase 5.1 emergency playlist polish.

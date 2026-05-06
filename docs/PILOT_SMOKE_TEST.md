@@ -74,6 +74,39 @@ Notes:
 - The invite send check creates or reuses a pending invite and verifies that Resend accepted the email for delivery. The tester still needs to confirm inbox delivery manually.
 - Add `--json` when piping results into another tool.
 
+## Browser Smoke
+
+Run a real browser UI check when a dedicated email/password pilot test account is available:
+
+```bash
+ZIGNS_BROWSER_EMAIL="pilot-admin@example.com" \
+ZIGNS_BROWSER_PASSWORD="use-a-dedicated-test-password" \
+ZIGNS_BROWSER_EXPECTED_ORG="Novares" \
+ZIGNS_BROWSER_EXPECTED_ROLE="admin" \
+npm run smoke:browser -- --base-url https://app.zigns.io
+```
+
+What it checks:
+- Login form controls render in a browser.
+- Email/password login reaches the dashboard and expected org/role.
+- Team invite modal opens and defaults to Editor.
+- Slideshow Tags modal opens with tags, auto-include, and emergency controls.
+- Add Screen pairing modal opens or shows the screen-limit prompt.
+- Profile issue report modal opens with copied context.
+
+Optional mutating CRUD pass:
+
+```bash
+ZIGNS_BROWSER_EMAIL="pilot-admin@example.com" \
+ZIGNS_BROWSER_PASSWORD="use-a-dedicated-test-password" \
+ZIGNS_BROWSER_EXPECTED_ORG="Novares" \
+ZIGNS_BROWSER_EXPECTED_ROLE="admin" \
+ZIGNS_BROWSER_MUTATE=1 \
+npm run smoke:browser -- --base-url https://app.zigns.io
+```
+
+The mutating pass creates a temporary slideshow, saves a `smoke` tag, then deletes the temporary slideshow. Only run it against a dedicated pilot test organization.
+
 ## Account And Role Smoke
 
 | Step | Expected Result |

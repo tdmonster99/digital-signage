@@ -175,6 +175,9 @@ async function main() {
     'sepCapEnabled',
     'createInvitation',
     'emailSent',
+    'showOptionsModal',
+    'showOptionsTags',
+    'showOptionsAutoTags',
     'broadcastConfirm',
     'No emergency playlists marked',
   ]));
@@ -204,7 +207,14 @@ async function main() {
     'Display Pairing Smoke',
     'Tags, Priority, And Emergency Smoke',
     'Team Invite Smoke',
+    'Browser Smoke',
     'CAP Alert Smoke',
+  ]));
+
+  await check('Static browser smoke script', () => assertFileContains('scripts/browser-smoke.mjs', [
+    'Zigns browser smoke',
+    'Slideshow tags modal opens',
+    'Slideshow CRUD smoke',
   ]));
 
   if (!config.staticOnly) {

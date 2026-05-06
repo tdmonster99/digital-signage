@@ -1,6 +1,11 @@
 {
   "name": "digital-signage",
   "version": "1.0.0",
+  "scripts": {
+    "smoke": "node scripts/pilot-smoke.mjs",
+    "smoke:static": "node scripts/pilot-smoke.mjs --static",
+    "smoke:browser": "node scripts/browser-smoke.mjs"
+  },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.0.0",
     "@aws-sdk/s3-request-presigner": "^3.0.0",
