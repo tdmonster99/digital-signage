@@ -4,6 +4,16 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-06 — Codex — Use production sender for invite emails
+
+Follow-up after invite links were created but emails were not appearing in inboxes.
+
+- **Email delivery**: switched team invite emails from the Resend test sender to `hello@zigns.io` for production invite delivery.
+- **Invite clarity**: the invite modal now reports whether the email was accepted for delivery or whether only the copyable invite link was created.
+- **Email copy**: updated invite email branding from “Digital Signage” to “Zigns.”
+
+---
+
 ## 2026-05-06 — Codex — Move team invites to server-backed flow
 
 Follow-up for Invite Team Member permission failures in production.

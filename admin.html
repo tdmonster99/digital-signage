@@ -6127,7 +6127,7 @@ body.role-editor .admin-action {
         </div>
       </div>
       <div id="inviteLinkSection" style="display:none">
-        <p style="font-size:13px;color:var(--muted);margin-bottom:12px">Invitation created! Share this link with your team member:</p>
+        <p id="inviteLinkStatus" style="font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:12px">Invitation created. Share this link with your team member:</p>
         <div class="invite-link-box">
           <div class="invite-link-text" id="inviteLinkText"></div>
           <button class="pairing-copy-btn" onclick="copyInviteLink()">Copy</button>
@@ -10589,6 +10589,9 @@ window.openInviteModal = function() {
   document.getElementById('inviteEmail').value  = '';
   document.getElementById('inviteRole').value   = 'editor';
   document.getElementById('inviteError').style.display = 'none';
+  document.getElementById('inviteLinkStatus').textContent = 'Invitation created. Share this link with your team member:';
+  document.getElementById('inviteLinkStatus').style.color = 'var(--muted)';
+  document.getElementById('inviteLinkStatus').title = '';
   updateRoleDesc();
   document.getElementById('inviteModal').style.display = 'flex';
   setTimeout(() => document.getElementById('inviteEmail').focus(), 80);
@@ -10640,6 +10643,15 @@ window.sendInvite = async function() {
     const link = result.inviteId
       ? window.location.origin + '/admin.html?invite=' + encodeURIComponent(result.inviteId)
       : result.inviteUrl;
+    const statusEl = document.getElementById('inviteLinkStatus');
+    if (result.emailSent) {
+      statusEl.textContent = 'Invite email sent. You can also copy this link if they do not see it in their inbox.';
+      statusEl.style.color = 'var(--muted)';
+    } else {
+      statusEl.textContent = 'Invite link created, but email delivery failed. Copy this link and send it directly.';
+      statusEl.style.color = 'var(--danger)';
+      if (result.emailError) statusEl.title = result.emailError;
+    }
     document.getElementById('inviteLinkText').textContent = link;
     document.getElementById('inviteFormSection').style.display = 'none';
     document.getElementById('inviteLinkSection').style.display = 'block';

@@ -131,13 +131,13 @@ async function sendTeamInvitationEmail({ email, inviteId, inviterEmail, orgName,
     <tr><td align="center">
       <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.08)">
         <tr><td style="background:#111111;padding:28px 40px">
-          <div style="font-size:20px;font-weight:700;color:#ffffff;letter-spacing:-0.3px">Digital Signage</div>
+          <div style="font-size:20px;font-weight:700;color:#ffffff;letter-spacing:-0.3px">Zigns</div>
         </td></tr>
         <tr><td style="padding:36px 40px">
           <p style="margin:0 0 8px;font-size:22px;font-weight:700;color:#111111">You're invited!</p>
           <p style="margin:0 0 24px;font-size:15px;color:#555555;line-height:1.6">
             <strong style="color:#111111">${escHtmlEmail(inviterEmail)}</strong> has invited you to join
-            <strong style="color:#111111">${escHtmlEmail(orgName)}</strong> on Digital Signage
+            <strong style="color:#111111">${escHtmlEmail(orgName)}</strong> on Zigns
             as <strong style="color:#111111">${roleLabel}</strong>.
           </p>
           <table cellpadding="0" cellspacing="0" style="margin:0 0 28px">
@@ -167,7 +167,7 @@ async function sendTeamInvitationEmail({ email, inviteId, inviterEmail, orgName,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'Digital Signage <onboarding@resend.dev>',
+        from: 'Zigns <hello@zigns.io>',
         to: [email],
         subject: `${inviterEmail} invited you to ${orgName}`,
         html,
@@ -177,7 +177,7 @@ async function sendTeamInvitationEmail({ email, inviteId, inviterEmail, orgName,
     if (!upstream.ok) {
       return { sent: false, error: data?.message || `Email error ${upstream.status}` };
     }
-    return { sent: true };
+    return { sent: true, id: data?.id || null };
   } catch (err) {
     return { sent: false, error: err.message };
   }
@@ -639,6 +639,7 @@ module.exports = async function handler(req, res) {
         inviteUrl: inviteUrl(result.inviteId),
         emailSent: emailResult.sent,
         emailError: emailResult.error || null,
+        emailId: emailResult.id || null,
       });
     }
 
@@ -709,6 +710,7 @@ module.exports = async function handler(req, res) {
         inviteUrl: inviteUrl(inviteId),
         emailSent: emailResult.sent,
         emailError: emailResult.error || null,
+        emailId: emailResult.id || null,
       });
     }
 
