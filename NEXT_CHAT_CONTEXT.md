@@ -22,12 +22,12 @@ This is the next recommended workstream because Novares pilot testing is beginni
 
 Current docs:
 - `docs/PILOT_QUICKSTART.md` — pilot onboarding, roles, pairing, and support intake
-- `docs/PILOT_SMOKE_TEST.md` — repeatable manual smoke-test harness for account, role, slideshow, pairing, playback, mobile, tags/emergency, and CAP checks
-- `scripts/pilot-smoke.mjs` — dependency-free sanity script with static checks, live public page checks, and optional Firebase email/password bootstrap checks
+- `docs/PILOT_SMOKE_TEST.md` — repeatable manual smoke-test harness for account, role, invite delivery, slideshow, pairing, playback, mobile, tags/emergency, and CAP checks
+- `scripts/pilot-smoke.mjs` — dependency-free sanity script with static checks, live public page checks, optional Firebase email/password bootstrap checks, and optional invite-email send checks
 
 Recommended next steps:
 - Run `node scripts/pilot-smoke.mjs --static` locally before pilot-impacting changes.
-- Run the harness against production with an Admin account and one Editor account.
+- Run the harness against production with an Admin account and one Editor account; use `ZIGNS_SMOKE_INVITE_EMAIL` with a controlled inbox when validating invite delivery.
 - Record failures with the in-app issue report helper: desktop Profile -> Report Issue, or mobile Account -> Copy issue report.
 - Create a dedicated Firebase email/password test account if we want `scripts/pilot-smoke.mjs` to verify org/role bootstrap automatically.
 - If browser credentials become available, add a small browser smoke suite for login/session, slideshow CRUD, publish, and pairing-modal sanity checks.
@@ -45,11 +45,13 @@ Shipped:
 - Schedule event priority
 - Saved emergency playlist trigger by all screens or tags
 - Display-side emergency playlist override and return behavior
+- Saved emergency playlist picker limited to explicitly marked emergency slideshows
+- Admin confirmation for marking emergency playlists, explicit trigger confirmation, and recent activity entries for trigger/clear
 
 Remaining polish:
 - Smoke-test tag propagation across screens, slideshows, slides, and media.
-- Tighten emergency playlist governance: who can mark a slideshow as emergency, how it is labeled, and how risky triggers are confirmed.
-- Add clearer emergency trigger audit/recent activity records if pilot feedback shows confusion.
+- Consider a richer emergency playlist management UI instead of the current prompt-based Slideshow Tags flow.
+- Add stronger audit history if pilot feedback shows recent activity is not enough.
 - Consider advanced targeting beyond all/tag/screen IDs later.
 
 ### 3. Phase 5.2 CAP Alerts / Emergency-CAP Polish

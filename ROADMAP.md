@@ -187,7 +187,7 @@ Sourced from `KITCAST_GAP_ANALYSIS.md` (2026-04-27), plus the 2026-04-28 Vercel 
 
 **Why:** Single biggest enterprise differentiator missing today. A natural cluster — tagging is the foundation that unlocks both smart playlists and pre-built emergency content. Kitcast Pro has all three; Zigns has none. Required to win schools, healthcare, multi-location retail.
 
-**Status:** Mostly shipped 2026-04-28. Screen/org/slideshow/slide/media tag management, smart playlist publish resolution, schedule event priority, saved emergency playlist marking, and saved-playlist emergency override are now implemented. Remaining: fuller emergency playlist governance and any advanced targeting beyond all/tag/screen IDs.
+**Status:** Mostly shipped 2026-04-28; emergency governance polish started 2026-05-06. Screen/org/slideshow/slide/media tag management, smart playlist publish resolution, schedule event priority, saved emergency playlist marking, and saved-playlist emergency override are now implemented. Remaining: richer emergency management UI, deeper smoke coverage, and any advanced targeting beyond all/tag/screen IDs.
 
 **What shipped 2026-04-28:**
 - Settings → Screen Tags is now a real org tag manager backed by `organizations/{orgId}.tags`, with create/rename/delete and cleanup across screen docs.
@@ -198,13 +198,14 @@ Sourced from `KITCAST_GAP_ANALYSIS.md` (2026-04-27), plus the 2026-04-28 Vercel 
 - Slideshow Options manages slideshow tags, smart auto-include tags, and `emergencyPlaylist: true`.
 - Slide and media cards now expose tag editors. Org tag rename/delete propagates through screens, slideshow metadata, slides/drafts, and media records.
 - Smart playlists materialize at publish/approval time by appending matching published slides from other org slideshows, so `display.html` stays unchanged.
+- Emergency trigger governance now limits saved-playlist broadcasts to explicitly marked emergency slideshows, requires an override confirmation before trigger, and records trigger/clear actions in recent activity.
 
 **What to build:**
 
 - **Tagging system** — first-class `tags: string[]` on screens, slideshows, slides, and media. Settings hub already has a `screentags` placeholder; promote it to a real Tag Manager (create/rename/delete tags org-wide). Tags become the join key for everything below. **Shipped across screens, slideshows, slides, and media.**
 - **Smart Playlists** — a slideshow option "Auto-include slides tagged X". Resolved at publish time so `display.html` doesn't need to change. **Shipped for published slides in other org slideshows.**
 - **Priority Overrides** — schedules gain a `priority: number` field. When two schedules overlap on a screen, higher priority wins. `display.html` schedule resolver needs an ordered pass instead of first-match. **Shipped for events within a screen's assigned schedule.**
-- **Pre-built Emergency Playlist** — a special slideshow type (`emergencyPlaylist: true`) that admins design ahead of time (designed slides, logos, instructions). New "Trigger Emergency" button on Screens page activates it across selected screens or by tag (e.g. "all healthcare-floor screens"). Reuses existing Broadcast overlay z-index 200 path; replaces the current text-only Broadcast modal with a "Quick message / Use saved playlist" tabbed picker. **Shipped using tagged slideshows marked `emergencyPlaylist: true`; remaining work is governance/polish.**
+- **Pre-built Emergency Playlist** — a special slideshow type (`emergencyPlaylist: true`) that admins design ahead of time (designed slides, logos, instructions). New "Trigger Emergency" button on Screens page activates it across selected screens or by tag (e.g. "all healthcare-floor screens"). Reuses existing Broadcast overlay z-index 200 path; replaces the current text-only Broadcast modal with a "Quick message / Use saved playlist" tabbed picker. **Shipped using tagged slideshows marked `emergencyPlaylist: true`; first governance pass shipped with explicit marking/trigger confirmation and no arbitrary slideshow fallback.**
 
 **Files:** `admin.html`, `display.html` (schedule resolver + emergency overlay), Firestore schema additions on `screens/{id}`, `slideshows/{id}`, `organizations/{id}.tags`.
 

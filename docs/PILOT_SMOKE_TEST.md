@@ -56,9 +56,22 @@ ZIGNS_SMOKE_EXPECTED_ROLE="editor" \
 node scripts/pilot-smoke.mjs --base-url https://app.zigns.io
 ```
 
+Optional invite send check from a dedicated Admin test account:
+
+```bash
+ZIGNS_SMOKE_EMAIL="pilot-admin@example.com" \
+ZIGNS_SMOKE_PASSWORD="use-a-dedicated-test-password" \
+ZIGNS_SMOKE_EXPECTED_ORG="Novares" \
+ZIGNS_SMOKE_EXPECTED_ROLE="admin" \
+ZIGNS_SMOKE_INVITE_EMAIL="pilot-invitee+smoke@example.com" \
+ZIGNS_SMOKE_INVITE_ROLE="viewer" \
+node scripts/pilot-smoke.mjs --base-url https://app.zigns.io
+```
+
 Notes:
 - The authenticated check supports Firebase email/password accounts. Google OAuth sign-in still needs a browser/manual run.
 - Do not use a real user's personal password for this script. Create a dedicated test account when we are ready for automated authenticated checks.
+- The invite send check creates or reuses a pending invite and verifies that Resend accepted the email for delivery. The tester still needs to confirm inbox delivery manually.
 - Add `--json` when piping results into another tool.
 
 ## Account And Role Smoke
@@ -75,6 +88,17 @@ Role checks:
 - Admin can open Settings -> Team and Screens.
 - Editor can create/edit slideshows and screens, but cannot manage billing/team settings.
 - Viewer, when used, should be read-only.
+
+## Team Invite Smoke
+
+| Step | Expected Result |
+|---|---|
+| As an Admin, open Settings -> Team -> Invite Member. | Invite modal opens and defaults to Editor. |
+| Send an invite to a controlled test inbox. | Modal says the invite email was sent and also shows a copyable invite link. |
+| Confirm the invite email arrives in the inbox. | Message comes from `hello@zigns.io`, subject names the inviter and organization, and the accept link opens Zigns. |
+| Open Resend Logs and search the invitee email. | The email appears with sent/delivered status or a clear failure reason. |
+| Accept the invite with the invited email. | User lands in the intended organization with the selected role. |
+| Return to Settings -> Team. | Pending invite disappears and the new member appears in the team list. |
 
 ## Slideshow Authoring Smoke
 
@@ -135,7 +159,9 @@ Use a phone viewport or the mobile route.
 | Add tags or auto-include rules to a slideshow. | Settings persist and publish resolves matching slides. |
 | Create overlapping schedule events with different priorities. | Display chooses the higher-priority event. |
 | Mark a slideshow as an emergency playlist. | It appears in the saved playlist emergency picker. |
-| Trigger saved emergency playlist by tag or all screens. | Matching displays switch to the emergency playlist and return after clear/expiry. |
+| Open the saved playlist emergency picker with no marked emergency playlists. | It does not allow arbitrary slideshow selection. |
+| Trigger saved emergency playlist by tag or all screens. | Confirmation is required; matching displays switch to the emergency playlist and return after clear/expiry. |
+| Clear the emergency broadcast. | Displays return to normal content and recent activity notes the clear action. |
 
 ## CAP Alert Smoke
 

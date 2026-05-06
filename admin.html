@@ -3120,6 +3120,13 @@ body > canvas[width="1920"][height="1080"] {
   color: var(--muted); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer;
 }
 .broadcast-tab.active { background: var(--surface); color: var(--text); box-shadow: var(--card-shadow); }
+.broadcast-confirm {
+  display: flex; align-items: flex-start; gap: 9px;
+  padding: 10px 12px; margin-top: 10px; border-radius: 10px;
+  background: rgba(220,38,38,.08); border: 1px solid rgba(220,38,38,.2);
+  color: var(--text); font-size: 12px; line-height: 1.4; cursor: pointer;
+}
+.broadcast-confirm input { margin-top: 2px; accent-color: #dc2626; }
 .screen-tag-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
 .screen-tag-chip {
   display: inline-flex; align-items: center; gap: 4px; padding: 3px 7px; border-radius: 999px;
@@ -4974,6 +4981,9 @@ body.role-editor .admin-action {
           <label>Emergency playlist</label>
           <select id="broadcastPlaylistSelect"></select>
         </div>
+        <div id="broadcastPlaylistHint" style="display:none;font-size:12px;color:var(--muted);line-height:1.5;margin:-6px 0 12px">
+          Mark a slideshow as an emergency playlist from Slideshows -> Tags before triggering saved emergency content.
+        </div>
         <div class="clock-field">
           <label>Target tag</label>
           <select id="broadcastTargetTag">
@@ -4991,6 +5001,10 @@ body.role-editor .admin-action {
           <option value="300">After 5 minutes</option>
         </select>
       </div>
+      <label class="broadcast-confirm">
+        <input type="checkbox" id="broadcastConfirm">
+        <span>I understand this will immediately override matching screens.</span>
+      </label>
       <div class="clock-modal-footer" style="margin-top:8px">
         <button class="btn btn-secondary" onclick="closeBroadcastModal()">Cancel</button>
         <button class="btn" onclick="sendBroadcast()" style="background:#dc2626;color:#fff;border-color:#dc2626">Trigger Emergency</button>
@@ -14320,9 +14334,16 @@ window.openShowOptions = async function(showId = currentShowId) {
   if (autoRaw === null) return;
   const tags = normalizeTagsFromInput(tagRaw);
   const autoIncludeTags = normalizeTagsFromInput(autoRaw);
-  const emergencyRaw = prompt('Saved emergency playlist? yes/no', show.emergencyPlaylist ? 'yes' : 'no');
-  if (emergencyRaw === null) return;
-  const emergencyPlaylist = /^y(es)?$/i.test(String(emergencyRaw).trim());
+  let emergencyPlaylist = show.emergencyPlaylist === true;
+  if (currentRole === 'admin') {
+    const emergencyRaw = prompt('Saved emergency playlist? yes/no', emergencyPlaylist ? 'yes' : 'no');
+    if (emergencyRaw === null) return;
+    emergencyPlaylist = /^y(es)?$/i.test(String(emergencyRaw).trim());
+    if (emergencyPlaylist && show.emergencyPlaylist !== true) {
+      const ok = confirm('Mark this slideshow as emergency-ready? It will be available in the Emergency Broadcast saved playlist picker.');
+      if (!ok) return;
+    }
+  }
   try {
     await saveShowMetadata(showId, { tags, autoIncludeTags, emergencyPlaylist });
     await syncOrgTags([...tags, ...autoIncludeTags]);
@@ -21882,6 +21903,8 @@ function tmplInsetPhoto(photoRef, left, top, width, height, opts = {}) {
 window.openBroadcastModal = function() {
   document.getElementById('broadcastMessage').value = '';
   document.getElementById('broadcastDismiss').value = '0';
+  const confirmEl = document.getElementById('broadcastConfirm');
+  if (confirmEl) confirmEl.checked = false;
   document.querySelectorAll('.broadcast-color-btn').forEach(b => b.classList.remove('active'));
   document.querySelector('.broadcast-color-btn[data-color="#dc2626"]').classList.add('active');
   setBroadcastMode('message');
@@ -21909,13 +21932,15 @@ window.setBroadcastMode = function(mode) {
 function populateBroadcastPlaylistOptions() {
   const showSel = document.getElementById('broadcastPlaylistSelect');
   const tagSel  = document.getElementById('broadcastTargetTag');
+  const hintEl  = document.getElementById('broadcastPlaylistHint');
   if (showSel) {
     const orgShows = currentOrg?.slideshows || getAllShows();
     const emergencyShows = orgShows.filter(s => s.emergencyPlaylist === true);
-    const shows = emergencyShows.length ? emergencyShows : orgShows;
-    showSel.innerHTML = shows.length
-      ? shows.map(s => `<option value="${escHtml(s.id)}">${escHtml(s.name)}</option>`).join('')
-      : '<option value="">No slideshows available</option>';
+    showSel.innerHTML = emergencyShows.length
+      ? emergencyShows.map(s => `<option value="${escHtml(s.id)}">${escHtml(s.name)}</option>`).join('')
+      : '<option value="">No emergency playlists marked</option>';
+    showSel.disabled = emergencyShows.length === 0;
+    if (hintEl) hintEl.style.display = emergencyShows.length ? 'none' : '';
   }
   if (tagSel) {
     const tags = getOrgTags();
@@ -21928,6 +21953,10 @@ window.sendBroadcast = async function() {
   const mode = document.getElementById('broadcastTabPlaylist')?.classList.contains('active') ? 'playlist' : 'message';
   const color      = document.querySelector('.broadcast-color-btn.active')?.dataset.color || '#dc2626';
   const autoDismiss = parseInt(document.getElementById('broadcastDismiss').value, 10) || 0;
+  if (!document.getElementById('broadcastConfirm')?.checked) {
+    toast('Confirm the emergency override before triggering.', true);
+    return;
+  }
   const payload = {
     active: true,
     mode,
@@ -21940,6 +21969,11 @@ window.sendBroadcast = async function() {
   if (mode === 'playlist') {
     const slideshowId = document.getElementById('broadcastPlaylistSelect')?.value || '';
     if (!slideshowId) { toast('Choose an emergency playlist.', true); return; }
+    const showMeta = showMetaFromOrg(slideshowId) || {};
+    if (showMeta.emergencyPlaylist !== true) {
+      toast('Choose a slideshow marked as an emergency playlist.', true);
+      return;
+    }
     const showName = getShowName(slideshowId);
     const targetTag = normalizeTag(document.getElementById('broadcastTargetTag')?.value || '');
     payload.slideshowId = slideshowId;
@@ -21954,7 +21988,9 @@ window.sendBroadcast = async function() {
   closeBroadcastModal();
   try {
     await setDoc(doc(db, 'broadcasts', currentOrgId), payload);
-    toast('Broadcast sent to all screens ✓');
+    const targetCopy = payload.targetTags?.length ? `screens tagged ${payload.targetTags.join(', ')}` : 'all screens';
+    toast('Emergency sent to ' + targetCopy + ' ✓');
+    logActivity(`Emergency ${mode === 'playlist' ? 'playlist' : 'message'} triggered for ${targetCopy}`);
   } catch(e) {
     toast('Broadcast failed: ' + e.message, true);
   }
@@ -21963,8 +21999,13 @@ window.sendBroadcast = async function() {
 window.clearBroadcast = async function() {
   if (!currentOrgId) return;
   try {
-    await setDoc(doc(db, 'broadcasts', currentOrgId), { active: false });
+    await setDoc(doc(db, 'broadcasts', currentOrgId), {
+      active: false,
+      clearedAt: new Date().toISOString(),
+      clearedBy: currentUser?.email || '',
+    }, { merge: true });
     toast('Broadcast cleared ✓');
+    logActivity('Emergency broadcast cleared');
   } catch(e) {
     toast('Could not clear broadcast: ' + e.message, true);
   }
@@ -22215,6 +22256,9 @@ const activityLog = [];
 function logActivity(msg) {
   activityLog.unshift({ msg: String(msg || ''), time: new Date() });
   if (activityLog.length > 20) activityLog.pop();
+  if (document.getElementById('page-dashboard')?.classList.contains('active')) {
+    updateDashboard();
+  }
 }
 
 function formatActivityTime(date) {

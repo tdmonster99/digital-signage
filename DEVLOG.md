@@ -4,6 +4,16 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-06 — Codex — Add invite smoke and emergency safeguards
+
+Follow-up for pilot QA and Phase 5.1 emergency playlist polish.
+
+- **Pilot smoke**: added an optional invite-send check that verifies server invite creation and Resend delivery acceptance, with manual inbox confirmation steps in the pilot checklist.
+- **Emergency playlists**: the saved playlist emergency picker now only allows slideshows explicitly marked as emergency-ready, with no fallback to arbitrary slideshows.
+- **Emergency governance**: saved emergency marking is admin-confirmed, triggering requires an explicit override checkbox, and trigger/clear actions now log recent activity that refreshes immediately on the dashboard.
+
+---
+
 ## 2026-05-06 — Codex — Use production sender for invite emails
 
 Follow-up after invite links were created but emails were not appearing in inboxes.

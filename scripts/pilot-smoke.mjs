@@ -34,6 +34,8 @@ const config = {
   password: args.password || process.env.ZIGNS_SMOKE_PASSWORD || '',
   expectedOrg: args['expected-org'] || process.env.ZIGNS_SMOKE_EXPECTED_ORG || '',
   expectedRole: args['expected-role'] || process.env.ZIGNS_SMOKE_EXPECTED_ROLE || '',
+  inviteEmail: args['invite-email'] || process.env.ZIGNS_SMOKE_INVITE_EMAIL || '',
+  inviteRole: args['invite-role'] || process.env.ZIGNS_SMOKE_INVITE_ROLE || 'viewer',
   timeoutMs: Number.parseInt(args.timeout || process.env.ZIGNS_SMOKE_TIMEOUT_MS || '12000', 10),
 };
 
@@ -140,6 +142,26 @@ async function runAuthBootstrapCheck() {
   }
 
   addResult('pass', 'Authenticated bootstrap', `user=${authBody.email || config.email}; org=${orgName || 'unknown'}; role=${role || 'unknown'}`);
+
+  if (config.inviteEmail) {
+    const inviteResp = await fetchWithTimeout(`${config.baseUrl}/api/link-account`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'createInvitation',
+        idToken: authBody.idToken,
+        email: config.inviteEmail,
+        role: config.inviteRole,
+      }),
+    });
+    const invite = await inviteResp.json().catch(() => ({}));
+    assert(inviteResp.ok && invite.ok === true, `invite creation failed: ${invite.error || `HTTP ${inviteResp.status}`}`);
+    assert(invite.inviteId, 'invite creation did not return an inviteId');
+    assert(invite.emailSent === true, `invite email was not accepted for delivery: ${invite.emailError || 'unknown error'}`);
+    addResult('pass', 'Invite email accepted', `invitee=${config.inviteEmail}; role=${config.inviteRole}; id=${invite.emailId || 'not returned'}`);
+  } else {
+    warn('Invite email accepted', 'skipped; set ZIGNS_SMOKE_INVITE_EMAIL to send a real invite from the authenticated admin test account');
+  }
 }
 
 async function main() {
@@ -151,6 +173,16 @@ async function main() {
     'emergencyPlaylist',
     'priority',
     'sepCapEnabled',
+    'createInvitation',
+    'emailSent',
+    'broadcastConfirm',
+    'No emergency playlists marked',
+  ]));
+
+  await check('Static invite sender', () => assertFileContains('api/link-account.js', [
+    'sendTeamInvitationEmail',
+    'Zigns <hello@zigns.io>',
+    'emailSent',
   ]));
 
   await check('Static mobile hooks', () => assertFileContains('mobile.html', [
@@ -171,6 +203,7 @@ async function main() {
     'Account And Role Smoke',
     'Display Pairing Smoke',
     'Tags, Priority, And Emergency Smoke',
+    'Team Invite Smoke',
     'CAP Alert Smoke',
   ]));
 
