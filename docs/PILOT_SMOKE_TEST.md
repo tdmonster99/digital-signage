@@ -91,6 +91,7 @@ What it checks:
 - Email/password login reaches the dashboard and expected org/role.
 - Team invite modal opens and defaults to Editor.
 - Slideshow Tags modal opens with tags, auto-include, and emergency controls.
+- Screens -> Emergency Playlists manager opens.
 - Add Screen pairing modal opens or shows the screen-limit prompt.
 - Profile issue report modal opens with copied context.
 
@@ -105,7 +106,7 @@ ZIGNS_BROWSER_MUTATE=1 \
 npm run smoke:browser -- --base-url https://app.zigns.io
 ```
 
-The mutating pass creates a temporary slideshow, saves a `smoke` tag, then deletes the temporary slideshow. Only run it against a dedicated pilot test organization.
+The mutating pass creates a temporary slideshow, saves a `smoke` tag, toggles its emergency-ready state on and off from the Screens manager, then deletes the temporary slideshow. Only run it against a dedicated pilot test organization.
 
 Run the Phase 5.1 tag propagation pass when validating tag manager or smart playlist changes:
 
@@ -203,7 +204,7 @@ Use a phone viewport or the mobile route.
 | Add a tag to a screen. | Tag chip appears on the screen card. |
 | Add tags or auto-include rules to a slideshow. | Settings persist and publish resolves matching slides. |
 | Create overlapping schedule events with different priorities. | Display chooses the higher-priority event. |
-| Mark a slideshow as an emergency playlist. | It appears in the saved playlist emergency picker. |
+| Mark a slideshow as an emergency playlist from Screens -> Emergency Playlists. | It appears in the saved playlist emergency picker. |
 | Open the saved playlist emergency picker with no marked emergency playlists. | It does not allow arbitrary slideshow selection. |
 | Trigger saved emergency playlist by tag or all screens. | Confirmation is required; matching displays switch to the emergency playlist and return after clear/expiry. |
 | Clear the emergency broadcast. | Displays return to normal content and recent activity notes the clear action. |

@@ -500,6 +500,19 @@ async function runReadOnlyAuthenticatedChecks(cdp) {
     return 'tags, auto-include, emergency controls present';
   });
 
+  await check('Emergency playlist manager opens', async () => {
+    await evaluate(cdp, `window.showPage('screens'); window.openEmergencyPlaylistManager?.(); true`);
+    await waitFor(cdp, `getComputedStyle(document.querySelector('#emergencyPlaylistManagerModal')).display !== 'none'`, 'emergency playlist manager');
+    const details = await evaluate(cdp, `(() => ({
+      hasPanel: Boolean(document.querySelector('#emergencyPlaylistPanel')),
+      hasSummary: Boolean(document.querySelector('#emergencyPlaylistManagerSummary')?.textContent?.trim()),
+      rowCount: document.querySelectorAll('#emergencyPlaylistManagerList .emergency-playlist-row').length,
+    }))()`);
+    assert(details.hasPanel && details.hasSummary, 'emergency playlist manager missing expected shell');
+    await evaluate(cdp, `window.closeEmergencyPlaylistManager?.(); true`);
+    return `manager rows=${details.rowCount}`;
+  });
+
   await check('Pairing modal opens', async () => {
     await evaluate(cdp, `window.showPage('screens'); window.openAddScreenModal?.(); true`);
     await waitFor(cdp, `document.querySelector('#pairingModal') && (getComputedStyle(document.querySelector('#pairingModal')).display !== 'none' || document.body.textContent.includes('Screen limit reached'))`, 'pairing modal or limit prompt');
@@ -561,6 +574,25 @@ async function runMutatingChecks(cdp) {
         return { tagsText, errorText, modalDisplay, toastText };
       })()`);
       assert(saveState.tagsText.includes('smoke'), `slideshow tag did not render after save: ${JSON.stringify(saveState)}`);
+      const emergencyState = await evaluate(cdp, `(async () => {
+        const showId = ${JSON.stringify(created.id)};
+        const oldConfirm = window.confirm;
+        window.confirm = () => true;
+        try {
+          window.openEmergencyPlaylistManager();
+          await window.toggleEmergencyPlaylist(showId);
+          const afterEnable = document.querySelector('#emergencyPlaylistManagerList .emergency-playlist-row[data-show-id="' + CSS.escape(showId) + '"]')?.classList.contains('ready') === true;
+          const panelAfterEnable = document.querySelector('#emergencyPlaylistPreview')?.textContent || '';
+          await window.toggleEmergencyPlaylist(showId);
+          const afterDisable = document.querySelector('#emergencyPlaylistManagerList .emergency-playlist-row[data-show-id="' + CSS.escape(showId) + '"]')?.classList.contains('ready') === true;
+          window.closeEmergencyPlaylistManager();
+          return { afterEnable, afterDisable, panelAfterEnable };
+        } finally {
+          window.confirm = oldConfirm;
+        }
+      })()`);
+      assert(emergencyState.afterEnable === true, `emergency manager did not mark temporary slideshow ready: ${JSON.stringify(emergencyState)}`);
+      assert(emergencyState.afterDisable === false, `emergency manager did not clear temporary slideshow: ${JSON.stringify(emergencyState)}`);
     } finally {
       if (created?.id) {
         cleanupNote = await evaluate(cdp, `(async () => {

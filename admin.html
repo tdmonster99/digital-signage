@@ -3127,6 +3127,79 @@ body > canvas[width="1920"][height="1080"] {
   color: var(--text); font-size: 12px; line-height: 1.4; cursor: pointer;
 }
 .broadcast-confirm input { margin-top: 2px; accent-color: #dc2626; }
+.emergency-playlist-panel {
+  display: flex; align-items: stretch; justify-content: space-between; gap: 18px;
+  padding: 16px; border: 1px solid rgba(220,38,38,.22); border-radius: 12px;
+  background: linear-gradient(180deg, rgba(220,38,38,.065), rgba(220,38,38,.035));
+}
+.emergency-playlist-panel-main { display: flex; gap: 12px; min-width: 240px; flex: 1; }
+.emergency-playlist-icon {
+  width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(220,38,38,.12); color: #dc2626;
+}
+.emergency-playlist-heading { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.emergency-playlist-heading h2 { margin: 0; font-size: 15px; font-weight: 800; color: var(--text); }
+.emergency-playlist-count {
+  display: inline-flex; align-items: center; min-height: 22px; padding: 2px 8px;
+  border-radius: 999px; background: var(--surface); border: 1px solid rgba(220,38,38,.2);
+  color: #b91c1c; font-size: 11px; font-weight: 800;
+}
+.emergency-playlist-preview { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.emergency-playlist-mini-item {
+  display: inline-flex; align-items: center; gap: 6px; max-width: 220px;
+  padding: 6px 9px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--text); font-size: 12px; font-weight: 700;
+}
+.emergency-playlist-mini-item span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.emergency-playlist-empty { color: var(--muted); font-size: 13px; line-height: 1.45; }
+.emergency-playlist-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.emergency-playlist-actions .btn { justify-content: center; }
+.emergency-playlist-actions .btn:disabled { opacity: .45; cursor: not-allowed; }
+.emergency-playlist-manager-modal {
+  display: none; position: fixed; inset: 0; z-index: 410;
+  background: rgba(0,0,0,.5); align-items: center; justify-content: center;
+  backdrop-filter: blur(4px); padding: 20px;
+}
+.emergency-playlist-modal-box {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+  width: 100%; max-width: 680px; padding: 24px 22px; overflow-y: auto; max-height: 90vh;
+}
+.emergency-playlist-manager-list { display: flex; flex-direction: column; gap: 9px; margin-top: 16px; }
+.emergency-playlist-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  padding: 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface2);
+}
+.emergency-playlist-row.ready { border-color: rgba(220,38,38,.28); background: rgba(220,38,38,.055); }
+.emergency-playlist-row-main { min-width: 0; flex: 1; }
+.emergency-playlist-row-title { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.emergency-playlist-row-name {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 13px; font-weight: 800; color: var(--text);
+}
+.emergency-playlist-state {
+  flex-shrink: 0; font-size: 10px; font-weight: 800; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .04em;
+}
+.emergency-playlist-row.ready .emergency-playlist-state { color: #dc2626; }
+.emergency-playlist-row-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
+.emergency-playlist-row-actions { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; justify-content: flex-end; }
+.emergency-playlist-row-actions .btn { padding: 7px 10px; font-size: 12px; }
+.emergency-toggle {
+  min-width: 86px; justify-content: center; padding: 7px 12px; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--surface); color: var(--text);
+  font: inherit; font-size: 12px; font-weight: 800; cursor: pointer; transition: all .15s;
+}
+.emergency-toggle.is-on { background: #dc2626; border-color: #dc2626; color: #fff; }
+.emergency-toggle:disabled, .emergency-playlist-row-actions .btn:disabled { opacity: .5; cursor: not-allowed; }
+@media (max-width: 760px) {
+  .emergency-playlist-panel { flex-direction: column; }
+  .emergency-playlist-actions { justify-content: stretch; }
+  .emergency-playlist-actions .btn { flex: 1; }
+  .emergency-playlist-row { align-items: stretch; flex-direction: column; }
+  .emergency-playlist-row-actions { justify-content: stretch; }
+  .emergency-playlist-row-actions .btn, .emergency-toggle { flex: 1; }
+}
 .screen-tag-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
 .screen-tag-chip {
   display: inline-flex; align-items: center; gap: 4px; padding: 3px 7px; border-radius: 999px;
@@ -4944,6 +5017,37 @@ body.role-editor .admin-action {
         </button>
       </div>
     </div>
+    <section class="emergency-playlist-panel admin-action" id="emergencyPlaylistPanel" aria-labelledby="emergencyPlaylistPanelTitle">
+      <div class="emergency-playlist-panel-main">
+        <div class="emergency-playlist-icon" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/>
+            <path d="M12 9v4"/><path d="M12 17h.01"/>
+          </svg>
+        </div>
+        <div style="min-width:0">
+          <div class="emergency-playlist-heading">
+            <h2 id="emergencyPlaylistPanelTitle">Emergency Playlists</h2>
+            <span class="emergency-playlist-count" id="emergencyPlaylistCount">0 ready</span>
+          </div>
+          <div class="emergency-playlist-preview" id="emergencyPlaylistPreview"></div>
+        </div>
+      </div>
+      <div class="emergency-playlist-actions">
+        <button class="btn btn-secondary" onclick="openEmergencyPlaylistManager()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>
+          </svg>
+          Manage
+        </button>
+        <button class="btn" id="emergencyPlaylistTriggerBtn" onclick="openBroadcastModal('playlist')" style="background:#dc2626;color:#fff;border:1px solid #dc2626">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 2 11 13"/><path d="m22 2-7 20-4-9-9-4Z"/>
+          </svg>
+          Trigger
+        </button>
+      </div>
+    </section>
     <!-- Active broadcast banner -->
     <div id="activeBroadcastBanner" style="display:none;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:12px 16px;display:none;align-items:center;gap:12px;flex-shrink:0">
       <div style="width:8px;height:8px;border-radius:50%;background:#dc2626;flex-shrink:0;animation:broadcastPulse 1.5s ease-in-out infinite"></div>
@@ -5037,6 +5141,28 @@ body.role-editor .admin-action {
         <button class="btn btn-secondary" onclick="closeBroadcastModal()">Cancel</button>
         <button class="btn" onclick="sendBroadcast()" style="background:#dc2626;color:#fff;border-color:#dc2626">Trigger Emergency</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Emergency playlist manager modal -->
+  <div id="emergencyPlaylistManagerModal" class="emergency-playlist-manager-modal">
+    <div class="emergency-playlist-modal-box">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:4px">
+        <div style="display:flex;align-items:center;gap:10px;min-width:0">
+          <div style="width:36px;height:36px;border-radius:9px;background:rgba(220,38,38,.12);display:flex;align-items:center;justify-content:center;color:#dc2626;flex-shrink:0">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/>
+              <path d="M12 9v4"/><path d="M12 17h.01"/>
+            </svg>
+          </div>
+          <div style="min-width:0">
+            <div style="font-size:16px;font-weight:800;color:var(--text)">Emergency Playlists</div>
+            <div id="emergencyPlaylistManagerSummary" style="font-size:12px;color:var(--muted);margin-top:2px">0 ready</div>
+          </div>
+        </div>
+        <button class="btn btn-secondary" onclick="closeEmergencyPlaylistManager()" style="padding:7px 10px">Done</button>
+      </div>
+      <div id="emergencyPlaylistManagerList" class="emergency-playlist-manager-list"></div>
     </div>
   </div>
 
@@ -9344,6 +9470,7 @@ function subscribeToOrg(orgId) {
 
       syncPlanEntitlements();
       if (typeof updateSettingsHubStatus === 'function') updateSettingsHubStatus();
+      if (typeof renderEmergencyPlaylistPanel === 'function') renderEmergencyPlaylistPanel();
       // Re-render billing if currently visible
       const billingSub = document.getElementById('settingsSub-billing');
       if (billingSub?.classList.contains('active')) {
@@ -11227,6 +11354,11 @@ async function saveShowMetadata(showId, patch) {
   if (Array.isArray(result.tags)) currentOrg.tags = result.tags;
   const item = document.querySelector(`#showList .show-item[data-id="${CSS.escape(showId)}"]`);
   renderShowTagsOnItem(item, result.show || shows.find(s => s.id === showId) || {});
+  renderEmergencyPlaylistPanel();
+  const managerModal = document.getElementById('emergencyPlaylistManagerModal');
+  if (managerModal && getComputedStyle(managerModal).display !== 'none') {
+    renderEmergencyPlaylistManager();
+  }
   return result;
 }
 
@@ -21952,6 +22084,157 @@ function _subscribeBroadcast() {
   });
 }
 
+function getEmergencyPlaylistShows() {
+  return getAllShows().filter(show => show?.emergencyPlaylist === true);
+}
+
+function emergencyPlaylistReadyLabel(count) {
+  return count + ' ready';
+}
+
+function renderEmergencyPlaylistPanel() {
+  const panel = document.getElementById('emergencyPlaylistPanel');
+  if (!panel) return;
+  const readyShows = getEmergencyPlaylistShows();
+  const countEl = document.getElementById('emergencyPlaylistCount');
+  const previewEl = document.getElementById('emergencyPlaylistPreview');
+  const triggerBtn = document.getElementById('emergencyPlaylistTriggerBtn');
+  if (countEl) countEl.textContent = emergencyPlaylistReadyLabel(readyShows.length);
+  if (triggerBtn) {
+    triggerBtn.disabled = readyShows.length === 0;
+    triggerBtn.title = readyShows.length ? 'Trigger a saved emergency playlist' : 'Mark a slideshow as emergency-ready first';
+  }
+  if (!previewEl) return;
+  if (!readyShows.length) {
+    previewEl.innerHTML = '<span class="emergency-playlist-empty">No emergency playlists ready</span>';
+    return;
+  }
+  const visible = readyShows.slice(0, 3);
+  previewEl.innerHTML = visible.map(show => `
+    <span class="emergency-playlist-mini-item" title="${escAttr(show.name || show.id)}">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M20 6 9 17l-5-5"/>
+      </svg>
+      <span>${escHtml(show.name || show.id)}</span>
+    </span>
+  `).join('') + (readyShows.length > visible.length
+    ? `<span class="emergency-playlist-mini-item"><span>+${readyShows.length - visible.length} more</span></span>`
+    : '');
+}
+
+function renderEmergencyPlaylistManager() {
+  const list = document.getElementById('emergencyPlaylistManagerList');
+  const summary = document.getElementById('emergencyPlaylistManagerSummary');
+  if (!list) return;
+  const shows = getAllShows();
+  const readyCount = shows.filter(show => show.emergencyPlaylist === true).length;
+  if (summary) summary.textContent = emergencyPlaylistReadyLabel(readyCount);
+  if (!shows.length) {
+    list.innerHTML = `<div class="emergency-playlist-empty" style="padding:18px 2px">No slideshows yet</div>`;
+    return;
+  }
+  const sortedShows = [...shows].sort((a, b) => {
+    if ((a.emergencyPlaylist === true) !== (b.emergencyPlaylist === true)) return a.emergencyPlaylist === true ? -1 : 1;
+    return String(a.name || a.id).localeCompare(String(b.name || b.id));
+  });
+  list.innerHTML = sortedShows.map(show => {
+    const ready = show.emergencyPlaylist === true;
+    const tags = Array.isArray(show.tags) ? show.tags : [];
+    const smart = Array.isArray(show.autoIncludeTags) ? show.autoIncludeTags : [];
+    const tagHtml = [
+      tagChipHtml(tags),
+      smart.map(t => `<span class="screen-tag-chip">auto:${escHtml(normalizeTag(t))}</span>`).join(''),
+    ].join('');
+    return `<div class="emergency-playlist-row${ready ? ' ready' : ''}" data-show-id="${escAttr(show.id)}">
+      <div class="emergency-playlist-row-main">
+        <div class="emergency-playlist-row-title">
+          <div class="emergency-playlist-row-name" title="${escAttr(show.name || show.id)}">${escHtml(show.name || show.id)}</div>
+          <span class="emergency-playlist-state">${ready ? 'Ready' : 'Off'}</span>
+        </div>
+        <div class="emergency-playlist-row-tags">${tagHtml || '<span class="emergency-playlist-empty">No tags</span>'}</div>
+      </div>
+      <div class="emergency-playlist-row-actions">
+        <button class="btn btn-secondary" data-action="edit-tags" data-show-id="${escAttr(show.id)}">Tags</button>
+        <button class="btn btn-secondary" data-action="trigger" data-show-id="${escAttr(show.id)}" ${ready ? '' : 'disabled'}>Trigger</button>
+        <button class="emergency-toggle${ready ? ' is-on' : ''}" type="button" aria-pressed="${ready ? 'true' : 'false'}" data-action="toggle" data-show-id="${escAttr(show.id)}">${ready ? 'Ready' : 'Off'}</button>
+      </div>
+    </div>`;
+  }).join('');
+  list.querySelectorAll('[data-action="toggle"][data-show-id]').forEach(btn => {
+    btn.addEventListener('click', () => window.toggleEmergencyPlaylist(btn.dataset.showId, btn));
+  });
+  list.querySelectorAll('[data-action="edit-tags"][data-show-id]').forEach(btn => {
+    btn.addEventListener('click', () => window.openEmergencyPlaylistTags(btn.dataset.showId));
+  });
+  list.querySelectorAll('[data-action="trigger"][data-show-id]').forEach(btn => {
+    btn.addEventListener('click', () => window.openEmergencyPlaylistBroadcast(btn.dataset.showId));
+  });
+}
+
+window.openEmergencyPlaylistManager = function() {
+  if (currentRole !== 'admin') {
+    toast('Only admins can manage emergency playlists.', true);
+    return;
+  }
+  renderEmergencyPlaylistManager();
+  const modal = document.getElementById('emergencyPlaylistManagerModal');
+  if (modal) modal.style.display = 'flex';
+  setTimeout(() => {
+    document.querySelector('#emergencyPlaylistManagerModal [data-action="toggle"], #emergencyPlaylistManagerModal .btn')?.focus();
+  }, 80);
+};
+
+window.closeEmergencyPlaylistManager = function() {
+  const modal = document.getElementById('emergencyPlaylistManagerModal');
+  if (modal) modal.style.display = 'none';
+};
+
+window.openEmergencyPlaylistTags = function(showId) {
+  window.closeEmergencyPlaylistManager?.();
+  window.openShowOptions?.(showId);
+};
+
+window.openEmergencyPlaylistBroadcast = function(showId = '') {
+  window.closeEmergencyPlaylistManager?.();
+  window.openBroadcastModal?.('playlist', showId);
+};
+
+window.toggleEmergencyPlaylist = async function(showId, btn = null) {
+  if (currentRole !== 'admin') {
+    toast('Only admins can change emergency playlist status.', true);
+    return;
+  }
+  const show = showMetaFromOrg(showId) || getAllShows().find(item => item.id === showId);
+  if (!show) {
+    toast('Slideshow not found.', true);
+    return;
+  }
+  const nextReady = show.emergencyPlaylist !== true;
+  if (nextReady) {
+    const ok = confirm('Mark this slideshow as emergency-ready? It will be available in the saved emergency playlist picker.');
+    if (!ok) return;
+  }
+  const oldText = btn?.textContent || '';
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+  }
+  try {
+    await saveShowMetadata(showId, { emergencyPlaylist: nextReady });
+    renderEmergencyPlaylistPanel();
+    renderEmergencyPlaylistManager();
+    populateBroadcastPlaylistOptions();
+    toast(nextReady ? 'Emergency playlist ready ✓' : 'Emergency playlist removed');
+    logActivity(`${getShowName(showId)} emergency playlist ${nextReady ? 'enabled' : 'disabled'}`);
+  } catch(e) {
+    toast('Could not update emergency playlist: ' + e.message, true);
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = oldText;
+    }
+  }
+};
+
 function tmplInsetPhoto(photoRef, left, top, width, height, opts = {}) {
   const url = resolveTemplatePhotoUrl(photoRef);
   if (!url) return null;
@@ -22024,15 +22307,19 @@ function tmplInsetPhoto(photoRef, left, top, width, height, opts = {}) {
   return frame;
 }
 
-window.openBroadcastModal = function() {
+window.openBroadcastModal = function(mode = 'message', preferredSlideshowId = '') {
   document.getElementById('broadcastMessage').value = '';
   document.getElementById('broadcastDismiss').value = '0';
   const confirmEl = document.getElementById('broadcastConfirm');
   if (confirmEl) confirmEl.checked = false;
   document.querySelectorAll('.broadcast-color-btn').forEach(b => b.classList.remove('active'));
   document.querySelector('.broadcast-color-btn[data-color="#dc2626"]').classList.add('active');
-  setBroadcastMode('message');
+  setBroadcastMode(mode === 'playlist' ? 'playlist' : 'message');
   populateBroadcastPlaylistOptions();
+  if (preferredSlideshowId) {
+    const playlistSelect = document.getElementById('broadcastPlaylistSelect');
+    if (playlistSelect) playlistSelect.value = preferredSlideshowId;
+  }
   document.getElementById('broadcastModal').style.display = 'flex';
 };
 
@@ -22473,15 +22760,27 @@ function repeatLabel(ev) {
 }
 
 function getShowName(id) {
-  const el = document.querySelector(`#showList .show-item[data-id="${id}"]`);
-  return el ? (el.querySelector('.show-item-name')?.textContent || id) : id;
+  const safeId = String(id || '');
+  if (!safeId) return '';
+  const el = document.querySelector(`#showList .show-item[data-id="${CSS.escape(safeId)}"]`);
+  const meta = showMetaFromOrg(safeId);
+  return el ? (el.querySelector('.show-item-name')?.textContent || meta?.name || safeId) : (meta?.name || safeId);
 }
 
 function getAllShows() {
-  return Array.from(document.querySelectorAll('#showList .show-item')).map(el => ({
+  const orgShows = Array.isArray(currentOrg?.slideshows) ? currentOrg.slideshows.filter(show => show?.id) : [];
+  const domShows = Array.from(document.querySelectorAll('#showList .show-item')).map(el => ({
     id:   el.dataset.id,
     name: el.querySelector('.show-item-name')?.textContent || el.dataset.id,
-  }));
+  })).filter(show => show.id);
+  const byId = new Map();
+  orgShows.forEach(show => byId.set(show.id, { ...show, name: show.name || show.id }));
+  domShows.forEach(show => byId.set(show.id, { ...(byId.get(show.id) || {}), ...show }));
+  const orderedIds = [
+    ...domShows.map(show => show.id),
+    ...orgShows.map(show => show.id).filter(id => !domShows.some(show => show.id === id)),
+  ];
+  return orderedIds.map(id => byId.get(id)).filter(Boolean);
 }
 
 // ── Load schedules from Firestore ─────────────────────────────────────────
@@ -22922,6 +23221,7 @@ window.showPage = function(name) {
   if (name === 'analytics') loadAnalytics();
   if (name === 'apps')      syncAppEntitlements();
   if (name === 'profile')   loadProfileData();
+  if (name === 'screens')   renderEmergencyPlaylistPanel();
 };
 
 // ── Settings hub navigation ────────────────────────────────────────────────

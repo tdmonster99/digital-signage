@@ -4,6 +4,16 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-07 — Codex — Polish emergency playlist management
+
+Phase 5.1 polish follow-up after the tag propagation smoke pass.
+
+- **Screens emergency surface**: added a dedicated Emergency Playlists panel and manager modal so admins can see ready playlists, toggle slideshow emergency readiness, edit tags, and jump straight into saved-playlist triggering without hunting through Slideshow Tags.
+- **Broadcast flow**: Emergency Playlist trigger shortcuts now open the Broadcast modal directly on the Saved Playlist tab with the selected ready slideshow prefilled.
+- **Smoke/docs**: browser smoke now checks the manager and mutating pass toggles a disposable slideshow's emergency-ready state; roadmap, pilot smoke docs, and handoff context reflect the shipped polish.
+
+---
+
 ## 2026-05-07 — Codex — Route screen and media tags through account API
 
 Follow-up to the Phase 5.1 propagation smoke after direct Firestore REST seeding exposed remaining client-write fragility.

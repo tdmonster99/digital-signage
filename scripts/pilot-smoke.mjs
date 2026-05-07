@@ -178,8 +178,11 @@ async function main() {
     'showOptionsModal',
     'showOptionsTags',
     'showOptionsAutoTags',
+    'emergencyPlaylistManagerModal',
+    'openEmergencyPlaylistManager',
     'broadcastConfirm',
     'No emergency playlists marked',
+    'No emergency playlists ready',
   ]));
 
   await check('Static invite sender', () => assertFileContains('api/link-account.js', [

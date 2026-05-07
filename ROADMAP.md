@@ -187,7 +187,7 @@ Sourced from `KITCAST_GAP_ANALYSIS.md` (2026-04-27), plus the 2026-04-28 Vercel 
 
 **Why:** Single biggest enterprise differentiator missing today. A natural cluster — tagging is the foundation that unlocks both smart playlists and pre-built emergency content. Kitcast Pro has all three; Zigns has none. Required to win schools, healthcare, multi-location retail.
 
-**Status:** Mostly shipped 2026-04-28; emergency governance and Tags UX polish started 2026-05-06. Screen/org/slideshow/slide/media tag management, smart playlist publish resolution, schedule event priority, saved emergency playlist marking, and saved-playlist emergency override are now implemented. Remaining: deeper smoke coverage, possible dedicated emergency management UI, and any advanced targeting beyond all/tag/screen IDs.
+**Status:** Mostly shipped 2026-04-28; emergency governance and Tags UX polish continued through 2026-05-07. Screen/org/slideshow/slide/media tag management, smart playlist publish resolution, schedule event priority, saved emergency playlist marking, saved-playlist emergency override, propagation smoke coverage, and a dedicated emergency playlist manager are now implemented. Remaining: stronger audit history if pilot feedback shows recent activity is not enough, and any advanced targeting beyond all/tag/screen IDs.
 
 **What shipped 2026-04-28:**
 - Settings → Screen Tags is now a real org tag manager backed by `organizations/{orgId}.tags`, with create/rename/delete and cleanup across screen docs.
@@ -200,6 +200,7 @@ Sourced from `KITCAST_GAP_ANALYSIS.md` (2026-04-27), plus the 2026-04-28 Vercel 
 - Smart playlists materialize at publish/approval time by appending matching published slides from other org slideshows, so `display.html` stays unchanged.
 - Emergency trigger governance now limits saved-playlist broadcasts to explicitly marked emergency slideshows, requires an override confirmation before trigger, and records trigger/clear actions in recent activity.
 - Slideshow Tags now uses a modal instead of browser prompts for slideshow tags, smart auto-include tags, and admin-only emergency-ready marking.
+- Screens now includes a dedicated Emergency Playlists manager for admin visibility, direct ready/off toggles, and one-click saved-playlist trigger setup.
 
 **What to build:**
 

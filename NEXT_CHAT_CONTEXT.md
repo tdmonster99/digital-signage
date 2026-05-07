@@ -1,4 +1,4 @@
-# Next Chat Context (updated 2026-05-06)
+# Next Chat Context (updated 2026-05-07)
 
 Use this as the first-read handoff snapshot before making new changes.
 
@@ -28,14 +28,13 @@ Current docs:
 
 Recommended next steps:
 - Run `node scripts/pilot-smoke.mjs --static` locally before pilot-impacting changes.
-- Run the harness against production with an Admin account and one Editor account; use `ZIGNS_SMOKE_INVITE_EMAIL` with a controlled inbox when validating invite delivery. Public production reachability passed on 2026-05-06; authenticated checks still need dedicated email/password test credentials.
+- Run the harness against production with an Admin account and one Editor account; use `ZIGNS_SMOKE_INVITE_EMAIL` with a controlled inbox when validating invite delivery. The dedicated smoke account is `jzegar2+smoke@gmail.com` in the isolated `Zigns Smoke Test` org.
 - Run `npm run smoke:browser -- --base-url https://app.zigns.io` for browser login-form reachability; add `ZIGNS_BROWSER_EMAIL` / `ZIGNS_BROWSER_PASSWORD` for authenticated browser flow and `ZIGNS_BROWSER_MUTATE=1` only in a dedicated test org.
 - Record failures with the in-app issue report helper: desktop Profile -> Report Issue, or mobile Account -> Copy issue report.
-- Create a dedicated Firebase email/password test account if we want `scripts/pilot-smoke.mjs` to verify org/role bootstrap automatically.
 
 ### 2. Phase 5.1 Tags / Priority / Emergency Playlist
 
-Status: mostly shipped.
+Status: polish shipped.
 
 Shipped:
 - Organization tag manager
@@ -49,10 +48,10 @@ Shipped:
 - Saved emergency playlist picker limited to explicitly marked emergency slideshows
 - Admin confirmation for marking emergency playlists, explicit trigger confirmation, and recent activity entries for trigger/clear
 - Slideshow Tags modal for slideshow tags, smart auto-include tags, and admin-only emergency-ready marking
+- Dedicated Screens -> Emergency Playlists manager for direct ready/off toggles and saved-playlist trigger setup
+- `npm run smoke:tags` production-safe propagation coverage across screens, slideshows, slides/drafts, and media
 
 Remaining polish:
-- Smoke-test tag propagation across screens, slideshows, slides, and media.
-- Consider a richer dedicated emergency playlist management surface if the Tags modal still feels too hidden during pilot.
 - Add stronger audit history if pilot feedback shows recent activity is not enough.
 - Consider advanced targeting beyond all/tag/screen IDs later.
 
