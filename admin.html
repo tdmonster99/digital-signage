@@ -11218,18 +11218,16 @@ function renderShowTagsOnItem(item, show = {}) {
 }
 
 async function saveShowMetadata(showId, patch) {
-  if (!currentOrgId || !showId) return;
-  const existingShows = currentOrg?.slideshows?.length
-    ? currentOrg.slideshows
-    : [{ id: showId, name: currentShowName || showId }];
-  const found = existingShows.some(s => s.id === showId);
-  const shows = (found ? existingShows : [...existingShows, { id: showId, name: currentShowName || showId }])
-    .map(s => s.id === showId ? { ...s, ...patch } : s);
-  await updateDoc(doc(db, 'organizations', currentOrgId), { slideshows: shows });
-  currentOrg.slideshows = shows;
-  await setDoc(doc(db, 'slideshows', showId), { ...patch, ...(currentOrgId && { orgId: currentOrgId }) }, { merge: true });
+  if (!showId) return null;
+  const result = await callAccountApi('saveSlideshowMetadata', { showId, patch });
+  const shows = Array.isArray(result.slideshows)
+    ? result.slideshows
+    : (currentOrg?.slideshows || []).map(s => s.id === showId ? { ...s, ...patch } : s);
+  currentOrg = { ...(currentOrg || {}), slideshows: shows };
+  if (Array.isArray(result.tags)) currentOrg.tags = result.tags;
   const item = document.querySelector(`#showList .show-item[data-id="${CSS.escape(showId)}"]`);
-  renderShowTagsOnItem(item, shows.find(s => s.id === showId) || {});
+  renderShowTagsOnItem(item, result.show || shows.find(s => s.id === showId) || {});
+  return result;
 }
 
 function updateReviewStatusBanner(data = {}) {
@@ -14467,7 +14465,6 @@ window.saveShowOptions = async function() {
   btn.textContent = 'Saving...';
   try {
     await saveShowMetadata(showId, { tags, autoIncludeTags, emergencyPlaylist });
-    await syncOrgTags([...tags, ...autoIncludeTags]);
     if (showId === currentShowId) await pushToFirestore();
     closeShowOptionsModal();
     toast('Slideshow options saved ✓');

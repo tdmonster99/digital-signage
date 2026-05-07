@@ -4,6 +4,16 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-07 — Codex — Fix smoke Slideshow Tags save path
+
+Follow-up from the dedicated smoke account/browser harness run.
+
+- **Smoke account**: verified `jzegar2+smoke@gmail.com` lands in the isolated `Zigns Smoke Test` org as Admin before mutating browser checks.
+- **Slideshow Tags**: moved slideshow tag/auto-include/emergency metadata saves through `/api/link-account` so production admins are not blocked by client Firestore rule drift.
+- **Browser smoke**: waits for the real admin module helpers and role/org UI before asserting auth state, targets the created slideshow by id during CRUD, and always cleans up temporary smoke slideshows.
+
+---
+
 ## 2026-05-06 — Codex — Neutralize Tags placeholder copy
 
 Small polish follow-up for the Slideshow Tags modal.

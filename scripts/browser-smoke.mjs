@@ -459,12 +459,16 @@ async function runReadOnlyAuthenticatedChecks(cdp) {
     await click(cdp, '#signInBtn');
     await waitFor(cdp, `location.pathname.endsWith('/admin.html') || document.querySelector('#page-dashboard')`, 'admin shell after login', 30000);
     await waitFor(cdp, `document.querySelector('#page-dashboard') && document.body.textContent.includes('Dashboard')`, 'dashboard content', 30000);
+    await waitFor(cdp, `typeof window.openInviteModal === 'function' && typeof window.openShowOptions === 'function' && typeof window.newShowPrompt === 'function'`, 'admin module helpers', 30000);
+    await waitFor(cdp, `document.querySelector('#roleBadge')?.textContent?.trim()`, 'role badge', 30000);
+    await evaluate(cdp, `window.showPage?.('settings'); window.showSettingsSub?.('org'); true`);
+    if (config.expectedOrg) {
+      await waitFor(cdp, `document.querySelector('#orgNameInput')?.value?.trim()`, 'organization name', 10000);
+    }
     const details = await evaluate(cdp, `(() => {
       const email = document.querySelector('.sidebar-user-email')?.textContent?.trim() || '';
       const role = document.querySelector('#roleBadge')?.textContent?.trim() || '';
       let org = '';
-      window.showPage?.('settings');
-      window.showSettingsSub?.('org');
       org = document.querySelector('#orgNameInput')?.value?.trim() || '';
       window.showPage?.('dashboard');
       return { email, role, org };
@@ -522,41 +526,63 @@ async function runReadOnlyAuthenticatedChecks(cdp) {
 async function runMutatingChecks(cdp) {
   await check('Slideshow CRUD smoke', async () => {
     const name = `Smoke ${new Date().toISOString().replace(/[:.]/g, '-')}`;
-    const created = await evaluate(cdp, `(async () => {
-      const oldPrompt = window.prompt;
-      window.prompt = () => ${JSON.stringify(name)};
-      try {
-        await window.newShowPrompt();
-      } finally {
-        window.prompt = oldPrompt;
+    let created = null;
+    let cleanupNote = 'not needed';
+    try {
+      created = await evaluate(cdp, `(async () => {
+        const oldPrompt = window.prompt;
+        window.prompt = () => ${JSON.stringify(name)};
+        try {
+          await window.newShowPrompt();
+        } finally {
+          window.prompt = oldPrompt;
+        }
+        const active = document.querySelector('#showList .show-item.active');
+        return {
+          id: active?.dataset.id || '',
+          name: document.querySelector('#showTitle')?.textContent?.trim() || active?.querySelector('.show-item-name')?.textContent?.trim() || '',
+        };
+      })()`);
+      assert(created.name === name, `slideshow create did not select "${name}"`);
+      assert(created.id, 'slideshow create did not expose a selected id');
+      const saveState = await evaluate(cdp, `(async () => {
+        const showId = ${JSON.stringify(created.id)};
+        const item = document.querySelector('#showList .show-item[data-id="' + CSS.escape(showId) + '"]');
+        item?.click();
+        window.openShowOptions(showId);
+        document.querySelector('#showOptionsTags').value = 'smoke';
+        document.querySelector('#showOptionsAutoTags').value = '';
+        document.querySelector('#showOptionsEmergency').checked = false;
+        await window.saveShowOptions();
+        const tagsText = document.querySelector('#showList .show-item[data-id="' + CSS.escape(showId) + '"] .show-item-tags')?.textContent || '';
+        const errorText = document.querySelector('#showOptionsError')?.textContent?.trim() || '';
+        const modalDisplay = getComputedStyle(document.querySelector('#showOptionsModal')).display;
+        const toastText = document.querySelector('#toast')?.textContent?.trim() || '';
+        return { tagsText, errorText, modalDisplay, toastText };
+      })()`);
+      assert(saveState.tagsText.includes('smoke'), `slideshow tag did not render after save: ${JSON.stringify(saveState)}`);
+    } finally {
+      if (created?.id) {
+        cleanupNote = await evaluate(cdp, `(async () => {
+          const showId = ${JSON.stringify(created.id)};
+          const item = document.querySelector('#showList .show-item[data-id="' + CSS.escape(showId) + '"]');
+          if (!item) return 'already removed';
+          item.click();
+          const oldConfirm = window.confirm;
+          window.confirm = () => true;
+          try {
+            await window.deleteCurrentSlideshow();
+          } finally {
+            window.confirm = oldConfirm;
+          }
+          return 'delete requested';
+        })()`).catch(error => `cleanup failed: ${error.message}`);
+        await waitFor(cdp, `!document.querySelector('#showList .show-item[data-id="' + CSS.escape(${JSON.stringify(created.id)}) + '"]')`, 'smoke slideshow deletion')
+          .catch(error => { cleanupNote = `${cleanupNote}; deletion wait failed: ${error.message}`; });
       }
-      const active = document.querySelector('#showList .show-item.active');
-      return {
-        id: active?.dataset.id || '',
-        name: document.querySelector('#showTitle')?.textContent?.trim() || active?.querySelector('.show-item-name')?.textContent?.trim() || '',
-      };
-    })()`);
-    assert(created.name === name, `slideshow create did not select "${name}"`);
-    const tagsSaved = await evaluate(cdp, `(async () => {
-      window.openShowOptions();
-      document.querySelector('#showOptionsTags').value = 'smoke';
-      document.querySelector('#showOptionsAutoTags').value = '';
-      document.querySelector('#showOptionsEmergency').checked = false;
-      await window.saveShowOptions();
-      return document.querySelector('.show-item.active .show-item-tags')?.textContent || '';
-    })()`);
-    assert(tagsSaved.includes('smoke'), 'slideshow tag did not render after save');
-    await evaluate(cdp, `(async () => {
-      const oldConfirm = window.confirm;
-      window.confirm = () => true;
-      try {
-        await window.deleteCurrentSlideshow();
-      } finally {
-        window.confirm = oldConfirm;
-      }
-    })()`);
-    await waitFor(cdp, `!document.querySelector('.show-item.active')?.textContent?.includes(${JSON.stringify(name)})`, 'smoke slideshow deletion');
-    return `created, tagged, and deleted ${created.id}`;
+    }
+    assert(!cleanupNote.includes('failed'), cleanupNote);
+    return `created, tagged, and deleted ${created.id}; cleanup=${cleanupNote}`;
   });
 }
 

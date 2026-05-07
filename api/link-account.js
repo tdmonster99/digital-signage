@@ -305,6 +305,20 @@ function sanitizePublishPatch(patch = {}) {
   return clean;
 }
 
+function sanitizeSlideshowMetadataPatch(patch = {}, role = 'viewer') {
+  const clean = {};
+  if (Object.prototype.hasOwnProperty.call(patch, 'tags')) {
+    clean.tags = normalizeTags(patch.tags);
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'autoIncludeTags')) {
+    clean.autoIncludeTags = normalizeTags(patch.autoIncludeTags);
+  }
+  if (role === 'admin' && Object.prototype.hasOwnProperty.call(patch, 'emergencyPlaylist')) {
+    clean.emergencyPlaylist = patch.emergencyPlaylist === true;
+  }
+  return clean;
+}
+
 function sanitizeScreenIds(value) {
   if (!Array.isArray(value)) return [];
   return Array.from(new Set(value.map(id => String(id || '').trim()).filter(Boolean))).slice(0, 200);
@@ -948,6 +962,64 @@ module.exports = async function handler(req, res) {
         };
         tx.set(showRef, showData, { merge: true });
         return { show: { id: showId, name }, slideshows: nextShows };
+      });
+
+      return res.json({ ok: true, ...result });
+    }
+
+    if (req.body.action === 'saveSlideshowMetadata') {
+      const { orgId, role } = await loadUserContext(db, uid);
+      requireRole(role, ['admin', 'editor']);
+
+      const showId = normalizeShowId(req.body.showId);
+      const cleanPatch = sanitizeSlideshowMetadataPatch(req.body.patch || {}, role);
+      const orgRef = db.doc(`organizations/${orgId}`);
+      const showRef = db.doc(`slideshows/${showId}`);
+      const now = new Date().toISOString();
+
+      const result = await db.runTransaction(async tx => {
+        const [orgSnap, showSnap] = await Promise.all([tx.get(orgRef), tx.get(showRef)]);
+        if (!orgSnap.exists) {
+          const error = new Error('Organization not found');
+          error.statusCode = 404;
+          throw error;
+        }
+
+        const orgData = orgSnap.data() || {};
+        const existingShows = Array.isArray(orgData.slideshows) ? orgData.slideshows : [];
+        const showData = showSnap.exists ? (showSnap.data() || {}) : null;
+        if (showData && showData.orgId !== orgId) {
+          const error = new Error('Slideshow is not in your organization');
+          error.statusCode = 403;
+          throw error;
+        }
+
+        const existingMeta = existingShows.find(show => show && show.id === showId) || {};
+        const name = existingMeta.name || showData?.name || 'Untitled Slideshow';
+        const nextShow = { id: showId, name, ...existingMeta, ...cleanPatch };
+        const nextShows = existingShows.some(show => show && show.id === showId)
+          ? existingShows.map(show => show && show.id === showId ? { ...show, ...cleanPatch } : show)
+          : [...existingShows, nextShow];
+
+        const incomingTags = normalizeTags([
+          ...(cleanPatch.tags || []),
+          ...(cleanPatch.autoIncludeTags || []),
+        ]);
+        const existingTags = normalizeTags(orgData.tags || []);
+        const nextTags = incomingTags.length
+          ? Array.from(new Set([...existingTags, ...incomingTags])).sort()
+          : existingTags;
+        const orgPatch = { slideshows: nextShows };
+        if (incomingTags.length) orgPatch.tags = nextTags;
+
+        tx.set(orgRef, orgPatch, { merge: true });
+        tx.set(showRef, { ...cleanPatch, orgId, updatedAt: now }, { merge: true });
+
+        return {
+          show: nextShows.find(show => show && show.id === showId) || nextShow,
+          slideshows: nextShows,
+          tags: nextTags,
+        };
       });
 
       return res.json({ ok: true, ...result });
