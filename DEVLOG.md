@@ -4,6 +4,16 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-07 — Codex — Route screen and media tags through account API
+
+Follow-up to the Phase 5.1 propagation smoke after direct Firestore REST seeding exposed remaining client-write fragility.
+
+- **Screen tags**: moved screen settings/tag saves through `/api/link-account` so screen tag edits use the same server-backed path as pairing and deletion.
+- **Media tags**: moved media tag saves through `/api/link-account` and added bounded media metadata upsert/delete helpers for smoke-safe disposable records.
+- **Tag propagation smoke**: now seeds screens through the real pairing flow, verifies propagation via server-side mutation stats, and cleans up partial runs more aggressively.
+
+---
+
 ## 2026-05-07 — Codex — Harden Phase 5.1 tag propagation
 
 Follow-up on Phase 5.1 tag manager reliability after authenticated smoke coverage.

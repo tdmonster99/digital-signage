@@ -21921,8 +21921,8 @@ window.openMediaTagsPrompt = async function(id) {
   if (raw === null) return;
   const tags = normalizeTagsFromInput(raw);
   try {
-    await setDoc(doc(db, 'organizations', currentOrgId, 'media', id), { tags }, { merge: true });
-    await syncOrgTags(tags);
+    const result = await callAccountApi('upsertMediaRecord', { mediaId: id, patch: { tags } });
+    if (Array.isArray(result.tags)) currentOrg = { ...(currentOrg || {}), tags: result.tags };
     toast('Media tags saved ✓');
   } catch(e) {
     toast('Could not save media tags: ' + e.message, true);
@@ -22333,12 +22333,21 @@ window.saveScreenEdit = async function() {
   };
 
   try {
-    await setDoc(doc(db, 'screens', editingScreenId), {
-      ...(name        && { name }),
-      location, slideshowId, scheduleId, orientation, tags, cap, workingHours,
-      timezone: document.getElementById('sepTimezone').value,
-    }, { merge: true });
-    await syncOrgTags(tags);
+    const result = await callAccountApi('saveScreenSettings', {
+      screenId: editingScreenId,
+      patch: {
+        ...(name && { name }),
+        location,
+        slideshowId,
+        scheduleId,
+        orientation,
+        tags,
+        cap,
+        workingHours,
+        timezone: document.getElementById('sepTimezone').value,
+      },
+    });
+    if (Array.isArray(result.tags)) currentOrg = { ...(currentOrg || {}), tags: result.tags };
     toast('Screen saved ✓');
     closeScreenEdit();
     logActivity('Screen "' + (name || editingScreenId) + '" updated');

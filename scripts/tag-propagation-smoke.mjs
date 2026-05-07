@@ -80,7 +80,7 @@ function extractFirebaseApiKey(source) {
   return match?.[1] || '';
 }
 
-function docUrl(...segments) {
+function collectionUrl(...segments) {
   return `${FIRESTORE_BASE}/${segments.map(segment => encodeURIComponent(segment)).join('/')}`;
 }
 
@@ -101,56 +101,29 @@ function toFirestoreFields(data = {}) {
   return Object.fromEntries(Object.entries(data).map(([key, value]) => [key, toFirestoreValue(value)]));
 }
 
-function fromFirestoreValue(value = {}) {
-  if ('stringValue' in value) return value.stringValue;
-  if ('booleanValue' in value) return value.booleanValue;
-  if ('integerValue' in value) return Number(value.integerValue);
-  if ('doubleValue' in value) return value.doubleValue;
-  if ('nullValue' in value) return null;
-  if ('arrayValue' in value) return (value.arrayValue.values || []).map(fromFirestoreValue);
-  if ('mapValue' in value) return fromFirestoreFields(value.mapValue.fields || {});
-  return undefined;
-}
-
-function fromFirestoreFields(fields = {}) {
-  return Object.fromEntries(Object.entries(fields).map(([key, value]) => [key, fromFirestoreValue(value)]));
-}
-
-async function firestoreRequest(method, segments, body = null) {
-  const resp = await fetchWithTimeout(docUrl(...segments), {
-    method,
+async function createDoc(collectionSegments, documentId, data) {
+  const resp = await fetchWithTimeout(`${collectionUrl(...collectionSegments)}?documentId=${encodeURIComponent(documentId)}`, {
+    method: 'POST',
     headers: {
       Authorization: `Bearer ${idToken}`,
       'Content-Type': 'application/json',
     },
-    ...(body && { body: JSON.stringify(body) }),
+    body: JSON.stringify({ fields: toFirestoreFields(data) }),
   });
-  const data = await resp.json().catch(() => ({}));
+  const body = await resp.json().catch(() => ({}));
   if (!resp.ok) {
-    throw new Error(`${method} ${segments.join('/')} failed: ${data.error?.message || `HTTP ${resp.status}`}`);
+    throw new Error(`CREATE ${[...collectionSegments, documentId].join('/')} failed: ${body.error?.message || `HTTP ${resp.status}`}`);
   }
-  return data;
+  return body;
 }
 
-async function patchDoc(segments, data) {
-  return firestoreRequest('PATCH', segments, { fields: toFirestoreFields(data) });
-}
-
-async function getDocData(segments) {
-  const data = await firestoreRequest('GET', segments);
-  return fromFirestoreFields(data.fields || {});
-}
-
-async function deleteDoc(segments) {
-  const resp = await fetchWithTimeout(docUrl(...segments), {
-    method: 'DELETE',
-    headers: { Authorization: `Bearer ${idToken}` },
-  });
-  if (resp.status === 404) return;
-  if (!resp.ok) {
-    const data = await resp.json().catch(() => ({}));
-    throw new Error(`DELETE ${segments.join('/')} failed: ${data.error?.message || `HTTP ${resp.status}`}`);
+function randomPairingCode() {
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 6; i += 1) {
+    code += alphabet[crypto.randomInt(0, alphabet.length)];
   }
+  return code;
 }
 
 async function signIn() {
@@ -194,6 +167,11 @@ function expectTagGone(label, tags, absent) {
   assert(!clean.includes(absent), `${label} still contains ${absent}: ${clean.join(',') || 'none'}`);
 }
 
+function expectStatAtLeast(stats, key, minimum = 1) {
+  const value = Number(stats?.[key] || 0);
+  assert(value >= minimum, `expected ${key} >= ${minimum}, got ${value}`);
+}
+
 async function main() {
   await signIn();
 
@@ -213,16 +191,23 @@ async function main() {
   const oldTag = normalizeTag(`phase51-old-${stamp}`);
   const newTag = normalizeTag(`phase51-new-${stamp}`);
   const showId = `phase51_${stamp}`;
-  const screenId = `phase51-${stamp}`;
+  let screenId = '';
   const mediaId = `phase51-${stamp}`;
   const now = new Date().toISOString();
   const slideUrl = 'https://dummyimage.com/1280x720/0043ce/ffffff.png&text=Zigns+Phase+5.1+Smoke';
 
-  let seeded = false;
+  const created = {
+    tag: false,
+    show: false,
+    screen: false,
+    media: false,
+  };
   try {
     await check('Seed tagged records', async () => {
       await account('syncOrgTags', { tags: [oldTag] });
+      created.tag = true;
       await account('createSlideshow', { showId, name: `Phase 5.1 Smoke ${stamp}` });
+      created.show = true;
       await account('saveSlideshowMetadata', {
         showId,
         patch: { tags: [oldTag], autoIncludeTags: [oldTag], emergencyPlaylist: false },
@@ -238,24 +223,39 @@ async function main() {
         slides: [{ id: 'draft-tagged', type: 'image', name: 'Draft tagged', url: slideUrl, active: true, tags: [oldTag] }],
         patch: {},
       });
-      await patchDoc(['screens', screenId], {
-        orgId,
-        name: `Phase 5.1 Smoke ${stamp}`,
-        credentialHash: crypto.randomBytes(32).toString('hex'),
-        credentialVersion: 1,
-        slideshowId: showId,
-        tags: [oldTag],
-        registeredAt: now,
-        lastSeen: now,
-      });
-      await patchDoc(['organizations', orgId, 'media', mediaId], {
-        name: `Phase 5.1 Smoke ${stamp}`,
-        type: 'image',
-        url: slideUrl,
-        tags: [oldTag],
+
+      const pairingCode = randomPairingCode();
+      await createDoc(['pairingCodes'], pairingCode, {
+        status: 'pending',
         createdAt: now,
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+        screenCredentialHash: crypto.randomBytes(32).toString('hex'),
+        credentialVersion: 1,
       });
-      seeded = true;
+      const paired = await account('pairScreen', { code: pairingCode });
+      screenId = paired.screenId || '';
+      assert(screenId, 'pairScreen did not return a screenId');
+      await account('saveScreenSettings', {
+        screenId,
+        patch: {
+          name: `Phase 5.1 Smoke ${stamp}`,
+          slideshowId: showId,
+          tags: [oldTag],
+        },
+      });
+      created.screen = true;
+
+      await account('upsertMediaRecord', {
+        mediaId,
+        patch: {
+          name: `Phase 5.1 Smoke ${stamp}`,
+          type: 'image',
+          url: slideUrl,
+          tags: [oldTag],
+          createdAt: now,
+        },
+      });
+      created.media = true;
       return `show=${showId}; screen=${screenId}; media=${mediaId}`;
     });
 
@@ -266,12 +266,12 @@ async function main() {
       const showMeta = (renamedBoot.slideshows || []).find(show => show.id === showId) || {};
       expectTagState('slideshow tags', showMeta.tags, newTag, oldTag);
       expectTagState('slideshow auto tags', showMeta.autoIncludeTags, newTag, oldTag);
-      expectTagState('screen tags', (await getDocData(['screens', screenId])).tags, newTag, oldTag);
-      expectTagState('media tags', (await getDocData(['organizations', orgId, 'media', mediaId])).tags, newTag, oldTag);
-      expectTagState('show document tags', (await getDocData(['slideshows', showId])).tags, newTag, oldTag);
-      expectTagState('published slide tags', (await getDocData(['slideshows', showId, 'slides', 'published-tagged'])).tags, newTag, oldTag);
-      expectTagState('draft slide tags', (await getDocData(['slideshows', showId, 'draftSlides', 'draft-tagged'])).tags, newTag, oldTag);
-      return `renamed ${oldTag} -> ${newTag}`;
+      expectStatAtLeast(result.stats, 'screensUpdated');
+      expectStatAtLeast(result.stats, 'slideshowsUpdated');
+      expectStatAtLeast(result.stats, 'publishedSlidesUpdated');
+      expectStatAtLeast(result.stats, 'draftSlidesUpdated');
+      expectStatAtLeast(result.stats, 'mediaUpdated');
+      return `renamed ${oldTag} -> ${newTag}; stats=${JSON.stringify(result.stats || {})}`;
     });
 
     await check('Delete tag propagates', async () => {
@@ -281,22 +281,24 @@ async function main() {
       const showMeta = (deletedBoot.slideshows || []).find(show => show.id === showId) || {};
       expectTagGone('slideshow tags', showMeta.tags, newTag);
       expectTagGone('slideshow auto tags', showMeta.autoIncludeTags, newTag);
-      expectTagGone('screen tags', (await getDocData(['screens', screenId])).tags, newTag);
-      expectTagGone('media tags', (await getDocData(['organizations', orgId, 'media', mediaId])).tags, newTag);
-      expectTagGone('show document tags', (await getDocData(['slideshows', showId])).tags, newTag);
-      expectTagGone('published slide tags', (await getDocData(['slideshows', showId, 'slides', 'published-tagged'])).tags, newTag);
-      expectTagGone('draft slide tags', (await getDocData(['slideshows', showId, 'draftSlides', 'draft-tagged'])).tags, newTag);
-      return `deleted ${newTag}`;
+      expectStatAtLeast(result.stats, 'screensUpdated');
+      expectStatAtLeast(result.stats, 'slideshowsUpdated');
+      expectStatAtLeast(result.stats, 'publishedSlidesUpdated');
+      expectStatAtLeast(result.stats, 'draftSlidesUpdated');
+      expectStatAtLeast(result.stats, 'mediaUpdated');
+      return `deleted ${newTag}; stats=${JSON.stringify(result.stats || {})}`;
     });
   } finally {
-    if (seeded) {
-      await check('Cleanup tagged records', async () => {
-        await account('deleteSlideshow', { showId }).catch(error => addResult('warn', 'Cleanup slideshow', error.message));
-        await account('deleteScreen', { screenId }).catch(error => addResult('warn', 'Cleanup screen', error.message));
-        await deleteDoc(['organizations', orgId, 'media', mediaId]).catch(error => addResult('warn', 'Cleanup media', error.message));
-        return 'temporary records removed';
-      });
-    }
+    await check('Cleanup tagged records', async () => {
+      if (created.show) await account('deleteSlideshow', { showId }).catch(error => addResult('warn', 'Cleanup slideshow', error.message));
+      if (created.screen && screenId) await account('deleteScreen', { screenId }).catch(error => addResult('warn', 'Cleanup screen', error.message));
+      if (created.media) await account('deleteMediaRecord', { mediaId }).catch(error => addResult('warn', 'Cleanup media', error.message));
+      if (created.tag) {
+        await account('mutateOrgTag', { oldTag, newTag: null }).catch(error => addResult('warn', 'Cleanup old tag', error.message));
+        await account('mutateOrgTag', { oldTag: newTag, newTag: null }).catch(error => addResult('warn', 'Cleanup new tag', error.message));
+      }
+      return 'temporary records removed';
+    });
   }
 
   finish();

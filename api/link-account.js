@@ -369,6 +369,90 @@ function sanitizeSlideshowName(value) {
   return name || 'Untitled Slideshow';
 }
 
+function sanitizeDocId(value, label = 'id') {
+  const id = String(value || '').trim();
+  if (!id) {
+    const error = new Error(`${label} required`);
+    error.statusCode = 400;
+    throw error;
+  }
+  if (id.length > 180 || /[\/?#\[\]*]/.test(id)) {
+    const error = new Error(`Invalid ${label}`);
+    error.statusCode = 400;
+    throw error;
+  }
+  return id;
+}
+
+function sanitizeScreenSettingsPatch(patch = {}) {
+  const clean = {};
+  if (Object.prototype.hasOwnProperty.call(patch, 'name')) {
+    const name = String(patch.name || '').trim().replace(/\s+/g, ' ').slice(0, 80);
+    if (name) clean.name = name;
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'location')) {
+    clean.location = String(patch.location || '').trim().slice(0, 120);
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'slideshowId')) {
+    clean.slideshowId = String(patch.slideshowId || '').trim().slice(0, 180);
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'scheduleId')) {
+    clean.scheduleId = String(patch.scheduleId || '').trim().slice(0, 180);
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'orientation')) {
+    const orientation = String(patch.orientation || 'landscape').trim().toLowerCase();
+    clean.orientation = ['landscape', 'portrait'].includes(orientation) ? orientation : 'landscape';
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'tags')) {
+    clean.tags = normalizeTags(patch.tags);
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'timezone')) {
+    clean.timezone = String(patch.timezone || '').trim().slice(0, 80);
+  }
+  if (patch.cap && typeof patch.cap === 'object') {
+    clean.cap = {
+      enabled: patch.cap.enabled === true,
+      state: String(patch.cap.state || '').trim().toUpperCase().slice(0, 2),
+      countyFips: Array.isArray(patch.cap.countyFips)
+        ? patch.cap.countyFips.map(v => String(v || '').trim()).filter(Boolean).slice(0, 20)
+        : [],
+      severityFloor: String(patch.cap.severityFloor || 'Severe').trim().slice(0, 20),
+    };
+  }
+  if (patch.workingHours && typeof patch.workingHours === 'object') {
+    const wh = patch.workingHours;
+    clean.workingHours = {
+      enabled: wh.enabled === true,
+      startHour: Math.min(23, Math.max(0, Number(wh.startHour) || 0)),
+      startMin: Math.min(59, Math.max(0, Number(wh.startMin) || 0)),
+      endHour: Math.min(23, Math.max(0, Number(wh.endHour) || 0)),
+      endMin: Math.min(59, Math.max(0, Number(wh.endMin) || 0)),
+      days: Array.isArray(wh.days)
+        ? wh.days.map(day => Number(day)).filter(day => Number.isInteger(day) && day >= 0 && day <= 6)
+        : [],
+    };
+  }
+  return clean;
+}
+
+function sanitizeMediaPatch(patch = {}) {
+  const clean = {};
+  if (Object.prototype.hasOwnProperty.call(patch, 'name')) {
+    clean.name = String(patch.name || '').trim().replace(/\s+/g, ' ').slice(0, 160) || 'Media item';
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'type')) {
+    const type = String(patch.type || 'image').trim().toLowerCase();
+    clean.type = ['image', 'video', 'audio', 'document', 'pdf'].includes(type) ? type : 'image';
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'url')) {
+    clean.url = String(patch.url || '').trim().slice(0, 2000);
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'tags')) {
+    clean.tags = normalizeTags(patch.tags);
+  }
+  return clean;
+}
+
 async function commitOpsInChunks(db, ops) {
   for (let i = 0; i < ops.length; i += 450) {
     const batch = db.batch();
@@ -953,6 +1037,36 @@ module.exports = async function handler(req, res) {
       return res.json({ ok: true, ...result });
     }
 
+    if (req.body.action === 'saveScreenSettings') {
+      const screenId = sanitizeDocId(req.body.screenId, 'screenId');
+      const { orgId, role } = await loadUserContext(db, uid);
+      requireRole(role, ['admin', 'editor']);
+
+      const screenRef = db.doc(`screens/${screenId}`);
+      const screenSnap = await screenRef.get();
+      if (!screenSnap.exists) return res.status(404).json({ error: 'Screen not found' });
+      const screenData = screenSnap.data() || {};
+      if (screenData.orgId !== orgId) {
+        return res.status(403).json({ error: 'Screen is not in your organization' });
+      }
+
+      const patch = sanitizeScreenSettingsPatch(req.body.patch || {});
+      await screenRef.set({ ...patch, orgId, updatedAt: new Date().toISOString() }, { merge: true });
+
+      let tags = null;
+      if (Array.isArray(patch.tags) && patch.tags.length) {
+        const orgRef = db.doc(`organizations/${orgId}`);
+        await db.runTransaction(async tx => {
+          const orgSnap = await tx.get(orgRef);
+          const orgData = orgSnap.exists ? (orgSnap.data() || {}) : {};
+          tags = Array.from(new Set([...normalizeTags(orgData.tags || []), ...patch.tags])).sort();
+          tx.set(orgRef, { tags }, { merge: true });
+        });
+      }
+
+      return res.json({ ok: true, screenId, tags });
+    }
+
     if (req.body.action === 'deleteScreen') {
       const screenId = String(req.body.screenId || '').trim();
       if (!screenId) return res.status(400).json({ error: 'screenId required' });
@@ -995,6 +1109,42 @@ module.exports = async function handler(req, res) {
         renamedBy: uid,
       }, { merge: true });
       return res.json({ ok: true, screenId, screenName: name });
+    }
+
+    if (req.body.action === 'upsertMediaRecord') {
+      const mediaId = sanitizeDocId(req.body.mediaId, 'mediaId');
+      const { orgId, role } = await loadUserContext(db, uid);
+      requireRole(role, ['admin', 'editor']);
+
+      const patch = sanitizeMediaPatch(req.body.patch || {});
+      const now = new Date().toISOString();
+      const mediaRef = db.doc(`organizations/${orgId}/media/${mediaId}`);
+      await mediaRef.set({
+        ...patch,
+        updatedAt: now,
+        ...(!req.body.patch?.createdAt && { createdAt: now }),
+      }, { merge: true });
+
+      let tags = null;
+      if (Array.isArray(patch.tags) && patch.tags.length) {
+        const orgRef = db.doc(`organizations/${orgId}`);
+        await db.runTransaction(async tx => {
+          const orgSnap = await tx.get(orgRef);
+          const orgData = orgSnap.exists ? (orgSnap.data() || {}) : {};
+          tags = Array.from(new Set([...normalizeTags(orgData.tags || []), ...patch.tags])).sort();
+          tx.set(orgRef, { tags }, { merge: true });
+        });
+      }
+
+      return res.json({ ok: true, mediaId, tags });
+    }
+
+    if (req.body.action === 'deleteMediaRecord') {
+      const mediaId = sanitizeDocId(req.body.mediaId, 'mediaId');
+      const { orgId, role } = await loadUserContext(db, uid);
+      requireRole(role, ['admin', 'editor']);
+      await db.doc(`organizations/${orgId}/media/${mediaId}`).delete();
+      return res.json({ ok: true, mediaId });
     }
 
     if (req.body.action === 'screenDiagnostics') {
