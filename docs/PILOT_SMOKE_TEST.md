@@ -107,6 +107,18 @@ npm run smoke:browser -- --base-url https://app.zigns.io
 
 The mutating pass creates a temporary slideshow, saves a `smoke` tag, then deletes the temporary slideshow. Only run it against a dedicated pilot test organization.
 
+Run the Phase 5.1 tag propagation pass when validating tag manager or smart playlist changes:
+
+```bash
+ZIGNS_SMOKE_EMAIL="pilot-admin@example.com" \
+ZIGNS_SMOKE_PASSWORD="use-a-dedicated-test-password" \
+ZIGNS_SMOKE_EXPECTED_ORG="Zigns Smoke Test" \
+ZIGNS_SMOKE_EXPECTED_ROLE="admin" \
+npm run smoke:tags -- --base-url https://app.zigns.io
+```
+
+The tag propagation pass creates temporary screen, media, slideshow, published slide, and draft slide records, verifies org tag rename/delete propagation across all of them, then removes the temporary records. Only run it against a dedicated test organization.
+
 ## Account And Role Smoke
 
 | Step | Expected Result |

@@ -22985,11 +22985,11 @@ function getOrgTags() {
 }
 
 async function persistOrgTags(tags) {
-  if (!currentOrgId) return;
-  const clean = Array.from(new Set(tags.map(normalizeTag).filter(Boolean))).sort();
-  await setDoc(doc(db, 'organizations', currentOrgId), { tags: clean }, { merge: true });
+  const result = await callAccountApi('syncOrgTags', { tags });
+  const clean = Array.isArray(result.tags) ? result.tags : Array.from(new Set(tags.map(normalizeTag).filter(Boolean))).sort();
   currentOrg = { ...(currentOrg || {}), tags: clean };
   renderScreenTagsList();
+  return clean;
 }
 
 async function syncOrgTags(tags) {
@@ -23044,64 +23044,22 @@ async function mutateSlideCollectionTags(showId, collectionName, oldTag, newTag 
 
 async function applyTagMutationEverywhere(oldTag, newTag = null) {
   if (!currentOrgId || !oldTag) return;
-
-  const screens = await getOrgScreensForTagMutation();
-  await Promise.all(screens
-    .filter(s => Array.isArray(s.tags) && s.tags.includes(oldTag))
-    .map(screen => setDoc(doc(db, 'screens', screen.id), { tags: mutateTagList(screen.tags, oldTag, newTag) }, { merge: true }))
-  );
-
-  const shows = currentOrg?.slideshows || [];
-  const nextShows = shows.map(show => ({
-    ...show,
-    tags: mutateTagList(show.tags || [], oldTag, newTag),
-    autoIncludeTags: mutateTagList(show.autoIncludeTags || [], oldTag, newTag),
-  }));
-  await updateDoc(doc(db, 'organizations', currentOrgId), { slideshows: nextShows });
-  currentOrg.slideshows = nextShows;
-
-  await Promise.all(nextShows.map(async show => {
-    try {
-      const showRef = doc(db, 'slideshows', show.id);
-      const snap = await getDoc(showRef);
-      if (!snap.exists()) return;
-      const data = snap.data();
-      const hasPublishedSubcollection =
-        data.slideStorageVersion >= SLIDE_STORAGE_VERSION ||
-        data.publishedStorage === 'subcollection';
-      const hasDraftSubcollection = data.draftStorage === 'subcollection';
-      const revisionPatch = {};
-
-      if (hasPublishedSubcollection) {
-        await mutateSlideCollectionTags(show.id, PUBLISHED_SLIDES_COLLECTION, oldTag, newTag);
-        revisionPatch.publishedRevision = new Date().toISOString();
-      }
-      if (hasDraftSubcollection) {
-        await mutateSlideCollectionTags(show.id, DRAFT_SLIDES_COLLECTION, oldTag, newTag);
-        revisionPatch.draftRevision = new Date().toISOString();
-      }
-
-      await setDoc(showRef, {
-        tags: mutateTagList(data.tags || show.tags || [], oldTag, newTag),
-        autoIncludeTags: mutateTagList(data.autoIncludeTags || show.autoIncludeTags || [], oldTag, newTag),
-        ...(Array.isArray(data.slides) && { slides: mutateSlideTagLists(data.slides, oldTag, newTag) }),
-        ...(Array.isArray(data.draftSlides) && { draftSlides: mutateSlideTagLists(data.draftSlides, oldTag, newTag) }),
-        ...revisionPatch,
-      }, { merge: true });
-    } catch(e) {
-      console.warn('Could not update slideshow tags:', show.id, e.message);
-    }
-  }));
-
-  try {
-    const mediaSnap = await getDocs(collection(db, 'organizations', currentOrgId, 'media'));
-    await Promise.all(mediaSnap.docs
-      .filter(d => Array.isArray(d.data().tags) && d.data().tags.includes(oldTag))
-      .map(d => setDoc(doc(db, 'organizations', currentOrgId, 'media', d.id), { tags: mutateTagList(d.data().tags, oldTag, newTag) }, { merge: true }))
-    );
-  } catch(e) {
-    console.warn('Could not update media tags:', e.message);
+  const result = await callAccountApi('mutateOrgTag', { oldTag, newTag });
+  currentOrg = {
+    ...(currentOrg || {}),
+    ...(Array.isArray(result.tags) && { tags: result.tags }),
+    ...(Array.isArray(result.slideshows) && { slideshows: result.slideshows }),
+  };
+  if (Array.isArray(slides)) {
+    slides = mutateSlideTagLists(slides, oldTag, newTag);
+    renderGrid();
   }
+  document.querySelectorAll('#showList .show-item[data-id]').forEach(item => {
+    const show = (currentOrg?.slideshows || []).find(s => s.id === item.dataset.id);
+    if (show) renderShowTagsOnItem(item, show);
+  });
+  renderScreenTagsList();
+  return result;
 }
 
 function renderScreenTagsList() {
@@ -23126,7 +23084,7 @@ window.openAddScreenTagModal = async function() {
   const tag = normalizeTag(prompt('New tag name'));
   if (!tag) return;
   try {
-    await persistOrgTags([...getOrgTags(), tag]);
+    await syncOrgTags([tag]);
     toast('Tag added ✓');
   } catch(e) {
     toast('Could not add tag: ' + e.message, true);
@@ -23139,7 +23097,6 @@ window.renameOrgTag = async function(encodedTag) {
   const newTag = normalizeTag(prompt('Rename tag', oldTag));
   if (!newTag || newTag === oldTag) return;
   try {
-    await persistOrgTags(getOrgTags().map(t => t === oldTag ? newTag : t));
     await applyTagMutationEverywhere(oldTag, newTag);
     toast('Tag renamed ✓');
   } catch(e) {
@@ -23151,7 +23108,6 @@ window.deleteOrgTag = async function(encodedTag) {
   const tag = normalizeTag(decodeURIComponent(encodedTag || ''));
   if (!tag || !confirm(`Delete tag "${tag}" from the organization and screens?`)) return;
   try {
-    await persistOrgTags(getOrgTags().filter(t => t !== tag));
     await applyTagMutationEverywhere(tag, null);
     toast('Tag deleted ✓');
   } catch(e) {

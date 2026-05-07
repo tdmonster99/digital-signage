@@ -285,6 +285,31 @@ function normalizeTags(value) {
   return Array.from(new Set(value.map(normalizeTag).filter(Boolean)));
 }
 
+function mutateTagList(tags, oldTag, newTag = null) {
+  return normalizeTags(tags)
+    .map(tag => tag === oldTag ? newTag : tag)
+    .filter(Boolean)
+    .filter((tag, index, arr) => arr.indexOf(tag) === index);
+}
+
+function mutateSlideTagLists(slides, oldTag, newTag = null) {
+  if (!Array.isArray(slides)) return slides;
+  return slides.map(slide => {
+    if (!slide || typeof slide !== 'object') return slide;
+    const next = { ...slide, tags: mutateTagList(slide.tags || [], oldTag, newTag) };
+    if (Array.isArray(next.slides)) next.slides = mutateSlideTagLists(next.slides, oldTag, newTag);
+    return next;
+  });
+}
+
+function hasTag(tags, tag) {
+  return normalizeTags(tags).includes(tag);
+}
+
+function tagListChanged(before, after) {
+  return JSON.stringify(normalizeTags(before)) !== JSON.stringify(normalizeTags(after));
+}
+
 function sanitizePublishPatch(patch = {}) {
   const clean = {};
   if (Number.isFinite(Number(patch.defaultDwell))) {
@@ -386,6 +411,135 @@ async function deleteSlideshowStorage(db, showRef) {
 
   ops.push(batch => batch.delete(showRef));
   await commitOpsInChunks(db, ops);
+}
+
+async function mutateSlideCollectionTags(db, showRef, collectionName, oldTag, newTag = null) {
+  const snap = await showRef.collection(collectionName).get();
+  const now = new Date().toISOString();
+  const ops = [];
+  snap.docs.forEach(docSnap => {
+    const data = docSnap.data() || {};
+    if (!hasTag(data.tags, oldTag) && !Array.isArray(data.slides)) return;
+    const current = normalizeSlideDoc(docSnap);
+    const [next] = mutateSlideTagLists([current], oldTag, newTag);
+    if (JSON.stringify(current.tags || []) === JSON.stringify(next.tags || [])
+      && JSON.stringify(current.slides || []) === JSON.stringify(next.slides || [])) {
+      return;
+    }
+    ops.push(batch => batch.set(docSnap.ref, {
+      ...next,
+      id: next.id || docSnap.id,
+      order: data.order ?? 0,
+      updatedAt: now,
+    }));
+  });
+  await commitOpsInChunks(db, ops);
+  return ops.length;
+}
+
+async function mutateOrgTagEverywhere(db, orgId, oldTag, newTag = null) {
+  const cleanOld = normalizeTag(oldTag);
+  const cleanNew = newTag === null ? null : normalizeTag(newTag);
+  if (!cleanOld) {
+    const error = new Error('oldTag required');
+    error.statusCode = 400;
+    throw error;
+  }
+  if (cleanNew === cleanOld) {
+    const error = new Error('Choose a different tag name');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const orgRef = db.doc(`organizations/${orgId}`);
+  const orgSnap = await orgRef.get();
+  if (!orgSnap.exists) {
+    const error = new Error('Organization not found');
+    error.statusCode = 404;
+    throw error;
+  }
+  const orgData = orgSnap.data() || {};
+  const shows = Array.isArray(orgData.slideshows) ? orgData.slideshows : [];
+  const nextOrgTags = mutateTagList(orgData.tags || [], cleanOld, cleanNew).sort();
+  const nextShows = shows.map(show => {
+    if (!show || typeof show !== 'object') return show;
+    return {
+      ...show,
+      tags: mutateTagList(show.tags || [], cleanOld, cleanNew),
+      autoIncludeTags: mutateTagList(show.autoIncludeTags || [], cleanOld, cleanNew),
+    };
+  });
+
+  await orgRef.set({ tags: nextOrgTags, slideshows: nextShows }, { merge: true });
+
+  const stats = {
+    screensUpdated: 0,
+    slideshowsUpdated: 0,
+    publishedSlidesUpdated: 0,
+    draftSlidesUpdated: 0,
+    mediaUpdated: 0,
+  };
+
+  const screenSnap = await db.collection('screens').where('orgId', '==', orgId).get();
+  const screenOps = [];
+  screenSnap.docs.forEach(docSnap => {
+    const data = docSnap.data() || {};
+    if (!hasTag(data.tags, cleanOld)) return;
+    screenOps.push(batch => batch.set(docSnap.ref, { tags: mutateTagList(data.tags, cleanOld, cleanNew) }, { merge: true }));
+  });
+  await commitOpsInChunks(db, screenOps);
+  stats.screensUpdated = screenOps.length;
+
+  for (const show of nextShows) {
+    if (!show?.id) continue;
+    const showRef = db.doc(`slideshows/${show.id}`);
+    const showSnap = await showRef.get();
+    if (!showSnap.exists) continue;
+    const showData = showSnap.data() || {};
+    if (showData.orgId !== orgId) continue;
+
+    const showPatch = {
+      tags: mutateTagList(showData.tags || show.tags || [], cleanOld, cleanNew),
+      autoIncludeTags: mutateTagList(showData.autoIncludeTags || show.autoIncludeTags || [], cleanOld, cleanNew),
+    };
+    if (Array.isArray(showData.slides)) {
+      showPatch.slides = mutateSlideTagLists(showData.slides, cleanOld, cleanNew);
+    }
+    if (Array.isArray(showData.draftSlides)) {
+      showPatch.draftSlides = mutateSlideTagLists(showData.draftSlides, cleanOld, cleanNew);
+    }
+    if (
+      tagListChanged(showData.tags || [], showPatch.tags)
+      || tagListChanged(showData.autoIncludeTags || [], showPatch.autoIncludeTags)
+      || JSON.stringify(showData.slides || []) !== JSON.stringify(showPatch.slides || showData.slides || [])
+      || JSON.stringify(showData.draftSlides || []) !== JSON.stringify(showPatch.draftSlides || showData.draftSlides || [])
+    ) {
+      showPatch.updatedAt = new Date().toISOString();
+      await showRef.set(showPatch, { merge: true });
+      stats.slideshowsUpdated += 1;
+    }
+
+    stats.publishedSlidesUpdated += await mutateSlideCollectionTags(db, showRef, PUBLISHED_SLIDES_COLLECTION, cleanOld, cleanNew);
+    stats.draftSlidesUpdated += await mutateSlideCollectionTags(db, showRef, DRAFT_SLIDES_COLLECTION, cleanOld, cleanNew);
+  }
+
+  const mediaSnap = await orgRef.collection('media').get();
+  const mediaOps = [];
+  mediaSnap.docs.forEach(docSnap => {
+    const data = docSnap.data() || {};
+    if (!hasTag(data.tags, cleanOld)) return;
+    mediaOps.push(batch => batch.set(docSnap.ref, { tags: mutateTagList(data.tags, cleanOld, cleanNew) }, { merge: true }));
+  });
+  await commitOpsInChunks(db, mediaOps);
+  stats.mediaUpdated = mediaOps.length;
+
+  return {
+    oldTag: cleanOld,
+    newTag: cleanNew,
+    tags: nextOrgTags,
+    slideshows: nextShows,
+    stats,
+  };
 }
 
 async function assertScreensInOrg(db, screenIds, orgId) {
@@ -1022,6 +1176,35 @@ module.exports = async function handler(req, res) {
         };
       });
 
+      return res.json({ ok: true, ...result });
+    }
+
+    if (req.body.action === 'syncOrgTags') {
+      const { orgId, role } = await loadUserContext(db, uid);
+      requireRole(role, ['admin', 'editor']);
+
+      const incomingTags = normalizeTags(req.body.tags || []);
+      const orgRef = db.doc(`organizations/${orgId}`);
+      const result = await db.runTransaction(async tx => {
+        const orgSnap = await tx.get(orgRef);
+        if (!orgSnap.exists) {
+          const error = new Error('Organization not found');
+          error.statusCode = 404;
+          throw error;
+        }
+        const orgData = orgSnap.data() || {};
+        const tags = Array.from(new Set([...normalizeTags(orgData.tags || []), ...incomingTags])).sort();
+        tx.set(orgRef, { tags }, { merge: true });
+        return { tags };
+      });
+
+      return res.json({ ok: true, ...result });
+    }
+
+    if (req.body.action === 'mutateOrgTag') {
+      const { orgId, role } = await loadUserContext(db, uid);
+      requireRole(role, ['admin', 'editor']);
+      const result = await mutateOrgTagEverywhere(db, orgId, req.body.oldTag, req.body.newTag ?? null);
       return res.json({ ok: true, ...result });
     }
 

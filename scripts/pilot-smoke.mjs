@@ -208,6 +208,7 @@ async function main() {
     'Tags, Priority, And Emergency Smoke',
     'Team Invite Smoke',
     'Browser Smoke',
+    'tag propagation pass',
     'CAP Alert Smoke',
   ]));
 
@@ -215,6 +216,12 @@ async function main() {
     'Zigns browser smoke',
     'Slideshow tags modal opens',
     'Slideshow CRUD smoke',
+  ]));
+
+  await check('Static tag propagation smoke script', () => assertFileContains('scripts/tag-propagation-smoke.mjs', [
+    'Zigns tag propagation smoke',
+    'Rename tag propagates',
+    'Delete tag propagates',
   ]));
 
   if (!config.staticOnly) {

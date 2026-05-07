@@ -4,6 +4,16 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-07 — Codex — Harden Phase 5.1 tag propagation
+
+Follow-up on Phase 5.1 tag manager reliability after authenticated smoke coverage.
+
+- **Tag manager**: moved org tag registry sync and org-wide tag rename/delete propagation through `/api/link-account`, covering screens, slideshow metadata, published/draft slide docs, and media records through Firebase Admin.
+- **Smoke coverage**: added `npm run smoke:tags`, a disposable production-safe Phase 5.1 propagation pass for the dedicated smoke org.
+- **Docs**: documented the tag propagation smoke command in the pilot smoke harness and included it in the static sanity script.
+
+---
+
 ## 2026-05-07 — Codex — Fix smoke Slideshow Tags save path
 
 Follow-up from the dedicated smoke account/browser harness run.
