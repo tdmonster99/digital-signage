@@ -242,6 +242,16 @@ service cloud.firestore {
     }
 
     // ----------------------------------------------------------------
+    // capAlerts/{orgId}
+    // display.html reads CAP mirrors without user auth. The poller/test
+    // helpers write with Admin SDK; direct client writes stay admin-only.
+    // ----------------------------------------------------------------
+    match /capAlerts/{orgId} {
+      allow read: if true;
+      allow write: if isAdmin(orgId);
+    }
+
+    // ----------------------------------------------------------------
     // brandKits/{orgId}
     // ----------------------------------------------------------------
     match /brandKits/{orgId} {

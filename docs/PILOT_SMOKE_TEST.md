@@ -216,8 +216,10 @@ Do not trigger real public alerts casually. Use test fixtures/manual validation 
 | Step | Expected Result |
 |---|---|
 | Configure CAP fields on a test screen. | State, county FIPS, severity floor, and enabled state persist. |
+| Use Send Test from the screen's CAP section. | A clearly marked TEST CAP overlay appears only on the targeted display and expires automatically. |
+| Use Clear Test from the same section. | The TEST overlay clears without removing real NWS alerts. |
 | Review CAP analytics view. | CAP render totals and recent rows load without permission errors. |
-| If a safe test alert is available, run poll path. | Matching screen shows the alert overlay above normal playback. |
+| If a real safe alert is available, run poll path. | Matching screen shows the NWS alert overlay above normal playback. |
 | Clear or wait for expiry. | Display returns to assigned slideshow/schedule. |
 
 ## Support Intake

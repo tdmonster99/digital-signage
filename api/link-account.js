@@ -36,6 +36,7 @@ const PLAN_LIMITS = {
   pro: { usersAllowed: 10 },
 };
 const INVITE_ROLES = new Set(['admin', 'editor', 'viewer']);
+const CAP_SEVERITIES = new Set(['Minor', 'Moderate', 'Severe', 'Extreme']);
 
 function pilotSubscription(now) {
   return {
@@ -349,6 +350,11 @@ function sanitizeScreenIds(value) {
   return Array.from(new Set(value.map(id => String(id || '').trim()).filter(Boolean))).slice(0, 200);
 }
 
+function sanitizeCapSeverity(value, fallback = 'Severe') {
+  const severity = String(value || fallback).trim();
+  return CAP_SEVERITIES.has(severity) ? severity : fallback;
+}
+
 function normalizeShowId(showId) {
   const id = String(showId || '').trim();
   if (!id) {
@@ -418,6 +424,7 @@ function sanitizeScreenSettingsPatch(patch = {}) {
         : [],
       severityFloor: String(patch.cap.severityFloor || 'Severe').trim().slice(0, 20),
     };
+    clean.cap.severityFloor = sanitizeCapSeverity(clean.cap.severityFloor);
   }
   if (patch.workingHours && typeof patch.workingHours === 'object') {
     const wh = patch.workingHours;
@@ -1145,6 +1152,100 @@ module.exports = async function handler(req, res) {
       requireRole(role, ['admin', 'editor']);
       await db.doc(`organizations/${orgId}/media/${mediaId}`).delete();
       return res.json({ ok: true, mediaId });
+    }
+
+    if (req.body.action === 'sendCapTestAlert') {
+      const screenId = sanitizeDocId(req.body.screenId, 'screenId');
+      const { orgId, role } = await loadUserContext(db, uid);
+      requireRole(role, ['admin']);
+
+      const screenRef = db.doc(`screens/${screenId}`);
+      const screenSnap = await screenRef.get();
+      if (!screenSnap.exists) return res.status(404).json({ error: 'Screen not found' });
+      const screenData = screenSnap.data() || {};
+      if (screenData.orgId !== orgId) {
+        return res.status(403).json({ error: 'Screen is not in your organization' });
+      }
+
+      const nowMs = Date.now();
+      const nowIso = new Date(nowMs).toISOString();
+      const durationSeconds = Math.min(1800, Math.max(60, Number(req.body.durationSeconds) || 600));
+      const expiresAt = new Date(nowMs + durationSeconds * 1000).toISOString();
+      const severity = sanitizeCapSeverity(req.body.severity || screenData.cap?.severityFloor || 'Severe');
+      const screenName = String(screenData.name || screenId).trim();
+      const areaDesc = String(req.body.areaDesc || screenData.location || screenName || 'Test screen').trim().slice(0, 160);
+      const alert = {
+        id: `zigns-test-${screenId}-${nowMs}`,
+        active: true,
+        test: true,
+        event: 'Zigns CAP Test',
+        severity,
+        headline: `TEST ${severity} Alert - ${screenName || 'Screen'}`,
+        description: 'This is a Zigns CAP overlay test.',
+        instruction: 'This is only a test. No action is required.',
+        areaDesc,
+        effectiveAt: nowIso,
+        expiresAt,
+        sentAt: nowIso,
+        targetScreenIds: [screenId],
+        source: 'Zigns Test',
+        createdBy: decoded.email || uid,
+      };
+
+      const capRef = db.doc(`capAlerts/${orgId}`);
+      const result = await db.runTransaction(async tx => {
+        const capSnap = await tx.get(capRef);
+        const existingAlerts = capSnap.exists && Array.isArray(capSnap.data().alerts)
+          ? capSnap.data().alerts
+          : [];
+        const keptAlerts = existingAlerts.filter(existing =>
+          !(existing && existing.test === true && Array.isArray(existing.targetScreenIds) && existing.targetScreenIds.includes(screenId))
+        );
+        const alerts = [...keptAlerts, alert];
+        tx.set(capRef, {
+          active: alerts.length > 0,
+          alerts,
+          updatedAt: nowIso,
+          testUpdatedAt: nowIso,
+        }, { merge: true });
+        return { replaced: existingAlerts.length - keptAlerts.length, alertsCount: alerts.length };
+      });
+
+      return res.json({ ok: true, screenId, alert, expiresAt, ...result });
+    }
+
+    if (req.body.action === 'clearCapTestAlert') {
+      const screenId = sanitizeDocId(req.body.screenId, 'screenId');
+      const { orgId, role } = await loadUserContext(db, uid);
+      requireRole(role, ['admin']);
+
+      const screenSnap = await db.doc(`screens/${screenId}`).get();
+      if (!screenSnap.exists) return res.status(404).json({ error: 'Screen not found' });
+      const screenData = screenSnap.data() || {};
+      if (screenData.orgId !== orgId) {
+        return res.status(403).json({ error: 'Screen is not in your organization' });
+      }
+
+      const nowIso = new Date().toISOString();
+      const capRef = db.doc(`capAlerts/${orgId}`);
+      const result = await db.runTransaction(async tx => {
+        const capSnap = await tx.get(capRef);
+        const existingAlerts = capSnap.exists && Array.isArray(capSnap.data().alerts)
+          ? capSnap.data().alerts
+          : [];
+        const alerts = existingAlerts.filter(existing =>
+          !(existing && existing.test === true && Array.isArray(existing.targetScreenIds) && existing.targetScreenIds.includes(screenId))
+        );
+        tx.set(capRef, {
+          active: alerts.length > 0,
+          alerts,
+          updatedAt: nowIso,
+          testClearedAt: nowIso,
+        }, { merge: true });
+        return { removed: existingAlerts.length - alerts.length, alertsCount: alerts.length };
+      });
+
+      return res.json({ ok: true, screenId, ...result });
     }
 
     if (req.body.action === 'screenDiagnostics') {

@@ -4,6 +4,17 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-07 — Codex — Add CAP alert test mode
+
+Phase 5.2 polish follow-up for safer CAP validation during pilot work.
+
+- **CAP test alerts**: added server-backed `sendCapTestAlert` / `clearCapTestAlert` account actions that target one screen, preserve real NWS alerts, and auto-expire test payloads.
+- **Screen settings**: added admin-only Send Test / Clear Test controls in the CAP section of the screen edit panel, with inline status and explicit confirmation.
+- **Display safety**: CAP overlays now clearly label test payloads as `TEST` and include test metadata in render analytics.
+- **Docs/rules**: recorded the test flow in the pilot smoke harness, updated Phase 5.2 handoff/roadmap notes, and added the missing `capAlerts/{orgId}` Firestore rule to keep the repo aligned with the display listener.
+
+---
+
 ## 2026-05-07 — Codex — Polish emergency playlist management
 
 Phase 5.1 polish follow-up after the tag propagation smoke pass.

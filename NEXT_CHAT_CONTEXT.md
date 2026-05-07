@@ -57,7 +57,7 @@ Remaining polish:
 
 ### 3. Phase 5.2 CAP Alerts / Emergency-CAP Polish
 
-Status: foundation shipped.
+Status: validation polish shipped.
 
 Shipped:
 - Per-screen CAP configuration
@@ -67,9 +67,9 @@ Shipped:
 - Display-side CAP overlay above normal playback
 - Auto-clear through polling/expiry path
 - CAP render analytics in the Analytics page
+- Screen settings can send/clear a targeted TEST CAP alert through `/api/link-account`, preserving real NWS alerts
 
 Remaining polish:
-- Safer test fixtures or admin-side test mode for validating alert rendering without waiting for real public alerts.
 - Bilingual copy controls.
 - Better defaults for screen CAP config, such as state/FIPS suggestions.
 - Richer support guidance for schools, healthcare, and manufacturing.

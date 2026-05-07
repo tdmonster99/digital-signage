@@ -3054,11 +3054,16 @@
         }
 
         const severity = alert.severity || 'Unknown';
+        const isTestAlert = alert.test === true || alert.source === 'Zigns Test';
         capEl.style.background = CAP_COLORS[severity] || CAP_COLORS.Unknown;
-        kickerEl.textContent = `${severity} Alert`;
+        kickerEl.textContent = `${isTestAlert ? 'TEST ' : ''}${severity} Alert`;
         headlineEl.textContent = alert.headline || alert.event || 'Emergency Alert';
         bodyEl.textContent = alert.instruction || alert.description || 'Follow local emergency guidance.';
-        metaEl.textContent = [alert.areaDesc, alert.expiresAt ? 'Expires ' + new Date(alert.expiresAt).toLocaleString() : '']
+        metaEl.textContent = [
+          isTestAlert ? 'Zigns test alert' : '',
+          alert.areaDesc,
+          alert.expiresAt ? 'Expires ' + new Date(alert.expiresAt).toLocaleString() : ''
+        ]
           .filter(Boolean).join(' · ');
         capEl.style.display = 'flex';
 
@@ -3073,6 +3078,7 @@
             areaDesc: alert.areaDesc || '',
             expiresAt: alert.expiresAt || '',
             source: alert.source || 'NWS',
+            test: isTestAlert,
           });
         }
       }, () => {});

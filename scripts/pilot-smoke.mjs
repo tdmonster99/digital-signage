@@ -173,6 +173,9 @@ async function main() {
     'emergencyPlaylist',
     'priority',
     'sepCapEnabled',
+    'sendCapTestAlert',
+    'clearCapTestAlert',
+    'sepCapSendTestBtn',
     'createInvitation',
     'emailSent',
     'showOptionsModal',
@@ -189,6 +192,12 @@ async function main() {
     'sendTeamInvitationEmail',
     'Zigns <hello@zigns.io>',
     'emailSent',
+  ]));
+
+  await check('Static CAP test actions', () => assertFileContains('api/link-account.js', [
+    'sendCapTestAlert',
+    'clearCapTestAlert',
+    'Zigns Test',
   ]));
 
   await check('Static mobile hooks', () => assertFileContains('mobile.html', [

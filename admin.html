@@ -510,6 +510,18 @@ body {
   transition: border-color 0.15s;
 }
 .sep-field input:focus, .sep-field select:focus { border-color: var(--accent); }
+.cap-test-tools {
+  display: flex; flex-direction: column; gap: 9px;
+  padding: 10px; border: 1px solid rgba(217,119,6,.22); border-radius: 8px;
+  background: rgba(217,119,6,.08);
+}
+.cap-test-tools-title {
+  font-size: 11px; font-weight: 800; color: var(--text);
+  text-transform: uppercase; letter-spacing: .06em;
+}
+.cap-test-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.cap-test-actions .btn { flex: 1; justify-content: center; padding: 7px 10px; font-size: 12px; }
+.cap-test-status { min-height: 16px; font-size: 11px; color: var(--muted); line-height: 1.4; }
 .sep-footer {
   padding: 16px 24px; border-top: 1px solid var(--border);
   display: flex; gap: 8px;
@@ -5344,6 +5356,14 @@ body.role-editor .admin-action {
               <option value="Severe">Severe</option>
               <option value="Extreme">Extreme</option>
             </select>
+          </div>
+          <div class="cap-test-tools admin-action">
+            <div class="cap-test-tools-title">CAP Test Alert</div>
+            <div class="cap-test-actions">
+              <button class="btn btn-secondary" id="sepCapSendTestBtn" onclick="sendCapTestAlert()">Send Test</button>
+              <button class="btn btn-secondary" id="sepCapClearTestBtn" onclick="clearCapTestAlert()">Clear Test</button>
+            </div>
+            <div class="cap-test-status" id="sepCapTestStatus"></div>
           </div>
         </div>
       </div>
@@ -22554,6 +22574,8 @@ window.openScreenEdit = function(screenId) {
   document.getElementById('sepCapState').value = cap.state || '';
   document.getElementById('sepCapFips').value = Array.isArray(cap.countyFips) ? cap.countyFips.join(', ') : '';
   document.getElementById('sepCapSeverity').value = cap.severityFloor || 'Severe';
+  const capStatus = document.getElementById('sepCapTestStatus');
+  if (capStatus) capStatus.textContent = '';
 
   // Working Hours
   const wh = screen.workingHours || {};
@@ -22667,6 +22689,65 @@ window.sendTestSignal = async function() {
     toast('Test signal sent ✓');
   } catch(e) {
     toast('Could not send test signal: ' + e.message, true);
+  }
+};
+
+function setCapTestButtons(disabled) {
+  const sendBtn = document.getElementById('sepCapSendTestBtn');
+  const clearBtn = document.getElementById('sepCapClearTestBtn');
+  if (sendBtn) sendBtn.disabled = disabled;
+  if (clearBtn) clearBtn.disabled = disabled;
+}
+
+function setCapTestStatus(message, isError = false) {
+  const el = document.getElementById('sepCapTestStatus');
+  if (!el) return;
+  el.textContent = message || '';
+  el.style.color = isError ? '#dc2626' : 'var(--muted)';
+}
+
+window.sendCapTestAlert = async function() {
+  if (!editingScreenId) return;
+  const screen = _cachedScreens.find(s => s.id === editingScreenId);
+  const label = screen?.name || editingScreenId;
+  if (!confirm(`Send a TEST CAP alert to "${label}" for 10 minutes?`)) return;
+
+  setCapTestButtons(true);
+  setCapTestStatus('Sending test...');
+  try {
+    const result = await callAccountApi('sendCapTestAlert', {
+      screenId: editingScreenId,
+      severity: document.getElementById('sepCapSeverity').value || 'Severe',
+      areaDesc: document.getElementById('sepLocation').value.trim() || label,
+      durationSeconds: 600,
+    }, true);
+    const expires = result.expiresAt ? new Date(result.expiresAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : 'soon';
+    setCapTestStatus(`Test active until ${expires}.`);
+    toast('CAP test alert sent ✓');
+    logActivity(`CAP test alert sent to ${label}`);
+  } catch(e) {
+    setCapTestStatus('Could not send test: ' + e.message, true);
+    toast('Could not send CAP test: ' + e.message, true);
+  } finally {
+    setCapTestButtons(false);
+  }
+};
+
+window.clearCapTestAlert = async function() {
+  if (!editingScreenId) return;
+  setCapTestButtons(true);
+  setCapTestStatus('Clearing test...');
+  try {
+    const result = await callAccountApi('clearCapTestAlert', { screenId: editingScreenId }, true);
+    setCapTestStatus(result.removed ? 'Test cleared.' : 'No active test alert found.');
+    toast(result.removed ? 'CAP test cleared ✓' : 'No CAP test to clear');
+    const screen = _cachedScreens.find(s => s.id === editingScreenId);
+    logActivity(`CAP test alert cleared for ${screen?.name || editingScreenId}`);
+  } catch(e) {
+    setCapTestStatus('Could not clear test: ' + e.message, true);
+    toast('Could not clear CAP test: ' + e.message, true);
+  } finally {
+    setCapTestButtons(false);
   }
 };
 
