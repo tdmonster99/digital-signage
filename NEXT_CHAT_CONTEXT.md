@@ -68,10 +68,10 @@ Shipped:
 - Auto-clear through polling/expiry path
 - CAP render analytics in the Analytics page
 - Screen settings can send/clear a targeted TEST CAP alert through `/api/link-account`, preserving real NWS alerts
+- Screen CAP setup has a state selector, conservative state suggestions, FIPS normalization, and save-time validation
 
 Remaining polish:
 - Bilingual copy controls.
-- Better defaults for screen CAP config, such as state/FIPS suggestions.
 - Richer support guidance for schools, healthcare, and manufacturing.
 - IPAWS/FEMA path remains Enterprise-only later.
 

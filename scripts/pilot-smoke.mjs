@@ -176,6 +176,9 @@ async function main() {
     'sendCapTestAlert',
     'clearCapTestAlert',
     'sepCapSendTestBtn',
+    'applyCapStateSuggestion',
+    'normalizeCapFipsField',
+    'sepCapStateSuggestions',
     'createInvitation',
     'emailSent',
     'showOptionsModal',
@@ -198,6 +201,7 @@ async function main() {
     'sendCapTestAlert',
     'clearCapTestAlert',
     'Zigns Test',
+    'normalizeCapFipsList',
   ]));
 
   await check('Static mobile hooks', () => assertFileContains('mobile.html', [

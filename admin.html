@@ -510,6 +510,20 @@ body {
   transition: border-color 0.15s;
 }
 .sep-field input:focus, .sep-field select:focus { border-color: var(--accent); }
+.cap-config-help {
+  font-size: 11px; color: var(--muted); line-height: 1.45;
+}
+.cap-suggestion-row, .cap-fips-actions {
+  display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+}
+.cap-suggestion-chip {
+  border: 1px solid var(--border); border-radius: 999px;
+  background: var(--surface); color: var(--text);
+  padding: 4px 9px; font-family: 'DM Sans', sans-serif;
+  font-size: 11px; font-weight: 700; cursor: pointer;
+}
+.cap-suggestion-chip:hover { border-color: var(--accent); color: var(--accent); }
+.cap-fips-actions .btn { padding: 6px 9px; font-size: 11px; }
 .cap-test-tools {
   display: flex; flex-direction: column; gap: 9px;
   padding: 10px; border: 1px solid rgba(217,119,6,.22); border-radius: 8px;
@@ -5281,7 +5295,7 @@ body.role-editor .admin-action {
       </div>
       <div class="sep-field">
         <label>Location / Description</label>
-        <input type="text" id="sepLocation" placeholder="e.g. Main entrance, ground floor">
+        <input type="text" id="sepLocation" placeholder="e.g. Main entrance, ground floor" oninput="renderCapSetupHints()">
       </div>
       <div class="sep-field">
         <label>Assigned Slideshow</label>
@@ -5304,7 +5318,7 @@ body.role-editor .admin-action {
       </div>
       <div class="sep-field">
         <label>Timezone</label>
-        <select id="sepTimezone">
+        <select id="sepTimezone" onchange="renderCapSetupHints()">
           <option value="local">Local (device time)</option>
           <optgroup label="US">
             <option value="America/New_York">Eastern (New York)</option>
@@ -5334,19 +5348,40 @@ body.role-editor .admin-action {
       </div>
       <div class="sep-field">
         <label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:13px;color:var(--text);font-weight:500">
-          <input type="checkbox" id="sepCapEnabled" style="width:auto;margin:0" onchange="document.getElementById('sepCapBody').style.display = this.checked ? 'flex' : 'none'">
+          <input type="checkbox" id="sepCapEnabled" style="width:auto;margin:0" onchange="toggleCapConfigBody(this.checked)">
           Emergency CAP alerts
         </label>
         <div id="sepCapBody" style="display:none;flex-direction:column;gap:10px;margin-top:10px;padding:12px;background:var(--surface2);border-radius:8px">
           <div style="display:flex;gap:10px">
             <div style="flex:1">
               <label style="font-size:10px">State</label>
-              <input type="text" id="sepCapState" maxlength="2" placeholder="TX">
+              <select id="sepCapState" onchange="renderCapSetupHints()">
+                <option value="">Select state</option>
+                <option value="AL">AL - Alabama</option><option value="AK">AK - Alaska</option><option value="AZ">AZ - Arizona</option><option value="AR">AR - Arkansas</option>
+                <option value="CA">CA - California</option><option value="CO">CO - Colorado</option><option value="CT">CT - Connecticut</option><option value="DE">DE - Delaware</option>
+                <option value="DC">DC - District of Columbia</option><option value="FL">FL - Florida</option><option value="GA">GA - Georgia</option><option value="HI">HI - Hawaii</option>
+                <option value="ID">ID - Idaho</option><option value="IL">IL - Illinois</option><option value="IN">IN - Indiana</option><option value="IA">IA - Iowa</option>
+                <option value="KS">KS - Kansas</option><option value="KY">KY - Kentucky</option><option value="LA">LA - Louisiana</option><option value="ME">ME - Maine</option>
+                <option value="MD">MD - Maryland</option><option value="MA">MA - Massachusetts</option><option value="MI">MI - Michigan</option><option value="MN">MN - Minnesota</option>
+                <option value="MS">MS - Mississippi</option><option value="MO">MO - Missouri</option><option value="MT">MT - Montana</option><option value="NE">NE - Nebraska</option>
+                <option value="NV">NV - Nevada</option><option value="NH">NH - New Hampshire</option><option value="NJ">NJ - New Jersey</option><option value="NM">NM - New Mexico</option>
+                <option value="NY">NY - New York</option><option value="NC">NC - North Carolina</option><option value="ND">ND - North Dakota</option><option value="OH">OH - Ohio</option>
+                <option value="OK">OK - Oklahoma</option><option value="OR">OR - Oregon</option><option value="PA">PA - Pennsylvania</option><option value="PR">PR - Puerto Rico</option>
+                <option value="RI">RI - Rhode Island</option><option value="SC">SC - South Carolina</option><option value="SD">SD - South Dakota</option><option value="TN">TN - Tennessee</option>
+                <option value="TX">TX - Texas</option><option value="UT">UT - Utah</option><option value="VT">VT - Vermont</option><option value="VA">VA - Virginia</option>
+                <option value="WA">WA - Washington</option><option value="WV">WV - West Virginia</option><option value="WI">WI - Wisconsin</option><option value="WY">WY - Wyoming</option>
+              </select>
             </div>
             <div style="flex:2">
               <label style="font-size:10px">County FIPS codes</label>
-              <input type="text" id="sepCapFips" placeholder="201, 029">
+              <input type="text" id="sepCapFips" placeholder="Blank = whole state" oninput="renderCapSetupHints()" onblur="normalizeCapFipsField()">
             </div>
+          </div>
+          <div class="cap-suggestion-row" id="sepCapStateSuggestions"></div>
+          <div class="cap-config-help" id="sepCapFipsHelp"></div>
+          <div class="cap-fips-actions">
+            <button class="btn btn-secondary" type="button" onclick="useWholeStateCapFips()">Whole State</button>
+            <button class="btn btn-secondary" type="button" onclick="normalizeCapFipsField()">Normalize FIPS</button>
           </div>
           <div>
             <label style="font-size:10px">Minimum severity</label>
@@ -22555,6 +22590,119 @@ window.closePairingModal = function() {
 };
 
 // ── Screen edit panel ────────────────────────────────────────────────────
+const CAP_STATE_LABELS = {
+  AL:'Alabama', AK:'Alaska', AZ:'Arizona', AR:'Arkansas', CA:'California', CO:'Colorado', CT:'Connecticut', DE:'Delaware',
+  DC:'District of Columbia', FL:'Florida', GA:'Georgia', HI:'Hawaii', ID:'Idaho', IL:'Illinois', IN:'Indiana', IA:'Iowa',
+  KS:'Kansas', KY:'Kentucky', LA:'Louisiana', ME:'Maine', MD:'Maryland', MA:'Massachusetts', MI:'Michigan', MN:'Minnesota',
+  MS:'Mississippi', MO:'Missouri', MT:'Montana', NE:'Nebraska', NV:'Nevada', NH:'New Hampshire', NJ:'New Jersey', NM:'New Mexico',
+  NY:'New York', NC:'North Carolina', ND:'North Dakota', OH:'Ohio', OK:'Oklahoma', OR:'Oregon', PA:'Pennsylvania', PR:'Puerto Rico',
+  RI:'Rhode Island', SC:'South Carolina', SD:'South Dakota', TN:'Tennessee', TX:'Texas', UT:'Utah', VT:'Vermont', VA:'Virginia',
+  WA:'Washington', WV:'West Virginia', WI:'Wisconsin', WY:'Wyoming',
+};
+
+const CAP_SINGLE_STATE_TIMEZONES = {
+  'America/Phoenix': 'AZ',
+  'America/Anchorage': 'AK',
+  'Pacific/Honolulu': 'HI',
+};
+
+function normalizeCapStateCode(value) {
+  const code = String(value || '').trim().toUpperCase().slice(0, 2);
+  return CAP_STATE_LABELS[code] ? code : '';
+}
+
+function capScreenContext() {
+  return _cachedScreens.find(s => s.id === editingScreenId) || null;
+}
+
+function detectCapStateFromText(value) {
+  const text = String(value || '').trim();
+  if (!text) return '';
+  for (const [code, label] of Object.entries(CAP_STATE_LABELS)) {
+    const codePattern = new RegExp(`(^|[\\s,;/(-])${code}($|[\\s,;)/.-])`, 'i');
+    if (codePattern.test(text)) return code;
+    const labelPattern = new RegExp(`(^|[\\s,;/(-])${label.replace(/\s+/g, '\\s+')}($|[\\s,;)/.-])`, 'i');
+    if (labelPattern.test(text)) return code;
+  }
+  return '';
+}
+
+function capStateSuggestions(screen = capScreenContext()) {
+  const locationState = detectCapStateFromText(document.getElementById('sepLocation')?.value || screen?.location || '');
+  if (locationState) return [{ code: locationState, reason: 'location' }];
+  const tz = document.getElementById('sepTimezone')?.value || screen?.timezone || '';
+  const timezoneState = CAP_SINGLE_STATE_TIMEZONES[tz];
+  if (timezoneState) return [{ code: timezoneState, reason: 'timezone' }];
+  return [];
+}
+
+function normalizeCapFipsToken(value) {
+  const digits = String(value || '').replace(/\D/g, '');
+  if (!digits) return '';
+  if (digits.length <= 3) return digits.padStart(3, '0');
+  if (digits.length <= 5) return digits.padStart(5, '0');
+  return digits.slice(-5);
+}
+
+function normalizeCapFipsList(value) {
+  return Array.from(new Set(String(value || '')
+    .split(',')
+    .map(normalizeCapFipsToken)
+    .filter(Boolean)
+  )).slice(0, 20);
+}
+
+window.applyCapStateSuggestion = function(code) {
+  const state = normalizeCapStateCode(code);
+  if (!state) return;
+  const stateEl = document.getElementById('sepCapState');
+  if (stateEl) stateEl.value = state;
+  renderCapSetupHints();
+};
+
+window.useWholeStateCapFips = function() {
+  const fipsEl = document.getElementById('sepCapFips');
+  if (fipsEl) fipsEl.value = '';
+  renderCapSetupHints();
+};
+
+window.normalizeCapFipsField = function() {
+  const fipsEl = document.getElementById('sepCapFips');
+  if (!fipsEl) return [];
+  const fips = normalizeCapFipsList(fipsEl.value);
+  fipsEl.value = fips.join(', ');
+  renderCapSetupHints();
+  return fips;
+};
+
+window.renderCapSetupHints = function(screen = capScreenContext()) {
+  const stateEl = document.getElementById('sepCapState');
+  const suggestionEl = document.getElementById('sepCapStateSuggestions');
+  const helpEl = document.getElementById('sepCapFipsHelp');
+  if (!stateEl || !suggestionEl || !helpEl) return;
+  const state = normalizeCapStateCode(stateEl.value);
+  if (stateEl.value && stateEl.value !== state) stateEl.value = state;
+  const suggestions = state ? [] : capStateSuggestions(screen);
+  suggestionEl.innerHTML = suggestions.length
+    ? suggestions.map(item => `<button type="button" class="cap-suggestion-chip" onclick="applyCapStateSuggestion('${escAttr(item.code)}')">Use ${escHtml(item.code)} - ${escHtml(CAP_STATE_LABELS[item.code])}</button>`).join('')
+    : '';
+  const fips = normalizeCapFipsList(document.getElementById('sepCapFips')?.value || '');
+  const stateLabel = state ? CAP_STATE_LABELS[state] : 'selected state';
+  helpEl.textContent = fips.length
+    ? `${fips.length} county code${fips.length === 1 ? '' : 's'} for ${stateLabel}. 3-digit county suffixes and 5-digit full FIPS codes are accepted.`
+    : `Blank targets the whole ${stateLabel}; add county FIPS codes only when this screen should receive county-specific alerts.`;
+};
+
+window.toggleCapConfigBody = function(checked) {
+  const body = document.getElementById('sepCapBody');
+  if (body) body.style.display = checked ? 'flex' : 'none';
+  if (!checked) return;
+  const stateEl = document.getElementById('sepCapState');
+  const suggestions = capStateSuggestions();
+  if (stateEl && !stateEl.value && suggestions.length === 1) stateEl.value = suggestions[0].code;
+  renderCapSetupHints();
+};
+
 window.openScreenEdit = function(screenId) {
   const screen = _cachedScreens.find(s => s.id === screenId);
   if (!screen) return;
@@ -22571,11 +22719,12 @@ window.openScreenEdit = function(screenId) {
   const capEnabled = !!cap.enabled;
   document.getElementById('sepCapEnabled').checked = capEnabled;
   document.getElementById('sepCapBody').style.display = capEnabled ? 'flex' : 'none';
-  document.getElementById('sepCapState').value = cap.state || '';
-  document.getElementById('sepCapFips').value = Array.isArray(cap.countyFips) ? cap.countyFips.join(', ') : '';
+  document.getElementById('sepCapState').value = normalizeCapStateCode(cap.state || '');
+  document.getElementById('sepCapFips').value = Array.isArray(cap.countyFips) ? normalizeCapFipsList(cap.countyFips.join(',')).join(', ') : '';
   document.getElementById('sepCapSeverity').value = cap.severityFloor || 'Severe';
   const capStatus = document.getElementById('sepCapTestStatus');
   if (capStatus) capStatus.textContent = '';
+  renderCapSetupHints(screen);
 
   // Working Hours
   const wh = screen.workingHours || {};
@@ -22622,10 +22771,19 @@ window.saveScreenEdit = async function() {
   const tagsRaw     = document.getElementById('sepTags').value;
   const tags        = normalizeTagsFromInput(tagsRaw);
   const capEnabled  = document.getElementById('sepCapEnabled').checked;
+  const capState    = normalizeCapStateCode(document.getElementById('sepCapState').value);
+  const capFips     = normalizeCapFipsField();
+  if (capEnabled && !capState) {
+    document.getElementById('sepCapBody').style.display = 'flex';
+    document.getElementById('sepCapState').focus();
+    renderCapSetupHints();
+    toast('Choose a CAP state before saving.', true);
+    return;
+  }
   const cap = {
     enabled: capEnabled,
-    state: document.getElementById('sepCapState').value.trim().toUpperCase().slice(0, 2),
-    countyFips: document.getElementById('sepCapFips').value.split(',').map(v => v.trim()).filter(Boolean),
+    state: capState,
+    countyFips: capFips,
     severityFloor: document.getElementById('sepCapSeverity').value || 'Severe',
   };
 

@@ -215,7 +215,8 @@ Do not trigger real public alerts casually. Use test fixtures/manual validation 
 
 | Step | Expected Result |
 |---|---|
-| Configure CAP fields on a test screen. | State, county FIPS, severity floor, and enabled state persist. |
+| Configure CAP fields on a test screen. | State selector, county FIPS normalization, severity floor, and enabled state persist. |
+| Enter 1-3 digit county FIPS values and save. | Codes are normalized to 3 digits; blank FIPS still targets the whole selected state. |
 | Use Send Test from the screen's CAP section. | A clearly marked TEST CAP overlay appears only on the targeted display and expires automatically. |
 | Use Clear Test from the same section. | The TEST overlay clears without removing real NWS alerts. |
 | Review CAP analytics view. | CAP render totals and recent rows load without permission errors. |

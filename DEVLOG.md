@@ -4,6 +4,17 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-07 — Codex — Polish CAP setup defaults
+
+Phase 5.2 follow-up for reducing CAP configuration mistakes during pilot setup.
+
+- **State selection**: replaced the free-form CAP state field with a controlled state selector and conservative state suggestion chips from location text or single-state timezones.
+- **FIPS handling**: added whole-state targeting, FIPS normalization, helper status, and server-side FIPS/state sanitization so county code input is predictable.
+- **Save validation**: CAP-enabled screens now require a valid state before saving instead of silently becoming ignored by the poller.
+- **Docs/smoke**: updated the pilot smoke harness and Phase 5.2 handoff/roadmap notes for the new setup helpers.
+
+---
+
 ## 2026-05-07 — Codex — Add CAP alert test mode
 
 Phase 5.2 polish follow-up for safer CAP validation during pilot work.

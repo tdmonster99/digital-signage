@@ -36,6 +36,11 @@ const PLAN_LIMITS = {
   pro: { usersAllowed: 10 },
 };
 const INVITE_ROLES = new Set(['admin', 'editor', 'viewer']);
+const CAP_STATE_CODES = new Set([
+  'AL','AK','AZ','AR','CA','CO','CT','DE','DC','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN',
+  'MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','PR','RI','SC','SD','TN','TX','UT','VT','VA',
+  'WA','WV','WI','WY',
+]);
 const CAP_SEVERITIES = new Set(['Minor', 'Moderate', 'Severe', 'Extreme']);
 
 function pilotSubscription(now) {
@@ -355,6 +360,24 @@ function sanitizeCapSeverity(value, fallback = 'Severe') {
   return CAP_SEVERITIES.has(severity) ? severity : fallback;
 }
 
+function sanitizeCapState(value) {
+  const state = String(value || '').trim().toUpperCase().slice(0, 2);
+  return CAP_STATE_CODES.has(state) ? state : '';
+}
+
+function normalizeCapFipsToken(value) {
+  const digits = String(value || '').replace(/\D/g, '');
+  if (!digits) return '';
+  if (digits.length <= 3) return digits.padStart(3, '0');
+  if (digits.length <= 5) return digits.padStart(5, '0');
+  return digits.slice(-5);
+}
+
+function normalizeCapFipsList(value) {
+  if (!Array.isArray(value)) return [];
+  return Array.from(new Set(value.map(normalizeCapFipsToken).filter(Boolean))).slice(0, 20);
+}
+
 function normalizeShowId(showId) {
   const id = String(showId || '').trim();
   if (!id) {
@@ -418,10 +441,8 @@ function sanitizeScreenSettingsPatch(patch = {}) {
   if (patch.cap && typeof patch.cap === 'object') {
     clean.cap = {
       enabled: patch.cap.enabled === true,
-      state: String(patch.cap.state || '').trim().toUpperCase().slice(0, 2),
-      countyFips: Array.isArray(patch.cap.countyFips)
-        ? patch.cap.countyFips.map(v => String(v || '').trim()).filter(Boolean).slice(0, 20)
-        : [],
+      state: sanitizeCapState(patch.cap.state),
+      countyFips: normalizeCapFipsList(patch.cap.countyFips),
       severityFloor: String(patch.cap.severityFloor || 'Severe').trim().slice(0, 20),
     };
     clean.cap.severityFloor = sanitizeCapSeverity(clean.cap.severityFloor);
