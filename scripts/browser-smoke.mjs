@@ -500,6 +500,15 @@ async function runReadOnlyAuthenticatedChecks(cdp) {
     return 'tags, auto-include, emergency controls present';
   });
 
+  await check('Add Media includes Google Photos', async () => {
+    await evaluate(cdp, `window.showPage('slideshows'); window.openAddMediaModal?.(); true`);
+    await waitFor(cdp, `document.querySelector('#addMediaModal.open')`, 'add media modal');
+    const labels = await evaluate(cdp, `Array.from(document.querySelectorAll('#addMediaModal .add-media-btn')).map(btn => btn.textContent.trim())`);
+    assert(labels.includes('Google Photos'), `Google Photos missing from Add Media sources: ${labels.join(', ')}`);
+    await evaluate(cdp, `window.closeAddMediaModal?.(); true`);
+    return labels.join(', ');
+  });
+
   await check('Emergency playlist manager opens', async () => {
     await evaluate(cdp, `window.showPage('screens'); window.openEmergencyPlaylistManager?.(); true`);
     await waitFor(cdp, `getComputedStyle(document.querySelector('#emergencyPlaylistManagerModal')).display !== 'none'`, 'emergency playlist manager');

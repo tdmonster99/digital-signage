@@ -37,6 +37,9 @@
     "api/cap-poll.js": {
       "maxDuration": 60
     },
+    "api/google-photos.js": {
+      "maxDuration": 60
+    },
     "api/analytics-rollup.js": {
       "maxDuration": 300
     }

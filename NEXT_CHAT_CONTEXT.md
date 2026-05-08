@@ -116,6 +116,7 @@ If any of these users land in a personal org instead of `Novares`, stop testing 
 ## Known Manual Tasks
 
 - Google Cloud OAuth verification is still a manual external task: verify `zigns.io` ownership in Search Console before branding approval can finish.
+- Google Photos import now uses the Picker API scope `https://www.googleapis.com/auth/photospicker.mediaitems.readonly`; if production returns `invalid_scope` or `access_denied`, enable the Google Photos Picker API and add the scope/test users in the same Google Cloud OAuth client used for Drive.
 - Real-device platform validation is pending user hardware availability.
 
 ## Recent Useful Commits

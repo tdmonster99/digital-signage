@@ -179,6 +179,11 @@ async function main() {
     'applyCapStateSuggestion',
     'normalizeCapFipsField',
     'sepCapStateSuggestions',
+    'addFromGooglePhotos',
+    'dashAddFromGooglePhotos',
+    'designerImageFromGooglePhotos',
+    'photospicker.googleapis.com',
+    'gphotosModal',
     'createInvitation',
     'emailSent',
     'showOptionsModal',
@@ -202,6 +207,13 @@ async function main() {
     'clearCapTestAlert',
     'Zigns Test',
     'normalizeCapFipsList',
+  ]));
+
+  await check('Static Google Photos import helper', () => assertFileContains('api/google-photos.js', [
+    'Google Photos Picker import helper',
+    'verifyIdToken',
+    'googleusercontent.com',
+    'PutObjectCommand',
   ]));
 
   await check('Static mobile hooks', () => assertFileContains('mobile.html', [
@@ -231,6 +243,7 @@ async function main() {
   await check('Static browser smoke script', () => assertFileContains('scripts/browser-smoke.mjs', [
     'Zigns browser smoke',
     'Slideshow tags modal opens',
+    'Add Media includes Google Photos',
     'Slideshow CRUD smoke',
   ]));
 

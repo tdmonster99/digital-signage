@@ -154,6 +154,7 @@ Role checks:
 | Create a new slideshow. | It appears in the slideshow list and can be selected. |
 | Rename the slideshow. | New name persists after refresh. |
 | Add an image slide. | Slide appears in the grid and preview. |
+| Add media from Google Photos, if the test Google account has a few disposable photos. | Google Photos picker opens, selected photos/videos import into the slideshow, and imported items appear in the media library. |
 | Design a slide from a template or blank canvas. | Slide saves as draft and appears in the grid. |
 | Change one slide duration. | Duration value persists after navigation/refresh. |
 | Save slideshow settings. | Dwell, fit mode, transition type, and speed save cleanly. |

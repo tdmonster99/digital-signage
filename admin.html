@@ -891,7 +891,7 @@ section.content {
   color: var(--muted); padding: 14px 22px 6px;
 }
 .add-media-grid {
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 0 22px 14px;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(82px, 1fr)); gap: 8px; padding: 0 22px 14px;
 }
 .add-media-btn {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -1144,6 +1144,53 @@ section.content {
 }
 .gdrive-btn-select:hover:not(:disabled) { background: #1557b0; }
 .gdrive-btn-select:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ── Google Photos import status modal ──────────────────────────────────── */
+#gphotosModal {
+  display: none; position: fixed; inset: 0; z-index: 610;
+  background: rgba(0,0,0,0.55); backdrop-filter: blur(4px);
+  align-items: center; justify-content: center; padding: 20px;
+}
+#gphotosModal.open { display: flex; }
+.gphotos-box {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+  width: min(480px, 96vw); box-shadow: 0 8px 48px rgba(0,0,0,0.22);
+  overflow: hidden;
+}
+.gphotos-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 18px 22px 14px; border-bottom: 1px solid var(--border);
+}
+.gphotos-head h3 { font-size: 15px; font-weight: 700; flex: 1; margin: 0; color: var(--text); }
+.gphotos-head-close {
+  background: none; border: none; cursor: pointer; color: var(--muted);
+  padding: 4px; border-radius: 6px; display: flex; align-items: center;
+}
+.gphotos-head-close:hover { color: var(--text); background: var(--surface2); }
+.gphotos-body { padding: 22px; display: flex; flex-direction: column; gap: 14px; }
+.gphotos-status { color: var(--text); font-size: 14px; line-height: 1.5; }
+.gphotos-substatus { color: var(--muted); font-size: 12px; line-height: 1.5; }
+.gphotos-progress {
+  height: 4px; background: var(--border); border-radius: 999px; overflow: hidden;
+}
+.gphotos-progress div {
+  width: 38%; height: 100%; background: #4285f4; border-radius: 999px;
+  animation: gphotosSlide 1.15s ease-in-out infinite;
+}
+@keyframes gphotosSlide {
+  0% { transform: translateX(-110%); }
+  100% { transform: translateX(280%); }
+}
+.gphotos-open-link {
+  display: none; align-items: center; justify-content: center;
+  padding: 9px 14px; border-radius: 8px; background: #1a73e8; color: #fff;
+  font-size: 13px; font-weight: 600; text-decoration: none;
+}
+.gphotos-open-link.visible { display: inline-flex; }
+.gphotos-foot {
+  display: flex; justify-content: flex-end; gap: 10px;
+  padding: 14px 22px; border-top: 1px solid var(--border);
+}
 
 /* ── Canva import modal ──────────────────────────────────────────────────── */
 #canvaModal {
@@ -6435,12 +6482,12 @@ body.role-editor .admin-action {
 
       <!-- Upload from device -->
       <div class="add-media-section-label">Upload from</div>
-      <div class="add-media-grid" style="grid-template-columns:repeat(5,1fr)">
+      <div class="add-media-grid">
         <button class="add-media-btn" onclick="document.getElementById('dashFileInput').click()">
           <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
           My Device
         </button>
-        <button class="add-media-btn" onclick="dashGoToShow();setTimeout(()=>gdriveOpen('slides'),80)">
+        <button class="add-media-btn" onclick="dashAddFromGoogleDrive()">
           <svg width="26" height="26" viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg" style="height:26px;width:auto">
             <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
             <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0-1.2 4.5h27.5z" fill="#00ac47"/>
@@ -6450,6 +6497,17 @@ body.role-editor .admin-action {
             <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 27h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
           </svg>
           Google Drive
+        </button>
+        <button class="add-media-btn" onclick="dashAddFromGooglePhotos()">
+          <span class="provider-logo" aria-hidden="true">
+            <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+              <path d="M24 4c-4.4 0-8 3.6-8 8v8h8c4.4 0 8-3.6 8-8s-3.6-8-8-8z" fill="#4285f4"/>
+              <path d="M44 24c0-4.4-3.6-8-8-8h-8v8c0 4.4 3.6 8 8 8s8-3.6 8-8z" fill="#34a853"/>
+              <path d="M24 44c4.4 0 8-3.6 8-8v-8h-8c-4.4 0-8 3.6-8 8s3.6 8 8 8z" fill="#fbbc04"/>
+              <path d="M4 24c0 4.4 3.6 8 8 8h8v-8c0-4.4-3.6-8-8-8s-8 3.6-8 8z" fill="#ea4335"/>
+            </svg>
+          </span>
+          Google Photos
         </button>
         <button class="add-media-btn" onclick="dashGoToShow();setTimeout(()=>_openOneDrivePicker('slides'),80)">
           <span class="provider-logo" aria-hidden="true">
@@ -6532,6 +6590,17 @@ body.role-editor .admin-action {
             <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
           </svg>
           Google Drive
+        </button>
+        <button class="add-media-btn" onclick="closeAddMediaModal();addFromGooglePhotos()">
+          <span class="provider-logo" aria-hidden="true">
+            <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+              <path d="M24 4c-4.4 0-8 3.6-8 8v8h8c4.4 0 8-3.6 8-8s-3.6-8-8-8z" fill="#4285f4"/>
+              <path d="M44 24c0-4.4-3.6-8-8-8h-8v8c0 4.4 3.6 8 8 8s8-3.6 8-8z" fill="#34a853"/>
+              <path d="M24 44c4.4 0 8-3.6 8-8v-8h-8c-4.4 0-8 3.6-8 8s3.6 8 8 8z" fill="#fbbc04"/>
+              <path d="M4 24c0 4.4 3.6 8 8 8h8v-8c0-4.4-3.6-8-8-8s-8 3.6-8 8z" fill="#ea4335"/>
+            </svg>
+          </span>
+          Google Photos
         </button>
         <button class="add-media-btn" onclick="closeAddMediaModal();addFromOneDrive()">
           <span class="provider-logo" aria-hidden="true">
@@ -6651,6 +6720,37 @@ body.role-editor .admin-action {
         <span class="gdrive-foot-count" id="gdriveCount">No files selected</span>
         <button class="btn btn-secondary" onclick="gdriveClose()">Cancel</button>
         <button class="gdrive-btn-select" id="gdriveSelectBtn" onclick="gdriveImport()" disabled>Select</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Google Photos import status modal -->
+  <div id="gphotosModal" onclick="if(event.target===this)gphotosCancel()">
+    <div class="gphotos-box">
+      <div class="gphotos-head">
+        <span class="provider-logo provider-logo-sm" aria-hidden="true">
+          <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+            <path d="M24 4c-4.4 0-8 3.6-8 8v8h8c4.4 0 8-3.6 8-8s-3.6-8-8-8z" fill="#4285f4"/>
+            <path d="M44 24c0-4.4-3.6-8-8-8h-8v8c0 4.4 3.6 8 8 8s8-3.6 8-8z" fill="#34a853"/>
+            <path d="M24 44c4.4 0 8-3.6 8-8v-8h-8c-4.4 0-8 3.6-8 8s3.6 8 8 8z" fill="#fbbc04"/>
+            <path d="M4 24c0 4.4 3.6 8 8 8h8v-8c0-4.4-3.6-8-8-8s-8 3.6-8 8z" fill="#ea4335"/>
+          </svg>
+        </span>
+        <h3>Import from Google Photos</h3>
+        <button class="gphotos-head-close" onclick="gphotosCancel()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="gphotos-body">
+        <div class="gphotos-status" id="gphotosStatus">Connecting to Google Photos...</div>
+        <div class="gphotos-substatus" id="gphotosSubstatus">A Google Photos picker window will open.</div>
+        <div class="gphotos-progress" id="gphotosProgress"><div></div></div>
+        <a id="gphotosOpenLink" class="gphotos-open-link" href="#" target="_blank" rel="noopener">Open Google Photos</a>
+      </div>
+      <div class="gphotos-foot">
+        <button class="btn btn-secondary" onclick="gphotosCancel()">Cancel</button>
       </div>
     </div>
   </div>
@@ -7599,6 +7699,17 @@ body.role-editor .admin-action {
               <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
             </svg>
             From Google Drive
+          </button>
+          <button class="popover-item" onclick="designerImageFromGooglePhotos()">
+            <span class="provider-logo provider-logo-sm" aria-hidden="true">
+              <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                <path d="M24 4c-4.4 0-8 3.6-8 8v8h8c4.4 0 8-3.6 8-8s-3.6-8-8-8z" fill="#4285f4"/>
+                <path d="M44 24c0-4.4-3.6-8-8-8h-8v8c0 4.4 3.6 8 8 8s8-3.6 8-8z" fill="#34a853"/>
+                <path d="M24 44c4.4 0 8-3.6 8-8v-8h-8c-4.4 0-8 3.6-8 8s3.6 8 8 8z" fill="#fbbc04"/>
+                <path d="M4 24c0 4.4 3.6 8 8 8h8v-8c0-4.4-3.6-8-8-8s-8 3.6-8 8z" fill="#ea4335"/>
+              </svg>
+            </span>
+            From Google Photos
           </button>
           <button class="popover-item" onclick="designerImageFromOneDrive()">
             <span class="provider-logo provider-logo-sm" aria-hidden="true">
@@ -13575,6 +13686,289 @@ window.addFromGoogleDrive = function() {
   });
 };
 
+window.dashAddFromGoogleDrive = function() {
+  if (!dashGoToShow()) return;
+  setTimeout(() => addFromGoogleDrive(), 120);
+};
+
+// ── Google Photos import ──────────────────────────────────────────────────
+const GPHOTOS_SCOPE = 'https://www.googleapis.com/auth/photospicker.mediaitems.readonly';
+const GPHOTOS_API   = 'https://photospicker.googleapis.com/v1';
+const GPHOTOS_MAX_ITEMS = 50;
+
+let _gpToken = null;
+let _gpMode = 'slides';
+let _gpSessionId = null;
+let _gpCancelRequested = false;
+
+function _gpAuth(callback) {
+  if (typeof google === 'undefined' || !google.accounts?.oauth2) {
+    toast('Google Identity Services not loaded. Please refresh the page.', true);
+    return;
+  }
+  google.accounts.oauth2.initTokenClient({
+    client_id: GDRIVE_CLIENT_ID,
+    scope: GPHOTOS_SCOPE,
+    callback,
+  }).requestAccessToken();
+}
+
+function _gpDurationMs(value, fallbackMs) {
+  if (typeof value !== 'string' || !value.endsWith('s')) return fallbackMs;
+  const seconds = Number.parseFloat(value.slice(0, -1));
+  return Number.isFinite(seconds) ? Math.max(0, Math.round(seconds * 1000)) : fallbackMs;
+}
+
+function _gpSleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function _gpPickerUri(uri) {
+  return `${String(uri || '').replace(/\/+$/, '')}/autoclose`;
+}
+
+function _gpUpdateStatus(status, substatus = '', busy = true, pickerUrl = '') {
+  const modal = document.getElementById('gphotosModal');
+  const statusEl = document.getElementById('gphotosStatus');
+  const subEl = document.getElementById('gphotosSubstatus');
+  const progress = document.getElementById('gphotosProgress');
+  const link = document.getElementById('gphotosOpenLink');
+  if (modal) modal.classList.add('open');
+  if (statusEl) statusEl.textContent = status;
+  if (subEl) subEl.textContent = substatus || '';
+  if (progress) progress.style.display = busy ? '' : 'none';
+  if (link) {
+    link.href = pickerUrl || '#';
+    link.classList.toggle('visible', Boolean(pickerUrl));
+  }
+}
+
+function _gpCloseModal() {
+  document.getElementById('gphotosModal')?.classList.remove('open');
+  document.getElementById('gphotosOpenLink')?.classList.remove('visible');
+}
+
+async function _gpFetchJson(url, options = {}) {
+  const headers = {
+    Authorization: `Bearer ${_gpToken}`,
+    ...(options.headers || {}),
+  };
+  if (options.body && !headers['Content-Type']) headers['Content-Type'] = 'application/json';
+  const res = await fetch(url, { ...options, headers });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    const msg = data?.error?.message || data?.error || `Google Photos API ${res.status}`;
+    throw new Error(msg);
+  }
+  if (res.status === 204) return {};
+  return res.json();
+}
+
+async function _gpCreateSession(maxItems) {
+  const requestId = crypto.randomUUID();
+  const session = await _gpFetchJson(`${GPHOTOS_API}/sessions?requestId=${encodeURIComponent(requestId)}`, {
+    method: 'POST',
+    body: JSON.stringify({ pickingConfig: { maxItemCount: String(maxItems) } }),
+  });
+  if (!session?.id || !session?.pickerUri) throw new Error('Google Photos did not return a picker session.');
+  return session;
+}
+
+async function _gpDeleteSession(sessionId) {
+  if (!sessionId || !_gpToken) return;
+  await _gpFetchJson(`${GPHOTOS_API}/sessions/${encodeURIComponent(sessionId)}`, { method: 'DELETE' }).catch(() => {});
+}
+
+async function _gpWaitForSelection(session) {
+  let current = session;
+  const maxDeadline = Date.now() + 10 * 60 * 1000;
+  let deadline = Date.now() + _gpDurationMs(current.pollingConfig?.timeoutIn, 5 * 60 * 1000);
+
+  while (!_gpCancelRequested) {
+    if (current.mediaItemsSet) return current;
+    const timeoutIn = _gpDurationMs(current.pollingConfig?.timeoutIn, 5 * 60 * 1000);
+    if (timeoutIn === 0 || Date.now() > deadline || Date.now() > maxDeadline) {
+      throw new Error('Google Photos selection timed out.');
+    }
+    const interval = Math.min(10000, Math.max(1000, _gpDurationMs(current.pollingConfig?.pollInterval, 3000)));
+    await _gpSleep(interval);
+    current = await _gpFetchJson(`${GPHOTOS_API}/sessions/${encodeURIComponent(session.id)}`);
+    if (current.pollingConfig?.timeoutIn) {
+      deadline = Math.min(maxDeadline, Date.now() + _gpDurationMs(current.pollingConfig.timeoutIn, 5 * 60 * 1000));
+    }
+  }
+  throw new Error('Google Photos import cancelled.');
+}
+
+async function _gpListMediaItems(sessionId) {
+  const items = [];
+  let pageToken = '';
+  do {
+    const url = new URL(`${GPHOTOS_API}/mediaItems`);
+    url.searchParams.set('sessionId', sessionId);
+    url.searchParams.set('pageSize', '100');
+    if (pageToken) url.searchParams.set('pageToken', pageToken);
+    const data = await _gpFetchJson(url.toString());
+    items.push(...(data.mediaItems || []));
+    pageToken = data.nextPageToken || '';
+  } while (pageToken);
+  return items;
+}
+
+function _gpNormalizePickedItem(item) {
+  const mediaFile = item?.mediaFile || {};
+  const mimeType = String(mediaFile.mimeType || '').toLowerCase();
+  const type = item?.type === 'VIDEO' || mimeType.startsWith('video/') ? 'video' : 'image';
+  const filename = mediaFile.filename || (type === 'video' ? 'Google Photos video.mp4' : 'Google Photos image.jpg');
+  const videoStatus = mediaFile.mediaFileMetadata?.videoMetadata?.processingStatus || '';
+  return {
+    id: item?.id || '',
+    baseUrl: mediaFile.baseUrl || '',
+    filename,
+    mimeType: mediaFile.mimeType || '',
+    mediaType: type,
+    videoStatus,
+  };
+}
+
+async function _gpImportViaServer(item) {
+  if (!auth.currentUser) throw new Error('Sign in first.');
+  const picked = _gpNormalizePickedItem(item);
+  if (!picked.baseUrl) throw new Error('Selected media is missing a download URL.');
+  if (picked.mediaType === 'video' && picked.videoStatus && picked.videoStatus !== 'READY') {
+    throw new Error('This video is still processing in Google Photos.');
+  }
+  const idToken = await auth.currentUser.getIdToken();
+  const res = await fetch('/api/google-photos', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      idToken,
+      accessToken: _gpToken,
+      baseUrl: picked.baseUrl,
+      filename: picked.filename,
+      mimeType: picked.mimeType,
+      type: picked.mediaType,
+    }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || data.ok !== true) throw new Error(data.error || `Google Photos import failed (${res.status})`);
+  return data;
+}
+
+async function _gpImportItems(items) {
+  const mode = _gpMode;
+  if (mode !== 'canvas') {
+    toast(`Importing ${items.length} item${items.length !== 1 ? 's' : ''} from Google Photos...`);
+  }
+  let added = 0;
+
+  for (let i = 0; i < items.length; i++) {
+    if (_gpCancelRequested) break;
+    const picked = _gpNormalizePickedItem(items[i]);
+    try {
+      if (mode === 'canvas' && picked.mediaType !== 'image') {
+        throw new Error('Only photos can be added to the designer.');
+      }
+      _gpUpdateStatus(
+        `Importing ${i + 1}/${items.length} from Google Photos...`,
+        picked.filename,
+        true
+      );
+      const imported = await _gpImportViaServer(items[i]);
+      const displayName = (imported.name || picked.filename || 'Google Photos item').replace(/\.[^.]+$/, '');
+
+      if (mode === 'canvas') {
+        await addImageToCanvas(imported.url);
+        saveMediaRecord(imported.url, displayName, 'image', imported.key);
+        added++;
+      } else {
+        const mediaType = imported.mediaType === 'video' ? 'video' : 'image';
+        const slide = { id: crypto.randomUUID(), url: imported.url, name: displayName, active: true };
+        if (mediaType === 'video') slide.type = 'video';
+        slides.push(slide);
+        saveMediaRecord(imported.url, displayName, mediaType, imported.key);
+        added++;
+      }
+    } catch (err) {
+      toast(`Could not import "${picked.filename}": ${err.message}`, true);
+    }
+  }
+
+  if (added) {
+    if (mode === 'canvas') {
+      toast('Image added from Google Photos ✓');
+    } else {
+      renderGrid(); updateCount();
+      await pushToFirestore();
+      toast(`Added ${added} item${added !== 1 ? 's' : ''} from Google Photos ✓`);
+    }
+  }
+}
+
+async function _gpStart(mode = 'slides') {
+  if (!auth.currentUser) { toast('Sign in first to import from Google Photos.', true); return; }
+  _gpMode = mode;
+  _gpCancelRequested = false;
+  _gpSessionId = null;
+  _gpUpdateStatus('Connecting to Google Photos...', 'A Google Photos picker window will open.');
+
+  _gpAuth(async resp => {
+    if (resp.error) {
+      _gpCloseModal();
+      toast('Google Photos sign-in failed: ' + resp.error, true);
+      return;
+    }
+    _gpToken = resp.access_token;
+    if (_gpCancelRequested) return;
+    try {
+      const maxItems = mode === 'canvas' ? 1 : GPHOTOS_MAX_ITEMS;
+      const session = await _gpCreateSession(maxItems);
+      _gpSessionId = session.id;
+      const pickerUrl = _gpPickerUri(session.pickerUri);
+      _gpUpdateStatus('Select media in Google Photos.', 'Waiting for your selection...', true, pickerUrl);
+      const popup = window.open(pickerUrl, 'zignsGooglePhotosPicker', 'width=1120,height=780');
+      if (!popup) {
+        _gpUpdateStatus('Open Google Photos to continue.', 'Your browser blocked the picker window.', true, pickerUrl);
+      }
+
+      const completedSession = await _gpWaitForSelection(session);
+      if (_gpCancelRequested) return;
+      _gpUpdateStatus('Reading your Google Photos selection...', '', true);
+      const items = await _gpListMediaItems(completedSession.id || session.id);
+      if (!items.length) {
+        toast('No Google Photos items selected.');
+        return;
+      }
+      await _gpImportItems(items);
+    } catch (err) {
+      if (!_gpCancelRequested) toast('Google Photos import failed: ' + err.message, true);
+    } finally {
+      const sessionId = _gpSessionId;
+      _gpSessionId = null;
+      await _gpDeleteSession(sessionId);
+      if (!_gpCancelRequested) _gpCloseModal();
+    }
+  });
+}
+
+window.addFromGooglePhotos = function(mode = 'slides') {
+  _gpStart(mode);
+};
+
+window.dashAddFromGooglePhotos = function() {
+  if (!dashGoToShow()) return;
+  setTimeout(() => addFromGooglePhotos(), 120);
+};
+
+window.gphotosCancel = function() {
+  _gpCancelRequested = true;
+  const sessionId = _gpSessionId;
+  _gpSessionId = null;
+  _gpDeleteSession(sessionId);
+  _gpCloseModal();
+};
+
 // ── OneDrive import ───────────────────────────────────────────────────────
 const AZURE_CLIENT_ID = '0eb0c0a8-0308-483b-b87e-580b1234575b';
 let _msalInstance = null;
@@ -16393,6 +16787,11 @@ window.designerImageFromGoogleDrive = function() {
     if (resp.error) { toast('Google sign-in failed: ' + resp.error, true); return; }
     gdriveOpen(resp.access_token, 'canvas');
   });
+};
+
+window.designerImageFromGooglePhotos = function() {
+  document.getElementById('imagePopover').classList.remove('open');
+  addFromGooglePhotos('canvas');
 };
 
 window.designerImageFromOneDrive = function() {

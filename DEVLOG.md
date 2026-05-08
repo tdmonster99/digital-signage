@@ -4,6 +4,14 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-08 — Codex — Add Google Photos import
+
+Added Google Photos as a first-class media source alongside Google Drive.
+
+- **Picker flow**: added Google Photos buttons in dashboard upload, slideshow Add Media, and the designer image picker using the Google Photos Picker API session flow.
+- **Media import**: added authenticated `/api/google-photos` to stream selected Picker media into S3/CloudFront, supporting photo slides, video slides, and designer photo insertion.
+- **Smoke/docs**: updated static/browser smoke coverage and pilot smoke docs; Google Cloud must have the Photos Picker API and `photospicker.mediaitems.readonly` scope enabled for production OAuth.
+
 ## 2026-05-07 — Codex — Polish CAP setup defaults
 
 Phase 5.2 follow-up for reducing CAP configuration mistakes during pilot setup.
