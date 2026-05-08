@@ -4,6 +4,14 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-08 — Codex — Polish Photos picker and slideshow rename
+
+Follow-up after first Google Photos pilot test.
+
+- **Google Photos UX**: changed the import flow to keep users anchored in the Zigns modal with Sign in / Select Media steps, then opens the Photos picker directly from the Select Media click to avoid popup-blocked fallback friction.
+- **Slideshow rename**: routed slideshow name changes through the server-backed slideshow metadata API so renamed shows persist across logout/reload under production Firestore rules.
+- **Smoke**: extended static smoke markers for the new Photos modal steps.
+
 ## 2026-05-08 — Codex — Add Google Photos import
 
 Added Google Photos as a first-class media source alongside Google Drive.

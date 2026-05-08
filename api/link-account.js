@@ -338,6 +338,9 @@ function sanitizePublishPatch(patch = {}) {
 
 function sanitizeSlideshowMetadataPatch(patch = {}, role = 'viewer') {
   const clean = {};
+  if (Object.prototype.hasOwnProperty.call(patch, 'name')) {
+    clean.name = sanitizeSlideshowName(patch.name);
+  }
   if (Object.prototype.hasOwnProperty.call(patch, 'tags')) {
     clean.tags = normalizeTags(patch.tags);
   }
@@ -1421,8 +1424,8 @@ module.exports = async function handler(req, res) {
         }
 
         const existingMeta = existingShows.find(show => show && show.id === showId) || {};
-        const name = existingMeta.name || showData?.name || 'Untitled Slideshow';
-        const nextShow = { id: showId, name, ...existingMeta, ...cleanPatch };
+        const name = cleanPatch.name || existingMeta.name || showData?.name || 'Untitled Slideshow';
+        const nextShow = { id: showId, ...existingMeta, ...cleanPatch, name };
         const nextShows = existingShows.some(show => show && show.id === showId)
           ? existingShows.map(show => show && show.id === showId ? { ...show, ...cleanPatch } : show)
           : [...existingShows, nextShow];

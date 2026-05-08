@@ -1187,6 +1187,15 @@ section.content {
   font-size: 13px; font-weight: 600; text-decoration: none;
 }
 .gphotos-open-link.visible { display: inline-flex; }
+.gphotos-primary-btn {
+  display: none; align-items: center; justify-content: center; gap: 10px;
+  padding: 13px 18px; border-radius: 10px; border: none;
+  background: #1a73e8; color: #fff; font-family: 'DM Sans', sans-serif;
+  font-size: 15px; font-weight: 700; cursor: pointer;
+}
+.gphotos-primary-btn:hover { background: #1557b0; }
+.gphotos-primary-btn.visible { display: inline-flex; }
+.gphotos-primary-btn svg { flex-shrink: 0; }
 .gphotos-foot {
   display: flex; justify-content: flex-end; gap: 10px;
   padding: 14px 22px; border-top: 1px solid var(--border);
@@ -6746,7 +6755,25 @@ body.role-editor .admin-action {
       <div class="gphotos-body">
         <div class="gphotos-status" id="gphotosStatus">Connecting to Google Photos...</div>
         <div class="gphotos-substatus" id="gphotosSubstatus">A Google Photos picker window will open.</div>
-        <div class="gphotos-progress" id="gphotosProgress"><div></div></div>
+        <div class="gphotos-progress" id="gphotosProgress" style="display:none"><div></div></div>
+        <button class="gphotos-primary-btn" id="gphotosAuthBtn" onclick="gphotosSignIn()">
+          <span class="provider-logo provider-logo-sm" aria-hidden="true">
+            <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+              <path d="M24 4c-4.4 0-8 3.6-8 8v8h8c4.4 0 8-3.6 8-8s-3.6-8-8-8z" fill="#4285f4"/>
+              <path d="M44 24c0-4.4-3.6-8-8-8h-8v8c0 4.4 3.6 8 8 8s8-3.6 8-8z" fill="#34a853"/>
+              <path d="M24 44c4.4 0 8-3.6 8-8v-8h-8c-4.4 0-8 3.6-8 8s3.6 8 8 8z" fill="#fbbc04"/>
+              <path d="M4 24c0 4.4 3.6 8 8 8h8v-8c0-4.4-3.6-8-8-8s-8 3.6-8 8z" fill="#ea4335"/>
+            </svg>
+          </span>
+          Sign in with Google Photos
+        </button>
+        <button class="gphotos-primary-btn" id="gphotosSelectBtn" onclick="gphotosSelectMedia()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+          Select Media
+        </button>
         <a id="gphotosOpenLink" class="gphotos-open-link" href="#" target="_blank" rel="noopener">Open Google Photos</a>
       </div>
       <div class="gphotos-foot">
@@ -11689,13 +11716,23 @@ function makeShowItem(s) {
 
 async function saveShowRename(id, newName) {
   if (!currentOrgId || !newName.trim()) return;
-  const shows = (currentOrg.slideshows || []).map(s => s.id === id ? { ...s, name: newName.trim() } : s);
-  await updateDoc(doc(db, 'organizations', currentOrgId), { slideshows: shows });
-  currentOrg.slideshows = shows;
+  const cleanName = newName.trim().replace(/\s+/g, ' ').slice(0, 80) || 'Untitled Slideshow';
+  const result = await callAccountApi('saveSlideshowMetadata', {
+    showId: id,
+    patch: { name: cleanName },
+  });
+  const shows = Array.isArray(result.slideshows)
+    ? result.slideshows
+    : (currentOrg?.slideshows || []).map(s => s.id === id ? { ...s, name: cleanName } : s);
+  currentOrg = { ...(currentOrg || {}), slideshows: shows };
+  const itemName = document.querySelector(`.show-item[data-id="${CSS.escape(id)}"] .show-item-name`);
+  if (itemName) itemName.textContent = cleanName;
   if (currentShowId === id) {
-    currentShowName = newName.trim();
-    document.getElementById('showTitle').textContent = newName.trim();
+    currentShowName = cleanName;
+    document.getElementById('showTitle').textContent = cleanName;
   }
+  syncPreviewSelect();
+  return result;
 }
 
 function startListItemRename(id, item) {
@@ -11711,7 +11748,15 @@ function startListItemRename(id, item) {
     const span = document.createElement('span');
     span.className = 'show-item-name'; span.textContent = newName;
     input.replaceWith(span);
-    if (newName !== original) await saveShowRename(id, newName);
+    if (newName !== original) {
+      try {
+        await saveShowRename(id, newName);
+      } catch(e) {
+        span.textContent = original;
+        if (currentShowId === id) document.getElementById('showTitle').textContent = original;
+        toast('Could not rename slideshow: ' + e.message, true);
+      }
+    }
   };
   input.addEventListener('blur', finish);
   input.addEventListener('keydown', e => { if (e.key === 'Enter') input.blur(); if (e.key === 'Escape') { input.value = original; input.blur(); } });
@@ -11729,9 +11774,12 @@ window.startTitleRename = function() {
     const newH2 = document.createElement('h2'); newH2.id = 'showTitle'; newH2.textContent = newName;
     input.replaceWith(newH2);
     if (newName !== original) {
-      await saveShowRename(currentShowId, newName);
-      const listItem = document.querySelector(`.show-item[data-id="${CSS.escape(currentShowId)}"] .show-item-name`);
-      if (listItem) listItem.textContent = newName;
+      try {
+        await saveShowRename(currentShowId, newName);
+      } catch(e) {
+        newH2.textContent = original;
+        toast('Could not rename slideshow: ' + e.message, true);
+      }
     }
   };
   input.addEventListener('blur', finish);
@@ -13727,25 +13775,51 @@ function _gpPickerUri(uri) {
   return `${String(uri || '').replace(/\/+$/, '')}/autoclose`;
 }
 
-function _gpUpdateStatus(status, substatus = '', busy = true, pickerUrl = '') {
-  const modal = document.getElementById('gphotosModal');
-  const statusEl = document.getElementById('gphotosStatus');
-  const subEl = document.getElementById('gphotosSubstatus');
-  const progress = document.getElementById('gphotosProgress');
+function _gpSetActions({ auth = false, select = false, pickerUrl = '' } = {}) {
+  const authBtn = document.getElementById('gphotosAuthBtn');
+  const selectBtn = document.getElementById('gphotosSelectBtn');
   const link = document.getElementById('gphotosOpenLink');
-  if (modal) modal.classList.add('open');
-  if (statusEl) statusEl.textContent = status;
-  if (subEl) subEl.textContent = substatus || '';
-  if (progress) progress.style.display = busy ? '' : 'none';
+  if (authBtn) authBtn.classList.toggle('visible', auth);
+  if (selectBtn) selectBtn.classList.toggle('visible', select);
   if (link) {
     link.href = pickerUrl || '#';
     link.classList.toggle('visible', Boolean(pickerUrl));
   }
 }
 
+function _gpUpdateStatus(status, substatus = '', busy = true, pickerUrl = '') {
+  const modal = document.getElementById('gphotosModal');
+  const statusEl = document.getElementById('gphotosStatus');
+  const subEl = document.getElementById('gphotosSubstatus');
+  const progress = document.getElementById('gphotosProgress');
+  if (modal) modal.classList.add('open');
+  if (statusEl) statusEl.textContent = status;
+  if (subEl) subEl.textContent = substatus || '';
+  if (progress) progress.style.display = busy ? '' : 'none';
+  _gpSetActions({ pickerUrl });
+}
+
+function _gpShowAuthPrompt() {
+  _gpUpdateStatus(
+    'Please authenticate with Google Photos to select files.',
+    'Zigns will only import the photos and videos you choose.',
+    false
+  );
+  _gpSetActions({ auth: true });
+}
+
+function _gpShowReadyPrompt() {
+  _gpUpdateStatus(
+    'Google Photos is connected.',
+    'Choose Select Media to open the Google Photos picker.',
+    false
+  );
+  _gpSetActions({ select: true });
+}
+
 function _gpCloseModal() {
   document.getElementById('gphotosModal')?.classList.remove('open');
-  document.getElementById('gphotosOpenLink')?.classList.remove('visible');
+  _gpSetActions();
 }
 
 async function _gpFetchJson(url, options = {}) {
@@ -13911,8 +13985,14 @@ async function _gpStart(mode = 'slides') {
   _gpMode = mode;
   _gpCancelRequested = false;
   _gpSessionId = null;
-  _gpUpdateStatus('Connecting to Google Photos...', 'A Google Photos picker window will open.');
+  if (_gpToken) _gpShowReadyPrompt();
+  else _gpShowAuthPrompt();
+}
 
+window.gphotosSignIn = function() {
+  _gpCancelRequested = false;
+  _gpSessionId = null;
+  _gpUpdateStatus('Connecting to Google Photos...', 'Choose your Google account in the secure Google window.');
   _gpAuth(async resp => {
     if (resp.error) {
       _gpCloseModal();
@@ -13921,14 +14001,34 @@ async function _gpStart(mode = 'slides') {
     }
     _gpToken = resp.access_token;
     if (_gpCancelRequested) return;
+    _gpShowReadyPrompt();
+  });
+};
+
+window.gphotosSelectMedia = async function() {
+  if (!_gpToken) { window.gphotosSignIn(); return; }
+  _gpCancelRequested = false;
+  _gpSessionId = null;
+  let pickerWindow = null;
+  let keepModalOpen = false;
+  try {
+    pickerWindow = window.open('about:blank', 'zignsGooglePhotosPicker', 'width=1120,height=780');
     try {
-      const maxItems = mode === 'canvas' ? 1 : GPHOTOS_MAX_ITEMS;
+      if (pickerWindow) {
+        pickerWindow.document.title = 'Opening Google Photos...';
+        pickerWindow.document.body.innerHTML = '<p style="font-family:sans-serif;padding:32px;color:#444">Opening Google Photos...</p>';
+      }
+    } catch (_) {}
+
+    try {
+      const maxItems = _gpMode === 'canvas' ? 1 : GPHOTOS_MAX_ITEMS;
       const session = await _gpCreateSession(maxItems);
       _gpSessionId = session.id;
       const pickerUrl = _gpPickerUri(session.pickerUri);
-      _gpUpdateStatus('Select media in Google Photos.', 'Waiting for your selection...', true, pickerUrl);
-      const popup = window.open(pickerUrl, 'zignsGooglePhotosPicker', 'width=1120,height=780');
-      if (!popup) {
+      if (pickerWindow && !pickerWindow.closed) {
+        pickerWindow.location.href = pickerUrl;
+        _gpUpdateStatus('Select media in Google Photos.', 'Waiting for your selection...');
+      } else {
         _gpUpdateStatus('Open Google Photos to continue.', 'Your browser blocked the picker window.', true, pickerUrl);
       }
 
@@ -13942,15 +14042,27 @@ async function _gpStart(mode = 'slides') {
       }
       await _gpImportItems(items);
     } catch (err) {
-      if (!_gpCancelRequested) toast('Google Photos import failed: ' + err.message, true);
+      if (!_gpCancelRequested) {
+        keepModalOpen = true;
+        try {
+          if (pickerWindow && !pickerWindow.closed && pickerWindow.location.href === 'about:blank') pickerWindow.close();
+        } catch (_) {}
+        if (/401|unauthorized|invalid.*token/i.test(err.message || '')) _gpToken = null;
+        toast('Google Photos import failed: ' + err.message, true);
+        if (!_gpToken) _gpShowAuthPrompt();
+        else _gpShowReadyPrompt();
+      }
     } finally {
       const sessionId = _gpSessionId;
       _gpSessionId = null;
       await _gpDeleteSession(sessionId);
-      if (!_gpCancelRequested) _gpCloseModal();
+      if (!_gpCancelRequested && !keepModalOpen) _gpCloseModal();
     }
-  });
-}
+  } catch (err) {
+    toast('Could not open Google Photos: ' + err.message, true);
+    _gpShowReadyPrompt();
+  }
+};
 
 window.addFromGooglePhotos = function(mode = 'slides') {
   _gpStart(mode);
