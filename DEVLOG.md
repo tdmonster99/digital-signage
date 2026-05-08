@@ -4,6 +4,14 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-08 — Codex — Guard slideshow rename slide loading
+
+Follow-up after a rename appeared to temporarily show empty slideshow contents.
+
+- **Rename safety**: name-only slideshow renames no longer create a missing parent slideshow document, avoiding incomplete metadata that can hide existing subcollection slides.
+- **Slide loading**: admin and server snapshot loaders now probe slide subcollections for unmarked parent metadata docs, and slide counts prefer loaded slide payloads when available.
+- **Smoke**: added static coverage for the slideshow metadata safety guard.
+
 ## 2026-05-08 — Codex — Polish Photos picker and slideshow rename
 
 Follow-up after first Google Photos pilot test.

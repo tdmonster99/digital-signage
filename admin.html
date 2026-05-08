@@ -11180,12 +11180,30 @@ function hasPublishedSlideCount(data = {}) {
   return Number.isFinite(data.publishedSlidesCount) && data.publishedSlidesCount > 0;
 }
 
+function shouldProbeUnmarkedSubcollections(data = {}) {
+  return data &&
+    !Array.isArray(data.slides) &&
+    !Array.isArray(data.draftSlides) &&
+    data.slideStorageVersion === undefined &&
+    data.publishedStorage === undefined &&
+    data.draftStorage === undefined;
+}
+
+function hasDraftSlidePayload(data = {}, draftSlides) {
+  return Array.isArray(draftSlides) &&
+    (draftSlides.length > 0 ||
+      data.draftStorage === 'subcollection' ||
+      Array.isArray(data.draftSlides) ||
+      Number.isFinite(data.draftSlidesCount));
+}
+
 function composeLoadedShowData(data = {}, publishedSlides = [], draftSlides) {
+  const hasDraftSlides = hasDraftSlidePayload(data, draftSlides);
   return {
     ...data,
     slides: Array.isArray(publishedSlides) ? publishedSlides : [],
     ...(draftSlides !== undefined && { draftSlides }),
-    _hasDraftSlides: draftSlides !== undefined,
+    _hasDraftSlides: hasDraftSlides,
   };
 }
 
@@ -11328,11 +11346,13 @@ async function deleteSlideshowOnServer(showId) {
 }
 
 function shouldLoadSubcollection(data = {}, collectionName) {
+  const probeUnmarked = shouldProbeUnmarkedSubcollections(data);
   if (collectionName === DRAFT_SLIDES_COLLECTION) {
-    return data.draftStorage === 'subcollection';
+    return data.draftStorage === 'subcollection' || probeUnmarked;
   }
   return data.slideStorageVersion >= SLIDE_STORAGE_VERSION ||
-    data.publishedStorage === 'subcollection';
+    data.publishedStorage === 'subcollection' ||
+    probeUnmarked;
 }
 
 async function loadShowWithSlides(showId, data = {}) {
@@ -11501,10 +11521,14 @@ function reviewStatusLabel(status) {
 function updateShowItemMeta(showId, data = {}) {
   const item = document.querySelector(`#showList .show-item[data-id="${CSS.escape(showId)}"]`);
   if (!item) return;
-  const slideArr = data.draftSlides ?? data.slides ?? [];
-  const n = Number.isFinite(data.draftSlidesCount) ? data.draftSlidesCount
+  const slideArr = data._hasDraftSlides ? (data.draftSlides || []) : (data.slides || []);
+  const loadedCount = Array.isArray(slideArr)
+    ? slideArr.filter(sl => sl.active !== false).length
+    : null;
+  const metadataCount = Number.isFinite(data.draftSlidesCount) ? data.draftSlidesCount
     : Number.isFinite(data.publishedSlidesCount) ? data.publishedSlidesCount
-    : slideArr.filter(sl => sl.active !== false).length;
+    : null;
+  const n = loadedCount > 0 ? loadedCount : (metadataCount ?? loadedCount ?? 0);
   const count = item.querySelector('.show-item-count');
   if (count) count.textContent = n + ' slide' + (n !== 1 ? 's' : '');
 

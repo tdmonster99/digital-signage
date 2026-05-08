@@ -66,6 +66,15 @@ async function loadSlideCollection(showRef, collectionName) {
   return snap.docs.map(normalizeSlideDoc);
 }
 
+function shouldProbeUnmarkedSubcollections(data = {}) {
+  return data &&
+    !Array.isArray(data.slides) &&
+    !Array.isArray(data.draftSlides) &&
+    data.slideStorageVersion === undefined &&
+    data.publishedStorage === undefined &&
+    data.draftStorage === undefined;
+}
+
 async function loadUserContext(db, uid) {
   const userSnap = await db.doc(`users/${uid}`).get();
   if (!userSnap.exists) {
@@ -1319,11 +1328,13 @@ module.exports = async function handler(req, res) {
         return res.status(403).json({ error: 'Slideshow is not in your organization' });
       }
 
+      const probeUnmarked = shouldProbeUnmarkedSubcollections(showData);
       const loadPublished =
-        showData.slideStorageVersion >= 2 ||
-        showData.publishedStorage === 'subcollection';
+        showData.slideStorageVersion >= SLIDE_STORAGE_VERSION ||
+        showData.publishedStorage === 'subcollection' ||
+        probeUnmarked;
       const loadDraft =
-        showData.draftStorage === 'subcollection' &&
+        (showData.draftStorage === 'subcollection' || probeUnmarked) &&
         ['admin', 'editor'].includes(userData.role);
 
       const [publishedSlides, draftSlides] = await Promise.all([
@@ -1402,6 +1413,7 @@ module.exports = async function handler(req, res) {
 
       const showId = normalizeShowId(req.body.showId);
       const cleanPatch = sanitizeSlideshowMetadataPatch(req.body.patch || {}, role);
+      const nonNameMetadataKeys = Object.keys(cleanPatch).filter(key => key !== 'name');
       const orgRef = db.doc(`organizations/${orgId}`);
       const showRef = db.doc(`slideshows/${showId}`);
       const now = new Date().toISOString();
@@ -1442,7 +1454,23 @@ module.exports = async function handler(req, res) {
         if (incomingTags.length) orgPatch.tags = nextTags;
 
         tx.set(orgRef, orgPatch, { merge: true });
-        tx.set(showRef, { ...cleanPatch, orgId, updatedAt: now }, { merge: true });
+        if (showSnap.exists || nonNameMetadataKeys.length) {
+          const showPatch = { ...cleanPatch, orgId, updatedAt: now };
+          if (!showSnap.exists) {
+            Object.assign(showPatch, {
+              name,
+              createdAt: now,
+              slideStorageVersion: SLIDE_STORAGE_VERSION,
+              publishedStorage: 'subcollection',
+              defaultDwell: 6,
+              fitMode: 'contain',
+              transition: 'crossfade',
+              transitionSpeed: 'medium',
+              status: 'published',
+            });
+          }
+          tx.set(showRef, showPatch, { merge: true });
+        }
 
         return {
           show: nextShows.find(show => show && show.id === showId) || nextShow,

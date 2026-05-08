@@ -188,6 +188,7 @@ async function main() {
     'gphotosSelectMedia',
     'gphotosAuthBtn',
     'gphotosSelectBtn',
+    'shouldProbeUnmarkedSubcollections',
     'createInvitation',
     'emailSent',
     'showOptionsModal',
@@ -211,6 +212,12 @@ async function main() {
     'clearCapTestAlert',
     'Zigns Test',
     'normalizeCapFipsList',
+  ]));
+
+  await check('Static slideshow metadata safety', () => assertFileContains('api/link-account.js', [
+    'shouldProbeUnmarkedSubcollections',
+    'nonNameMetadataKeys',
+    "publishedStorage: 'subcollection'",
   ]));
 
   await check('Static Google Photos import helper', () => assertFileContains('api/google-photos.js', [
