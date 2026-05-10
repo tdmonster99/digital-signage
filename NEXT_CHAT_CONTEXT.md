@@ -77,7 +77,7 @@ Remaining polish:
 
 ### 4. Phase 5.3 Vercel Pro Infrastructure
 
-Status: largely complete.
+Status: complete for the planned low-risk Pro cleanup.
 
 Shipped:
 - `api/screen-monitor.js` on Vercel Cron
@@ -86,9 +86,9 @@ Shipped:
 - Function duration tuning for CAP poll and analytics rollup
 - Query-string cron-secret fallback removed
 - Sensitive env var cleanup and duplicate Vercel project deletion completed per `ROADMAP.md`
+- Production scheduled-origin logs confirmed `/api/analytics-rollup` returned 200 at the 2026-05-09 and 2026-05-10 `08:17 UTC` cron ticks
 
 Remaining polish:
-- Optional next scheduled-origin verification for analytics rollup.
 - Evaluate explicit function durations for heavyweight import routes only if logs show timeouts.
 - Keep future cron endpoints header-auth only.
 

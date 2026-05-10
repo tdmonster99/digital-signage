@@ -4,6 +4,14 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-10 — Codex — Close Phase 5.3 scheduled cron verification
+
+Closed the remaining Phase 5.3 scheduled-origin verification note after shipping the CAP bilingual polish.
+
+- **Deploy**: pushed `42a89f1` (`feat: add cap bilingual display controls`) to `main` for the app production deploy path.
+- **Cron verification**: Vercel production logs showed `/api/analytics-rollup` returning 200 at the scheduled `08:17 UTC` cron tick on 2026-05-09 and 2026-05-10.
+- **Docs**: marked Phase 5.3 complete for the planned low-risk Pro cleanup and removed the stale optional scheduled-origin verification follow-up.
+
 ## 2026-05-10 — Codex — Add CAP bilingual display controls
 
 Closed the remaining Phase 5.2 bilingual-copy polish item after production smoke passed in the isolated smoke org.
