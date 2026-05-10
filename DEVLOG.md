@@ -4,6 +4,15 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-10 — Codex — Polish Photos, CAP, and emergency audit
+
+Continued Phase 5 pilot polish after production smoke verification.
+
+- **Google Photos support**: OAuth/scope/verification-style failures now keep the Photos modal open with a Google setup checklist instead of collapsing into a generic toast.
+- **CAP setup**: added compact schools, healthcare, and manufacturing guidance inside screen CAP settings without changing alert behavior.
+- **Emergency audit**: routed emergency trigger/clear writes through the server account API and added a Screens -> Emergency Audit panel backed by `organizations/{orgId}/emergencyAudit`.
+- **Smoke/docs**: extended static/browser smoke markers and pilot smoke docs for Photos setup guidance, CAP guidance, and emergency audit history.
+
 ## 2026-05-08 — Codex — Guard slideshow rename slide loading
 
 Follow-up after a rename appeared to temporarily show empty slideshow contents.

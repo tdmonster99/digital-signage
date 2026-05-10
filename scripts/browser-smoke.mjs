@@ -514,10 +514,11 @@ async function runReadOnlyAuthenticatedChecks(cdp) {
     await waitFor(cdp, `getComputedStyle(document.querySelector('#emergencyPlaylistManagerModal')).display !== 'none'`, 'emergency playlist manager');
     const details = await evaluate(cdp, `(() => ({
       hasPanel: Boolean(document.querySelector('#emergencyPlaylistPanel')),
+      hasAudit: Boolean(document.querySelector('#emergencyAuditPanel') && document.querySelector('#emergencyAuditList')),
       hasSummary: Boolean(document.querySelector('#emergencyPlaylistManagerSummary')?.textContent?.trim()),
       rowCount: document.querySelectorAll('#emergencyPlaylistManagerList .emergency-playlist-row').length,
     }))()`);
-    assert(details.hasPanel && details.hasSummary, 'emergency playlist manager missing expected shell');
+    assert(details.hasPanel && details.hasAudit && details.hasSummary, 'emergency playlist manager missing expected shell');
     await evaluate(cdp, `window.closeEmergencyPlaylistManager?.(); true`);
     return `manager rows=${details.rowCount}`;
   });

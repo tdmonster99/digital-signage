@@ -51,8 +51,8 @@ Optional authenticated bootstrap check for a dedicated Firebase email/password t
 ```bash
 ZIGNS_SMOKE_EMAIL="pilot-test@example.com" \
 ZIGNS_SMOKE_PASSWORD="use-a-dedicated-test-password" \
-ZIGNS_SMOKE_EXPECTED_ORG="Novares" \
-ZIGNS_SMOKE_EXPECTED_ROLE="editor" \
+ZIGNS_SMOKE_EXPECTED_ORG="Zigns Smoke Test" \
+ZIGNS_SMOKE_EXPECTED_ROLE="admin" \
 node scripts/pilot-smoke.mjs --base-url https://app.zigns.io
 ```
 
@@ -61,7 +61,7 @@ Optional invite send check from a dedicated Admin test account:
 ```bash
 ZIGNS_SMOKE_EMAIL="pilot-admin@example.com" \
 ZIGNS_SMOKE_PASSWORD="use-a-dedicated-test-password" \
-ZIGNS_SMOKE_EXPECTED_ORG="Novares" \
+ZIGNS_SMOKE_EXPECTED_ORG="Zigns Smoke Test" \
 ZIGNS_SMOKE_EXPECTED_ROLE="admin" \
 ZIGNS_SMOKE_INVITE_EMAIL="pilot-invitee+smoke@example.com" \
 ZIGNS_SMOKE_INVITE_ROLE="viewer" \
@@ -81,7 +81,7 @@ Run a real browser UI check when a dedicated email/password pilot test account i
 ```bash
 ZIGNS_BROWSER_EMAIL="pilot-admin@example.com" \
 ZIGNS_BROWSER_PASSWORD="use-a-dedicated-test-password" \
-ZIGNS_BROWSER_EXPECTED_ORG="Novares" \
+ZIGNS_BROWSER_EXPECTED_ORG="Zigns Smoke Test" \
 ZIGNS_BROWSER_EXPECTED_ROLE="admin" \
 npm run smoke:browser -- --base-url https://app.zigns.io
 ```
@@ -92,6 +92,7 @@ What it checks:
 - Team invite modal opens and defaults to Editor.
 - Slideshow Tags modal opens with tags, auto-include, and emergency controls.
 - Screens -> Emergency Playlists manager opens.
+- Screens -> Emergency Audit panel is present.
 - Add Screen pairing modal opens or shows the screen-limit prompt.
 - Profile issue report modal opens with copied context.
 
@@ -100,7 +101,7 @@ Optional mutating CRUD pass:
 ```bash
 ZIGNS_BROWSER_EMAIL="pilot-admin@example.com" \
 ZIGNS_BROWSER_PASSWORD="use-a-dedicated-test-password" \
-ZIGNS_BROWSER_EXPECTED_ORG="Novares" \
+ZIGNS_BROWSER_EXPECTED_ORG="Zigns Smoke Test" \
 ZIGNS_BROWSER_EXPECTED_ROLE="admin" \
 ZIGNS_BROWSER_MUTATE=1 \
 npm run smoke:browser -- --base-url https://app.zigns.io
@@ -155,6 +156,7 @@ Role checks:
 | Rename the slideshow. | New name persists after refresh. |
 | Add an image slide. | Slide appears in the grid and preview. |
 | Add media from Google Photos, if the test Google account has a few disposable photos. | Google Photos picker opens, selected photos/videos import into the slideshow, and imported items appear in the media library. |
+| Retry Google Photos after an OAuth scope/test-user error, if encountered. | The import modal stays open and shows the Google setup checklist instead of dropping back to a generic failure. |
 | Design a slide from a template or blank canvas. | Slide saves as draft and appears in the grid. |
 | Change one slide duration. | Duration value persists after navigation/refresh. |
 | Save slideshow settings. | Dwell, fit mode, transition type, and speed save cleanly. |
@@ -208,7 +210,8 @@ Use a phone viewport or the mobile route.
 | Mark a slideshow as an emergency playlist from Screens -> Emergency Playlists. | It appears in the saved playlist emergency picker. |
 | Open the saved playlist emergency picker with no marked emergency playlists. | It does not allow arbitrary slideshow selection. |
 | Trigger saved emergency playlist by tag or all screens. | Confirmation is required; matching displays switch to the emergency playlist and return after clear/expiry. |
-| Clear the emergency broadcast. | Displays return to normal content and recent activity notes the clear action. |
+| Clear the emergency broadcast. | Displays return to normal content and Emergency Audit records the clear action. |
+| Refresh the Emergency Audit panel. | Recent trigger and clear entries load without Firestore permission errors. |
 
 ## CAP Alert Smoke
 
@@ -217,6 +220,7 @@ Do not trigger real public alerts casually. Use test fixtures/manual validation 
 | Step | Expected Result |
 |---|---|
 | Configure CAP fields on a test screen. | State selector, county FIPS normalization, severity floor, and enabled state persist. |
+| Review the CAP pilot guidance in screen settings. | Schools, healthcare, and manufacturing setup guidance is visible without changing saved alert behavior. |
 | Enter 1-3 digit county FIPS values and save. | Codes are normalized to 3 digits; blank FIPS still targets the whole selected state. |
 | Use Send Test from the screen's CAP section. | A clearly marked TEST CAP overlay appears only on the targeted display and expires automatically. |
 | Use Clear Test from the same section. | The TEST overlay clears without removing real NWS alerts. |

@@ -524,6 +524,17 @@ body {
 }
 .cap-suggestion-chip:hover { border-color: var(--accent); color: var(--accent); }
 .cap-fips-actions .btn { padding: 6px 9px; font-size: 11px; }
+.cap-support-guidance {
+  padding: 10px; border: 1px solid rgba(59,130,246,.22); border-radius: 8px;
+  background: rgba(59,130,246,.07); color: var(--muted);
+  font-size: 11px; line-height: 1.45;
+}
+.cap-support-guidance strong {
+  display: block; margin-bottom: 5px; color: var(--text);
+  font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em;
+}
+.cap-support-guidance ul { margin: 0; padding-left: 17px; }
+.cap-support-guidance li { margin: 4px 0; }
 .cap-test-tools {
   display: flex; flex-direction: column; gap: 9px;
   padding: 10px; border: 1px solid rgba(217,119,6,.22); border-radius: 8px;
@@ -1196,6 +1207,22 @@ section.content {
 .gphotos-primary-btn:hover { background: #1557b0; }
 .gphotos-primary-btn.visible { display: inline-flex; }
 .gphotos-primary-btn svg { flex-shrink: 0; }
+.gphotos-help {
+  display: none; padding: 12px 13px; border: 1px solid rgba(66,133,244,.24);
+  border-radius: 10px; background: rgba(66,133,244,.075);
+  color: var(--muted); font-size: 12px; line-height: 1.5;
+}
+.gphotos-help.visible { display: block; }
+.gphotos-help strong {
+  display: block; margin-bottom: 5px; color: var(--text); font-size: 12px;
+}
+.gphotos-help p { margin: 0 0 8px; }
+.gphotos-help ul { margin: 0; padding-left: 18px; }
+.gphotos-help li { margin: 4px 0; }
+.gphotos-help code {
+  padding: 1px 4px; border-radius: 5px; background: var(--surface);
+  border: 1px solid var(--border); color: var(--text); font-size: 11px;
+}
 .gphotos-foot {
   display: flex; justify-content: flex-end; gap: 10px;
   padding: 14px 22px; border-top: 1px solid var(--border);
@@ -3274,6 +3301,23 @@ body > canvas[width="1920"][height="1080"] {
 }
 .emergency-toggle.is-on { background: #dc2626; border-color: #dc2626; color: #fff; }
 .emergency-toggle:disabled, .emergency-playlist-row-actions .btn:disabled { opacity: .5; cursor: not-allowed; }
+.emergency-audit-panel {
+  display: flex; flex-direction: column; gap: 12px;
+  padding: 14px 16px; border: 1px solid var(--border); border-radius: 12px;
+  background: var(--surface);
+}
+.emergency-audit-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.emergency-audit-head h2 { margin: 0; font-size: 15px; font-weight: 800; color: var(--text); }
+.emergency-audit-head p { margin: 3px 0 0; color: var(--muted); font-size: 12px; line-height: 1.45; }
+.emergency-audit-list { display: flex; flex-direction: column; gap: 8px; }
+.emergency-audit-row {
+  display: flex; justify-content: space-between; gap: 12px;
+  padding: 10px 11px; border-radius: 10px; background: var(--surface2);
+  border: 1px solid var(--border);
+}
+.emergency-audit-action { color: var(--text); font-size: 12px; font-weight: 800; }
+.emergency-audit-meta { margin-top: 3px; color: var(--muted); font-size: 11px; line-height: 1.4; }
+.emergency-audit-time { color: var(--muted); font-size: 11px; white-space: nowrap; }
 @media (max-width: 760px) {
   .emergency-playlist-panel { flex-direction: column; }
   .emergency-playlist-actions { justify-content: stretch; }
@@ -3281,6 +3325,8 @@ body > canvas[width="1920"][height="1080"] {
   .emergency-playlist-row { align-items: stretch; flex-direction: column; }
   .emergency-playlist-row-actions { justify-content: stretch; }
   .emergency-playlist-row-actions .btn, .emergency-toggle { flex: 1; }
+  .emergency-audit-head, .emergency-audit-row { align-items: stretch; flex-direction: column; }
+  .emergency-audit-time { white-space: normal; }
 }
 .screen-tag-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
 .screen-tag-chip {
@@ -5130,6 +5176,18 @@ body.role-editor .admin-action {
         </button>
       </div>
     </section>
+    <section class="emergency-audit-panel admin-action" id="emergencyAuditPanel" aria-labelledby="emergencyAuditTitle">
+      <div class="emergency-audit-head">
+        <div>
+          <h2 id="emergencyAuditTitle">Emergency Audit</h2>
+          <p>Recent emergency triggers and clears.</p>
+        </div>
+        <button class="btn btn-secondary" onclick="loadEmergencyAuditHistory()">Refresh</button>
+      </div>
+      <div class="emergency-audit-list" id="emergencyAuditList">
+        <div class="emergency-playlist-empty">No emergency audit entries loaded.</div>
+      </div>
+    </section>
     <!-- Active broadcast banner -->
     <div id="activeBroadcastBanner" style="display:none;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:12px 16px;display:none;align-items:center;gap:12px;flex-shrink:0">
       <div style="width:8px;height:8px;border-radius:50%;background:#dc2626;flex-shrink:0;animation:broadcastPulse 1.5s ease-in-out infinite"></div>
@@ -5447,6 +5505,14 @@ body.role-editor .admin-action {
               <option value="Severe">Severe</option>
               <option value="Extreme">Extreme</option>
             </select>
+          </div>
+          <div class="cap-support-guidance" id="capSupportGuidance">
+            <strong>Pilot guidance</strong>
+            <ul>
+              <li>Schools: start with Severe/Extreme weather alerts unless policy requires broader coverage.</li>
+              <li>Healthcare: use campus county FIPS codes and run Send Test before go-live.</li>
+              <li>Manufacturing: use whole-state targeting for distributed floors, or county FIPS for fixed plants.</li>
+            </ul>
           </div>
           <div class="cap-test-tools admin-action">
             <div class="cap-test-tools-title">CAP Test Alert</div>
@@ -6756,6 +6822,7 @@ body.role-editor .admin-action {
         <div class="gphotos-status" id="gphotosStatus">Connecting to Google Photos...</div>
         <div class="gphotos-substatus" id="gphotosSubstatus">A Google Photos picker window will open.</div>
         <div class="gphotos-progress" id="gphotosProgress" style="display:none"><div></div></div>
+        <div class="gphotos-help" id="gphotosSetupChecklist" aria-live="polite"></div>
         <button class="gphotos-primary-btn" id="gphotosAuthBtn" onclick="gphotosSignIn()">
           <span class="provider-logo provider-logo-sm" aria-hidden="true">
             <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
@@ -13767,6 +13834,12 @@ window.dashAddFromGoogleDrive = function() {
 const GPHOTOS_SCOPE = 'https://www.googleapis.com/auth/photospicker.mediaitems.readonly';
 const GPHOTOS_API   = 'https://photospicker.googleapis.com/v1';
 const GPHOTOS_MAX_ITEMS = 50;
+const GPHOTOS_SETUP_CHECKS = [
+  'Enable the Google Photos Picker API in Google Cloud.',
+  `Add the OAuth scope ${GPHOTOS_SCOPE} to the same web client used by Drive.`,
+  'Keep https://app.zigns.io in Authorized JavaScript origins.',
+  'Publish or verify the Google app, or add this Google account as an OAuth test user while verification is pending.',
+];
 
 let _gpToken = null;
 let _gpMode = 'slides';
@@ -13811,6 +13884,49 @@ function _gpSetActions({ auth = false, select = false, pickerUrl = '' } = {}) {
   }
 }
 
+function _gpSetHelp({ visible = false, title = '', body = '', items = [] } = {}) {
+  const help = document.getElementById('gphotosSetupChecklist');
+  if (!help) return;
+  help.classList.toggle('visible', visible);
+  if (!visible) {
+    help.innerHTML = '';
+    return;
+  }
+  const list = Array.isArray(items) && items.length
+    ? `<ul>${items.map(item => `<li>${escHtml(item)}</li>`).join('')}</ul>`
+    : '';
+  help.innerHTML = `
+    ${title ? `<strong>${escHtml(title)}</strong>` : ''}
+    ${body ? `<p>${escHtml(body)}</p>` : ''}
+    ${list}
+  `;
+}
+
+function _gpClearHelp() {
+  _gpSetHelp();
+}
+
+function _gpLooksLikeSetupError(message = '') {
+  return /invalid[_\s-]?scope|access[_\s-]?denied|permission|permissions|unauthorized|unverified|verified|verification|scope|picker api|photos picker|insufficient/i
+    .test(String(message || ''));
+}
+
+function _gpShowSetupHelp(message = '') {
+  const detail = String(message || '').trim();
+  _gpUpdateStatus(
+    'Google Photos sign-in needs attention.',
+    detail ? `Google returned: ${detail}` : 'Google blocked the Photos authorization request.',
+    false
+  );
+  _gpSetHelp({
+    visible: true,
+    title: 'Google setup checklist',
+    body: 'If Google shows an unverified-app, invalid-scope, or access-denied message, check these Cloud settings before retrying.',
+    items: GPHOTOS_SETUP_CHECKS,
+  });
+  _gpSetActions({ auth: true });
+}
+
 function _gpUpdateStatus(status, substatus = '', busy = true, pickerUrl = '') {
   const modal = document.getElementById('gphotosModal');
   const statusEl = document.getElementById('gphotosStatus');
@@ -13824,6 +13940,7 @@ function _gpUpdateStatus(status, substatus = '', busy = true, pickerUrl = '') {
 }
 
 function _gpShowAuthPrompt() {
+  _gpClearHelp();
   _gpUpdateStatus(
     'Please authenticate with Google Photos to select files.',
     'Zigns will only import the photos and videos you choose.',
@@ -13833,6 +13950,7 @@ function _gpShowAuthPrompt() {
 }
 
 function _gpShowReadyPrompt() {
+  _gpClearHelp();
   _gpUpdateStatus(
     'Google Photos is connected.',
     'Choose Select Media to open the Google Photos picker.',
@@ -13843,6 +13961,7 @@ function _gpShowReadyPrompt() {
 
 function _gpCloseModal() {
   document.getElementById('gphotosModal')?.classList.remove('open');
+  _gpClearHelp();
   _gpSetActions();
 }
 
@@ -14016,10 +14135,12 @@ async function _gpStart(mode = 'slides') {
 window.gphotosSignIn = function() {
   _gpCancelRequested = false;
   _gpSessionId = null;
+  _gpClearHelp();
   _gpUpdateStatus('Connecting to Google Photos...', 'Choose your Google account in the secure Google window.');
   _gpAuth(async resp => {
     if (resp.error) {
-      _gpCloseModal();
+      _gpToken = null;
+      _gpShowSetupHelp(resp.error_description || resp.error);
       toast('Google Photos sign-in failed: ' + resp.error, true);
       return;
     }
@@ -14033,6 +14154,7 @@ window.gphotosSelectMedia = async function() {
   if (!_gpToken) { window.gphotosSignIn(); return; }
   _gpCancelRequested = false;
   _gpSessionId = null;
+  _gpClearHelp();
   let pickerWindow = null;
   let keepModalOpen = false;
   try {
@@ -14073,7 +14195,8 @@ window.gphotosSelectMedia = async function() {
         } catch (_) {}
         if (/401|unauthorized|invalid.*token/i.test(err.message || '')) _gpToken = null;
         toast('Google Photos import failed: ' + err.message, true);
-        if (!_gpToken) _gpShowAuthPrompt();
+        if (_gpLooksLikeSetupError(err.message)) _gpShowSetupHelp(err.message);
+        else if (!_gpToken) _gpShowAuthPrompt();
         else _gpShowReadyPrompt();
       }
     } finally {
@@ -21918,6 +22041,7 @@ const _screenLimitEnforcerId = (() => {
 })();
 
 function initScreensPage() {
+  loadEmergencyAuditHistory();
   if (screensUnsub) { renderScreens(_cachedScreens); return; }
   const q = currentOrgId
     ? query(collection(db, 'screens'), where('orgId', '==', currentOrgId))
@@ -22674,6 +22798,59 @@ function _subscribeBroadcast() {
   });
 }
 
+function emergencyAuditTime(value) {
+  const date = new Date(value || '');
+  if (Number.isNaN(date.getTime())) return '—';
+  return date.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+function emergencyAuditActionLabel(entry = {}) {
+  if (entry.action === 'clear') return 'Broadcast cleared';
+  if (entry.mode === 'playlist') return 'Emergency playlist triggered';
+  return 'Emergency message triggered';
+}
+
+function emergencyAuditMeta(entry = {}) {
+  const bits = [];
+  if (entry.createdBy) bits.push(entry.createdBy);
+  if (entry.mode === 'playlist' && entry.slideshowId) bits.push(`playlist ${entry.slideshowId}`);
+  if (Array.isArray(entry.targetTags) && entry.targetTags.length) bits.push(`tags ${entry.targetTags.join(', ')}`);
+  if (entry.autoDismiss) bits.push(`auto-clear ${entry.autoDismiss}s`);
+  return bits.join(' / ') || 'No details recorded';
+}
+
+function renderEmergencyAuditHistory(entries = []) {
+  const list = document.getElementById('emergencyAuditList');
+  if (!list) return;
+  if (!entries.length) {
+    list.innerHTML = '<div class="emergency-playlist-empty">No emergency audit entries yet.</div>';
+    return;
+  }
+  list.innerHTML = entries.map(entry => `
+    <div class="emergency-audit-row">
+      <div style="min-width:0">
+        <div class="emergency-audit-action">${escHtml(emergencyAuditActionLabel(entry))}</div>
+        <div class="emergency-audit-meta">${escHtml(emergencyAuditMeta(entry))}</div>
+      </div>
+      <div class="emergency-audit-time">${escHtml(emergencyAuditTime(entry.createdAt))}</div>
+    </div>
+  `).join('');
+}
+
+async function loadEmergencyAuditHistory() {
+  const list = document.getElementById('emergencyAuditList');
+  if (!list || !currentOrgId || currentRole !== 'admin') return;
+  list.innerHTML = '<div class="emergency-playlist-empty">Loading emergency audit...</div>';
+  try {
+    const result = await callAccountApi('listEmergencyAudit', { limit: 12 });
+    renderEmergencyAuditHistory(Array.isArray(result.entries) ? result.entries : []);
+  } catch(e) {
+    list.innerHTML = `<div class="emergency-playlist-empty" style="color:#dc2626">Could not load emergency audit: ${escHtml(e.message)}</div>`;
+  }
+}
+
+window.loadEmergencyAuditHistory = loadEmergencyAuditHistory;
+
 function getEmergencyPlaylistShows() {
   return getAllShows().filter(show => show?.emergencyPlaylist === true);
 }
@@ -22958,13 +23135,10 @@ window.sendBroadcast = async function() {
     toast('Confirm the emergency override before triggering.', true);
     return;
   }
-  const payload = {
-    active: true,
+  const request = {
     mode,
     color,
     autoDismiss,
-    createdAt: new Date().toISOString(),
-    createdBy: currentUser?.email || '',
   };
 
   if (mode === 'playlist') {
@@ -22977,21 +23151,23 @@ window.sendBroadcast = async function() {
     }
     const showName = getShowName(slideshowId);
     const targetTag = normalizeTag(document.getElementById('broadcastTargetTag')?.value || '');
-    payload.slideshowId = slideshowId;
-    payload.message = 'Emergency playlist: ' + showName;
-    if (targetTag) payload.targetTags = [targetTag];
+    request.slideshowId = slideshowId;
+    request.message = 'Emergency playlist: ' + showName;
+    if (targetTag) request.targetTags = [targetTag];
   } else {
     const message = document.getElementById('broadcastMessage').value.trim();
     if (!message) { toast('Please enter a broadcast message', true); return; }
-    payload.message = message;
+    request.message = message;
   }
 
   closeBroadcastModal();
   try {
-    await setDoc(doc(db, 'broadcasts', currentOrgId), payload);
-    const targetCopy = payload.targetTags?.length ? `screens tagged ${payload.targetTags.join(', ')}` : 'all screens';
+    const result = await callAccountApi('setEmergencyBroadcast', request, true);
+    const broadcast = result.broadcast || request;
+    const targetCopy = broadcast.targetTags?.length ? `screens tagged ${broadcast.targetTags.join(', ')}` : 'all screens';
     toast('Emergency sent to ' + targetCopy + ' ✓');
     logActivity(`Emergency ${mode === 'playlist' ? 'playlist' : 'message'} triggered for ${targetCopy}`);
+    loadEmergencyAuditHistory();
   } catch(e) {
     toast('Broadcast failed: ' + e.message, true);
   }
@@ -23000,13 +23176,10 @@ window.sendBroadcast = async function() {
 window.clearBroadcast = async function() {
   if (!currentOrgId) return;
   try {
-    await setDoc(doc(db, 'broadcasts', currentOrgId), {
-      active: false,
-      clearedAt: new Date().toISOString(),
-      clearedBy: currentUser?.email || '',
-    }, { merge: true });
+    await callAccountApi('clearEmergencyBroadcast', {}, true);
     toast('Broadcast cleared ✓');
     logActivity('Emergency broadcast cleared');
+    loadEmergencyAuditHistory();
   } catch(e) {
     toast('Could not clear broadcast: ' + e.message, true);
   }
@@ -23995,7 +24168,7 @@ window.showPage = function(name) {
   if (name === 'analytics') loadAnalytics();
   if (name === 'apps')      syncAppEntitlements();
   if (name === 'profile')   loadProfileData();
-  if (name === 'screens')   renderEmergencyPlaylistPanel();
+  if (name === 'screens')   { renderEmergencyPlaylistPanel(); loadEmergencyAuditHistory(); }
 };
 
 // ── Settings hub navigation ────────────────────────────────────────────────

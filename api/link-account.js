@@ -42,6 +42,7 @@ const CAP_STATE_CODES = new Set([
   'WA','WV','WI','WY',
 ]);
 const CAP_SEVERITIES = new Set(['Minor', 'Moderate', 'Severe', 'Extreme']);
+const BROADCAST_COLORS = new Set(['#dc2626', '#d97706', '#1e40af', '#111827', '#ffffff']);
 
 function pilotSubscription(now) {
   return {
@@ -491,6 +492,65 @@ function sanitizeMediaPatch(patch = {}) {
     clean.tags = normalizeTags(patch.tags);
   }
   return clean;
+}
+
+function sanitizeBroadcastMode(value) {
+  const mode = String(value || 'message').trim().toLowerCase();
+  return mode === 'playlist' ? 'playlist' : 'message';
+}
+
+function sanitizeBroadcastColor(value) {
+  const color = String(value || '').trim().toLowerCase();
+  return BROADCAST_COLORS.has(color) ? color : '#dc2626';
+}
+
+function sanitizeBroadcastAutoDismiss(value) {
+  const seconds = Number(value) || 0;
+  return Number.isFinite(seconds) ? Math.min(86400, Math.max(0, Math.round(seconds))) : 0;
+}
+
+function sanitizeBroadcastMessage(value) {
+  return String(value || '').trim().replace(/\s+/g, ' ').slice(0, 500);
+}
+
+function sanitizeEmergencyAuditLimit(value) {
+  const limit = Number(value) || 12;
+  return Math.min(50, Math.max(1, Math.round(limit)));
+}
+
+async function loadEmergencyPlaylistMeta(db, orgId, showId) {
+  const id = normalizeShowId(showId);
+  const [orgSnap, showSnap] = await Promise.all([
+    db.doc(`organizations/${orgId}`).get(),
+    db.doc(`slideshows/${id}`).get(),
+  ]);
+  const orgData = orgSnap.exists ? (orgSnap.data() || {}) : {};
+  const orgShows = Array.isArray(orgData.slideshows) ? orgData.slideshows : [];
+  const orgMeta = orgShows.find(show => show && show.id === id) || null;
+  const showData = showSnap.exists ? (showSnap.data() || {}) : null;
+
+  if (!orgMeta && (!showData || showData.orgId !== orgId)) {
+    const error = new Error('Emergency playlist not found');
+    error.statusCode = 404;
+    throw error;
+  }
+  if (showData && showData.orgId !== orgId) {
+    const error = new Error('Emergency playlist is not in your organization');
+    error.statusCode = 403;
+    throw error;
+  }
+
+  const emergencyPlaylist = showData?.emergencyPlaylist === true || orgMeta?.emergencyPlaylist === true;
+  if (!emergencyPlaylist) {
+    const error = new Error('Choose a slideshow marked as an emergency playlist');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  return {
+    id,
+    name: showData?.name || orgMeta?.name || id,
+  };
 }
 
 async function commitOpsInChunks(db, ops) {
@@ -1185,6 +1245,96 @@ module.exports = async function handler(req, res) {
       requireRole(role, ['admin', 'editor']);
       await db.doc(`organizations/${orgId}/media/${mediaId}`).delete();
       return res.json({ ok: true, mediaId });
+    }
+
+    if (req.body.action === 'setEmergencyBroadcast') {
+      const { userData, orgId, role } = await loadUserContext(db, uid);
+      requireRole(role, ['admin']);
+
+      const now = new Date().toISOString();
+      const mode = sanitizeBroadcastMode(req.body.mode);
+      const targetTags = normalizeTags(req.body.targetTags || []).slice(0, 20);
+      const payload = {
+        active: true,
+        mode,
+        color: sanitizeBroadcastColor(req.body.color),
+        autoDismiss: sanitizeBroadcastAutoDismiss(req.body.autoDismiss),
+        createdAt: now,
+        createdBy: userData.email || email || '',
+        createdByUid: uid,
+      };
+
+      if (mode === 'playlist') {
+        const show = await loadEmergencyPlaylistMeta(db, orgId, req.body.slideshowId);
+        payload.slideshowId = show.id;
+        payload.message = 'Emergency playlist: ' + show.name;
+        if (targetTags.length) payload.targetTags = targetTags;
+      } else {
+        const message = sanitizeBroadcastMessage(req.body.message);
+        if (!message) return res.status(400).json({ error: 'Broadcast message required' });
+        payload.message = message;
+      }
+
+      const auditRef = db.collection(`organizations/${orgId}/emergencyAudit`).doc();
+      const batch = db.batch();
+      batch.set(db.doc(`broadcasts/${orgId}`), payload, { merge: false });
+      batch.set(auditRef, {
+        action: 'trigger',
+        mode: payload.mode,
+        message: payload.message,
+        color: payload.color,
+        autoDismiss: payload.autoDismiss,
+        slideshowId: payload.slideshowId || '',
+        targetTags: payload.targetTags || [],
+        createdAt: now,
+        createdBy: payload.createdBy,
+        createdByUid: uid,
+        source: 'admin',
+      });
+      await batch.commit();
+
+      return res.json({ ok: true, broadcast: payload, auditId: auditRef.id });
+    }
+
+    if (req.body.action === 'clearEmergencyBroadcast') {
+      const { userData, orgId, role } = await loadUserContext(db, uid);
+      requireRole(role, ['admin']);
+
+      const now = new Date().toISOString();
+      const actorEmail = userData.email || email || '';
+      const auditRef = db.collection(`organizations/${orgId}/emergencyAudit`).doc();
+      const batch = db.batch();
+      batch.set(db.doc(`broadcasts/${orgId}`), {
+        active: false,
+        clearedAt: now,
+        clearedBy: actorEmail,
+        clearedByUid: uid,
+      }, { merge: true });
+      batch.set(auditRef, {
+        action: 'clear',
+        mode: 'clear',
+        message: 'Emergency broadcast cleared',
+        targetTags: [],
+        createdAt: now,
+        createdBy: actorEmail,
+        createdByUid: uid,
+        source: 'admin',
+      });
+      await batch.commit();
+
+      return res.json({ ok: true, auditId: auditRef.id, clearedAt: now });
+    }
+
+    if (req.body.action === 'listEmergencyAudit') {
+      const { orgId, role } = await loadUserContext(db, uid);
+      requireRole(role, ['admin']);
+      const auditLimit = sanitizeEmergencyAuditLimit(req.body.limit);
+      const snap = await db.collection(`organizations/${orgId}/emergencyAudit`)
+        .orderBy('createdAt', 'desc')
+        .limit(auditLimit)
+        .get();
+      const entries = snap.docs.map(doc => ({ id: doc.id, ...(doc.data() || {}) }));
+      return res.json({ ok: true, entries });
     }
 
     if (req.body.action === 'sendCapTestAlert') {

@@ -187,7 +187,7 @@ Sourced from `KITCAST_GAP_ANALYSIS.md` (2026-04-27), plus the 2026-04-28 Vercel 
 
 **Why:** Single biggest enterprise differentiator missing today. A natural cluster — tagging is the foundation that unlocks both smart playlists and pre-built emergency content. Kitcast Pro has all three; Zigns has none. Required to win schools, healthcare, multi-location retail.
 
-**Status:** Mostly shipped 2026-04-28; emergency governance and Tags UX polish continued through 2026-05-07. Screen/org/slideshow/slide/media tag management, smart playlist publish resolution, schedule event priority, saved emergency playlist marking, saved-playlist emergency override, propagation smoke coverage, and a dedicated emergency playlist manager are now implemented. Remaining: stronger audit history if pilot feedback shows recent activity is not enough, and any advanced targeting beyond all/tag/screen IDs.
+**Status:** Mostly shipped 2026-04-28; emergency governance and Tags UX polish continued through 2026-05-10. Screen/org/slideshow/slide/media tag management, smart playlist publish resolution, schedule event priority, saved emergency playlist marking, saved-playlist emergency override, propagation smoke coverage, a dedicated emergency playlist manager, and server-backed emergency audit history are now implemented. Remaining: any advanced targeting beyond all/tag/screen IDs.
 
 **What shipped 2026-04-28:**
 - Settings → Screen Tags is now a real org tag manager backed by `organizations/{orgId}.tags`, with create/rename/delete and cleanup across screen docs.
@@ -198,9 +198,9 @@ Sourced from `KITCAST_GAP_ANALYSIS.md` (2026-04-27), plus the 2026-04-28 Vercel 
 - Slideshow Options manages slideshow tags, smart auto-include tags, and `emergencyPlaylist: true`.
 - Slide and media cards now expose tag editors. Org tag rename/delete propagates through screens, slideshow metadata, slides/drafts, and media records.
 - Smart playlists materialize at publish/approval time by appending matching published slides from other org slideshows, so `display.html` stays unchanged.
-- Emergency trigger governance now limits saved-playlist broadcasts to explicitly marked emergency slideshows, requires an override confirmation before trigger, and records trigger/clear actions in recent activity.
+- Emergency trigger governance now limits saved-playlist broadcasts to explicitly marked emergency slideshows, requires an override confirmation before trigger, and records trigger/clear actions in server-backed Emergency Audit history.
 - Slideshow Tags now uses a modal instead of browser prompts for slideshow tags, smart auto-include tags, and admin-only emergency-ready marking.
-- Screens now includes a dedicated Emergency Playlists manager for admin visibility, direct ready/off toggles, and one-click saved-playlist trigger setup.
+- Screens now includes a dedicated Emergency Playlists manager for admin visibility, direct ready/off toggles, one-click saved-playlist trigger setup, and an Emergency Audit panel for recent trigger/clear history.
 
 **What to build:**
 
@@ -217,7 +217,7 @@ Sourced from `KITCAST_GAP_ANALYSIS.md` (2026-04-27), plus the 2026-04-28 Vercel 
 
 **Why:** Procurement checkbox for schools, healthcare, government, manufacturing. Several US states require automated severe-weather and AMBER alert display in public spaces. Kitcast lists CAP support; Zigns has manual Broadcast only. Audio playback (the other half of priority #2 in the gap analysis) shipped 2026-04-27.
 
-**Status:** Partial foundation shipped 2026-04-28; validation and setup polish continued 2026-05-07. Per-screen CAP config, `capAlerts/{orgId}` mirroring, and `display.html` alert overlay are implemented. CAP polling has been split from `api/screen-monitor.js` into dedicated `api/cap-poll.js`, deployed, and production-verified on Vercel Cron. CAP render audit UX shipped 2026-05-01 in the Analytics page. Screen-targeted TEST CAP alerts plus state/FIPS setup helpers are now available from screen settings. Remaining: bilingual copy controls, richer support guidance, and possible IPAWS/FEMA path for Enterprise later.
+**Status:** Partial foundation shipped 2026-04-28; validation and setup polish continued 2026-05-10. Per-screen CAP config, `capAlerts/{orgId}` mirroring, and `display.html` alert overlay are implemented. CAP polling has been split from `api/screen-monitor.js` into dedicated `api/cap-poll.js`, deployed, and production-verified on Vercel Cron. CAP render audit UX shipped 2026-05-01 in the Analytics page. Screen-targeted TEST CAP alerts, state/FIPS setup helpers, and vertical-specific pilot guidance are now available from screen settings. Remaining: bilingual copy controls and possible IPAWS/FEMA path for Enterprise later.
 
 **What to build:**
 
@@ -228,6 +228,7 @@ Sourced from `KITCAST_GAP_ANALYSIS.md` (2026-04-27), plus the 2026-04-28 Vercel 
 - **Auto-clear** when the alert's `<expires>` timestamp passes or no matching active alerts remain. **Shipped through the CAP poll refresh path and display-side expiry filtering.**
 - **Audit trail** — log every alert rendered to a screen for compliance reporting (some procurement RFPs ask for this). **Shipped 2026-05-01: Analytics now includes CAP render totals, reached-screen count, latest render table, and CSV export fields; future display events include headline, area, expiry, and source metadata.**
 - **Safe test fixtures** — admins can send and clear a short-lived TEST CAP alert to a single screen through the server-backed account API without overwriting real NWS alerts. **Shipped 2026-05-07.**
+- **Support guidance** — screen CAP settings now include compact schools, healthcare, and manufacturing setup guidance for pilot admins. **Shipped 2026-05-10.**
 
 **Files:** `api/cap-poll.js`, `display.html`, `admin.html` (per-screen CAP config UI), Firestore `capAlerts/{orgId}` and `screens/{id}.cap` config.
 

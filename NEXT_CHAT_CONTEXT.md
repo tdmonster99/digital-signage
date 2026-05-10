@@ -1,4 +1,4 @@
-# Next Chat Context (updated 2026-05-07)
+# Next Chat Context (updated 2026-05-10)
 
 Use this as the first-read handoff snapshot before making new changes.
 
@@ -18,7 +18,7 @@ Use this as the first-read handoff snapshot before making new changes.
 
 ### 1. Pilot QA / Smoke-Test Harness
 
-This is the next recommended workstream because Novares pilot testing is beginning.
+This remains the first check before and after production-impacting changes.
 
 Current docs:
 - `docs/PILOT_QUICKSTART.md` — pilot onboarding, roles, pairing, and support intake
@@ -28,8 +28,8 @@ Current docs:
 
 Recommended next steps:
 - Run `node scripts/pilot-smoke.mjs --static` locally before pilot-impacting changes.
-- Run the harness against production with an Admin account and one Editor account; use `ZIGNS_SMOKE_INVITE_EMAIL` with a controlled inbox when validating invite delivery. The dedicated smoke account is `jzegar2+smoke@gmail.com` in the isolated `Zigns Smoke Test` org.
-- Run `npm run smoke:browser -- --base-url https://app.zigns.io` for browser login-form reachability; add `ZIGNS_BROWSER_EMAIL` / `ZIGNS_BROWSER_PASSWORD` for authenticated browser flow and `ZIGNS_BROWSER_MUTATE=1` only in a dedicated test org.
+- Run the harness against production with the dedicated smoke account `jzegar2+smoke@gmail.com` in the isolated `Zigns Smoke Test` org; use `ZIGNS_SMOKE_INVITE_EMAIL` with a controlled inbox when validating invite delivery.
+- Run `npm run smoke:browser -- --base-url https://app.zigns.io` for browser login-form reachability; add `ZIGNS_BROWSER_EMAIL` / `ZIGNS_BROWSER_PASSWORD` for authenticated browser flow and `ZIGNS_BROWSER_MUTATE=1` only in the dedicated `Zigns Smoke Test` org.
 - Record failures with the in-app issue report helper: desktop Profile -> Report Issue, or mobile Account -> Copy issue report.
 
 ### 2. Phase 5.1 Tags / Priority / Emergency Playlist
@@ -49,10 +49,10 @@ Shipped:
 - Admin confirmation for marking emergency playlists, explicit trigger confirmation, and recent activity entries for trigger/clear
 - Slideshow Tags modal for slideshow tags, smart auto-include tags, and admin-only emergency-ready marking
 - Dedicated Screens -> Emergency Playlists manager for direct ready/off toggles and saved-playlist trigger setup
+- Server-backed Emergency Audit panel for recent trigger/clear history
 - `npm run smoke:tags` production-safe propagation coverage across screens, slideshows, slides/drafts, and media
 
 Remaining polish:
-- Add stronger audit history if pilot feedback shows recent activity is not enough.
 - Consider advanced targeting beyond all/tag/screen IDs later.
 
 ### 3. Phase 5.2 CAP Alerts / Emergency-CAP Polish
@@ -69,10 +69,10 @@ Shipped:
 - CAP render analytics in the Analytics page
 - Screen settings can send/clear a targeted TEST CAP alert through `/api/link-account`, preserving real NWS alerts
 - Screen CAP setup has a state selector, conservative state suggestions, FIPS normalization, and save-time validation
+- Screen CAP setup includes compact pilot guidance for schools, healthcare, and manufacturing
 
 Remaining polish:
 - Bilingual copy controls.
-- Richer support guidance for schools, healthcare, and manufacturing.
 - IPAWS/FEMA path remains Enterprise-only later.
 
 ### 4. Phase 5.3 Vercel Pro Infrastructure
@@ -116,7 +116,7 @@ If any of these users land in a personal org instead of `Novares`, stop testing 
 ## Known Manual Tasks
 
 - Google Cloud OAuth verification is still a manual external task: verify `zigns.io` ownership in Search Console before branding approval can finish.
-- Google Photos import now uses the Picker API scope `https://www.googleapis.com/auth/photospicker.mediaitems.readonly`; if production returns `invalid_scope` or `access_denied`, enable the Google Photos Picker API and add the scope/test users in the same Google Cloud OAuth client used for Drive.
+- Google Photos import now uses the Picker API scope `https://www.googleapis.com/auth/photospicker.mediaitems.readonly`; if production returns `invalid_scope` or `access_denied`, the import modal shows the setup checklist. Console-side fixes are still enabling the Google Photos Picker API, adding the scope/test users, and completing OAuth verification in the same Google Cloud OAuth client used for Drive.
 - Real-device platform validation is pending user hardware availability.
 
 ## Recent Useful Commits
