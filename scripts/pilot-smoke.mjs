@@ -211,6 +211,12 @@ async function main() {
     'broadcastConfirm',
     'No emergency playlists marked',
     'No emergency playlists ready',
+    'assets/brand/google-drive.png',
+    'assets/brand/google-photos.svg',
+    'assets/brand/onedrive.svg',
+    'assets/brand/dropbox.svg',
+    'assets/brand/youtube.png',
+    'assets/brand/canva.svg',
   ]));
 
   await check('Static invite sender', () => assertFileContains('api/link-account.js', [
@@ -241,6 +247,17 @@ async function main() {
     'verifyIdToken',
     'googleusercontent.com',
     'PutObjectCommand',
+  ]));
+
+  await check('Static brand asset ledger', () => assertFileContains('assets/brand/BRAND_ASSETS.md', [
+    'Third-party provider marks',
+    'official or official-hosted brand resources',
+    'google-drive.png',
+    'google-photos.svg',
+    'onedrive.svg',
+    'dropbox.svg',
+    'youtube.png',
+    'canva.svg',
   ]));
 
   await check('Static mobile hooks', () => assertFileContains('mobile.html', [

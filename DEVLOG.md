@@ -4,6 +4,14 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-10 — Codex — Source provider brand icons
+
+Replaced hand-drawn provider logo approximations with documented, official-hosted assets.
+
+- **Brand assets**: added `assets/brand/` with Google, Microsoft, YouTube, Dropbox, and Canva source files plus `BRAND_ASSETS.md` source ledger.
+- **Add Media polish**: swapped Add Media, Google Photos/Drive/Slides/Canva modal headers, designer image picker, and sign-in provider buttons to use local sourced assets while keeping the custom PDF icon.
+- **Smoke**: added static pilot-smoke coverage for the brand asset references and source ledger.
+
 ## 2026-05-10 — Codex — Polish Photos, CAP, and emergency audit
 
 Continued Phase 5 pilot polish after production smoke verification.
