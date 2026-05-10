@@ -5523,6 +5523,19 @@ body.role-editor .admin-action {
               <option value="Extreme">Extreme</option>
             </select>
           </div>
+          <div>
+            <label style="font-size:10px">Display language</label>
+            <select id="sepCapLanguage" onchange="renderCapLanguageHelp()">
+              <option value="en">English</option>
+              <option value="es">Spanish labels</option>
+              <option value="en-es">English + Spanish labels</option>
+            </select>
+            <div class="cap-config-help" id="sepCapLanguageHelp"></div>
+          </div>
+          <div id="sepCapSpanishNoteWrap" style="display:none">
+            <label style="font-size:10px">Spanish safety note</label>
+            <textarea id="sepCapSpanishNote" rows="2" maxlength="240" placeholder="Optional short note shown below the official alert text." style="width:100%;resize:vertical"></textarea>
+          </div>
           <div class="cap-support-guidance" id="capSupportGuidance">
             <strong>Pilot guidance</strong>
             <ul>
@@ -23218,9 +23231,16 @@ const CAP_SINGLE_STATE_TIMEZONES = {
   'Pacific/Honolulu': 'HI',
 };
 
+const CAP_LANGUAGES = new Set(['en', 'es', 'en-es']);
+
 function normalizeCapStateCode(value) {
   const code = String(value || '').trim().toUpperCase().slice(0, 2);
   return CAP_STATE_LABELS[code] ? code : '';
+}
+
+function normalizeCapLanguage(value) {
+  const lang = String(value || 'en').trim().toLowerCase();
+  return CAP_LANGUAGES.has(lang) ? lang : 'en';
 }
 
 function capScreenContext() {
@@ -23305,6 +23325,17 @@ window.renderCapSetupHints = function(screen = capScreenContext()) {
     : `Blank targets the whole ${stateLabel}; add county FIPS codes only when this screen should receive county-specific alerts.`;
 };
 
+window.renderCapLanguageHelp = function() {
+  const lang = normalizeCapLanguage(document.getElementById('sepCapLanguage')?.value || 'en');
+  const helpEl = document.getElementById('sepCapLanguageHelp');
+  const noteWrap = document.getElementById('sepCapSpanishNoteWrap');
+  if (noteWrap) noteWrap.style.display = lang === 'en' ? 'none' : 'block';
+  if (!helpEl) return;
+  helpEl.textContent = lang === 'en'
+    ? 'Shows the official NWS alert text with English Zigns labels.'
+    : 'Zigns labels and default guidance use Spanish/bilingual copy; official NWS alert text is shown as received.';
+};
+
 window.toggleCapConfigBody = function(checked) {
   const body = document.getElementById('sepCapBody');
   if (body) body.style.display = checked ? 'flex' : 'none';
@@ -23334,9 +23365,12 @@ window.openScreenEdit = function(screenId) {
   document.getElementById('sepCapState').value = normalizeCapStateCode(cap.state || '');
   document.getElementById('sepCapFips').value = Array.isArray(cap.countyFips) ? normalizeCapFipsList(cap.countyFips.join(',')).join(', ') : '';
   document.getElementById('sepCapSeverity').value = cap.severityFloor || 'Severe';
+  document.getElementById('sepCapLanguage').value = normalizeCapLanguage(cap.language || 'en');
+  document.getElementById('sepCapSpanishNote').value = String(cap.spanishNote || '').slice(0, 240);
   const capStatus = document.getElementById('sepCapTestStatus');
   if (capStatus) capStatus.textContent = '';
   renderCapSetupHints(screen);
+  renderCapLanguageHelp();
 
   // Working Hours
   const wh = screen.workingHours || {};
@@ -23397,6 +23431,8 @@ window.saveScreenEdit = async function() {
     state: capState,
     countyFips: capFips,
     severityFloor: document.getElementById('sepCapSeverity').value || 'Severe',
+    language: normalizeCapLanguage(document.getElementById('sepCapLanguage').value),
+    spanishNote: document.getElementById('sepCapSpanishNote').value.trim().slice(0, 240),
   };
 
   // Working Hours

@@ -4,6 +4,15 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-10 — Codex — Add CAP bilingual display controls
+
+Closed the remaining Phase 5.2 bilingual-copy polish item after production smoke passed in the isolated smoke org.
+
+- **Smoke**: production authenticated pilot smoke and browser smoke passed for `Zigns Smoke Test`, including the mutating create/tag/delete browser pass.
+- **CAP language controls**: screen CAP settings now include English, Spanish-label, and English + Spanish-label display modes plus an optional Spanish safety note.
+- **Display overlay**: CAP overlays preserve official alert text, localize Zigns-controlled labels/default guidance, and record the selected display language on CAP render analytics.
+- **Docs/smoke**: updated roadmap, handoff context, and static smoke markers for the bilingual CAP controls.
+
 ## 2026-05-10 — Codex — Source provider brand icons
 
 Replaced hand-drawn provider logo approximations with documented, official-hosted assets.

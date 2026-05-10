@@ -193,6 +193,9 @@ async function main() {
     'photospicker.mediaitems.readonly',
     'Google Photos Picker API',
     'capSupportGuidance',
+    'sepCapLanguage',
+    'sepCapSpanishNote',
+    'renderCapLanguageHelp',
     'Schools: start with Severe/Extreme',
     'Healthcare: use campus county FIPS',
     'Manufacturing: use whole-state targeting',
@@ -269,6 +272,9 @@ async function main() {
 
   await check('Static display hooks', () => assertFileContains('display.html', [
     'capAlerts',
+    '_capPresentation',
+    'CAP_DEFAULT_SPANISH_NOTE',
+    'language: _capPresentation.language',
     'broadcasts',
     'playlist_slide_skipped',
     'playerVersion',

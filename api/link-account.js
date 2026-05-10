@@ -42,6 +42,7 @@ const CAP_STATE_CODES = new Set([
   'WA','WV','WI','WY',
 ]);
 const CAP_SEVERITIES = new Set(['Minor', 'Moderate', 'Severe', 'Extreme']);
+const CAP_LANGUAGES = new Set(['en', 'es', 'en-es']);
 const BROADCAST_COLORS = new Set(['#dc2626', '#d97706', '#1e40af', '#111827', '#ffffff']);
 
 function pilotSubscription(now) {
@@ -378,6 +379,11 @@ function sanitizeCapState(value) {
   return CAP_STATE_CODES.has(state) ? state : '';
 }
 
+function sanitizeCapLanguage(value) {
+  const lang = String(value || 'en').trim().toLowerCase();
+  return CAP_LANGUAGES.has(lang) ? lang : 'en';
+}
+
 function normalizeCapFipsToken(value) {
   const digits = String(value || '').replace(/\D/g, '');
   if (!digits) return '';
@@ -457,6 +463,8 @@ function sanitizeScreenSettingsPatch(patch = {}) {
       state: sanitizeCapState(patch.cap.state),
       countyFips: normalizeCapFipsList(patch.cap.countyFips),
       severityFloor: String(patch.cap.severityFloor || 'Severe').trim().slice(0, 20),
+      language: sanitizeCapLanguage(patch.cap.language),
+      spanishNote: String(patch.cap.spanishNote || '').trim().slice(0, 240),
     };
     clean.cap.severityFloor = sanitizeCapSeverity(clean.cap.severityFloor);
   }

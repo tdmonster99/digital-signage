@@ -70,9 +70,9 @@ Shipped:
 - Screen settings can send/clear a targeted TEST CAP alert through `/api/link-account`, preserving real NWS alerts
 - Screen CAP setup has a state selector, conservative state suggestions, FIPS normalization, and save-time validation
 - Screen CAP setup includes compact pilot guidance for schools, healthcare, and manufacturing
+- Screen CAP setup includes per-screen English, Spanish-label, or English + Spanish-label display controls plus an optional Spanish safety note
 
 Remaining polish:
-- Bilingual copy controls.
 - IPAWS/FEMA path remains Enterprise-only later.
 
 ### 4. Phase 5.3 Vercel Pro Infrastructure

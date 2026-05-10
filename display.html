@@ -3015,6 +3015,9 @@
     // ── CAP alerts ───────────────────────────────────────────────────────────
     let _capUnsub = null;
     let _capOrgId = null;
+    let _capLatestData = null;
+    let _capLastAnalyticsKey = '';
+    let _capPresentation = { language: 'en', spanishNote: '' };
     const CAP_COLORS = {
       Extreme: '#7f1d1d',
       Severe: '#b91c1c',
@@ -3022,6 +3025,119 @@
       Minor: '#1d4ed8',
       Unknown: '#111827',
     };
+    const CAP_SEVERITY_ES = {
+      Extreme: 'extrema',
+      Severe: 'grave',
+      Moderate: 'moderada',
+      Minor: 'menor',
+      Unknown: 'desconocida',
+    };
+    const CAP_DEFAULT_SPANISH_NOTE = 'Siga las instrucciones de las autoridades locales.';
+
+    function _normalizeCapLanguage(value) {
+      const lang = String(value || 'en').trim().toLowerCase();
+      return ['en', 'es', 'en-es'].includes(lang) ? lang : 'en';
+    }
+
+    function _setCapPresentation(cap = {}) {
+      _capPresentation = {
+        language: _normalizeCapLanguage(cap.language),
+        spanishNote: String(cap.spanishNote || '').trim().slice(0, 240),
+      };
+      _renderLatestCapAlert();
+    }
+
+    function _capText(en, es) {
+      if (_capPresentation.language === 'es') return es;
+      if (_capPresentation.language === 'en-es') return `${en} / ${es}`;
+      return en;
+    }
+
+    function _capKickerText(severity, isTestAlert) {
+      const sev = severity || 'Unknown';
+      const sevEs = CAP_SEVERITY_ES[sev] || CAP_SEVERITY_ES.Unknown;
+      const testEn = isTestAlert ? 'TEST ' : '';
+      const testEs = isTestAlert ? 'PRUEBA ' : '';
+      if (_capPresentation.language === 'es') return `${testEs}Alerta ${sevEs}`;
+      if (_capPresentation.language === 'en-es') return `${testEn}${sev} Alert / ${testEs}Alerta ${sevEs}`;
+      return `${testEn}${sev} Alert`;
+    }
+
+    function _capBodyText(alert) {
+      const body = alert.instruction || alert.description || _capText(
+        'Follow local emergency guidance.',
+        'Siga las instrucciones de las autoridades locales.'
+      );
+      if (_capPresentation.language === 'en') return body;
+      const note = _capPresentation.spanishNote || CAP_DEFAULT_SPANISH_NOTE;
+      return `${body}\n\nEspañol: ${note}`;
+    }
+
+    function _capMetaText(alert, isTestAlert) {
+      const parts = [];
+      if (isTestAlert) parts.push(_capText('Zigns test alert', 'Prueba de Zigns'));
+      if (alert.areaDesc) parts.push(alert.areaDesc);
+      if (alert.expiresAt) {
+        const formatted = new Date(alert.expiresAt).toLocaleString();
+        parts.push(_capText(`Expires ${formatted}`, `Vence ${formatted}`));
+      }
+      return parts.filter(Boolean).join(' · ');
+    }
+
+    function _renderLatestCapAlert() {
+      const capEl = document.getElementById('stageCapAlert');
+      const kickerEl = document.getElementById('capKickerEl');
+      const headlineEl = document.getElementById('capHeadlineEl');
+      const bodyEl = document.getElementById('capBodyEl');
+      const metaEl = document.getElementById('capMetaEl');
+      if (!capEl || !kickerEl || !headlineEl || !bodyEl || !metaEl) return;
+
+      const data = _capLatestData;
+      const alerts = Array.isArray(data?.alerts) ? data.alerts : [];
+      const now = Date.now();
+      const alert = alerts.find(a =>
+        a && a.active !== false &&
+        (!Array.isArray(a.targetScreenIds) || !a.targetScreenIds.length || a.targetScreenIds.includes(screenId)) &&
+        (!a.expiresAt || new Date(a.expiresAt).getTime() > now)
+      );
+
+      if (!alert) {
+        capEl.style.display = 'none';
+        _capLastAnalyticsKey = '';
+        return;
+      }
+
+      const severity = alert.severity || 'Unknown';
+      const isTestAlert = alert.test === true || alert.source === 'Zigns Test';
+      capEl.style.background = CAP_COLORS[severity] || CAP_COLORS.Unknown;
+      kickerEl.textContent = _capKickerText(severity, isTestAlert);
+      headlineEl.textContent = alert.headline || alert.event || _capText('Emergency Alert', 'Alerta de emergencia');
+      bodyEl.textContent = _capBodyText(alert);
+      metaEl.textContent = _capMetaText(alert, isTestAlert);
+      capEl.style.display = 'flex';
+
+      const analyticsKey = [
+        alert.id || alert.event || alert.headline || '',
+        alert.expiresAt || '',
+        _capPresentation.language,
+      ].join('|');
+      if (hasScreenWriteAccess() && analyticsOrgId && analyticsKey !== _capLastAnalyticsKey) {
+        _capLastAnalyticsKey = analyticsKey;
+        queueAnalyticsEvent({
+          type: 'cap_alert_rendered',
+          screenId,
+          alertId: alert.id || '',
+          event: alert.event || '',
+          severity,
+          headline: alert.headline || '',
+          areaDesc: alert.areaDesc || '',
+          expiresAt: alert.expiresAt || '',
+          source: alert.source || 'NWS',
+          test: isTestAlert,
+          language: _capPresentation.language,
+        });
+      }
+    }
 
     function _subscribeCapAlerts(orgId) {
       if (!orgId) return;
@@ -3029,58 +3145,14 @@
         try { _capUnsub(); } catch(_) {}
         _capUnsub = null;
         _capOrgId = null;
+        _capLatestData = null;
+        _capLastAnalyticsKey = '';
       }
       if (_capUnsub) return;
       _capOrgId = orgId;
-      const capEl = document.getElementById('stageCapAlert');
-      const kickerEl = document.getElementById('capKickerEl');
-      const headlineEl = document.getElementById('capHeadlineEl');
-      const bodyEl = document.getElementById('capBodyEl');
-      const metaEl = document.getElementById('capMetaEl');
-
       _capUnsub = onSnapshot(doc(db, 'capAlerts', orgId), snap => {
-        const data = snap.exists() ? snap.data() : null;
-        const alerts = Array.isArray(data?.alerts) ? data.alerts : [];
-        const now = Date.now();
-        const alert = alerts.find(a =>
-          a && a.active !== false &&
-          (!Array.isArray(a.targetScreenIds) || !a.targetScreenIds.length || a.targetScreenIds.includes(screenId)) &&
-          (!a.expiresAt || new Date(a.expiresAt).getTime() > now)
-        );
-
-        if (!alert) {
-          capEl.style.display = 'none';
-          return;
-        }
-
-        const severity = alert.severity || 'Unknown';
-        const isTestAlert = alert.test === true || alert.source === 'Zigns Test';
-        capEl.style.background = CAP_COLORS[severity] || CAP_COLORS.Unknown;
-        kickerEl.textContent = `${isTestAlert ? 'TEST ' : ''}${severity} Alert`;
-        headlineEl.textContent = alert.headline || alert.event || 'Emergency Alert';
-        bodyEl.textContent = alert.instruction || alert.description || 'Follow local emergency guidance.';
-        metaEl.textContent = [
-          isTestAlert ? 'Zigns test alert' : '',
-          alert.areaDesc,
-          alert.expiresAt ? 'Expires ' + new Date(alert.expiresAt).toLocaleString() : ''
-        ]
-          .filter(Boolean).join(' · ');
-        capEl.style.display = 'flex';
-
-        if (hasScreenWriteAccess() && analyticsOrgId) {
-          queueAnalyticsEvent({
-            type: 'cap_alert_rendered',
-            screenId,
-            alertId: alert.id || '',
-            event: alert.event || '',
-            severity,
-            headline: alert.headline || '',
-            areaDesc: alert.areaDesc || '',
-            expiresAt: alert.expiresAt || '',
-            source: alert.source || 'NWS',
-            test: isTestAlert,
-          });
-        }
+        _capLatestData = snap.exists() ? snap.data() : null;
+        _renderLatestCapAlert();
       }, () => {});
     }
 
@@ -3301,6 +3373,7 @@
           // re-fires this snapshot callback, causing an infinite write loop.
           emitOnline(newOrgId);
           _subscribeBroadcast(newOrgId);
+          _setCapPresentation(data.cap || {});
           _subscribeCapAlerts(newOrgId);
           _applySuspended(data.suspended === true);
           if (data.suspended === true) return;
