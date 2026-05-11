@@ -3862,6 +3862,8 @@ body.role-editor .admin-action {
 .signin-logo-text { font-weight:700; font-size:22px; letter-spacing:.05em; color:var(--text); }
 .signin-title { font-size:20px; font-weight:700; margin:0 0 4px; color:var(--text); }
 .signin-sub { font-size:13px; color:var(--muted); margin:0 0 24px; }
+.signin-badge { display:inline-flex; align-items:center; padding:4px 8px; border-radius:999px; background:var(--accent-bg); color:var(--accent); font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; margin:0 0 10px; }
+.signin-note { font-size:12px; color:var(--muted); line-height:1.45; margin:-8px 0 16px; }
 .signin-provider-btn { display:flex; align-items:center; gap:10px; width:100%; padding:10px 14px; border:1px solid var(--border); border-radius:8px; background:var(--surface); color:var(--text); font-size:14px; font-weight:500; cursor:pointer; margin-bottom:10px; transition:background .15s; }
 .signin-provider-btn:hover { background:var(--surface2); }
 .signin-provider-btn svg, .signin-provider-btn img { flex-shrink:0; }
@@ -3993,6 +3995,13 @@ body.role-editor .admin-action {
 .ob-step { display: none; }
 .ob-step.active { display: block; }
 .ob-emoji  { font-size: 40px; margin-bottom: 16px; }
+.ob-badge  {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 9px; border-radius: 999px;
+  background: var(--accent-bg); color: var(--accent);
+  font-size: 10px; font-weight: 700; letter-spacing: .06em;
+  text-transform: uppercase; margin-bottom: 12px;
+}
 .ob-title  { font-size: 24px; font-weight: 700; color: var(--text); margin-bottom: 8px; line-height: 1.2; }
 .ob-sub    { font-size: 14px; color: var(--muted); margin-bottom: 28px; line-height: 1.6; }
 .ob-field  { margin-bottom: 16px; }
@@ -4106,8 +4115,9 @@ body.role-editor .admin-action {
       <!-- Step 1: Welcome -->
       <div class="ob-step active" id="obStep0">
         <div class="ob-emoji">👋</div>
+        <div class="ob-badge">Early Access</div>
         <div class="ob-title">Welcome! Let's get your first screen live.</div>
-        <div class="ob-sub">We'll have you up and running in under 5 minutes. First, tell us a little about yourself.</div>
+        <div class="ob-sub">Zigns is ready for real signage today while we finish official launch polish for late May / early June. First, tell us a little about yourself.</div>
         <div class="ob-field">
           <label>Organization / Company Name</label>
           <input type="text" id="obOrgName" placeholder="e.g. Acme Coffee Co.">
@@ -6413,7 +6423,7 @@ body.role-editor .admin-action {
         <div class="signin-logo-text">IGNS</div>
       </div>
       <div class="signin-title">Sign in to Zigns</div>
-      <div class="signin-sub">Manage your digital screens</div>
+      <div class="signin-sub">Manage your digital screens in Early Access</div>
 
       <button class="signin-provider-btn" onclick="signInWithGoogle()">
         <img src="assets/brand/google-g.png" alt="" aria-hidden="true" style="width:18px;height:18px;object-fit:contain;flex-shrink:0">
@@ -6445,6 +6455,8 @@ body.role-editor .admin-action {
       </div>
 
       <div id="registerView" style="display:none">
+        <div class="signin-badge">Early Access</div>
+        <div class="signin-note">Use Zigns for real signage today while we finish late May / early June launch polish.</div>
         <div class="signin-field">
           <label>Email</label>
           <input type="email" id="regEmail" placeholder="you@example.com" autocomplete="email">

@@ -115,6 +115,17 @@
 
   .card-title { font-size: 22px; font-weight: 700; color: #0a1628; margin-bottom: 6px; }
   .card-sub { font-size: 14px; color: #6b7280; margin-bottom: 28px; }
+  .early-access-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 9px; border-radius: 999px;
+    background: #eaf1ff; color: #0043ce;
+    font-size: 11px; font-weight: 700; letter-spacing: .04em;
+    text-transform: uppercase; margin-bottom: 12px;
+  }
+  .early-access-note {
+    font-size: 12px; color: #6b7280; line-height: 1.45;
+    margin: -16px 0 22px;
+  }
 
   .provider-btn {
     display: flex; align-items: center; gap: 10px;
@@ -298,8 +309,10 @@
 
     <!-- Register view -->
     <div id="registerView" style="display:none">
+      <div class="early-access-badge">Early Access</div>
       <div class="card-title">Create account</div>
-      <div class="card-sub">Start managing your screens today</div>
+      <div class="card-sub">Start managing real screens today</div>
+      <div class="early-access-note">Official launch is coming late May / early June. Some integrations and polish may continue to evolve during Early Access.</div>
       <div class="field">
         <label>Email</label>
         <input type="email" id="regEmail" placeholder="you@example.com" autocomplete="email">

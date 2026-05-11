@@ -4,6 +4,14 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-11 — Codex — Early Access legal and onboarding update
+
+Updated the canonical app legal pages and app onboarding copy for the Early Access launch posture.
+
+- **Legal**: refreshed Privacy Policy and Terms dates, added Google Photos/Google API data disclosures, AI-generation disclosure, expanded third-party processor coverage, and emergency/CAP non-life-safety terms.
+- **Onboarding**: added Early Access badges and launch-timing copy to the login/register flow and first-run onboarding wizard.
+- **Cross-project alignment**: paired with marketing-site Early Access copy and legal summary updates in `site/`.
+
 ## 2026-05-10 — Codex — Close Phase 5.3 scheduled cron verification
 
 Closed the remaining Phase 5.3 scheduled-origin verification note after shipping the CAP bilingual polish.

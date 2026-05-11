@@ -217,7 +217,7 @@
 
   <div class="doc-header">
     <h1>Privacy Policy</h1>
-    <p class="doc-meta">Last updated: April 19, 2026</p>
+    <p class="doc-meta">Last updated: May 10, 2026</p>
   </div>
 
   <div class="toc">
@@ -228,6 +228,7 @@
       <li><a href="#collect">Information We Collect</a></li>
       <li><a href="#use">How We Use Your Information</a></li>
       <li><a href="#share">How We Share Your Information</a></li>
+      <li><a href="#google-data">Google API Data</a></li>
       <li><a href="#retention">Data Retention</a></li>
       <li><a href="#security">Security</a></li>
       <li><a href="#rights">Your Privacy Rights</a></li>
@@ -241,7 +242,7 @@
   <!-- 1 -->
   <div class="section" id="intro">
     <h2>1. Introduction</h2>
-    <p>The website <a href="https://app.zigns.io">https://app.zigns.io</a> (the "Platform") is provided by Zigns ("Zigns," "we," "us," or "our"). Zigns offers a cloud-based digital signage platform that enables businesses to create, manage, and display visual content on connected screens.</p>
+    <p>The website <a href="https://app.zigns.io">https://app.zigns.io</a> (the "Platform") is provided by Zigns ("Zigns," "we," "us," or "our"). Zigns offers a cloud-based digital signage platform that enables businesses to create, manage, and display visual content on connected screens. Zigns is currently available in Early Access ahead of its official late May / early June launch.</p>
     <p>This Privacy Policy explains how we collect, use, disclose, and protect personal information when you visit our website or use our Services. By accessing the Platform, you confirm that you have read and understood this Policy and consent to the collection and use of your information as described herein.</p>
     <p>We are committed to respecting your privacy and complying with applicable data protection laws, including the California Consumer Privacy Act (CCPA).</p>
   </div>
@@ -260,6 +261,7 @@
     <p>When you register for a Zigns account, we collect:</p>
     <ul>
       <li><strong>Email address and password</strong> — used for account authentication and login. Passwords are encrypted and never stored in plain text.</li>
+      <li><strong>Single sign-on profile data</strong> — if you sign in with Google or Microsoft, we receive the basic account information needed to authenticate you, such as name, email address, and provider identifier.</li>
       <li><strong>First and last name</strong> (optional) — used to personalize your experience and identify users within your organization's account.</li>
       <li><strong>Profile preferences</strong> — timezone, date/time format, language preference, and notification settings, stored to personalize your experience.</li>
     </ul>
@@ -274,13 +276,21 @@
       <li>Browser type and device information</li>
       <li>Pages visited, features used, and time spent on the Platform</li>
       <li>Screen activity and content playback data associated with your organization</li>
+      <li>Screen diagnostics, player capability checks, online/offline events, watchdog restarts, skipped slide diagnostics, and proof-of-play analytics</li>
     </ul>
     <p>This data is used to operate, improve, and secure the Platform.</p>
 
     <h3>3.4 Content You Upload</h3>
-    <p>The Platform allows you to upload images, videos, and other media files ("Customer Content"). This content is stored on our behalf by Amazon Web Services (AWS S3) and served via Amazon CloudFront. You retain ownership of all content you upload. See Section 5 for details on how content is shared with service providers.</p>
+    <p>The Platform allows you to upload images, videos, documents, slide decks, generated slides, and other media files ("Customer Content"). This content is stored on our behalf by Amazon Web Services (AWS S3) and served via Amazon CloudFront. You retain ownership of all content you upload or import. See Section 5 for details on how content is shared with service providers.</p>
 
-    <h3>3.5 Cookies and Tracking Technologies</h3>
+    <h3>3.5 Third-Party Imports and Connected Services</h3>
+    <p>If you choose to import content from a third-party service, such as Google Photos, Google Slides, Canva, PowerPoint conversion, or other supported sources, we access only the data needed to complete the import you requested. Imported files are copied into your Zigns organization as Customer Content so they can be displayed on your screens.</p>
+    <p>For Google Photos imports, Zigns uses the Google Photos Picker API to let you select specific photos or videos. Zigns requests the <code>https://www.googleapis.com/auth/photospicker.mediaitems.readonly</code> scope, lists only the media items you selected in that picker session, downloads those selected items, and stores imported copies in your Zigns media library. Zigns does not use Google Photos data for advertising, does not sell Google user data, and does not store Google Photos access tokens long term.</p>
+
+    <h3>3.6 AI Slide Generation</h3>
+    <p>If you use AI-assisted slide generation, the prompt, selected style settings, and related generation instructions may be sent to our AI provider, Anthropic, to generate slide design output. Do not include sensitive personal information, regulated data, or confidential third-party information in AI prompts unless you have the right to process it through the service.</p>
+
+    <h3>3.7 Cookies and Tracking Technologies</h3>
     <p>We use cookies and similar technologies to operate the Platform and understand how it is used. Categories of cookies we use include:</p>
     <ul>
       <li><strong>Strictly necessary cookies</strong> — required for authentication, session management, and core Platform functionality. These cannot be disabled.</li>
@@ -298,6 +308,7 @@
       <li><strong>Communications</strong> — sending transactional and onboarding emails to help you get started, and billing-related communications for paid subscribers. We will only send marketing communications with your explicit consent, and you may unsubscribe at any time.</li>
       <li><strong>Security and fraud prevention</strong> — using IP address and login data to detect unauthorized access or abuse, including enforcement of our one-account-per-free-plan policy.</li>
       <li><strong>Platform improvement</strong> — analyzing aggregated, anonymized usage data to understand feature adoption, identify usability issues, and guide product development.</li>
+      <li><strong>Requested integrations</strong> — connecting to third-party services only when you request an import, export, embed, or data-driven widget, and using that data only to provide the visible feature you selected.</li>
       <li><strong>Legal compliance</strong> — retaining billing records as required by applicable tax and accounting laws, and responding to lawful requests from authorities.</li>
     </ul>
     <p>We do not sell your personal information to third parties. We do not use your personal information for automated decision-making or profiling that produces legal or similarly significant effects.</p>
@@ -325,6 +336,16 @@
           <td>United States</td>
         </tr>
         <tr>
+          <td>Google APIs</td>
+          <td>Google sign-in, Google Photos Picker imports, Google Slides imports, and Google Sheets widgets when you choose those features</td>
+          <td>United States</td>
+        </tr>
+        <tr>
+          <td>Microsoft identity platform</td>
+          <td>Microsoft account sign-in when you choose that provider</td>
+          <td>United States</td>
+        </tr>
+        <tr>
           <td>Amazon Web Services (S3 + CloudFront)</td>
           <td>Media file storage and content delivery</td>
           <td>United States</td>
@@ -344,6 +365,26 @@
           <td>Platform hosting and serverless functions</td>
           <td>United States</td>
         </tr>
+        <tr>
+          <td>Canva</td>
+          <td>Canva design listing and export/import when you connect Canva</td>
+          <td>United States / other regions</td>
+        </tr>
+        <tr>
+          <td>CloudConvert</td>
+          <td>PowerPoint file conversion when you import slide decks</td>
+          <td>United States / European Union</td>
+        </tr>
+        <tr>
+          <td>Anthropic</td>
+          <td>AI slide generation when you use AI-assisted creation</td>
+          <td>United States</td>
+        </tr>
+        <tr>
+          <td>OpenWeather and National Weather Service</td>
+          <td>Weather widgets and public CAP emergency alert feed data</td>
+          <td>United States / other regions</td>
+        </tr>
       </tbody>
     </table>
 
@@ -358,21 +399,31 @@
   </div>
 
   <!-- 6 -->
+  <div class="section" id="google-data">
+    <h2>6. Google API Data and Connected Imports</h2>
+    <p>Zigns uses Google API data only to provide user-facing features that you choose in the app. For Google Photos, Zigns opens a Google-controlled picker session, lets you select photos or videos, lists the selected media items, and imports copies of those selected items into your Zigns organization. We do not scan your full Google Photos library, and we do not access items you did not select.</p>
+    <p>Imported Google Photos media becomes Customer Content in Zigns and is stored with your other media in AWS S3 and delivered through CloudFront for display on your screens. Your organization admins and editors may be able to view, use, rename, schedule, or delete imported media according to their Zigns permissions.</p>
+    <p>Zigns does not sell Google user data, does not use Google user data for advertising, and does not transfer Google user data except as needed to provide or secure the import feature, comply with law, or complete a business transfer as described in this Policy. Google Photos access tokens are used for the active import session and are not stored long term by Zigns.</p>
+    <p>You can delete imported Google Photos media from your Zigns media library or request deletion of your account and associated data as described below.</p>
+  </div>
+
+  <!-- 7 -->
   <div class="section" id="retention">
-    <h2>6. Data Retention</h2>
+    <h2>7. Data Retention</h2>
     <p>We retain your personal information for as long as your account is active or as necessary to provide you with the Services. Specifically:</p>
     <ul>
       <li><strong>Account data</strong> is retained through the duration of your account. Upon account deletion, we initiate removal of your data from our database and cloud storage within a reasonable period.</li>
       <li><strong>Billing records</strong> are retained as required by applicable tax and accounting law, even after account deletion.</li>
       <li><strong>Inactive accounts</strong> on the free plan that have not logged in for 365 consecutive days are permanently deleted. We will send reminder notifications at 60-day intervals beginning 6 months before deletion.</li>
-      <li><strong>Uploaded media</strong> is marked for deletion upon account deletion and removed from storage promptly thereafter.</li>
+      <li><strong>Uploaded and imported media</strong> is marked for deletion upon account deletion and removed from storage promptly thereafter.</li>
+      <li><strong>Analytics and diagnostics</strong> may be retained in raw and aggregated form for operational reporting, security, compliance, and product improvement.</li>
     </ul>
     <p>You may request deletion of your account and associated data at any time through the Settings page within the Platform or by emailing <a href="mailto:hello@zigns.io">hello@zigns.io</a>.</p>
   </div>
 
-  <!-- 7 -->
+  <!-- 8 -->
   <div class="section" id="security">
-    <h2>7. Security</h2>
+    <h2>8. Security</h2>
     <p>We take appropriate technical and organizational measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction. These measures include:</p>
     <ul>
       <li>Encrypted data transmission (HTTPS/TLS) for all Platform communications</li>
@@ -385,11 +436,11 @@
     <p>In the event of a data breach affecting your personal information, we will notify affected users as required by applicable state and federal breach notification laws.</p>
   </div>
 
-  <!-- 8 -->
+  <!-- 9 -->
   <div class="section" id="rights">
-    <h2>8. Your Privacy Rights</h2>
+    <h2>9. Your Privacy Rights</h2>
 
-    <h3>8.1 All Users</h3>
+    <h3>9.1 All Users</h3>
     <p>Regardless of where you are located, you have the right to:</p>
     <ul>
       <li><strong>Access</strong> — request a copy of the personal information we hold about you.</li>
@@ -398,7 +449,7 @@
       <li><strong>Opt-out of marketing</strong> — unsubscribe from marketing emails at any time using the unsubscribe link in any email we send.</li>
     </ul>
 
-    <h3>8.2 California Residents (CCPA)</h3>
+    <h3>9.2 California Residents (CCPA)</h3>
     <p>If you are a California resident, you have additional rights under the California Consumer Privacy Act (CCPA):</p>
     <ul>
       <li><strong>Right to Know</strong> — you may request disclosure of the categories and specific pieces of personal information we have collected about you, the sources, purposes, and third parties with whom it has been shared.</li>
@@ -408,36 +459,36 @@
     </ul>
     <p>To exercise your CCPA rights, contact us at <a href="mailto:hello@zigns.io">hello@zigns.io</a>. We will respond to verified requests within 45 days of receipt. Where necessary, we may extend this period by an additional 45 days and will notify you of the extension.</p>
 
-    <h3>8.3 Residents of Other US States</h3>
-    <p>Several US states have enacted comprehensive privacy laws granting residents rights similar to those described above, including Virginia (VCDPA), Colorado (CPA), Connecticut (CTDPA), Texas (TDPSA), Montana, Oregon, and others. If you are a resident of a state with an applicable privacy law, you may have the right to access, correct, delete, or opt out of certain processing of your personal information. To exercise any such rights, contact us as described in Section 8.4.</p>
+    <h3>9.3 Residents of Other US States</h3>
+    <p>Several US states have enacted comprehensive privacy laws granting residents rights similar to those described above, including Virginia (VCDPA), Colorado (CPA), Connecticut (CTDPA), Texas (TDPSA), Montana, Oregon, and others. If you are a resident of a state with an applicable privacy law, you may have the right to access, correct, delete, or opt out of certain processing of your personal information. To exercise any such rights, contact us as described in Section 9.4.</p>
 
-    <h3>8.4 How to Submit a Request</h3>
+    <h3>9.4 How to Submit a Request</h3>
     <p>To exercise any privacy right, email us at <a href="mailto:hello@zigns.io">hello@zigns.io</a> with "Privacy Request" in the subject line. We will respond within 45 days of receipt and may ask you to verify your identity before fulfilling the request.</p>
   </div>
 
-  <!-- 9 -->
+  <!-- 10 -->
   <div class="section" id="children">
-    <h2>9. Children's Privacy</h2>
+    <h2>10. Children's Privacy</h2>
     <p>The Zigns Platform is not directed to children under the age of 13, and we do not knowingly collect personal information from children. If we become aware that a child under 13 has provided us with personal information, we will promptly delete it. If you believe a child has provided us with their information, please contact us at <a href="mailto:hello@zigns.io">hello@zigns.io</a>.</p>
   </div>
 
-  <!-- 10 -->
+  <!-- 11 -->
   <div class="section" id="international">
-    <h2>10. International Users</h2>
+    <h2>11. International Users</h2>
     <p>Zigns is currently operated from the United States and our Services are directed at users in the United States. All data we collect is processed and stored in the United States. By using the Platform from outside the United States, you consent to the transfer of your information to the United States, which may have different data protection rules than those in your country.</p>
     <p>We plan to expand our Services to Canada and Mexico in the future. As we do so, we will update this Policy to reflect applicable data protection requirements in those jurisdictions.</p>
   </div>
 
-  <!-- 11 -->
+  <!-- 12 -->
   <div class="section" id="changes">
-    <h2>11. Changes to This Policy</h2>
+    <h2>12. Changes to This Policy</h2>
     <p>We may update this Privacy Policy periodically. When we make material changes, we will notify you by posting the updated Policy on this page with a new "Last Updated" date and, where appropriate, by sending an email notification. We encourage you to review this Policy periodically.</p>
     <p>Your continued use of the Platform after any changes constitutes your acceptance of the revised Policy.</p>
   </div>
 
-  <!-- 12 -->
+  <!-- 13 -->
   <div class="section" id="contact">
-    <h2>12. Contact Us</h2>
+    <h2>13. Contact Us</h2>
     <p>If you have any questions, concerns, or requests regarding this Privacy Policy or our data practices, please contact us:</p>
     <ul>
       <li><strong>Email:</strong> <a href="mailto:hello@zigns.io">hello@zigns.io</a></li>
