@@ -9603,6 +9603,10 @@ let screensUnsub  = null;
 let _mediaUnsub   = null;
 let _broadcastUnsub = null;
 let _broadcastOrgId = null;
+let _authSessionStartedAt = 0;
+let _bootReadyAt = 0;
+const SHOW_LOAD_STARTUP_GRACE_MS = 15000;
+const _showLoadRetryCounts = new Map();
 
 function stopRealtimeListener(label, unsub) {
   if (!unsub) return null;
@@ -9622,6 +9626,36 @@ function cleanupRealtimeListeners() {
 
 function stopActiveShowListener() {
   unsubscribe = stopRealtimeListener('Slideshow', unsubscribe);
+}
+
+function isPermissionDeniedError(error) {
+  const message = String(error?.message || error || '');
+  return /missing or insufficient permissions|permission-denied/i.test(message);
+}
+
+function isStartupShowLoadRace(error) {
+  const anchor = _bootReadyAt || _authSessionStartedAt;
+  return Boolean(anchor && isPermissionDeniedError(error) && Date.now() - anchor < SHOW_LOAD_STARTUP_GRACE_MS);
+}
+
+function retryStartupShowLoad(showId, showName, error, source = 'listener') {
+  if (!isStartupShowLoadRace(error) || !showId) return false;
+  const count = _showLoadRetryCounts.get(showId) || 0;
+  if (count >= 2) return false;
+  _showLoadRetryCounts.set(showId, count + 1);
+  const delay = 700 + (count * 900);
+  console.warn(`[Slides] Suppressed startup slideshow permission race from ${source}; retrying ${showId} in ${delay}ms.`);
+  setTimeout(() => {
+    if (!auth.currentUser || currentShowId !== showId) return;
+    const slideshowsActive = document.getElementById('page-slideshows')?.classList.contains('active');
+    if (slideshowsActive) {
+      stopActiveShowListener();
+      listenToShow(showId, showName || currentShowName);
+    } else {
+      loadCurrentShowSnapshot(showId);
+    }
+  }, delay);
+  return true;
 }
 
 // Live listener on the org doc — keeps plan/role in sync when Stripe webhooks
@@ -9683,6 +9717,9 @@ onAuthStateChanged(auth, async user => {
   const btn   = document.getElementById("authBtn");
 
   if (user) {
+    _authSessionStartedAt = Date.now();
+    _bootReadyAt = 0;
+    _showLoadRetryCounts.clear();
     const tokenResult = await user.getIdTokenResult().catch(e => {
       console.warn('Could not inspect auth token:', e.message);
       return null;
@@ -9700,7 +9737,11 @@ onAuthStateChanged(auth, async user => {
     email.textContent  = user.email;
     btn.textContent    = "Sign Out";
     await initUserAndOrg(user);
+    _bootReadyAt = Date.now();
   } else {
+    _authSessionStartedAt = 0;
+    _bootReadyAt = 0;
+    _showLoadRetryCounts.clear();
     cleanupRealtimeListeners();
     window.location.replace('/login');
   }
@@ -11817,6 +11858,7 @@ function setPushVisible(visible) {
 }
 
 function applyLoadedShowData(id, data = {}) {
+  _showLoadRetryCounts.delete(id);
   slides = data._hasDraftSlides ? data.draftSlides : (data.slides || []);
   document.getElementById("defaultDwell").value  = data.draftDwell      ?? data.defaultDwell  ?? 6;
   document.getElementById("fitMode").value       = data.draftFitMode    ?? data.fitMode       ?? "contain";
@@ -11866,6 +11908,7 @@ function listenToShow(id, name) {
     } catch(e) {
       if (currentShowId !== id) return;
       console.warn('Slideshow load failed:', e.message);
+      if (retryStartupShowLoad(id, name, e, 'snapshot')) return;
       toast('Could not load slideshow: ' + e.message, true);
     }
   }, async err => {
@@ -11876,6 +11919,7 @@ function listenToShow(id, name) {
       applyLoadedShowData(id, fallback);
       return;
     }
+    if (retryStartupShowLoad(id, name, err, 'listener error')) return;
     toast('Could not load slideshow: ' + err.message, true);
   });
 }

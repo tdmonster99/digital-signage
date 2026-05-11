@@ -4,6 +4,13 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-11 — Codex — Suppress startup slideshow permission race
+
+Quieted a transient Early Access QA issue where opening Add Media immediately after sign-in could surface a slideshow permission toast before the first slideshow listener settled.
+
+- **Slideshows**: startup permission-denied slideshow reads now retry quietly during a short post-auth grace window, while persistent permission failures still show the normal error.
+- **UX**: Add Media can open during initial dashboard hydration without displaying an unrelated "Could not load slideshow" warning.
+
 ## 2026-05-11 — Codex — Early Access legal and onboarding update
 
 Updated the canonical app legal pages and app onboarding copy for the Early Access launch posture.
