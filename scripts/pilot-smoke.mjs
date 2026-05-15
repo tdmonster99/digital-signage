@@ -220,6 +220,10 @@ async function main() {
     'assets/brand/dropbox.svg',
     'assets/brand/youtube.png',
     'assets/brand/canva.svg',
+    'sortScreensForDisplay',
+    'isStaleScreen',
+    'screens-stale-banner',
+    'screen-stale-chip',
   ]));
 
   await check('Static invite sender', () => assertFileContains('api/link-account.js', [

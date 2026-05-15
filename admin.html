@@ -363,6 +363,14 @@ body {
 }
 .screen-status-badge.online  { background: rgba(34,197,94,.12); color: #22c55e; }
 .screen-status-badge.offline { background: var(--surface2); color: var(--muted); }
+.screen-status-wrap { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.screen-stale-chip {
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 999px; padding: 3px 7px;
+  background: rgba(245,158,11,.12); color: #b45309;
+  font-size: 11px; font-weight: 700;
+}
+[data-theme="dark"] .screen-stale-chip { background: rgba(251,191,36,.16); color: #fbbf24; }
 .screen-status-dot {
   width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
 }
@@ -383,6 +391,14 @@ body {
 }
 .screen-url-btn:hover { color: var(--accent); }
 .screen-url-btn svg { flex-shrink: 0; }
+.screens-stale-banner {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 12px 14px; border: 1px solid rgba(245,158,11,.3);
+  border-radius: 12px; background: rgba(245,158,11,.08);
+  color: var(--text);
+}
+.screens-stale-banner strong { display: block; font-size: 13px; margin-bottom: 3px; }
+.screens-stale-banner span { display: block; color: var(--muted); font-size: 12px; line-height: 1.4; }
 
 /* ── Pairing modal ───────────────────────────────────────────────────── */
 #pairingModal {
@@ -22206,6 +22222,40 @@ function isOnline(lastSeen) {
   return (Date.now() - new Date(lastSeen)) < 3 * 60 * 1000;
 }
 
+const STALE_SCREEN_DAYS = 7;
+const STALE_SCREEN_MS = STALE_SCREEN_DAYS * 24 * 60 * 60 * 1000;
+
+function screenTimeMs(value) {
+  if (!value) return 0;
+  const ms = new Date(value).getTime();
+  return Number.isFinite(ms) ? ms : 0;
+}
+
+function isStaleScreen(screen) {
+  const lastSeenMs = screenTimeMs(screen?.lastSeen);
+  return !isOnline(screen?.lastSeen) && (!lastSeenMs || Date.now() - lastSeenMs >= STALE_SCREEN_MS);
+}
+
+function sortScreensForDisplay(screens) {
+  return [...screens].sort((a, b) => {
+    const aOnline = isOnline(a.lastSeen);
+    const bOnline = isOnline(b.lastSeen);
+    if (aOnline !== bOnline) return aOnline ? -1 : 1;
+
+    const aStale = isStaleScreen(a);
+    const bStale = isStaleScreen(b);
+    if (aStale !== bStale) return aStale ? 1 : -1;
+
+    const lastSeenDelta = screenTimeMs(b.lastSeen) - screenTimeMs(a.lastSeen);
+    if (lastSeenDelta) return lastSeenDelta;
+
+    const registeredDelta = screenTimeMs(b.registeredAt) - screenTimeMs(a.registeredAt);
+    if (registeredDelta) return registeredDelta;
+
+    return String(a.name || a.id || '').localeCompare(String(b.name || b.id || ''));
+  });
+}
+
 const PLAYER_DIAGNOSTIC_TYPES = new Set([
   'player_boot',
   'player_capabilities',
@@ -22357,22 +22407,39 @@ function renderScreens(screens) {
   const emptyEl = document.getElementById('screensEmptyState');
   if (emptyEl) emptyEl.remove();
 
+  const displayScreens = sortScreensForDisplay(screens);
+  const staleCount = screens.filter(isStaleScreen).length;
+  const staleLabel = `${staleCount} stale screen${staleCount === 1 ? '' : 's'}`;
+
+  let staleBanner = list.querySelector('.screens-stale-banner');
+  if (staleCount && currentRole === 'admin') {
+    if (!staleBanner) {
+      staleBanner = document.createElement('div');
+      staleBanner.className = 'screens-stale-banner';
+      list.prepend(staleBanner);
+    }
+    staleBanner.innerHTML = `<div>
+      <strong>${staleLabel}</strong>
+      <span>Offline for ${STALE_SCREEN_DAYS}+ days. These are organization records, not browser sessions; delete any that no longer represent a physical display.</span>
+    </div>`;
+  } else if (staleBanner) {
+    staleBanner.remove();
+  }
+
   // Build or update grid
   let grid = list.querySelector('.screens-grid');
   if (!grid) {
     grid = document.createElement('div');
     grid.className = 'screens-grid';
-    list.innerHTML = '';
     list.appendChild(grid);
   }
 
   const shows = getAllShows();
-  const now   = Date.now();
 
-  grid.innerHTML = screens
-    .sort((a, b) => (a.registeredAt || '') < (b.registeredAt || '') ? -1 : 1)
+  grid.innerHTML = displayScreens
     .map(screen => {
       const online       = isOnline(screen.lastSeen);
+      const stale        = isStaleScreen(screen);
       const lastSeenStr  = fmtLastSeen(screen.lastSeen);
       const showName     = shows.find(s => s.id === screen.slideshowId)?.name || screen.slideshowId || 'main';
       const locationStr  = screen.location ? escHtml(screen.location) : '<span style="color:var(--muted);font-style:italic">No location set</span>';
@@ -22395,9 +22462,12 @@ function renderScreens(screens) {
         <div class="screen-card-body">
           <div class="screen-card-row">
             <div class="screen-card-name">${escHtml(screen.name || screen.id)}</div>
-            <div class="screen-status-badge ${online ? 'online' : 'offline'}">
-              <div class="screen-status-dot"></div>
-              ${online ? 'Online' : 'Offline'}
+            <div class="screen-status-wrap">
+              ${stale ? `<span class="screen-stale-chip" title="This screen has not checked in for ${STALE_SCREEN_DAYS}+ days. Delete it if it no longer represents a physical display.">Stale</span>` : ''}
+              <div class="screen-status-badge ${online ? 'online' : 'offline'}">
+                <div class="screen-status-dot"></div>
+                ${online ? 'Online' : 'Offline'}
+              </div>
             </div>
           </div>
           <div class="screen-card-location">${locationStr}</div>

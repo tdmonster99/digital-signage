@@ -4,6 +4,14 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-15 — Codex — Clarify stale Novares screen inventory
+
+Adjusted the Screens page so active and recently seen displays are prioritized over old offline records, reducing confusion when a Novares admin signs in from another machine.
+
+- **Screens**: sort online/recent displays first without mutating the cached screen list.
+- **Inventory clarity**: label screens offline for 7+ days as stale and show an admin-only stale inventory notice explaining that these are organization records, not browser sessions.
+- **Smoke**: added static smoke markers for the stale screen ordering and labeling guard.
+
 ## 2026-05-11 — Codex — Suppress startup slideshow permission race
 
 Quieted a transient Early Access QA issue where opening Add Media immediately after sign-in could surface a slideshow permission toast before the first slideshow listener settled.
