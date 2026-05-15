@@ -9616,6 +9616,7 @@ let orgUnsub      = null;
 let _orgListenerOrgId = null;
 let unsubscribe   = null;
 let screensUnsub  = null;
+let _screensListenerOrgId = null;
 let _mediaUnsub   = null;
 let _broadcastUnsub = null;
 let _broadcastOrgId = null;
@@ -9630,11 +9631,18 @@ function stopRealtimeListener(label, unsub) {
   return null;
 }
 
+function resetScreensListener() {
+  screensUnsub = stopRealtimeListener('Screens', screensUnsub);
+  _screensListenerOrgId = null;
+  _cachedScreens = [];
+  _screensReady = false;
+}
+
 function cleanupRealtimeListeners() {
   unsubscribe = stopRealtimeListener('Slideshow', unsubscribe);
   orgUnsub = stopRealtimeListener('Org', orgUnsub);
   _orgListenerOrgId = null;
-  screensUnsub = stopRealtimeListener('Screens', screensUnsub);
+  resetScreensListener();
   _mediaUnsub = stopRealtimeListener('Media', _mediaUnsub);
   _broadcastUnsub = stopRealtimeListener('Broadcast', _broadcastUnsub);
   _broadcastOrgId = null;
@@ -9677,17 +9685,13 @@ function retryStartupShowLoad(showId, showName, error, source = 'listener') {
 // Live listener on the org doc — keeps plan/role in sync when Stripe webhooks
 // or another admin's writes update the doc.
 function subscribeToOrg(orgId) {
+  if (screensUnsub && _screensListenerOrgId !== orgId) {
+    resetScreensListener();
+  }
   if (orgUnsub && _orgListenerOrgId !== orgId) {
     try { orgUnsub(); } catch(_) {}
     orgUnsub = null;
     _orgListenerOrgId = null;
-    // Org changed — also drop the screens listener so it re-binds with the new orgId
-    if (typeof screensUnsub !== 'undefined' && screensUnsub) {
-      try { screensUnsub(); } catch(_) {}
-      screensUnsub  = null;
-      _cachedScreens = [];
-      _screensReady  = false;
-    }
   }
   if (!orgId || orgUnsub) return;
   _orgListenerOrgId = orgId;
@@ -10129,6 +10133,10 @@ async function initUserAndOrg(user) {
   await loadSchedulesFromOrg();
   loadBrandKit();
   _subscribeBroadcast();
+  if (document.getElementById('page-screens')?.classList.contains('active')
+      || (_pendingPublishModal && document.getElementById('publishModal')?.classList.contains('open'))) {
+    initScreensPage();
+  }
   handleInitialDeepLink();
   scheduleTemplateThumbnailWarmup();
 
@@ -11986,9 +11994,18 @@ window.publishToScreens = function() {
 
 function _openPublishModal() {
   // Ensure screens are loaded even if the Screens page was never visited
-  if (!screensUnsub) initScreensPage();
   const listEl = document.getElementById('publishScreenList');
   const shows  = getAllShows();
+  if (!currentOrgId) {
+    _pendingPublishModal = true;
+    listEl.innerHTML = `<div class="publish-empty"><div class="pairing-spinner" style="margin:0 auto"></div></div>`;
+    _publishSelectedIds = new Set();
+    _updatePublishFooter();
+    resetPublishConfirmButton();
+    document.getElementById('publishModal').classList.add('open');
+    return;
+  }
+  if (!screensUnsub || _screensListenerOrgId !== currentOrgId) initScreensPage();
 
   // If snapshot hasn't fired yet, show a spinner and re-render when it does
   if (!_screensReady) {
@@ -22029,15 +22046,39 @@ const _screenLimitEnforcerId = (() => {
   catch { return `admin-${Date.now()}-${Math.random().toString(36).slice(2)}`; }
 })();
 
+function renderScreensOrgPending() {
+  const list = document.getElementById('screensList');
+  if (!list) return;
+  list.innerHTML = `<div class="empty" id="screensLoadingState" style="padding:80px 0">
+    <div class="pairing-spinner" style="margin:0 auto 14px"></div>
+    <p>Loading organization screens…</p>
+  </div>`;
+}
+
 function initScreensPage() {
   loadEmergencyAuditHistory();
-  if (screensUnsub) { renderScreens(_cachedScreens); return; }
-  const q = currentOrgId
-    ? query(collection(db, 'screens'), where('orgId', '==', currentOrgId))
-    : collection(db, 'screens');
+  if (!currentOrgId) {
+    console.warn('Screens listener waiting for organization context');
+    resetScreensListener();
+    renderScreensOrgPending();
+    return;
+  }
+
+  if (screensUnsub && _screensListenerOrgId === currentOrgId) {
+    renderScreens(_cachedScreens);
+    return;
+  }
+  if (screensUnsub) resetScreensListener();
+
+  const listenerOrgId = currentOrgId;
+  const q = query(collection(db, 'screens'), where('orgId', '==', listenerOrgId));
+  _screensListenerOrgId = listenerOrgId;
   screensUnsub = onSnapshot(q,
     snap => {
-      _cachedScreens = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      if (_screensListenerOrgId !== listenerOrgId || currentOrgId !== listenerOrgId) return;
+      _cachedScreens = snap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .filter(screen => screen.orgId === listenerOrgId);
       _screensReady  = true;
       renderScreens(_cachedScreens);
       enforceScreenLimit(_cachedScreens);

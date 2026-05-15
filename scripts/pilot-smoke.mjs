@@ -226,6 +226,13 @@ async function main() {
     'screen-stale-chip',
   ]));
 
+  await check('Static screen org scoping guard', async () => {
+    const adminHtml = await readText('admin.html');
+    assert(adminHtml.includes('Screens listener waiting for organization context'), 'admin.html is missing the screen org readiness guard');
+    assert(adminHtml.includes('_screensListenerOrgId'), 'admin.html is missing screen listener org tracking');
+    assert(!adminHtml.includes(": collection(db, 'screens');"), 'admin.html still falls back to an unscoped screens collection listener');
+  });
+
   await check('Static invite sender', () => assertFileContains('api/link-account.js', [
     'sendTeamInvitationEmail',
     'Zigns <hello@zigns.io>',

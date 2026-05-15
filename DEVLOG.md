@@ -4,6 +4,15 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-15 — Codex — Prevent unscoped screen inventory loads
+
+Fixed a Screens page race where opening screen inventory before the organization context finished loading could attach an unscoped public screens listener and show other historical screen records that the server correctly refused to mutate.
+
+- **Screens**: wait for a resolved organization before subscribing to screen records.
+- **Org safety**: track the org bound to the screen listener and re-bind when org context changes.
+- **Publish flow**: keep the publish modal in a loading state until org-scoped screens can load.
+- **Smoke**: added static coverage to prevent reintroducing the unscoped screens fallback.
+
 ## 2026-05-15 — Codex — Clarify stale Novares screen inventory
 
 Adjusted the Screens page so active and recently seen displays are prioritized over old offline records, reducing confusion when a Novares admin signs in from another machine.
