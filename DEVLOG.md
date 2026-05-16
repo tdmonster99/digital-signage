@@ -4,6 +4,14 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-15 — Codex — Hydrate slideshow sidebar counts
+
+Fixed a startup display issue where inactive slideshows could show `0 slides` in the sidebar until clicked, even when their slide subcollections contained published slides.
+
+- **Slideshows**: sidebar count preloading now hydrates suspicious zero or missing metadata through the full slideshow loader.
+- **Fallback**: missing parent slideshow docs use the server snapshot path so counts can still resolve from org-owned show metadata and subcollections.
+- **Smoke**: added static coverage to prevent the sidebar from trusting stale zero count metadata again.
+
 ## 2026-05-15 — Codex — Prevent unscoped screen inventory loads
 
 Fixed a Screens page race where opening screen inventory before the organization context finished loading could attach an unscoped public screens listener and show other historical screen records that the server correctly refused to mutate.

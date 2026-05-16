@@ -233,6 +233,13 @@ async function main() {
     assert(!adminHtml.includes(": collection(db, 'screens');"), 'admin.html still falls back to an unscoped screens collection listener');
   });
 
+  await check('Static slideshow sidebar count hydration', async () => {
+    const adminHtml = await readText('admin.html');
+    assert(adminHtml.includes('shouldHydrateShowCountMeta'), 'admin.html is missing stale slideshow count hydration');
+    assert(adminHtml.includes('loadShowMetaForSidebarCount'), 'admin.html is missing sidebar count loader fallback');
+    assert(!adminHtml.includes('if (!hasCount && !hasInlineSlides)'), 'admin.html still trusts stale zero slideshow count metadata');
+  });
+
   await check('Static invite sender', () => assertFileContains('api/link-account.js', [
     'sendTeamInvitationEmail',
     'Zigns <hello@zigns.io>',

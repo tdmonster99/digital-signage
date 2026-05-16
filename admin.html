@@ -10322,14 +10322,8 @@ async function loadShowsFromOrg() {
   // Fetch slide counts and review badges for all shows.
   shows.forEach(async s => {
     try {
-      const snap = await getDoc(doc(db, 'slideshows', s.id));
-      if (!snap.exists()) return;
-      let data = snap.data();
-      const hasCount = Number.isFinite(data.draftSlidesCount) || Number.isFinite(data.publishedSlidesCount);
-      const hasInlineSlides = Array.isArray(data.draftSlides) || Array.isArray(data.slides);
-      if (!hasCount && !hasInlineSlides) {
-        data = await loadShowWithSlides(s.id, data);
-      }
+      const data = await loadShowMetaForSidebarCount(s.id);
+      if (!data) return;
       updateShowItemMeta(s.id, data);
     } catch(e) { /* non-critical */ }
   });
@@ -11266,6 +11260,38 @@ function composeLoadedShowData(data = {}, publishedSlides = [], draftSlides) {
     ...(draftSlides !== undefined && { draftSlides }),
     _hasDraftSlides: hasDraftSlides,
   };
+}
+
+function slideshowMetadataCount(data = {}) {
+  if (Number.isFinite(data.draftSlidesCount)) return data.draftSlidesCount;
+  if (Number.isFinite(data.publishedSlidesCount)) return data.publishedSlidesCount;
+  return null;
+}
+
+function hasInlineSlidePayload(data = {}) {
+  return Array.isArray(data.draftSlides) || Array.isArray(data.slides);
+}
+
+function shouldHydrateShowCountMeta(data = {}) {
+  if (hasInlineSlidePayload(data)) return false;
+  const metadataCount = slideshowMetadataCount(data);
+  if (!Number.isFinite(metadataCount)) return true;
+  if (metadataCount > 0) return false;
+  return data.slideStorageVersion >= SLIDE_STORAGE_VERSION ||
+    data.publishedStorage === 'subcollection' ||
+    data.draftStorage === 'subcollection' ||
+    shouldProbeUnmarkedSubcollections(data);
+}
+
+async function loadShowMetaForSidebarCount(showId) {
+  const snap = await getDoc(doc(db, 'slideshows', showId));
+  if (!snap.exists()) {
+    return loadShowSnapshotFromServer(showId, 'sidebar count missing slideshow doc');
+  }
+  const data = snap.data();
+  return shouldHydrateShowCountMeta(data)
+    ? loadShowWithSlides(showId, data)
+    : data;
 }
 
 async function loadShowSnapshotFromServer(showId, reason = '') {
