@@ -4,6 +4,26 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-17 — Codex — Refresh Apps page icons
+
+Replaced the generic inline app-card icons with generated raster icons for the Apps page, excluding YouTube and Instagram.
+
+- **Apps**: added a varied-color imagegen icon set for Clock & Date, Weather, QR Code, RSS Ticker, Google Slides, Web Page, Google Reviews, Countdown Timer, Google Sheets, Menu Board, Multi-Zone Layout, WiFi Password, and Stock Ticker.
+- **Assets**: saved the final cropped icon PNGs under `assets/app-icons/` so the page does not depend on Codex generated-image output paths.
+
+---
+
+## 2026-05-17 — Codex — Activate remaining app cards
+
+Finished the remaining Apps page cards that were still marked coming soon.
+
+- **Apps**: activated RSS Ticker, Google Slides, Web Page, WiFi Password, and Stock Ticker cards with plan gating aligned to existing app tiers.
+- **New app flows**: added RSS and stock ticker slide creation using designed slides with ticker metadata, plus WiFi password QR slide creation.
+- **Player/API**: added stock ticker playback support and a lightweight delayed quote proxy while preserving existing RSS ticker behavior.
+- **Local auth**: boot-time account read recovery now keeps the signed-in session and shows safe diagnostics instead of clearing the session when local backend fallback is unavailable.
+
+---
+
 ## 2026-05-17 — Codex — Add screen diagnostics panel
 
 Added a clearer screen-health diagnostics surface after investigating a Novares ChromeOS multi-display incident where TV 2 stopped heartbeating while TV 1 stayed online.

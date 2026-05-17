@@ -3,6 +3,9 @@
 // GET /api/proxy?type=rss&url=RSS_URL
 //   → fetches RSS feed, returns { ok, headlines: string[] }
 //
+// GET /api/proxy?type=stocks&symbols=AAPL,MSFT
+//   → fetches delayed stock quotes, returns { ok, quotes: [...] }
+//
 // GET /api/proxy?type=weather&location=LOCATION&units=imperial|metric
 //   → proxies OpenWeatherMap current + 3-day forecast
 //   → Required env var: OPENWEATHER_API_KEY
@@ -98,6 +101,52 @@ module.exports = async function handler(req, res) {
       const headlines = parseRss(await upstream.text());
       res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=60');
       return res.status(200).json({ ok: true, headlines });
+    } catch (e) {
+      return res.status(502).json({ error: e.message });
+    }
+  }
+
+  // ── Stock quote proxy ──────────────────────────────────────────────────────
+  if (type === 'stocks') {
+    const symbols = normalizeStockSymbols(req.query.symbols);
+    if (!symbols.length) return res.status(400).json({ error: 'symbols is required' });
+
+    const stooqSymbols = symbols.map(toStooqSymbol);
+    const endpoint = `https://stooq.com/q/l/?s=${stooqSymbols.map(encodeURIComponent).join('+')}&f=sd2t2ohlcv&h&e=csv`;
+
+    try {
+      const upstream = await fetch(endpoint, {
+        headers: { 'User-Agent': 'Zigns/1.0 Stock Ticker (+https://zigns.io)' },
+        signal: AbortSignal.timeout(8000),
+      });
+      if (!upstream.ok) return res.status(502).json({ error: `Upstream returned ${upstream.status}` });
+
+      const rows = parseStockCsv(await upstream.text());
+      const bySymbol = new Map(rows.map(row => [String(row.Symbol || '').toLowerCase(), row]));
+      const quotes = stooqSymbols.map((sourceSymbol, idx) => {
+        const row = bySymbol.get(sourceSymbol.toLowerCase());
+        const displaySymbol = symbols[idx];
+        if (!row || String(row.Close || '').toUpperCase() === 'N/D') {
+          return { symbol: displaySymbol, status: 'unavailable' };
+        }
+        const price = Number(row.Close);
+        const open = Number(row.Open);
+        const hasMove = Number.isFinite(price) && Number.isFinite(open) && open !== 0;
+        const change = hasMove ? price - open : null;
+        return {
+          symbol: displaySymbol,
+          price: Number.isFinite(price) ? price : null,
+          change,
+          changePercent: hasMove ? (change / open) * 100 : null,
+          currency: 'USD',
+          date: row.Date || '',
+          time: row.Time || '',
+          status: Number.isFinite(price) ? 'ok' : 'unavailable',
+        };
+      });
+
+      res.setHeader('Cache-Control', 's-maxage=120, stale-while-revalidate=300');
+      return res.status(200).json({ ok: true, source: 'stooq', delayed: true, quotes });
     } catch (e) {
       return res.status(502).json({ error: e.message });
     }
@@ -292,7 +341,7 @@ module.exports = async function handler(req, res) {
     }
   }
 
-  return res.status(400).json({ error: 'type must be "rss", "weather", "googlereviews", "embedcheck", or "instagram"' });
+  return res.status(400).json({ error: 'type must be "rss", "stocks", "weather", "googlereviews", "embedcheck", or "instagram"' });
 };
 
 async function fetchHeadersOnly(url) {
@@ -397,6 +446,61 @@ function normalizeInstagramPost(item) {
     timestamp: item.timestamp || '',
     username: item.username || '',
   };
+}
+
+function normalizeStockSymbols(input) {
+  const symbols = [];
+  String(input || '')
+    .split(/[\s,]+/)
+    .map(s => s.trim().toUpperCase().replace(/[^A-Z0-9.\-]/g, ''))
+    .filter(Boolean)
+    .forEach(symbol => {
+      if (!symbols.includes(symbol) && /^[A-Z0-9][A-Z0-9.\-]{0,14}$/.test(symbol)) symbols.push(symbol);
+    });
+  return symbols.slice(0, 12);
+}
+
+function toStooqSymbol(symbol) {
+  const normalized = String(symbol || '').toLowerCase().replace(/-/g, '.');
+  if (/\.[a-z]{2,4}$/.test(normalized)) return normalized;
+  return `${normalized}.us`;
+}
+
+function parseStockCsv(csv) {
+  const lines = String(csv || '').trim().split(/\r?\n/).filter(Boolean);
+  if (lines.length < 2) return [];
+  const headers = parseCsvLine(lines[0]);
+  return lines.slice(1).map(line => {
+    const cols = parseCsvLine(line);
+    return headers.reduce((row, key, idx) => {
+      row[key] = cols[idx] || '';
+      return row;
+    }, {});
+  });
+}
+
+function parseCsvLine(line) {
+  const values = [];
+  let cur = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i += 1) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        cur += '"';
+        i += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (ch === ',' && !inQuotes) {
+      values.push(cur);
+      cur = '';
+    } else {
+      cur += ch;
+    }
+  }
+  values.push(cur);
+  return values.map(v => v.trim());
 }
 
 function parseRss(xml) {

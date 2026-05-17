@@ -2988,6 +2988,17 @@ body > canvas[width="1920"][height="1080"] {
   display: block;
   flex-shrink: 0;
 }
+.app-card-icon.app-card-icon--image {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+.app-card-icon.app-card-icon--image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
 .app-card-name { font-size: 14px; font-weight: 700; color: var(--text); }
 .app-card-desc { font-size: 12px; color: var(--muted); line-height: 1.5; flex: 1; }
 .app-card-soon-badge {
@@ -4760,18 +4771,7 @@ body.role-editor .admin-action {
 
       <!-- Clock & Date — available -->
       <div class="app-card" data-category="widgets" data-name="clock date" onclick="openClockModal(null)">
-        <div class="app-card-icon" style="background:linear-gradient(135deg, rgba(255,122,0,.18), rgba(255,229,204,.2))">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3.2" y="4" width="17.6" height="16" rx="4" fill="#fff8ef" stroke="#f07c00" stroke-width="1.4"/>
-            <rect x="5.4" y="5.6" width="13.2" height="3.1" rx="1.1" fill="#f07c00"/>
-            <circle cx="15.4" cy="14.3" r="3.1" fill="#fff" stroke="#f07c00" stroke-width="1.6"/>
-            <line x1="15.4" y1="14.3" x2="15.4" y2="12.4" stroke="#f07c00" stroke-width="1.6"/>
-            <line x1="15.4" y1="14.3" x2="17" y2="15.2" stroke="#f07c00" stroke-width="1.6"/>
-            <rect x="6.7" y="11.4" width="4.2" height="1.2" rx=".6" fill="#fdba74"/>
-            <rect x="6.7" y="14.2" width="4.2" height="1.2" rx=".6" fill="#fdba74"/>
-            <rect x="11.1" y="11.4" width="2.1" height="1.2" rx=".6" fill="#fed7aa"/>
-          </svg>
-        </div>
+        <div class="app-card-icon app-card-icon--image"><img src="assets/app-icons/clock-date.png" alt="" aria-hidden="true"></div>
         <div class="app-card-name">Clock &amp; Date</div>
         <div class="app-card-desc">Live clock with date, timezone, and custom font styles</div>
         <button class="app-card-add" onclick="event.stopPropagation();openClockModal(null)">Add →</button>
@@ -4779,13 +4779,7 @@ body.role-editor .admin-action {
 
       <!-- Weather -->
       <div class="app-card" data-category="widgets" data-name="weather" onclick="openWeatherModal(null)">
-        <div class="app-card-icon" style="background:linear-gradient(135deg, rgba(59,130,246,.16), rgba(191,219,254,.2))">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="8.2" cy="8.2" r="3.1" fill="#fbbf24"/>
-            <path d="M8.2 4.6V3.2M5 5.6 4 4.6M11.4 5.6 12.4 4.6M3.9 8.2H2.5M13.9 8.2H15.3" stroke="#f59e0b" stroke-width="1.2"/>
-            <path d="M7.8 17h8.7a3.4 3.4 0 0 0 .3-6.8 5.2 5.2 0 0 0-9.9 1.5A3.4 3.4 0 0 0 7.8 17Z" fill="#fff" stroke="#3b82f6" stroke-width="1.6"/>
-          </svg>
-        </div>
+        <div class="app-card-icon app-card-icon--image"><img src="assets/app-icons/weather.png" alt="" aria-hidden="true"></div>
         <div class="app-card-name">Weather</div>
         <div class="app-card-desc">Current conditions and forecast for any location</div>
         <button class="app-card-add" onclick="event.stopPropagation();openWeatherModal(null)">Add →</button>
@@ -4793,46 +4787,18 @@ body.role-editor .admin-action {
 
       <!-- QR Code -->
       <div class="app-card" data-category="widgets" data-name="qr code" onclick="openQrModal(null)">
-        <div class="app-card-icon" style="background:linear-gradient(135deg, rgba(79,70,229,.18), rgba(167,139,250,.22))">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
-            <rect x="3.1" y="3.1" width="17.8" height="17.8" rx="4.3" fill="#faf5ff" stroke="#7c3aed" stroke-width="1.4"/>
-            <rect x="4.2" y="4.2" width="5" height="5" rx="1.1" fill="#7c3aed"/>
-            <rect x="5.2" y="5.2" width="3" height="3" rx=".7" fill="#fff"/>
-            <rect x="14.8" y="4.2" width="5" height="5" rx="1.1" fill="#06b6d4"/>
-            <rect x="15.8" y="5.2" width="3" height="3" rx=".7" fill="#fff"/>
-            <rect x="4.2" y="14.8" width="5" height="5" rx="1.1" fill="#f43f5e"/>
-            <rect x="5.2" y="15.8" width="3" height="3" rx=".7" fill="#fff"/>
-            <rect x="10.4" y="10.2" width="1.4" height="1.4" rx=".3" fill="#7c3aed"/>
-            <rect x="12.4" y="10.2" width="1.4" height="1.4" rx=".3" fill="#111827"/>
-            <rect x="14.4" y="10.2" width="1.4" height="1.4" rx=".3" fill="#06b6d4"/>
-            <rect x="10.4" y="12.2" width="1.4" height="1.4" rx=".3" fill="#111827"/>
-            <rect x="12.4" y="12.2" width="1.4" height="1.4" rx=".3" fill="#f43f5e"/>
-            <rect x="14.4" y="12.2" width="1.4" height="1.4" rx=".3" fill="#7c3aed"/>
-            <rect x="11.3" y="14.8" width="3.9" height="1.1" rx=".55" fill="#111827"/>
-          </svg>
-        </div>
+        <div class="app-card-icon app-card-icon--image"><img src="assets/app-icons/qr-code.png" alt="" aria-hidden="true"></div>
         <div class="app-card-name">QR Code</div>
         <div class="app-card-desc">Display a scannable QR code for any URL</div>
         <button class="app-card-add" onclick="event.stopPropagation();openQrModal(null)">Add →</button>
       </div>
 
-      <!-- RSS Ticker — coming soon -->
-      <div class="app-card app-coming-soon" data-category="news" data-name="rss ticker" onclick="appsComingSoon()">
-        <div class="app-card-icon" style="background:linear-gradient(135deg, rgba(249,115,22,.18), rgba(254,215,170,.22))">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3.1" y="4" width="17.8" height="16" rx="4" fill="#fff7ed" stroke="#f97316" stroke-width="1.4"/>
-            <circle cx="6.1" cy="16.8" r="1.1" fill="#f97316"/>
-            <path d="M5.4 8.2c4.8 0 8.7 3.4 9.1 8.2" stroke="#f97316" stroke-width="1.9"/>
-            <path d="M5.4 11.9c2.8 0 5 2.1 5.4 4.8" stroke="#fb923c" stroke-width="1.9"/>
-            <rect x="12.8" y="6.1" width="4.2" height="4.2" rx="1" fill="#f97316"/>
-            <rect x="13.7" y="7" width="2.4" height="2.4" rx=".6" fill="#fff7ed"/>
-            <rect x="11.8" y="13.1" width="6.1" height="1.4" rx=".7" fill="#fdba74"/>
-            <rect x="10.5" y="15.4" width="7.3" height="1.1" rx=".55" fill="#fed7aa"/>
-          </svg>
-        </div>
+      <!-- RSS Ticker -->
+      <div class="app-card" data-category="news" data-name="rss ticker headlines feed" onclick="openRssTickerModal(null)">
+        <div class="app-card-icon app-card-icon--image"><img src="assets/app-icons/rss-ticker.png" alt="" aria-hidden="true"></div>
         <div class="app-card-name">RSS Ticker</div>
         <div class="app-card-desc">Scroll live headlines from any RSS feed</div>
-        <span class="app-card-soon-badge">Coming Soon</span>
+        <button class="app-card-add" onclick="event.stopPropagation();openRssTickerModal(null)">Add →</button>
       </div>
 
       <!-- YouTube -->
@@ -4848,41 +4814,20 @@ body.role-editor .admin-action {
         <button class="app-card-add" onclick="event.stopPropagation();openYoutubeModal(null)">Add →</button>
       </div>
 
-      <!-- Google Slides — coming soon -->
-      <div class="app-card app-coming-soon" data-category="data" data-name="google slides" onclick="appsComingSoon()">
-        <div class="app-card-icon" style="background:linear-gradient(135deg, rgba(251,191,36,.18), rgba(253,230,138,.2))">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
-            <path d="M6 3h8.9L19 7.1V21H6z" fill="#fbbf05"/>
-            <path d="M14.9 3v4.1H19" fill="#f59e0b"/>
-            <rect x="8.3" y="10" width="7.5" height="6.5" rx="1.1" fill="#fff" opacity=".95"/>
-            <rect x="9.2" y="11.1" width="5.7" height="1.1" rx=".5" fill="#f59e0b"/>
-            <rect x="9.2" y="13.1" width="4.1" height="1" rx=".5" fill="#f59e0b"/>
-          </svg>
-        </div>
+      <!-- Google Slides -->
+      <div class="app-card" data-category="data" data-name="google slides presentation import" onclick="openGslidesModal()">
+        <div class="app-card-icon app-card-icon--image"><img src="assets/app-icons/presentation-slides.png" alt="" aria-hidden="true"></div>
         <div class="app-card-name">Google Slides</div>
-        <div class="app-card-desc">Embed and auto-refresh a Google Slides presentation</div>
-        <span class="app-card-soon-badge">Coming Soon</span>
+        <div class="app-card-desc">Import slides from a Google Slides presentation</div>
+        <button class="app-card-add" onclick="event.stopPropagation();openGslidesModal()">Add →</button>
       </div>
 
-      <!-- Web Page — coming soon -->
-      <div class="app-card app-coming-soon" data-category="widgets" data-name="web page" onclick="appsComingSoon()">
-        <div class="app-card-icon" style="background:linear-gradient(135deg, rgba(107,114,128,.14), rgba(226,232,240,.24))">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="4.1" width="18" height="15.8" rx="3" fill="#fff" stroke="#6b7280" stroke-width="1.4"/>
-            <rect x="5.1" y="6.2" width="13.8" height="11.5" rx="1.7" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1"/>
-            <circle cx="6.3" cy="7.4" r=".8" fill="#ef4444"/>
-            <circle cx="8.5" cy="7.4" r=".8" fill="#f59e0b"/>
-            <circle cx="10.7" cy="7.4" r=".8" fill="#22c55e"/>
-            <rect x="6.6" y="9.5" width="8.2" height="1.1" rx=".55" fill="#e2e8f0"/>
-            <rect x="6.6" y="11.8" width="5.9" height="1.1" rx=".55" fill="#3b82f6"/>
-            <rect x="6.6" y="14" width="8.5" height="1.1" rx=".55" fill="#cbd5e1"/>
-            <path d="M13.9 10.9 16.1 13.1 13.9 15.3" stroke="#64748b" stroke-width="1.7"/>
-            <path d="M9.8 10.9 7.6 13.1 9.8 15.3" stroke="#64748b" stroke-width="1.7"/>
-          </svg>
-        </div>
+      <!-- Web Page -->
+      <div class="app-card" data-category="widgets" data-name="web page website url embed" onclick="openWebpageModal()">
+        <div class="app-card-icon app-card-icon--image"><img src="assets/app-icons/web-page.png" alt="" aria-hidden="true"></div>
         <div class="app-card-name">Web Page</div>
         <div class="app-card-desc">Display any website as a live fullscreen slide</div>
-        <span class="app-card-soon-badge">Coming Soon</span>
+        <button class="app-card-add" onclick="event.stopPropagation();openWebpageModal()">Add →</button>
       </div>
 
       <!-- Instagram -->
@@ -4901,15 +4846,7 @@ body.role-editor .admin-action {
 
       <!-- Google Reviews -->
       <div class="app-card" data-category="social" data-name="google reviews ratings testimonials social proof" onclick="openGoogleReviewsModal(null)">
-        <div class="app-card-icon" style="background:linear-gradient(135deg, rgba(250,204,21,.16), rgba(254,243,199,.22))">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
-            <path d="m12 3 2.3 4.6 5.1.8-3.7 3.6.9 5.1-4.6-2.4-4.6 2.4.9-5.1-3.7-3.6 5.1-.8L12 3z" fill="#f59e0b"/>
-            <circle cx="5.9" cy="6.2" r="1.1" fill="#4285f4"/>
-            <circle cx="18.1" cy="6.2" r="1.1" fill="#34a853"/>
-            <circle cx="6.5" cy="18" r="1.1" fill="#ea4335"/>
-            <circle cx="17.3" cy="17.6" r="1.1" fill="#fbbc05"/>
-          </svg>
-        </div>
+        <div class="app-card-icon app-card-icon--image"><img src="assets/app-icons/customer-reviews.png" alt="" aria-hidden="true"></div>
         <div class="app-card-name">Google Reviews</div>
         <div class="app-card-desc">Show recent Google reviews with star ratings and customer quotes</div>
         <button class="app-card-add" onclick="event.stopPropagation();openGoogleReviewsModal(null)">Add →</button>
@@ -4917,16 +4854,7 @@ body.role-editor .admin-action {
 
       <!-- Countdown Timer -->
       <div class="app-card" data-category="widgets" data-name="countdown timer" onclick="openCountdownModal(null)">
-        <div class="app-card-icon" style="background:linear-gradient(135deg, rgba(240,124,0,.16), rgba(254,215,170,.2))">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12.5" r="7.5" fill="rgba(255,255,255,.86)" stroke="#f07c00" stroke-width="1.8"/>
-            <rect x="9.1" y="2.8" width="5.8" height="2.4" rx="1.1" fill="#f07c00"/>
-            <line x1="12" y1="12.5" x2="12" y2="8.8" stroke="#f07c00" stroke-width="1.8"/>
-            <line x1="12" y1="12.5" x2="15" y2="14.2" stroke="#f07c00" stroke-width="1.8"/>
-            <path d="M5.1 4 3.6 5.5" stroke="#f07c00" stroke-width="1.6"/>
-            <path d="M18.9 4 20.4 5.5" stroke="#f07c00" stroke-width="1.6"/>
-          </svg>
-        </div>
+        <div class="app-card-icon app-card-icon--image"><img src="assets/app-icons/countdown-timer.png" alt="" aria-hidden="true"></div>
         <div class="app-card-name">Countdown Timer</div>
         <div class="app-card-desc">Count down to events, launches, or deadlines</div>
         <button class="app-card-add" onclick="event.stopPropagation();openCountdownModal(null)">Add →</button>
@@ -4934,17 +4862,7 @@ body.role-editor .admin-action {
 
       <!-- Google Sheets -->
       <div class="app-card" data-category="data" data-name="google sheets live data spreadsheet" onclick="openGoogleSheetsModal(null)">
-        <div class="app-card-icon" style="background:linear-gradient(135deg, rgba(52,168,83,.16), rgba(209,250,229,.2))">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M6 2.8h8.6L19 7.2V20H6z" fill="#34a853"/>
-            <path d="M14.6 2.8v4.4H19" fill="#188038"/>
-            <rect x="8.2" y="10" width="7.6" height="8.2" rx="1.1" fill="#fff"/>
-            <line x1="8.2" y1="12.7" x2="15.8" y2="12.7" stroke="#34a853" stroke-width="1"/>
-            <line x1="8.2" y1="15.3" x2="15.8" y2="15.3" stroke="#34a853" stroke-width="1"/>
-            <line x1="10.7" y1="10" x2="10.7" y2="18.2" stroke="#34a853" stroke-width="1"/>
-            <line x1="13.1" y1="10" x2="13.1" y2="18.2" stroke="#34a853" stroke-width="1"/>
-          </svg>
-        </div>
+        <div class="app-card-icon app-card-icon--image"><img src="assets/app-icons/spreadsheet-data.png" alt="" aria-hidden="true"></div>
         <div class="app-card-name">Google Sheets</div>
         <div class="app-card-desc">Display live spreadsheet data — tables, numbers, leaderboards</div>
         <button class="app-card-add" onclick="event.stopPropagation();openGoogleSheetsModal(null)">Add →</button>
@@ -4952,18 +4870,7 @@ body.role-editor .admin-action {
 
       <!-- Menu Board -->
       <div class="app-card" data-category="widgets" data-name="menu board food drink restaurant" onclick="openMenuboardModal(null)">
-        <div class="app-card-icon" style="background:linear-gradient(135deg, rgba(212,175,55,.18), rgba(254,243,199,.24))">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3.1" y="4" width="17.8" height="16" rx="4" fill="#fffaf0" stroke="#d4af37" stroke-width="1.4"/>
-            <path d="M6 13.6c0-3.4 2.8-6.1 6-6.1s6 2.7 6 6.1" stroke="#d4af37" stroke-width="1.5"/>
-            <path d="M5.2 13.6h13.6" stroke="#b45309" stroke-width="1.5"/>
-            <path d="M11.1 7.4h1.8" stroke="#d4af37" stroke-width="1.4"/>
-            <circle cx="12" cy="11.2" r=".9" fill="#d4af37"/>
-            <path d="M9 15.7h6" stroke="#b45309" stroke-width="1.4"/>
-            <path d="M7.1 9.2c0-.9.4-1.5.9-2.1" stroke="#d97706" stroke-width="1.2"/>
-            <path d="M16.9 9.2c0-.9-.4-1.5-.9-2.1" stroke="#d97706" stroke-width="1.2"/>
-          </svg>
-        </div>
+        <div class="app-card-icon app-card-icon--image"><img src="assets/app-icons/menu-board.png" alt="" aria-hidden="true"></div>
         <div class="app-card-name">Menu Board</div>
         <div class="app-card-desc">Structured food &amp; drink menus with categories, prices, and badges</div>
         <button class="app-card-add" onclick="event.stopPropagation();openMenuboardModal(null)">Add →</button>
@@ -4971,56 +4878,26 @@ body.role-editor .admin-action {
 
       <!-- Multi-Zone Layout -->
       <div class="app-card" data-category="layouts" data-name="multi zone layout split screen zones" onclick="openMultiZoneModal(null)">
-        <div class="app-card-icon" style="background:linear-gradient(135deg, rgba(16,185,129,.16), rgba(167,243,208,.2))">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="3" width="18" height="18" rx="4" fill="rgba(255,255,255,.9)" stroke="#10b981" stroke-width="1.4"/>
-            <rect x="5.1" y="5.1" width="6.3" height="6.3" rx="1.2" fill="#60a5fa"/>
-            <rect x="12.6" y="5.1" width="6.3" height="6.3" rx="1.2" fill="#f59e0b"/>
-            <rect x="5.1" y="12.6" width="6.3" height="6.3" rx="1.2" fill="#34d399"/>
-            <rect x="12.6" y="12.6" width="6.3" height="6.3" rx="1.2" fill="#a78bfa"/>
-          </svg>
-        </div>
+        <div class="app-card-icon app-card-icon--image"><img src="assets/app-icons/multi-zone-layout.png" alt="" aria-hidden="true"></div>
         <div class="app-card-name">Multi-Zone Layout</div>
         <div class="app-card-desc">Split your screen into zones — clock, weather, video, and more simultaneously</div>
         <button class="app-card-add" onclick="event.stopPropagation();openMultiZoneModal(null)">Add →</button>
       </div>
 
-      <!-- WiFi Password — coming soon -->
-      <div class="app-card app-coming-soon" data-category="widgets" data-name="wifi password" onclick="appsComingSoon()">
-        <div class="app-card-icon" style="background:linear-gradient(135deg, rgba(59,130,246,.18), rgba(191,219,254,.22))">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3.1" y="4" width="17.8" height="16" rx="4" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.4"/>
-            <path d="M5 10.1a11.7 11.7 0 0 1 14 0" stroke="#3b82f6" stroke-width="1.8"/>
-            <path d="M6.9 12.8a8.1 8.1 0 0 1 10.2 0" stroke="#3b82f6" stroke-width="1.8"/>
-            <path d="M9 15a4.2 4.2 0 0 1 6 0" stroke="#3b82f6" stroke-width="1.8"/>
-            <rect x="9.2" y="13.5" width="5.6" height="4.4" rx="1.2" fill="#fff" stroke="#3b82f6" stroke-width="1"/>
-            <path d="M10.3 13.5v-.9a1.7 1.7 0 0 1 3.4 0v.9" stroke="#3b82f6" stroke-width="1"/>
-            <circle cx="12" cy="15.5" r=".7" fill="#3b82f6"/>
-          </svg>
-        </div>
+      <!-- WiFi Password -->
+      <div class="app-card" data-category="widgets" data-name="wifi password network qr" onclick="openWifiModal(null)">
+        <div class="app-card-icon app-card-icon--image"><img src="assets/app-icons/wifi-password.png" alt="" aria-hidden="true"></div>
         <div class="app-card-name">WiFi Password</div>
         <div class="app-card-desc">Show network name and password with a scannable QR</div>
-        <span class="app-card-soon-badge">Coming Soon</span>
+        <button class="app-card-add" onclick="event.stopPropagation();openWifiModal(null)">Add →</button>
       </div>
 
-      <!-- Stock Ticker — coming soon -->
-      <div class="app-card app-coming-soon" data-category="data" data-name="stock ticker" onclick="appsComingSoon()">
-        <div class="app-card-icon" style="background:linear-gradient(135deg, rgba(21,128,61,.18), rgba(220,252,231,.22))">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3.1" y="4" width="17.8" height="16" rx="4" fill="#f0fdf4" stroke="#15803d" stroke-width="1.4"/>
-            <line x1="5.4" y1="15.6" x2="18.1" y2="15.6" stroke="#86efac" stroke-width="1"/>
-            <rect x="5.7" y="10.3" width="1.6" height="4.2" rx=".6" fill="#34d399"/>
-            <rect x="8.1" y="8.8" width="1.6" height="5.7" rx=".6" fill="#16a34a"/>
-            <rect x="10.5" y="11" width="1.6" height="3.5" rx=".6" fill="#22c55e"/>
-            <rect x="12.9" y="7.8" width="1.6" height="6.7" rx=".6" fill="#15803d"/>
-            <rect x="15.3" y="9.2" width="1.6" height="5.3" rx=".6" fill="#86efac"/>
-            <path d="M5.5 14.4 8 12.2l2.3 1.4 2.4-3.8 2.3 1.2 2.7-2.8" stroke="#15803d" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M18.2 7.2h1.7v1.7" stroke="#15803d" stroke-width="1.5"/>
-          </svg>
-        </div>
+      <!-- Stock Ticker -->
+      <div class="app-card" data-category="data" data-name="stock ticker market data quotes" onclick="openStockTickerModal(null)">
+        <div class="app-card-icon app-card-icon--image"><img src="assets/app-icons/stock-ticker.png" alt="" aria-hidden="true"></div>
         <div class="app-card-name">Stock Ticker</div>
         <div class="app-card-desc">Live stock prices and market data on a scrolling ticker</div>
-        <span class="app-card-soon-badge">Coming Soon</span>
+        <button class="app-card-add" onclick="event.stopPropagation();openStockTickerModal(null)">Add →</button>
       </div>
 
     </div>
@@ -7600,6 +7477,157 @@ body.role-editor .admin-action {
   </div>
 </div>
 
+<!-- ── RSS Ticker Modal ────────────────────────────────────────────────────── -->
+<div id="rssTickerModal" style="display:none;position:fixed;inset:0;z-index:300;align-items:center;justify-content:center;background:#00000088;backdrop-filter:blur(6px);padding:20px">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;width:min(560px,94vw);box-shadow:0 8px 48px rgba(0,0,0,0.16)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <h2 id="rssTickerModalTitle" style="font-size:18px;font-weight:600;color:var(--text)">Add RSS Ticker Slide</h2>
+      <button class="gallery-close" onclick="closeRssTickerModal()">✕</button>
+    </div>
+    <div class="field" id="rssTickerShowTargetWrap" style="margin-bottom:14px">
+      <label>Add to slideshow</label>
+      <select id="rssTickerShowTarget"></select>
+    </div>
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) 130px;gap:12px;margin-bottom:14px">
+      <div class="field">
+        <label>Slide name</label>
+        <input type="text" id="rssTickerName" placeholder="RSS Ticker">
+      </div>
+      <div class="field">
+        <label>Duration (sec)</label>
+        <input type="number" id="rssTickerDwell" min="5" max="3600" step="1" value="30">
+      </div>
+    </div>
+    <div class="field" style="margin-bottom:14px">
+      <label>RSS feed URL</label>
+      <input type="url" id="rssTickerUrl" placeholder="https://example.com/feed.xml" autocomplete="off">
+    </div>
+    <div class="field" style="margin-bottom:14px">
+      <label>Fallback text</label>
+      <input type="text" id="rssTickerText" placeholder="Latest headlines">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:22px">
+      <div class="field">
+        <label>Speed</label>
+        <select id="rssTickerSpeed">
+          <option value="slow">Slow</option>
+          <option value="medium" selected>Medium</option>
+          <option value="fast">Fast</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Position</label>
+        <select id="rssTickerPosition">
+          <option value="bottom" selected>Bottom</option>
+          <option value="top">Top</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btn-secondary" onclick="closeRssTickerModal()">Cancel</button>
+      <button class="btn btn-primary" id="rssTickerSaveBtn" onclick="saveRssTickerSlide()">Add Slide</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── WiFi Password Modal ─────────────────────────────────────────────────── -->
+<div id="wifiModal" style="display:none;position:fixed;inset:0;z-index:300;align-items:center;justify-content:center;background:#00000088;backdrop-filter:blur(6px);padding:20px">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;width:min(560px,94vw);box-shadow:0 8px 48px rgba(0,0,0,0.16)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <h2 id="wifiModalTitle" style="font-size:18px;font-weight:600;color:var(--text)">Add WiFi Password Slide</h2>
+      <button class="gallery-close" onclick="closeWifiModal()">✕</button>
+    </div>
+    <div class="field" id="wifiShowTargetWrap" style="margin-bottom:14px">
+      <label>Add to slideshow</label>
+      <select id="wifiShowTarget"></select>
+    </div>
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) 130px;gap:12px;margin-bottom:14px">
+      <div class="field">
+        <label>Slide name</label>
+        <input type="text" id="wifiName" placeholder="Guest WiFi">
+      </div>
+      <div class="field">
+        <label>Duration (sec)</label>
+        <input type="number" id="wifiDwell" min="5" max="3600" step="1" value="20">
+      </div>
+    </div>
+    <div class="field" style="margin-bottom:14px">
+      <label>Network name</label>
+      <input type="text" id="wifiSsid" placeholder="Guest Network" autocomplete="off">
+    </div>
+    <div style="display:grid;grid-template-columns:150px minmax(0,1fr);gap:12px;margin-bottom:14px">
+      <div class="field">
+        <label>Security</label>
+        <select id="wifiEncryption">
+          <option value="WPA" selected>WPA/WPA2</option>
+          <option value="WEP">WEP</option>
+          <option value="nopass">Open</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="text" id="wifiPassword" placeholder="Network password" autocomplete="off">
+      </div>
+    </div>
+    <div class="field" style="margin-bottom:14px">
+      <label>Label text</label>
+      <input type="text" id="wifiLabel" placeholder="Scan to join our guest WiFi">
+    </div>
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text);margin-bottom:22px">
+      <input type="checkbox" id="wifiHidden" style="width:16px;height:16px">
+      Hidden network
+    </label>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btn-secondary" onclick="closeWifiModal()">Cancel</button>
+      <button class="btn btn-primary" id="wifiSaveBtn" onclick="saveWifiSlide()">Add Slide</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Stock Ticker Modal ──────────────────────────────────────────────────── -->
+<div id="stockTickerModal" style="display:none;position:fixed;inset:0;z-index:300;align-items:center;justify-content:center;background:#00000088;backdrop-filter:blur(6px);padding:20px">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;width:min(560px,94vw);box-shadow:0 8px 48px rgba(0,0,0,0.16)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <h2 id="stockTickerModalTitle" style="font-size:18px;font-weight:600;color:var(--text)">Add Stock Ticker Slide</h2>
+      <button class="gallery-close" onclick="closeStockTickerModal()">✕</button>
+    </div>
+    <div class="field" id="stockTickerShowTargetWrap" style="margin-bottom:14px">
+      <label>Add to slideshow</label>
+      <select id="stockTickerShowTarget"></select>
+    </div>
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) 130px;gap:12px;margin-bottom:14px">
+      <div class="field">
+        <label>Slide name</label>
+        <input type="text" id="stockTickerName" placeholder="Stock Ticker">
+      </div>
+      <div class="field">
+        <label>Duration (sec)</label>
+        <input type="number" id="stockTickerDwell" min="5" max="3600" step="1" value="30">
+      </div>
+    </div>
+    <div class="field" style="margin-bottom:14px">
+      <label>Symbols</label>
+      <input type="text" id="stockTickerSymbols" placeholder="AAPL, MSFT, GOOGL, NVDA" autocomplete="off">
+    </div>
+    <div class="field" style="margin-bottom:14px">
+      <label>Fallback text</label>
+      <input type="text" id="stockTickerText" placeholder="Market data updating">
+    </div>
+    <div class="field" style="margin-bottom:22px">
+      <label>Speed</label>
+      <select id="stockTickerSpeed">
+        <option value="slow">Slow</option>
+        <option value="medium" selected>Medium</option>
+        <option value="fast">Fast</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btn-secondary" onclick="closeStockTickerModal()">Cancel</button>
+      <button class="btn btn-primary" id="stockTickerSaveBtn" onclick="saveStockTickerSlide()">Add Slide</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── Slide Designer Modal ──────────────────────────────────────────────── -->
 <!-- ── Slide Preview Lightbox ─────────────────────────────────────────────── -->
 <div id="slidePreviewModal" onclick="if(event.target===this)closeSlidePreview()">
@@ -9972,12 +10000,13 @@ const ROLE_DESCS = {
   viewer: 'Read-only access. Can view slideshows but cannot edit.',
 };
 
-function showBootError(message) {
+function showBootError(message, detail = '') {
   const overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#0f172a;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:24px;text-align:center;font-family:DM Sans,system-ui,sans-serif;';
   overlay.innerHTML = `
     <div style="font-size:32px;font-weight:800;color:#4d8bff;">Zigns</div>
     <div style="font-size:16px;font-weight:600;max-width:420px;line-height:1.4;">${message}</div>
+    ${detail ? `<div style="font-size:12px;color:#94a3b8;max-width:520px;line-height:1.5;font-family:DM Mono,ui-monospace,monospace;word-break:break-word;">${escHtml(detail)}</div>` : ''}
     <button id="bootErrReload" style="background:#0043ce;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-weight:600;font-size:14px;cursor:pointer;">Reload</button>
   `;
   document.body.appendChild(overlay);
@@ -9992,15 +10021,22 @@ function isAuthReadFailure(error) {
     || msg.includes('Missing or insufficient permissions');
 }
 
-async function redirectToLoginAfterBootAuthFailure(label, error) {
-  console.warn(`[Boot] ${label} read failed with auth error; clearing session.`, error?.message || error);
+async function showBootAuthFailure(label, error) {
+  console.warn(`[Boot] ${label} read failed with auth error; keeping session for reload.`, error?.message || error);
   cleanupRealtimeListeners();
-  await signOut(auth).catch(() => {});
-  window.location.replace('/login');
+  const detail = [
+    `client ${label}: ${error?.code || 'auth-read-failed'} ${error?.message || error || ''}`,
+    _lastBootFallbackError ? `server fallback: ${_lastBootFallbackError}` : '',
+  ].filter(Boolean).join(' | ');
+  showBootError(
+    'Could not load your account. Your sign-in is still active; reload after checking your connection or local Firebase setup.',
+    detail
+  );
 }
 
 let _bootAccountPromise = null;
 let _bootAccountUid = null;
+let _lastBootFallbackError = '';
 
 function bootstrapSnap(data) {
   return {
@@ -10025,6 +10061,7 @@ async function loadAccountBootstrap(user) {
     }
     return result;
   })().catch(e => {
+    _lastBootFallbackError = e.message || String(e);
     console.warn('[Boot] Server bootstrap failed:', e.message);
     return null;
   });
@@ -10071,7 +10108,7 @@ async function getBootDocWithAuthRecovery(ref, user, label, fallbackMessage) {
         if (isAuthReadFailure(retryErr)) {
           const fallbackSnap = await getBootstrapFallbackSnap(ref, user, label);
           if (fallbackSnap) return fallbackSnap;
-          await redirectToLoginAfterBootAuthFailure(label, retryErr);
+          await showBootAuthFailure(label, retryErr);
         } else {
           console.error(`Failed to load ${label} after token refresh:`, retryErr);
           showBootError(fallbackMessage);
@@ -10452,13 +10489,16 @@ const FEATURE_UPGRADE_COPY = {
 const APP_FEATURE_REQUIREMENTS = {
   openClockModal:         'starterApps',
   openQrModal:            'starterApps',
+  openWifiModal:          'starterApps',
   openWeatherModal:       'starterApps',
   openYoutubeModal:       'starterApps',
+  openRssTickerModal:     'standardApps',
   openWebpageModal:       'standardApps',
   openCountdownModal:     'standardApps',
   openMenuboardModal:     'standardApps',
   openMultiZoneModal:     'standardApps',
   openGslidesModal:       'premiumApps',
+  openStockTickerModal:   'premiumApps',
   openGoogleSheetsModal:  'premiumApps',
   openInstagramModal:     'premiumApps',
   openGoogleReviewsModal: 'premiumApps',
@@ -17240,6 +17280,7 @@ fabric.TickerBar = fabric.util.createClass(fabric.Rect, {
     options.tickerFontSize = options.tickerFontSize || 36;
     options.tickerSep      = options.tickerSep      || '  •  ';
     options.rssUrl         = options.rssUrl         || '';
+    options.stockSymbols   = options.stockSymbols   || '';
     this.callSuper('initialize', options);
     this.on('scaling', function() { this.set({ scaleX: 1, scaleY: 1 }); });
   },
@@ -17255,6 +17296,7 @@ fabric.TickerBar = fabric.util.createClass(fabric.Rect, {
       tickerFontSize: this.tickerFontSize,
       tickerSep:      this.tickerSep,
       rssUrl:         this.rssUrl,
+      stockSymbols:   this.stockSymbols,
     });
   },
 
@@ -24998,6 +25040,449 @@ async function _addSlidesToShow(showId, newSlides) {
 async function _addSlideToShow(showId, slide) {
   return _addSlidesToShow(showId, [slide]);
 }
+
+function _clampDwell(value, fallback = 30) {
+  return Math.min(3600, Math.max(5, parseInt(value, 10) || fallback));
+}
+
+function _compactText(value, fallback = '', maxLen = 140) {
+  const text = String(value || '').replace(/\s+/g, ' ').trim() || fallback;
+  return text.length > maxLen ? text.slice(0, maxLen - 3).trim() + '...' : text;
+}
+
+function _appSvgEscape(value) {
+  return String(value || '').replace(/[&<>"']/g, c => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  })[c]);
+}
+
+function _appSlideThumbDataUrl({ title, subtitle, accent = '#2563eb' }) {
+  const safeTitle = _appSvgEscape(_compactText(title, 'Zigns App', 48));
+  const safeSub   = _appSvgEscape(_compactText(subtitle, '', 72));
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="480" height="270" viewBox="0 0 480 270">
+      <defs>
+        <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#061426"/>
+          <stop offset="1" stop-color="#12294c"/>
+        </linearGradient>
+      </defs>
+      <rect width="480" height="270" fill="url(#bg)"/>
+      <rect x="36" y="42" width="74" height="10" rx="5" fill="${accent}"/>
+      <text x="36" y="112" fill="#ffffff" font-family="Arial, sans-serif" font-size="32" font-weight="700">${safeTitle}</text>
+      <text x="36" y="150" fill="#bfd0e8" font-family="Arial, sans-serif" font-size="17">${safeSub}</text>
+      <rect x="0" y="218" width="480" height="52" fill="#07111f" opacity=".92"/>
+      <rect x="0" y="218" width="74" height="52" fill="${accent}"/>
+      <text x="37" y="251" text-anchor="middle" fill="#fff" font-family="Arial, sans-serif" font-size="13" font-weight="700">LIVE</text>
+      <text x="96" y="251" fill="#ffffff" font-family="Arial, sans-serif" font-size="20">Ticker ready</text>
+    </svg>`;
+  return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
+}
+
+function _tickerConfigFromSlide(slide) {
+  try {
+    const data = typeof slide?.canvasJson === 'string' ? JSON.parse(slide.canvasJson) : slide?.canvasJson;
+    return (data?.objects || []).find(obj => obj?.type === 'tickerBar') || {};
+  } catch {
+    return {};
+  }
+}
+
+function _tickerCanvasJson({
+  title,
+  subtitle,
+  tickerText,
+  tickerSpeed = 'medium',
+  tickerPos = 'bottom',
+  tickerBg = '#07111f',
+  tickerColor = '#ffffff',
+  tickerOpacity = 0.92,
+  tickerFontSize = 40,
+  tickerSep = '  •  ',
+  rssUrl = '',
+  stockSymbols = '',
+  accent = '#2563eb',
+}) {
+  const barHeight = Math.round(tickerFontSize * 2.4);
+  const barTop = tickerPos === 'top' ? 0 : CANVAS_H - barHeight;
+  const objects = [
+    {
+      type: 'rect',
+      version: '5.3.0',
+      originX: 'left',
+      originY: 'top',
+      left: 0,
+      top: 0,
+      width: CANVAS_W,
+      height: CANVAS_H,
+      fill: '#061426',
+      selectable: false,
+      evented: false,
+    },
+    {
+      type: 'rect',
+      version: '5.3.0',
+      originX: 'left',
+      originY: 'top',
+      left: 120,
+      top: 180,
+      width: 140,
+      height: 14,
+      rx: 7,
+      ry: 7,
+      fill: accent,
+      selectable: false,
+      evented: false,
+    },
+    {
+      type: 'textbox',
+      version: '5.3.0',
+      left: 120,
+      top: 240,
+      width: 1500,
+      text: _compactText(title, 'Ticker'),
+      fontFamily: 'DM Sans',
+      fontSize: 86,
+      fontWeight: '700',
+      lineHeight: 1.05,
+      fill: '#ffffff',
+      selectable: false,
+      evented: false,
+    },
+    {
+      type: 'textbox',
+      version: '5.3.0',
+      left: 124,
+      top: 370,
+      width: 1300,
+      text: _compactText(subtitle, 'Live updates for your screens', 120),
+      fontFamily: 'DM Sans',
+      fontSize: 34,
+      lineHeight: 1.25,
+      fill: '#bfd0e8',
+      selectable: false,
+      evented: false,
+    },
+    {
+      type: 'tickerBar',
+      version: '5.3.0',
+      originX: 'left',
+      originY: 'top',
+      left: 0,
+      top: barTop,
+      width: CANVAS_W,
+      height: barHeight,
+      fill: 'transparent',
+      stroke: null,
+      strokeWidth: 0,
+      selectable: false,
+      evented: false,
+      tickerText: _compactText(tickerText, 'Live updates'),
+      tickerSpeed,
+      tickerPos,
+      tickerBg,
+      tickerColor,
+      tickerOpacity,
+      tickerFontSize,
+      tickerSep,
+      rssUrl,
+      stockSymbols,
+    },
+  ];
+  return sanitizeCanvasJson(JSON.stringify({ version: '5.3.0', objects, background: '#061426' }));
+}
+
+async function _saveAppSlideToShow({ editIdx, targetSelectId, slide, noun, logBase }) {
+  const isEdit = editIdx !== null && editIdx !== undefined;
+  const targetShowId = isEdit ? currentShowId : (document.getElementById(targetSelectId)?.value || currentShowId);
+  if (!targetShowId) {
+    toast('Choose a slideshow first.', true);
+    return false;
+  }
+
+  if (targetShowId === currentShowId) {
+    if (isEdit) slides[editIdx] = { ...slides[editIdx], ...slide };
+    else slides.push(slide);
+    await pushToFirestore();
+    renderGrid();
+    if (typeof updateCount === 'function') updateCount();
+  } else {
+    await _addSlideToShow(targetShowId, slide);
+  }
+
+  const targetName = (currentOrg?.slideshows || []).find(s => s.id === targetShowId)?.name || targetShowId;
+  logActivity(isEdit ? `Edited ${logBase}` : `Added ${logBase}`);
+  updateDashboard();
+  toast(isEdit
+    ? `${noun} updated ✓`
+    : targetShowId === currentShowId
+      ? `${noun} added ✓`
+      : `${noun} added to "${targetName}" ✓`);
+  return true;
+}
+
+let rssTickerEditIdx = null;
+
+window.openRssTickerModal = function(slideIdx = null) {
+  const isEdit = slideIdx !== null && slideIdx !== undefined;
+  const slide = isEdit ? slides[slideIdx] : null;
+  const cfg = _tickerConfigFromSlide(slide);
+  rssTickerEditIdx = slide ? slideIdx : null;
+
+  document.getElementById('rssTickerModalTitle').textContent = rssTickerEditIdx === null ? 'Add RSS Ticker Slide' : 'Edit RSS Ticker Slide';
+  document.getElementById('rssTickerSaveBtn').textContent = rssTickerEditIdx === null ? 'Add Slide' : 'Save Changes';
+  document.getElementById('rssTickerShowTargetWrap').style.display = rssTickerEditIdx === null ? 'block' : 'none';
+  if (rssTickerEditIdx === null) _populateShowSelect('rssTickerShowTarget');
+
+  document.getElementById('rssTickerName').value = slide?.name || 'RSS Ticker';
+  document.getElementById('rssTickerDwell').value = slide?.dwell || 30;
+  document.getElementById('rssTickerUrl').value = cfg.rssUrl || '';
+  document.getElementById('rssTickerText').value = cfg.tickerText || 'Latest headlines';
+  document.getElementById('rssTickerSpeed').value = cfg.tickerSpeed || 'medium';
+  document.getElementById('rssTickerPosition').value = cfg.tickerPos || 'bottom';
+  document.getElementById('rssTickerModal').style.display = 'flex';
+  setTimeout(() => document.getElementById('rssTickerUrl').focus(), 50);
+};
+
+window.closeRssTickerModal = function() {
+  document.getElementById('rssTickerModal').style.display = 'none';
+  rssTickerEditIdx = null;
+};
+
+window.saveRssTickerSlide = async function() {
+  const rawUrl = document.getElementById('rssTickerUrl').value.trim();
+  let parsed;
+  try {
+    parsed = new URL(rawUrl);
+    if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error('bad protocol');
+  } catch {
+    toast('Enter a valid RSS feed URL, including https://', true);
+    return;
+  }
+
+  const editIdx = rssTickerEditIdx;
+  const existing = editIdx !== null ? slides[editIdx] : null;
+  const name = document.getElementById('rssTickerName').value.trim() || 'RSS Ticker';
+  const fallback = document.getElementById('rssTickerText').value.trim() || 'Latest headlines';
+  const speed = document.getElementById('rssTickerSpeed').value || 'medium';
+  const pos = document.getElementById('rssTickerPosition').value || 'bottom';
+  const slide = {
+    ...(existing || {}),
+    id: existing?.id || crypto.randomUUID(),
+    type: 'designed',
+    appType: 'rssTicker',
+    name,
+    dwell: _clampDwell(document.getElementById('rssTickerDwell').value, 30),
+    active: existing?.active !== false,
+    thumbnailUrl: _appSlideThumbDataUrl({ title: name, subtitle: parsed.hostname, accent: '#f97316' }),
+    canvasJson: _tickerCanvasJson({
+      title: name,
+      subtitle: `Headlines from ${parsed.hostname}`,
+      tickerText: fallback,
+      tickerSpeed: speed,
+      tickerPos: pos,
+      rssUrl: parsed.href,
+      accent: '#f97316',
+    }),
+  };
+
+  try {
+    const saved = await _saveAppSlideToShow({
+      editIdx,
+      targetSelectId: 'rssTickerShowTarget',
+      slide,
+      noun: 'RSS ticker slide',
+      logBase: 'RSS ticker slide',
+    });
+    if (saved) closeRssTickerModal();
+  } catch (e) {
+    console.error('save RSS ticker failed', e);
+    toast('Could not save RSS ticker slide.', true);
+  }
+};
+
+function _escapeWifiQr(value) {
+  return String(value || '').replace(/([\\;,:"])/g, '\\$1');
+}
+
+let wifiEditIdx = null;
+
+window.openWifiModal = function(slideIdx = null) {
+  const isEdit = slideIdx !== null && slideIdx !== undefined;
+  const slide = isEdit ? slides[slideIdx] : null;
+  wifiEditIdx = slide ? slideIdx : null;
+
+  document.getElementById('wifiModalTitle').textContent = wifiEditIdx === null ? 'Add WiFi Password Slide' : 'Edit WiFi Password Slide';
+  document.getElementById('wifiSaveBtn').textContent = wifiEditIdx === null ? 'Add Slide' : 'Save Changes';
+  document.getElementById('wifiShowTargetWrap').style.display = wifiEditIdx === null ? 'block' : 'none';
+  if (wifiEditIdx === null) _populateShowSelect('wifiShowTarget');
+
+  document.getElementById('wifiName').value = slide?.name || 'Guest WiFi';
+  document.getElementById('wifiDwell').value = slide?.dwell || 20;
+  document.getElementById('wifiSsid').value = slide?.wifiSsid || '';
+  document.getElementById('wifiPassword').value = '';
+  document.getElementById('wifiEncryption').value = slide?.wifiEncryption || 'WPA';
+  document.getElementById('wifiHidden').checked = !!slide?.wifiHidden;
+  document.getElementById('wifiLabel').value = slide?.label || '';
+  document.getElementById('wifiModal').style.display = 'flex';
+  setTimeout(() => document.getElementById('wifiSsid').focus(), 50);
+};
+
+window.closeWifiModal = function() {
+  document.getElementById('wifiModal').style.display = 'none';
+  wifiEditIdx = null;
+};
+
+window.saveWifiSlide = async function() {
+  const ssid = document.getElementById('wifiSsid').value.trim();
+  const encryption = document.getElementById('wifiEncryption').value || 'WPA';
+  const password = document.getElementById('wifiPassword').value;
+  const hidden = document.getElementById('wifiHidden').checked;
+  if (!ssid) {
+    toast('Enter the WiFi network name.', true);
+    document.getElementById('wifiSsid').focus();
+    return;
+  }
+  if (encryption !== 'nopass' && !password) {
+    toast('Enter the WiFi password, or choose Open for an open network.', true);
+    document.getElementById('wifiPassword').focus();
+    return;
+  }
+
+  const passwordPart = encryption === 'nopass' ? '' : `P:${_escapeWifiQr(password)};`;
+  const payload = `WIFI:T:${encryption};S:${_escapeWifiQr(ssid)};${passwordPart}H:${hidden ? 'true' : 'false'};;`;
+  const editIdx = wifiEditIdx;
+  const existing = editIdx !== null ? slides[editIdx] : null;
+  const name = document.getElementById('wifiName').value.trim() || `${ssid} WiFi`;
+  const slide = {
+    ...(existing || {}),
+    id: existing?.id || crypto.randomUUID(),
+    type: 'qr',
+    appType: 'wifiPassword',
+    name,
+    dwell: _clampDwell(document.getElementById('wifiDwell').value, 20),
+    url: payload,
+    label: document.getElementById('wifiLabel').value.trim() || `Scan to join ${ssid}`,
+    size: 320,
+    fgColor: '#111827',
+    bgColor: '#ffffff',
+    wifiSsid: ssid,
+    wifiEncryption: encryption,
+    wifiHidden: hidden,
+    active: existing?.active !== false,
+  };
+
+  try {
+    const saved = await _saveAppSlideToShow({
+      editIdx,
+      targetSelectId: 'wifiShowTarget',
+      slide,
+      noun: 'WiFi slide',
+      logBase: 'WiFi password slide',
+    });
+    if (saved) closeWifiModal();
+  } catch (e) {
+    console.error('save WiFi slide failed', e);
+    toast('Could not save WiFi slide.', true);
+  }
+};
+
+function _normalizeStockSymbols(value) {
+  const symbols = [];
+  String(value || '')
+    .split(/[\s,]+/)
+    .map(s => s.trim().toUpperCase().replace(/[^A-Z0-9.\-]/g, ''))
+    .filter(Boolean)
+    .forEach(symbol => {
+      if (!symbols.includes(symbol) && /^[A-Z0-9][A-Z0-9.\-]{0,14}$/.test(symbol)) symbols.push(symbol);
+    });
+  return symbols.slice(0, 12);
+}
+
+let stockTickerEditIdx = null;
+
+window.openStockTickerModal = function(slideIdx = null) {
+  const isEdit = slideIdx !== null && slideIdx !== undefined;
+  const slide = isEdit ? slides[slideIdx] : null;
+  const cfg = _tickerConfigFromSlide(slide);
+  stockTickerEditIdx = slide ? slideIdx : null;
+
+  document.getElementById('stockTickerModalTitle').textContent = stockTickerEditIdx === null ? 'Add Stock Ticker Slide' : 'Edit Stock Ticker Slide';
+  document.getElementById('stockTickerSaveBtn').textContent = stockTickerEditIdx === null ? 'Add Slide' : 'Save Changes';
+  document.getElementById('stockTickerShowTargetWrap').style.display = stockTickerEditIdx === null ? 'block' : 'none';
+  if (stockTickerEditIdx === null) _populateShowSelect('stockTickerShowTarget');
+
+  document.getElementById('stockTickerName').value = slide?.name || 'Stock Ticker';
+  document.getElementById('stockTickerDwell').value = slide?.dwell || 30;
+  document.getElementById('stockTickerSymbols').value = cfg.stockSymbols || 'AAPL, MSFT, GOOGL, NVDA';
+  document.getElementById('stockTickerText').value = cfg.tickerText || 'Market data updating';
+  document.getElementById('stockTickerSpeed').value = cfg.tickerSpeed || 'medium';
+  document.getElementById('stockTickerModal').style.display = 'flex';
+  setTimeout(() => document.getElementById('stockTickerSymbols').focus(), 50);
+};
+
+window.closeStockTickerModal = function() {
+  document.getElementById('stockTickerModal').style.display = 'none';
+  stockTickerEditIdx = null;
+};
+
+window.saveStockTickerSlide = async function() {
+  const symbols = _normalizeStockSymbols(document.getElementById('stockTickerSymbols').value);
+  if (!symbols.length) {
+    toast('Enter at least one stock symbol.', true);
+    document.getElementById('stockTickerSymbols').focus();
+    return;
+  }
+
+  const editIdx = stockTickerEditIdx;
+  const existing = editIdx !== null ? slides[editIdx] : null;
+  const name = document.getElementById('stockTickerName').value.trim() || 'Stock Ticker';
+  const fallback = document.getElementById('stockTickerText').value.trim() || symbols.join('  •  ');
+  const slide = {
+    ...(existing || {}),
+    id: existing?.id || crypto.randomUUID(),
+    type: 'designed',
+    appType: 'stockTicker',
+    name,
+    dwell: _clampDwell(document.getElementById('stockTickerDwell').value, 30),
+    active: existing?.active !== false,
+    thumbnailUrl: _appSlideThumbDataUrl({ title: name, subtitle: symbols.join(', '), accent: '#16a34a' }),
+    canvasJson: _tickerCanvasJson({
+      title: name,
+      subtitle: symbols.join('  •  '),
+      tickerText: fallback,
+      tickerSpeed: document.getElementById('stockTickerSpeed').value || 'medium',
+      stockSymbols: symbols.join(','),
+      accent: '#16a34a',
+    }),
+  };
+
+  try {
+    const saved = await _saveAppSlideToShow({
+      editIdx,
+      targetSelectId: 'stockTickerShowTarget',
+      slide,
+      noun: 'Stock ticker slide',
+      logBase: 'stock ticker slide',
+    });
+    if (saved) closeStockTickerModal();
+  } catch (e) {
+    console.error('save stock ticker failed', e);
+    toast('Could not save stock ticker slide.', true);
+  }
+};
+
+['rssTickerModal', 'wifiModal', 'stockTickerModal'].forEach(id => {
+  document.getElementById(id)?.addEventListener('click', e => {
+    if (e.target.id === 'rssTickerModal') closeRssTickerModal();
+    if (e.target.id === 'wifiModal') closeWifiModal();
+    if (e.target.id === 'stockTickerModal') closeStockTickerModal();
+  });
+});
 
 // ── QR Code modal ─────────────────────────────────────────────────────────
 let qrEditIdx      = null;

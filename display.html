@@ -623,7 +623,9 @@
   let rssRefreshTimer = null;
   let _lastTickerText = null;  // prevents animation reset when content unchanged
   let _activeRssUrl   = null;  // RSS URL currently displayed
+  let _activeStockSymbols = null; // Stock symbols currently displayed
   let _rssCache       = {};    // url → last fetched text (survives stopTicker)
+  let _stockCache     = {};    // symbols → last fetched text (survives stopTicker)
 
   function _applyTickerText(cfg, text) {
     // Skip re-render if content hasn't changed and ticker is already running
@@ -674,7 +676,40 @@
   function renderTicker(cfg) {
     if (rssRefreshTimer) { clearInterval(rssRefreshTimer); rssRefreshTimer = null; }
 
-    if (cfg.rssUrl) {
+    const stockKey = normalizeTickerSymbols(cfg.stockSymbols);
+    if (stockKey) {
+      const fallback = cfg.tickerText || stockKey.replace(/,/g, '  •  ');
+
+      async function loadStocks() {
+        try {
+          const r = await fetch('/api/proxy?type=stocks&symbols=' + encodeURIComponent(stockKey));
+          if (!r.ok) { _applyTickerText(cfg, fallback); return; }
+          const data = await r.json();
+          const text = formatStockTickerText(data.quotes, fallback);
+          _stockCache[stockKey] = text;
+          _applyTickerText(cfg, text);
+        } catch(e) {
+          _applyTickerText(cfg, fallback);
+        }
+      }
+
+      if (stockKey === _activeStockSymbols && tickerWrap.style.display !== 'none') {
+        rssRefreshTimer = setInterval(loadStocks, 2 * 60 * 1000);
+        return;
+      }
+
+      _activeRssUrl = null;
+      _activeStockSymbols = stockKey;
+
+      if (_stockCache[stockKey]) {
+        _applyTickerText(cfg, _stockCache[stockKey]);
+      } else {
+        tickerWrap.style.display = 'none';
+      }
+
+      loadStocks();
+      rssRefreshTimer = setInterval(loadStocks, 2 * 60 * 1000);
+    } else if (cfg.rssUrl) {
       // Same URL already running and visible — just re-arm the refresh timer, no flicker
       if (cfg.rssUrl === _activeRssUrl && tickerWrap.style.display !== 'none') {
         rssRefreshTimer = setInterval(loadRss, 5 * 60 * 1000);
@@ -682,6 +717,7 @@
       }
 
       _activeRssUrl = cfg.rssUrl;
+      _activeStockSymbols = null;
       const sep = cfg.tickerSep || '  •  ';
 
       async function loadRss() {
@@ -710,6 +746,7 @@
       rssRefreshTimer = setInterval(loadRss, 5 * 60 * 1000);
     } else {
       _activeRssUrl = null;
+      _activeStockSymbols = null;
       _applyTickerText(cfg, cfg.tickerText || '');
     }
   }
@@ -718,9 +755,39 @@
     if (rssRefreshTimer) { clearInterval(rssRefreshTimer); rssRefreshTimer = null; }
     _lastTickerText = null;
     _activeRssUrl   = null;
+    _activeStockSymbols = null;
     // _rssCache intentionally kept — avoids re-flash if this URL is shown again soon
     tickerWrap.style.display = 'none';
     tickerTrack.innerHTML    = '';
+  }
+
+  function normalizeTickerSymbols(value) {
+    const symbols = [];
+    String(value || '')
+      .split(/[\s,]+/)
+      .map(s => s.trim().toUpperCase().replace(/[^A-Z0-9.\-]/g, ''))
+      .filter(Boolean)
+      .forEach(symbol => {
+        if (!symbols.includes(symbol)) symbols.push(symbol);
+      });
+    return symbols.slice(0, 12).join(',');
+  }
+
+  function formatStockTickerText(quotes, fallback) {
+    const parts = (Array.isArray(quotes) ? quotes : []).map(q => {
+      const symbol = String(q.symbol || '').toUpperCase();
+      if (!symbol) return '';
+      if (q.status && q.status !== 'ok') return `${symbol} unavailable`;
+      const price = Number(q.price);
+      if (!Number.isFinite(price)) return `${symbol} unavailable`;
+      const change = Number(q.change);
+      const pct = Number(q.changePercent);
+      const priceText = price.toLocaleString(undefined, { maximumFractionDigits: price >= 100 ? 2 : 4 });
+      if (!Number.isFinite(change) || !Number.isFinite(pct)) return `${symbol} ${priceText}`;
+      const sign = change > 0 ? '+' : '';
+      return `${symbol} ${priceText} ${sign}${change.toFixed(2)} (${sign}${pct.toFixed(2)}%)`;
+    }).filter(Boolean);
+    return parts.length ? parts.join('  •  ') : fallback;
   }
 
   function loadDesignedSlide(canvasJson) {
