@@ -794,16 +794,18 @@ aside {
 .field label { font-size: 12px; color: var(--muted); }
 .field input, .field select {
   background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 9px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
   color: var(--text);
   font-family: 'DM Sans', sans-serif;
   font-size: 14px;
-  transition: border-color 0.15s;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
 }
 .field input:focus, .field select:focus {
-  outline: none; border-color: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0,67,206,.12);
 }
 .field select option { background: var(--surface2); }
 
@@ -1010,7 +1012,7 @@ section.content {
 
 .btn {
   display: inline-flex; align-items: center; gap: 7px;
-  padding: 9px 18px; border-radius: 8px;
+  padding: 9px 18px; border-radius: 10px;
   font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
   cursor: pointer; border: none; transition: all 0.15s;
 }
@@ -2279,7 +2281,7 @@ body > canvas[width="1920"][height="1080"] {
 .gallery-header h2 { font-size: 22px; font-weight: 700; color: var(--text); }
 .gallery-header p  { font-size: 13px; color: var(--muted); margin-top: 3px; }
 .gallery-close {
-  width: 34px; height: 34px; border-radius: 8px; flex-shrink: 0;
+  width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0;
   border: 1px solid var(--border); background: var(--surface2);
   color: var(--muted); cursor: pointer; font-size: 18px; line-height: 1;
   display: flex; align-items: center; justify-content: center;
@@ -3038,7 +3040,7 @@ body > canvas[width="1920"][height="1080"] {
 .clock-modal-box {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: 16px;
   width: 100%; max-width: 760px;
   display: flex; gap: 0;
   overflow: hidden;
@@ -3076,7 +3078,7 @@ body > canvas[width="1920"][height="1080"] {
 .clock-preview-wrap {
   width: 100%;
   aspect-ratio: 16/9;
-  border-radius: 8px;
+  border-radius: 12px;
   overflow: hidden;
   position: relative;
   border: 1px solid var(--border);
@@ -3092,34 +3094,90 @@ body > canvas[width="1920"][height="1080"] {
 .clock-preview-date { font-size: 9px; margin-top: 6px; opacity: 0.7; }
 
 .clock-field { margin-bottom: 16px; }
-.clock-field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; }
-.clock-field input[type="text"],
-.clock-field select { width: 100%; }
+.clock-field label {
+  display: block;
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 7px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.clock-field input,
+.clock-field select,
+.clock-field textarea {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  outline: none;
+  transition: border-color .15s, box-shadow .15s, background .15s;
+}
+.clock-field input:focus,
+.clock-field select:focus,
+.clock-field textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0,67,206,.12);
+}
+.clock-field input::placeholder,
+.clock-field textarea::placeholder { color: var(--muted); opacity: .78; }
+.clock-field select { cursor: pointer; }
+.clock-field input[type="color"] {
+  height: 48px !important;
+  padding: 5px !important;
+  border-radius: 10px !important;
+  cursor: pointer;
+}
+.clock-field input[type="range"] {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  accent-color: var(--accent);
+  box-shadow: none;
+}
+.clock-field input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border-radius: 4px;
+  accent-color: var(--accent);
+}
 
 .font-style-btns { display: flex; gap: 8px; }
 .font-style-btn {
-  flex: 1; padding: 10px 8px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  flex: 1; padding: 12px 10px;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
   background: var(--surface2);
   color: var(--text);
   cursor: pointer;
-  font-size: 11px;
+  font-size: 13px;
+  font-weight: 600;
   text-align: center;
-  transition: border-color 0.15s, background 0.15s;
+  transition: border-color 0.15s, background 0.15s, box-shadow .15s;
 }
 .font-style-btn:hover { border-color: var(--muted); }
-.font-style-btn.active { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); }
-.font-style-preview { display: block; font-size: 18px; margin-bottom: 4px; }
+.font-style-btn.active {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+  color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0,67,206,.08);
+}
+.font-style-preview { display: block; font-size: 20px; margin-bottom: 5px; }
 
 .toggle-row {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 10px 0; border-bottom: 1px solid var(--border);
+  padding: 12px 0; border-bottom: 1px solid var(--border);
 }
 .toggle-row:last-child { border-bottom: none; }
-.toggle-row label { font-size: 13px; color: var(--text); cursor: pointer; }
+.toggle-row label { font-size: 13px; color: var(--text); cursor: pointer; font-weight: 600; }
 .toggle-switch {
-  position: relative; width: 36px; height: 20px;
+  position: relative; width: 42px; height: 24px;
   cursor: pointer;
 }
 .toggle-switch input { opacity: 0; width: 0; height: 0; }
@@ -3131,11 +3189,11 @@ body > canvas[width="1920"][height="1080"] {
 .toggle-switch input:checked + .toggle-track { background: var(--accent); }
 .toggle-thumb {
   position: absolute; top: 3px; left: 3px;
-  width: 14px; height: 14px;
+  width: 18px; height: 18px;
   background: #fff; border-radius: 50%;
   transition: left 0.2s;
 }
-.toggle-switch input:checked ~ .toggle-thumb { left: 19px; }
+.toggle-switch input:checked ~ .toggle-thumb { left: 21px; }
 
 .color-row { display: flex; gap: 12px; }
 .color-row .clock-field { flex: 1; }

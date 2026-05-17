@@ -4,6 +4,15 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-17 — Codex — Normalize app modal form controls
+
+Aligned the older app modals with the newer RSS Ticker form styling.
+
+- **App modals**: rounded shared `.field` inputs/selects, buttons, close controls, and legacy `.clock-field` controls so Clock, QR, Countdown, Sheets, Instagram, Reviews, and related flows no longer fall back to square browser-default fields.
+- **Interaction polish**: added consistent focus rings, softer segmented option buttons, larger toggle switches, and rounded preview/color controls.
+
+---
+
 ## 2026-05-17 — Codex — Refresh Apps page icons
 
 Replaced the generic inline app-card icons with generated raster icons for the Apps page, excluding YouTube and Instagram.
