@@ -294,6 +294,31 @@ body {
   border-color: rgba(252, 165, 165, 0.45);
 }
 @keyframes preview-spin { to { transform: rotate(360deg); } }
+.ui-control,
+.screen-show-select {
+  padding: 9px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface2);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+}
+.ui-control { width: 100%; }
+.screen-show-select {
+  min-width: 190px;
+  cursor: pointer;
+}
+select.ui-control { cursor: pointer; }
+.ui-control:focus,
+.screen-show-select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0,67,206,.12);
+}
+.ui-control:hover,
+.screen-show-select:hover { border-color: var(--muted); }
 
 /* ── Screens page ───────────────────────────────────────────────────────── */
 #page-screens.active { flex-direction: column; padding: 32px; gap: 24px; }
@@ -305,10 +330,10 @@ body {
 .media-header-left p  { font-size: 13px; color: var(--muted); }
 .media-toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .media-filter-tabs { display: flex; gap: 4px; }
-.media-filter-tab { padding: 6px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--muted); font-size: 13px; cursor: pointer; transition: background 0.12s; }
+.media-filter-tab { padding: 6px 14px; border-radius: 10px; border: 1.5px solid var(--border); background: var(--surface); color: var(--muted); font-size: 13px; cursor: pointer; transition: background 0.12s, border-color 0.15s, box-shadow 0.15s; }
 .media-filter-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-.media-search { padding: 7px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-size: 13px; width: 200px; outline: none; }
-.media-search:focus { border-color: var(--accent); }
+.media-search { padding: 9px 14px; border: 1.5px solid var(--border); border-radius: 10px; background: var(--surface2); color: var(--text); font-size: 13px; width: 200px; outline: none; transition: border-color 0.15s, box-shadow 0.15s, background 0.15s; }
+.media-search:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,67,206,.12); }
 .media-count { font-size: 13px; color: var(--muted); }
 .media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; }
 .media-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; cursor: pointer; transition: border-color 0.15s, transform 0.15s; position: relative; }
@@ -521,11 +546,14 @@ body {
 .sep-field label { display: block; font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
 .sep-field input, .sep-field select, .sep-field textarea {
   width: 100%; font-family: 'DM Sans', sans-serif; font-size: 13px;
-  background: var(--surface2); border: 1px solid var(--border);
-  border-radius: 8px; padding: 9px 12px; color: var(--text); outline: none;
-  transition: border-color 0.15s;
+  background: var(--surface2); border: 1.5px solid var(--border);
+  border-radius: 10px; padding: 10px 14px; color: var(--text); outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
 }
-.sep-field input:focus, .sep-field select:focus { border-color: var(--accent); }
+.sep-field input:focus, .sep-field select:focus, .sep-field textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0,67,206,.12);
+}
 .cap-config-help {
   font-size: 11px; color: var(--muted); line-height: 1.45;
 }
@@ -689,8 +717,8 @@ body {
 .sched-ev-item:hover .sched-ev-del { opacity: 1; }
 .sched-filler { padding: 10px; border-radius: 8px; margin-top: 4px; background: var(--surface2); border: 1px dashed var(--border); }
 .sched-filler-lbl { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
-.sched-filler-sel { font-family: 'DM Sans', sans-serif; font-size: 13px; background: var(--surface); border: 1px solid var(--border); border-radius: 7px; padding: 6px 8px; color: var(--text); width: 100%; transition: border-color 0.15s; }
-.sched-filler-sel:focus { outline: none; border-color: var(--accent); }
+.sched-filler-sel { font-family: 'DM Sans', sans-serif; font-size: 13px; background: var(--surface2); border: 1.5px solid var(--border); border-radius: 10px; padding: 9px 12px; color: var(--text); width: 100%; transition: border-color 0.15s, box-shadow 0.15s, background 0.15s; }
+.sched-filler-sel:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,67,206,.12); }
 
 /* ── Add Event Modal ────────────────────────────────────────────────────── */
 #addEventModal { position: fixed; inset: 0; z-index: 310; display: none; align-items: center; justify-content: center; background: #00000088; backdrop-filter: blur(6px); }
@@ -2498,12 +2526,12 @@ body > canvas[width="1920"][height="1080"] {
 .prop-row   { display: flex; flex-direction: column; gap: 5px; }
 .prop-label { font-size: 11px; color: var(--muted); }
 .prop-input, .prop-select {
-  background: var(--surface2); border: 1px solid var(--border);
-  border-radius: 7px; padding: 7px 10px;
+  background: var(--surface2); border: 1.5px solid var(--border);
+  border-radius: 10px; padding: 8px 12px;
   color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 13px;
-  width: 100%; transition: border-color 0.15s;
+  width: 100%; transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
 }
-.prop-input:focus, .prop-select:focus { outline: none; border-color: var(--accent); }
+.prop-input:focus, .prop-select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,67,206,.12); }
 .prop-select option { background: var(--surface2); }
 .prop-color-wide {
   width: 100%; height: 34px; border-radius: 7px;
@@ -3857,8 +3885,8 @@ body.role-editor .admin-action {
 .pf-label { width: 150px; flex-shrink: 0; font-size: 13px; color: var(--muted); text-align: right; padding-right: 20px; }
 .pf-label.req::after { content: '*'; color: var(--danger); margin-left: 2px; }
 .pf-ctrl { flex: 1; }
-.pf-ctrl input, .pf-ctrl select { width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface2); color: var(--text); font-size: 13px; font-family: 'DM Sans', sans-serif; outline: none; transition: border-color .15s; }
-.pf-ctrl input:focus, .pf-ctrl select:focus { border-color: var(--accent); }
+.pf-ctrl input, .pf-ctrl select { width: 100%; padding: 10px 14px; border: 1.5px solid var(--border); border-radius: 10px; background: var(--surface2); color: var(--text); font-size: 13px; font-family: 'DM Sans', sans-serif; outline: none; transition: border-color .15s, box-shadow .15s, background .15s; }
+.pf-ctrl input:focus, .pf-ctrl select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,67,206,.12); }
 .pf-ctrl input[readonly] { color: var(--muted); cursor: default; background: var(--bg); }
 .pf-section { font-size: 14px; font-weight: 700; color: var(--text); border-bottom: 1px solid var(--border); padding-bottom: 10px; margin: 24px 0 16px; }
 .pf-radio-group { display: flex; flex-direction: column; gap: 10px; }
@@ -3974,16 +4002,16 @@ body.role-editor .admin-action {
 .signin-sub { font-size:13px; color:var(--muted); margin:0 0 24px; }
 .signin-badge { display:inline-flex; align-items:center; padding:4px 8px; border-radius:999px; background:var(--accent-bg); color:var(--accent); font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; margin:0 0 10px; }
 .signin-note { font-size:12px; color:var(--muted); line-height:1.45; margin:-8px 0 16px; }
-.signin-provider-btn { display:flex; align-items:center; gap:10px; width:100%; padding:10px 14px; border:1px solid var(--border); border-radius:8px; background:var(--surface); color:var(--text); font-size:14px; font-weight:500; cursor:pointer; margin-bottom:10px; transition:background .15s; }
+.signin-provider-btn { display:flex; align-items:center; gap:10px; width:100%; padding:10px 14px; border:1.5px solid var(--border); border-radius:10px; background:var(--surface); color:var(--text); font-size:14px; font-weight:500; cursor:pointer; margin-bottom:10px; transition:background .15s, border-color .15s, box-shadow .15s; }
 .signin-provider-btn:hover { background:var(--surface2); }
 .signin-provider-btn svg, .signin-provider-btn img { flex-shrink:0; }
 .signin-divider { display:flex; align-items:center; gap:10px; margin:18px 0; color:var(--muted); font-size:12px; }
 .signin-divider::before, .signin-divider::after { content:''; flex:1; height:1px; background:var(--border); }
 .signin-field { margin-bottom:12px; }
 .signin-field label { display:block; font-size:11px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:5px; }
-.signin-field input { width:100%; box-sizing:border-box; padding:9px 12px; border:1px solid var(--border); border-radius:8px; background:var(--surface2); color:var(--text); font-size:14px; outline:none; }
-.signin-field input:focus { border-color:var(--accent); }
-.signin-submit { width:100%; padding:10px; background:var(--accent); color:#fff; border:none; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer; margin-top:4px; }
+.signin-field input { width:100%; box-sizing:border-box; padding:10px 14px; border:1.5px solid var(--border); border-radius:10px; background:var(--surface2); color:var(--text); font-size:14px; outline:none; transition:border-color .15s, box-shadow .15s, background .15s; }
+.signin-field input:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(0,67,206,.12); }
+.signin-submit { width:100%; padding:10px; background:var(--accent); color:#fff; border:none; border-radius:10px; font-size:14px; font-weight:600; cursor:pointer; margin-top:4px; }
 .signin-submit:hover { opacity:.9; }
 .signin-footer { display:flex; justify-content:space-between; margin-top:14px; font-size:12px; color:var(--muted); }
 .signin-footer a { color:var(--accent); text-decoration:none; cursor:pointer; }
@@ -4118,11 +4146,11 @@ body.role-editor .admin-action {
 .ob-field label { display: block; font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
 .ob-field input, .ob-field select {
   width: 100%; font-family: 'DM Sans', sans-serif; font-size: 14px;
-  background: var(--surface2); border: 1px solid var(--border);
+  background: var(--surface2); border: 1.5px solid var(--border);
   border-radius: 10px; padding: 11px 14px; color: var(--text); outline: none;
-  transition: border-color 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
 }
-.ob-field input:focus, .ob-field select:focus { border-color: var(--accent); }
+.ob-field input:focus, .ob-field select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,67,206,.12); }
 .ob-template-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 12px; }
 .ob-tmpl-card {
   border: 2px solid var(--border); border-radius: 12px; overflow: hidden;
@@ -4186,11 +4214,11 @@ body.role-editor .admin-action {
 .invite-field label { display: block; font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
 .invite-field input, .invite-field select {
   width: 100%; font-family: 'DM Sans', sans-serif; font-size: 13px;
-  background: var(--surface2); border: 1px solid var(--border);
-  border-radius: 8px; padding: 9px 12px; color: var(--text); outline: none;
-  transition: border-color 0.15s;
+  background: var(--surface2); border: 1.5px solid var(--border);
+  border-radius: 10px; padding: 10px 14px; color: var(--text); outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
 }
-.invite-field input:focus, .invite-field select:focus { border-color: var(--accent); }
+.invite-field input:focus, .invite-field select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,67,206,.12); }
 .invite-role-desc { font-size: 11px; color: var(--muted); margin-top: 6px; line-height: 1.5; }
 .invite-modal-footer { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
 </style>
@@ -4578,7 +4606,7 @@ body.role-editor .admin-action {
       <div class="dash-card" style="grid-column:1/-1">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
           <div class="dash-card-title">Live Preview</div>
-          <select id="previewShowSelect" class="screen-show-select" style="font-size:12px;padding:5px 8px" onchange="updatePreviewFrame()">
+          <select id="previewShowSelect" class="screen-show-select" onchange="updatePreviewFrame()">
             <option value="main">Main Display</option>
           </select>
         </div>
@@ -5237,7 +5265,7 @@ body.role-editor .admin-action {
         <div class="clock-field">
           <label>Message</label>
           <textarea id="broadcastMessage" rows="3" placeholder="Fire drill — please evacuate now"
-            style="width:100%;padding:10px 12px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-size:14px;resize:vertical;font-family:inherit"></textarea>
+            style="width:100%;padding:10px 14px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-size:14px;resize:vertical;font-family:inherit"></textarea>
         </div>
         <div class="clock-field">
           <label>Background</label>
@@ -5873,7 +5901,7 @@ body.role-editor .admin-action {
         <div class="settings-section-body" style="display:flex;gap:12px;align-items:flex-end">
           <div style="flex:1">
             <label style="display:block;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Organization Name</label>
-            <input id="orgNameInput" type="text" style="width:100%;font-family:'DM Sans',sans-serif;font-size:13px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);outline:none" placeholder="My Organization">
+            <input id="orgNameInput" type="text" class="ui-control" placeholder="My Organization">
           </div>
           <button class="btn btn-primary admin-action" onclick="saveOrgName()">Save</button>
         </div>
@@ -6568,7 +6596,7 @@ body.role-editor .admin-action {
       <!-- Slideshow picker -->
       <div style="padding:16px 20px 16px">
         <label style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);display:block;margin-bottom:6px">Add to slideshow</label>
-        <select id="dashUploadShow" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--text);font-size:14px;font-family:inherit">
+        <select id="dashUploadShow" class="ui-control">
           <option value="">— select a slideshow —</option>
         </select>
       </div>
@@ -7483,7 +7511,7 @@ body.role-editor .admin-action {
       <div id="gslidesPicker" style="display:flex;flex-direction:column;flex:1;min-height:0">
         <input type="text" id="gslidesSearch" placeholder="Search presentations…" autocomplete="off"
                oninput="gslidesFilterList()"
-               style="width:100%;box-sizing:border-box;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:var(--surface);color:var(--text);margin-bottom:10px;flex-shrink:0">
+               style="width:100%;box-sizing:border-box;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;background:var(--surface2);color:var(--text);margin-bottom:10px;flex-shrink:0">
         <div id="gslidesPickerList" style="overflow-y:auto;flex:1;border:1px solid var(--border);border-radius:10px;min-height:200px"></div>
         <div style="margin-top:12px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
           <button onclick="gslidesShowUrl()" style="background:none;border:none;color:var(--text-muted);font-size:13px;cursor:pointer;padding:0;text-decoration:underline">Or paste a URL instead</button>
@@ -9004,11 +9032,11 @@ body.role-editor .admin-action {
       <div class="color-row">
         <div class="clock-field">
           <label>Background</label>
-          <input type="color" id="clockBgColor" value="#000000" oninput="updateClockPreview()" style="width:100%;height:36px;padding:2px;cursor:pointer;border-radius:6px;border:1px solid var(--border);background:var(--surface2)" />
+          <input type="color" id="clockBgColor" value="#000000" oninput="updateClockPreview()" style="width:100%;height:36px;padding:2px;cursor:pointer;border-radius:10px;border:1.5px solid var(--border);background:var(--surface2)" />
         </div>
         <div class="clock-field">
           <label>Text Color</label>
-          <input type="color" id="clockTextColor" value="#ffffff" oninput="updateClockPreview()" style="width:100%;height:36px;padding:2px;cursor:pointer;border-radius:6px;border:1px solid var(--border);background:var(--surface2)" />
+          <input type="color" id="clockTextColor" value="#ffffff" oninput="updateClockPreview()" style="width:100%;height:36px;padding:2px;cursor:pointer;border-radius:10px;border:1.5px solid var(--border);background:var(--surface2)" />
         </div>
       </div>
 
@@ -9070,12 +9098,12 @@ body.role-editor .admin-action {
         <div class="clock-field">
           <label>Foreground</label>
           <input type="color" id="qrFgColor" value="#000000" oninput="updateQrPreview()"
-                 style="width:100%;height:36px;padding:2px;cursor:pointer;border-radius:6px;border:1px solid var(--border);background:var(--surface2)" />
+                 style="width:100%;height:36px;padding:2px;cursor:pointer;border-radius:10px;border:1.5px solid var(--border);background:var(--surface2)" />
         </div>
         <div class="clock-field">
           <label>Background</label>
           <input type="color" id="qrBgColor" value="#ffffff" oninput="updateQrPreview()"
-                 style="width:100%;height:36px;padding:2px;cursor:pointer;border-radius:6px;border:1px solid var(--border);background:var(--surface2)" />
+                 style="width:100%;height:36px;padding:2px;cursor:pointer;border-radius:10px;border:1.5px solid var(--border);background:var(--surface2)" />
         </div>
       </div>
       <div class="clock-field" id="qrShowTargetWrap">
@@ -9291,7 +9319,7 @@ body.role-editor .admin-action {
       <div class="clock-field">
         <label>Accent Color</label>
         <input type="color" id="cdAccent" value="#f07c00"
-               style="width:100%;height:36px;padding:2px;cursor:pointer;border-radius:6px;border:1px solid var(--border);background:var(--surface2)" />
+               style="width:100%;height:36px;padding:2px;cursor:pointer;border-radius:10px;border:1.5px solid var(--border);background:var(--surface2)" />
       </div>
     </div>
     <div class="clock-field" id="cdShowTargetWrap">
@@ -9579,7 +9607,7 @@ body.role-editor .admin-action {
       </div>
       <div class="mb-field">
         <label>Accent Color</label>
-        <input id="mbAccentColor" type="color" value="#D4AF37" style="height:36px;padding:2px 4px;cursor:pointer;width:100%;border-radius:7px;background:var(--surface2);border:1px solid var(--border)" />
+        <input id="mbAccentColor" type="color" value="#D4AF37" style="height:36px;padding:2px 4px;cursor:pointer;width:100%;border-radius:10px;background:var(--surface2);border:1.5px solid var(--border)" />
       </div>
       <div class="clock-field" id="mbShowTargetWrap">
         <label>Add to Slideshow</label>
@@ -9960,8 +9988,8 @@ function showAdminProviderConflict(email, pendingCred) {
       Enter your password once to link Google sign-in permanently.
     </p>
     <input id="linkPwInput" type="password" placeholder="Your password"
-      style="width:100%;margin-bottom:8px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--surface2);color:var(--text);box-sizing:border-box">
-    <button id="linkPwBtn" style="width:100%;padding:9px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer">Link &amp; Sign In</button>
+      style="width:100%;margin-bottom:8px;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;background:var(--surface2);color:var(--text);box-sizing:border-box">
+    <button id="linkPwBtn" style="width:100%;padding:9px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">Link &amp; Sign In</button>
     <p id="linkPwErr" style="font-size:12px;color:#dc2626;margin:6px 0 0"></p>`;
   errEl.style.display = 'block';
   document.getElementById('linkPwBtn').onclick = async () => {
@@ -27405,10 +27433,10 @@ function _mzZoneFieldsHtml(idx, contentType, saved) {
     <div style="display:flex;gap:10px;">
       <div class="mz-field" style="flex:1"><label>Background</label>
         <input type="color" id="mzZ${idx}_bgColor" value="${c.bgColor||'#000000'}"
-          style="width:100%;height:38px;padding:2px;cursor:pointer;border-radius:8px;border:1.5px solid var(--border);background:var(--surface2)" /></div>
+          style="width:100%;height:38px;padding:2px;cursor:pointer;border-radius:10px;border:1.5px solid var(--border);background:var(--surface2)" /></div>
       <div class="mz-field" style="flex:1"><label>Text Color</label>
         <input type="color" id="mzZ${idx}_textColor" value="${c.textColor||'#ffffff'}"
-          style="width:100%;height:38px;padding:2px;cursor:pointer;border-radius:8px;border:1.5px solid var(--border);background:var(--surface2)" /></div>
+          style="width:100%;height:38px;padding:2px;cursor:pointer;border-radius:10px;border:1.5px solid var(--border);background:var(--surface2)" /></div>
     </div>`;
 
   if (contentType === 'weather') return `

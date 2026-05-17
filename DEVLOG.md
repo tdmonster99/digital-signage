@@ -10,6 +10,7 @@ Aligned the older app modals with the newer RSS Ticker form styling.
 
 - **App modals**: rounded shared `.field` inputs/selects, buttons, close controls, and legacy `.clock-field` controls so Clock, QR, Countdown, Sheets, Instagram, Reviews, and related flows no longer fall back to square browser-default fields.
 - **Interaction polish**: added consistent focus rings, softer segmented option buttons, larger toggle switches, and rounded preview/color controls.
+- **Remaining traces**: normalized the Live Preview slideshow dropdown plus other older control families that were still using compact square-ish field styling.
 
 ---
 
