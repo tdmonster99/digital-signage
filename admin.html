@@ -563,6 +563,31 @@ body {
 .cap-test-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .cap-test-actions .btn { flex: 1; justify-content: center; padding: 7px 10px; font-size: 12px; }
 .cap-test-status { min-height: 16px; font-size: 11px; color: var(--muted); line-height: 1.4; }
+.screen-diagnostics-panel {
+  padding: 12px; background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; font-size: 12px; color: var(--muted); display: flex; flex-direction: column; gap: 12px;
+}
+.screen-diagnostics-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.screen-diagnostics-title { font-size: 13px; font-weight: 800; color: var(--text); }
+.screen-diagnostics-status { display: inline-flex; align-items: center; border-radius: 999px; padding: 3px 8px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
+.screen-diagnostics-status.ok { background: rgba(34,197,94,.12); color: #16a34a; }
+.screen-diagnostics-status.warn { background: rgba(245,158,11,.14); color: #b45309; }
+.screen-diagnostics-status.bad { background: rgba(239,68,68,.12); color: #dc2626; }
+.screen-diagnostics-summary { padding: 10px; border-radius: 8px; background: var(--surface); border: 1px solid var(--border); line-height: 1.45; color: var(--text); }
+.screen-diagnostics-actions { display: flex; justify-content: flex-end; }
+.screen-diagnostics-refresh {
+  border: 1px solid var(--border); background: var(--surface); color: var(--text);
+  border-radius: 8px; padding: 6px 9px; font: 700 11px 'DM Sans', sans-serif; cursor: pointer;
+}
+.screen-diagnostics-refresh:hover { border-color: var(--accent); color: var(--accent); }
+.screen-diagnostics-section-title { font-size: 10px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; }
+.screen-diagnostics-events { display: flex; flex-direction: column; gap: 6px; }
+.screen-diagnostics-event { display: grid; grid-template-columns: 76px 1fr; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--border); }
+.screen-diagnostics-event:last-child { border-bottom: none; }
+.screen-diagnostics-event-time { color: var(--muted); font-size: 11px; white-space: nowrap; }
+.screen-diagnostics-event-body { min-width: 0; }
+.screen-diagnostics-event-type { color: var(--text); font-weight: 700; font-size: 12px; }
+.screen-diagnostics-event-detail { color: var(--muted); font-size: 11px; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; }
 .sep-footer {
   padding: 16px 24px; border-top: 1px solid var(--border);
   display: flex; gap: 8px;
@@ -5611,9 +5636,9 @@ body.role-editor .admin-action {
         </div>
       </div>
       <div class="sep-field">
-        <label>Player Diagnostics</label>
-        <div id="sepPlayerDiagnostics" style="padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--muted)">
-          Open this screen to load player diagnostics.
+        <label>Screen Diagnostics</label>
+        <div id="sepPlayerDiagnostics" class="screen-diagnostics-panel">
+          Open this screen to load screen diagnostics.
         </div>
       </div>
     </div>
@@ -22324,14 +22349,19 @@ function sortScreensForDisplay(screens) {
 }
 
 const PLAYER_DIAGNOSTIC_TYPES = new Set([
+  'screen_online',
+  'screen_offline',
   'player_boot',
   'player_capabilities',
   'player_online',
   'player_offline',
+  'player_heartbeat_error',
   'player_watchdog_restart',
   'player_slideshow_error',
   'playlist_slide_skipped',
 ]);
+
+const SCREEN_OFFLINE_THRESHOLD_MS = 10 * 60 * 1000;
 
 function formatPlayerDiagTime(value) {
   if (!value) return '—';
@@ -22365,15 +22395,152 @@ function playerDiagRow(label, value) {
   </div>`;
 }
 
+function eventTimeMs(event) {
+  const ms = new Date(event?.timestamp || 0).getTime();
+  return Number.isFinite(ms) ? ms : 0;
+}
+
+function screenDiagEventLabel(event) {
+  const labels = {
+    screen_online: 'Screen online',
+    screen_offline: 'Screen offline',
+    player_boot: 'Player boot',
+    player_capabilities: 'Capabilities',
+    player_online: 'Player online',
+    player_offline: 'Player offline',
+    player_heartbeat_error: 'Heartbeat failed',
+    player_watchdog_restart: 'Watchdog restart',
+    player_slideshow_error: 'Slideshow error',
+    playlist_slide_skipped: 'Slide skipped',
+  };
+  return labels[event?.type] || event?.type || 'Event';
+}
+
+function screenDiagEventDetail(event) {
+  if (!event) return '';
+  const parts = [];
+  if (event.source) parts.push(`source: ${event.source}`);
+  if (event.reason) parts.push(`reason: ${event.reason}`);
+  if (event.message) parts.push(String(event.message).slice(0, 120));
+  if (event.slideshowId) parts.push(`show: ${event.slideshowId}`);
+  if (event.online === false) parts.push('browser reported offline');
+  return parts.join(' · ');
+}
+
+function diagnoseScreenHealth(screen, latest) {
+  const online = isOnline(screen?.lastSeen);
+  const lastSeenMs = screenTimeMs(screen?.lastSeen);
+  const lastOffline = latest.player_offline || latest.screen_offline || null;
+  const lastOnline = latest.player_online || latest.screen_online || null;
+  const heartbeatError = latest.player_heartbeat_error || null;
+  const lastOfflineSource = String(lastOffline?.source || '').toLowerCase();
+  const lastOnlineMs = eventTimeMs(lastOnline);
+  const lastOfflineMs = eventTimeMs(lastOffline);
+  const heartbeatErrorMs = eventTimeMs(heartbeatError);
+
+  if (online) {
+    return {
+      state: 'ok',
+      title: 'Healthy',
+      summary: 'This screen is heartbeating normally right now.',
+    };
+  }
+  if (!lastSeenMs) {
+    return {
+      state: 'warn',
+      title: 'No heartbeat yet',
+      summary: 'This screen record exists, but the player has not written its first heartbeat.',
+    };
+  }
+  if (heartbeatError && heartbeatErrorMs >= lastSeenMs) {
+    return {
+      state: 'bad',
+      title: 'Heartbeat write failed',
+      summary: `The player reported a heartbeat write failure after its last successful heartbeat${heartbeatError.message ? `: ${heartbeatError.message}` : '.'}`,
+    };
+  }
+  if (lastOfflineMs >= Math.max(lastSeenMs - 60 * 1000, 0) && lastOfflineMs >= lastOnlineMs) {
+    if (lastOfflineSource === 'visibility_hidden' || lastOfflineSource === 'pagehide') {
+      return {
+        state: 'bad',
+        title: 'Tab hidden or closed',
+        summary: 'The player reported that its tab/window was hidden or unloaded near the time heartbeats stopped.',
+      };
+    }
+    if (lastOfflineSource === 'browser') {
+      return {
+        state: 'bad',
+        title: 'Browser went offline',
+        summary: 'The browser reported a network offline event before heartbeats stopped.',
+      };
+    }
+    return {
+      state: 'bad',
+      title: 'Player went offline',
+      summary: 'The player reported an offline event near the time heartbeats stopped.',
+    };
+  }
+  return {
+    state: 'warn',
+    title: 'Heartbeat stopped',
+    summary: 'The heartbeat stopped without a final event. The tab may have been closed, Chrome may have discarded it, or the device/session stopped before it could report a reason.',
+  };
+}
+
+function renderScreenDiagnosticsSummary(screen, latest, events) {
+  const diagnosis = diagnoseScreenHealth(screen, latest);
+  const lastIssue = latest.player_heartbeat_error || latest.player_slideshow_error || latest.playlist_slide_skipped || latest.player_watchdog_restart || null;
+  const offlineAge = screen?.lastSeen
+    ? Math.max(0, Math.round((Date.now() - new Date(screen.lastSeen).getTime()) / 60000))
+    : null;
+  const eventRows = events.slice(0, 8).map(event => `
+    <div class="screen-diagnostics-event">
+      <div class="screen-diagnostics-event-time">${escHtml(formatPlayerDiagTime(event.timestamp))}</div>
+      <div class="screen-diagnostics-event-body">
+        <div class="screen-diagnostics-event-type">${escHtml(screenDiagEventLabel(event))}</div>
+        <div class="screen-diagnostics-event-detail">${escHtml(screenDiagEventDetail(event) || 'No extra detail')}</div>
+      </div>
+    </div>
+  `).join('');
+
+  return `
+    <div class="screen-diagnostics-head">
+      <div>
+        <div class="screen-diagnostics-title">${escHtml(diagnosis.title)}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${events.length} recent player event${events.length === 1 ? '' : 's'} checked</div>
+      </div>
+      <span class="screen-diagnostics-status ${diagnosis.state}">${diagnosis.state === 'ok' ? 'Online' : 'Check'}</span>
+    </div>
+    <div class="screen-diagnostics-summary">${escHtml(diagnosis.summary)}</div>
+    <div>
+      ${playerDiagRow('Last heartbeat', escHtml(screen?.lastSeen ? `${formatPlayerDiagTime(screen.lastSeen)}${offlineAge !== null && offlineAge * 60 * 1000 >= SCREEN_OFFLINE_THRESHOLD_MS ? ` (${offlineAge}m ago)` : ''}` : 'never'))}
+      ${playerDiagRow('Offline alert', escHtml(formatPlayerDiagTime(screen?.lastNotifiedAt)))}
+      ${playerDiagRow('Last boot', escHtml(formatPlayerDiagTime((latest.player_boot || latest.player_capabilities || {}).timestamp)))}
+      ${playerDiagRow('Last online', escHtml(formatPlayerDiagTime((latest.player_online || latest.screen_online || {}).timestamp)))}
+      ${playerDiagRow('Last offline', escHtml(formatPlayerDiagTime((latest.player_offline || latest.screen_offline || {}).timestamp)))}
+      ${lastIssue ? playerDiagRow('Last issue', escHtml(screenDiagEventDetail(lastIssue) || lastIssue.reason || screenDiagEventLabel(lastIssue))) : ''}
+    </div>
+    <div class="screen-diagnostics-actions">
+      <button type="button" class="screen-diagnostics-refresh" onclick="loadScreenPlayerDiagnostics('${escAttr(screen?.id || '')}')">Refresh diagnostics</button>
+    </div>
+    <div>
+      <div class="screen-diagnostics-section-title">Recent player events</div>
+      <div class="screen-diagnostics-events">${eventRows || '<div style="color:var(--muted)">No player events recorded yet.</div>'}</div>
+    </div>
+  `;
+}
+
 function renderPlayerDiagnostics(screenId, events) {
   const el = document.getElementById('sepPlayerDiagnostics');
   if (!el || editingScreenId !== screenId) return;
+  const screenRecord = _cachedScreens.find(s => s.id === screenId) || { id: screenId };
 
   const latest = {};
-  events
+  const screenEvents = events
     .filter(e => e.screenId === screenId && PLAYER_DIAGNOSTIC_TYPES.has(e.type))
     .sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0))
-    .forEach(e => { if (!latest[e.type]) latest[e.type] = e; });
+    .slice(0, 50);
+  screenEvents.forEach(e => { if (!latest[e.type]) latest[e.type] = e; });
 
   const capsEvent = latest.player_capabilities || {};
   const bootEvent = latest.player_boot || {};
@@ -22387,11 +22554,11 @@ function renderPlayerDiagnostics(screenId, events) {
   const platformFamily = platform.family || bootEvent.platformFamily || '—';
   const shell = platform.shell || {};
   const shellLabel = shell.type ? `${shell.type}${shell.version ? ' ' + shell.version : ''}` : '';
-  const lastIssue = latest.player_slideshow_error || latest.playlist_slide_skipped || latest.player_watchdog_restart || null;
+  const lastIssue = latest.player_heartbeat_error || latest.player_slideshow_error || latest.playlist_slide_skipped || latest.player_watchdog_restart || null;
 
   if (!Object.keys(latest).length) {
-    el.innerHTML = `<div style="color:var(--muted);line-height:1.5">
-      No player diagnostics yet. Reload the paired display after the latest deployment and check back here.
+    el.innerHTML = renderScreenDiagnosticsSummary(screenRecord, latest, screenEvents) + `<div style="color:var(--muted);line-height:1.5">
+      No screen diagnostics yet. Reload the paired display after the latest deployment and check back here.
     </div>`;
     return;
   }
@@ -22401,6 +22568,7 @@ function renderPlayerDiagnostics(screenId, events) {
     .join('');
 
   el.innerHTML = `
+    ${renderScreenDiagnosticsSummary(screenRecord, latest, screenEvents)}
     ${playerDiagRow('Player', escHtml(version))}
     ${playerDiagRow('Platform', escHtml(platformFamily))}
     ${shellLabel ? playerDiagRow('Shell', escHtml(shellLabel)) : ''}
@@ -22409,7 +22577,7 @@ function renderPlayerDiagnostics(screenId, events) {
     ${playerDiagRow('Last boot', escHtml(formatPlayerDiagTime(bootEvent.timestamp || capsEvent.timestamp)))}
     ${playerDiagRow('Last online', escHtml(formatPlayerDiagTime((latest.player_online || {}).timestamp)))}
     ${playerDiagRow('Last offline', escHtml(formatPlayerDiagTime((latest.player_offline || {}).timestamp)))}
-    ${lastIssue ? playerDiagRow('Last issue', escHtml(lastIssue.reason || lastIssue.type || 'Issue')) : ''}
+    ${lastIssue ? playerDiagRow('Last issue', escHtml(screenDiagEventDetail(lastIssue) || lastIssue.reason || lastIssue.type || 'Issue')) : ''}
     <div style="padding-top:10px">
       <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Features</div>
       <div>${featureChips || '—'}</div>
@@ -22429,7 +22597,7 @@ function renderPlayerDiagnostics(screenId, events) {
 async function loadScreenPlayerDiagnostics(screenId) {
   const el = document.getElementById('sepPlayerDiagnostics');
   if (!el || !currentOrgId) return;
-  el.innerHTML = '<div style="color:var(--muted)">Loading player diagnostics…</div>';
+  el.innerHTML = '<div style="color:var(--muted)">Loading screen diagnostics…</div>';
   try {
     const snap = await getDocs(query(
       collection(db, 'organizations', currentOrgId, 'analytics'),
@@ -22449,6 +22617,7 @@ async function loadScreenPlayerDiagnostics(screenId) {
     }
   }
 }
+window.loadScreenPlayerDiagnostics = loadScreenPlayerDiagnostics;
 
 function renderScreens(screens) {
   const list = document.getElementById('screensList');
@@ -23596,7 +23765,7 @@ window.openScreenEdit = function(screenId) {
 window.closeScreenEdit = function() {
   document.getElementById('screenEditPanel').classList.remove('open');
   const diagEl = document.getElementById('sepPlayerDiagnostics');
-  if (diagEl) diagEl.innerHTML = 'Open this screen to load player diagnostics.';
+  if (diagEl) diagEl.innerHTML = 'Open this screen to load screen diagnostics.';
   editingScreenId = null;
 };
 

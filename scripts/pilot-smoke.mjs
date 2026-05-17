@@ -298,6 +298,22 @@ async function main() {
     'playerVersion',
   ]));
 
+  await check('Static screen diagnostics panel', () => assertFileContains('admin.html', [
+    'Screen Diagnostics',
+    'renderScreenDiagnosticsSummary',
+    'diagnoseScreenHealth',
+    'Last heartbeat',
+    'Recent player events',
+    'Refresh diagnostics',
+    'heartbeat stopped without a final event',
+  ]));
+
+  await check('Static player diagnostic events', () => assertFileContains('display.html', [
+    'player_heartbeat_error',
+    'visibility_visible',
+    'pagehide',
+  ]));
+
   await check('Pilot docs exist', () => assertFileContains('docs/PILOT_SMOKE_TEST.md', [
     'Account And Role Smoke',
     'Display Pairing Smoke',

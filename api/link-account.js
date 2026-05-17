@@ -3,12 +3,16 @@ const admin = require('firebase-admin');
 const crypto = require('crypto');
 
 const PLAYER_DIAGNOSTIC_TYPES = new Set([
+  'screen_online',
+  'screen_offline',
   'player_boot',
   'player_capabilities',
   'player_online',
   'player_offline',
+  'player_heartbeat_error',
   'player_watchdog_restart',
   'player_slideshow_error',
+  'playlist_slide_skipped',
 ]);
 
 const SLIDE_STORAGE_VERSION = 2;

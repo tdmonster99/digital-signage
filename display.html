@@ -99,7 +99,7 @@
   let watchdogHandle    = null;
   let debugVisible      = false;
   const PAGE_LOAD_TIME  = Date.now();
-  const ZIGNS_PLAYER_VERSION = "2026.05.04.5";
+  const ZIGNS_PLAYER_VERSION = "2026.05.17.1";
 
   // ── Player platform diagnostics ───────────────────────────────────────────
   let playerBootDiagnosticsSent = false;
@@ -2925,8 +2925,15 @@
     // callback — doing so writes lastSeen → re-triggers the snapshot → infinite write loop.
     async function heartbeat() {
       if (!(await ensureScreenWriteAccess())) return;
-      try { await setDoc(screenRef, { lastSeen: new Date().toISOString() }, { merge: true }); }
-      catch(e) {}
+      try {
+        await setDoc(screenRef, { lastSeen: new Date().toISOString() }, { merge: true });
+      } catch(e) {
+        queuePlayerEvent("player_heartbeat_error", {
+          source: "heartbeat",
+          message: String(e.message || e || "Heartbeat write failed").slice(0, 300),
+        });
+        flushAnalyticsSoon();
+      }
     }
 
     function startHeartbeatAfterScreenSnapshot() {
@@ -3167,16 +3174,24 @@
       queuePlayerEvent("player_online", { source: "screen_boot" });
       emitPlayerBootDiagnostics();
     }
+    function emitPlayerHidden(source) {
+      if (!hasScreenWriteAccess() || !analyticsOrgId) return;
+      // Best-effort flush + offline event when tab is hidden/closed.
+      queuePlayerEvent("player_offline", { source });
+      flushAnalytics();
+      addDoc(collection(db, 'organizations', analyticsOrgId, 'analytics'), {
+        type: 'screen_offline', screenId, timestamp: new Date().toISOString(),
+      }).catch(() => {});
+    }
+
     window.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'hidden' && hasScreenWriteAccess() && analyticsOrgId) {
-        // Best-effort flush + offline event when tab is hidden/closed
-        queuePlayerEvent("player_offline", { source: "visibility_hidden" });
-        flushAnalytics();
-        addDoc(collection(db, 'organizations', analyticsOrgId, 'analytics'), {
-          type: 'screen_offline', screenId, timestamp: new Date().toISOString(),
-        }).catch(() => {});
+      if (document.visibilityState === 'hidden') {
+        emitPlayerHidden("visibility_hidden");
+      } else if (document.visibilityState === 'visible') {
+        emitPlayerConnectivity("player_online", "visibility_visible");
       }
     });
+    window.addEventListener('pagehide', () => emitPlayerHidden("pagehide"));
 
     // ── Schedule enforcement ─────────────────────────────────────────────────
     // Reads the assigned schedule doc from Firestore and switches the playing

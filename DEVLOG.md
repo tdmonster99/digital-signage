@@ -4,6 +4,17 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-17 — Codex — Add screen diagnostics panel
+
+Added a clearer screen-health diagnostics surface after investigating a Novares ChromeOS multi-display incident where TV 2 stopped heartbeating while TV 1 stayed online.
+
+- **Screens**: expanded the Edit Screen diagnostics block into a Screen Diagnostics panel with last heartbeat, offline alert time, recent player events, and an operator-facing health interpretation.
+- **Player telemetry**: display sessions now report visibility-visible recovery, pagehide/offline transitions, and heartbeat write failures as diagnostics events.
+- **Fallback API**: screen diagnostics fallback now includes screen online/offline, heartbeat error, and skipped-slide event types.
+- **Smoke**: added static smoke coverage for the diagnostics panel and player event markers.
+
+---
+
 ## 2026-05-15 — Codex — Hydrate slideshow sidebar counts
 
 Fixed a startup display issue where inactive slideshows could show `0 slides` in the sidebar until clicked, even when their slide subcollections contained published slides.
