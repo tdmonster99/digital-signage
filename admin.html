@@ -49,8 +49,7 @@
   --header-shadow:   0 1px 3px rgba(0,0,0,0.08);
   --canvas-shadow:   0 8px 32px rgba(0,0,0,0.14);
   --card-shadow:     0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
-  --checker-bg:      #e4e8ed;
-  --checker-tile:    #d0d5de;
+  --designer-stage-bg:#eaf2ff;
 }
 
 /* ── Dark theme ─────────────────────────────────────────────────────────── */
@@ -73,8 +72,7 @@
   --header-shadow:   none;
   --canvas-shadow:   0 12px 64px rgba(0,0,0,0.55);
   --card-shadow:     none;
-  --checker-bg:      #1a1d24;
-  --checker-tile:    #22252e;
+  --designer-stage-bg:#0f1d3a;
 }
 
 body {
@@ -1864,7 +1862,12 @@ section.content {
   flex-shrink: 0;
 }
 .designer-topbar-label {
-  font-size: 11px; font-weight: 600; letter-spacing: 0.1em;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 58px;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.11em;
+  line-height: 1.05;
   text-transform: uppercase; color: var(--muted);
 }
 #designerSlideName {
@@ -1879,6 +1882,62 @@ section.content {
 }
 #designerSlideName:focus { outline: none; border-color: var(--accent); }
 .designer-topbar-actions { display: flex; gap: 8px; margin-left: auto; }
+.designer-zoom-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  margin-left: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+}
+.designer-zoom-btn {
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font: 700 15px/1 'DM Sans', sans-serif;
+  position: relative;
+}
+.designer-zoom-btn:hover { background: var(--surface2); color: var(--text); }
+.designer-zoom-label {
+  min-width: 50px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.designer-topbar .btn[title],
+.designer-zoom-btn[title] {
+  position: relative;
+}
+.designer-topbar .btn[title]:hover::after,
+.designer-zoom-btn[title]:hover::after {
+  content: attr(title);
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 8px);
+  transform: translateX(-50%);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  padding: 5px 9px;
+  border-radius: 6px;
+  pointer-events: none;
+  z-index: 600;
+  box-shadow: 0 8px 24px rgba(0,0,0,.16);
+}
 
 /* Designer body (toolbar + canvas side by side) */
 .designer-body {
@@ -1941,6 +2000,7 @@ section.content {
   gap: 2px;
 }
 .tool-popover.open { display: flex; }
+.tool-popover-shapes { min-width: 150px; }
 .popover-item {
   display: flex; align-items: center; gap: 10px;
   padding: 8px 12px; border-radius: 7px;
@@ -1998,22 +2058,18 @@ section.content {
   display: none;
 }
 #canvasArea {
-  display: flex; align-items: center; justify-content: center;
-  overflow: hidden;
-  /* Checkerboard — like Figma/Canva outside the canvas bounds */
-  background-color: var(--checker-bg);
-  background-image:
-    linear-gradient(45deg, var(--checker-tile) 25%, transparent 25%),
-    linear-gradient(-45deg, var(--checker-tile) 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, var(--checker-tile) 75%),
-    linear-gradient(-45deg, transparent 75%, var(--checker-tile) 75%);
-  background-size: 24px 24px;
-  background-position: 0 0, 0 12px, 12px -12px, -12px 0px;
+  display: flex; align-items: flex-start; justify-content: flex-start;
+  overflow: auto;
+  padding: 24px;
+  box-sizing: border-box;
+  background: var(--designer-stage-bg);
 }
 #canvasFrame {
   box-shadow: var(--canvas-shadow);
   line-height: 0; /* prevent inline gap below canvas */
   position: relative;
+  margin: auto;
+  flex: 0 0 auto;
 }
 
 /* ── Safe Zone Overlay ───────────────────────────────────────────────────── */
@@ -2459,12 +2515,60 @@ body > canvas[width="1920"][height="1080"] {
 
 /* ── Properties Panel ────────────────────────────────────────────────────── */
 .designer-props {
-  width: 240px; flex-shrink: 0;
+  width: var(--designer-props-width, 320px);
+  min-width: 240px;
+  max-width: 520px;
+  flex-shrink: 0;
   background: var(--surface);
   border-left: 1px solid var(--border);
   overflow-y: auto;
   padding: 16px;
   display: flex; flex-direction: column; gap: 14px;
+  position: relative;
+}
+.designer-props-resizer {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 16px;
+  cursor: col-resize;
+  z-index: 5;
+}
+.designer-props-resizer::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: rgba(0,67,206,.36);
+}
+.designer-props-resizer::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 50%;
+  width: 10px;
+  height: 48px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background:
+    radial-gradient(circle, var(--muted) 1.2px, transparent 1.4px) center 13px / 8px 8px no-repeat,
+    radial-gradient(circle, var(--muted) 1.2px, transparent 1.4px) center 23px / 8px 8px no-repeat,
+    radial-gradient(circle, var(--muted) 1.2px, transparent 1.4px) center 33px / 8px 8px no-repeat,
+    var(--surface);
+  box-shadow: 0 2px 8px rgba(0,0,0,.08);
+  transform: translateY(-50%);
+}
+.designer-props-resizer:hover::after,
+.designer-props-resizer.dragging::after {
+  background: var(--accent);
+  opacity: 1;
+}
+.designer-props-resizer:hover::before,
+.designer-props-resizer.dragging::before {
+  border-color: var(--accent);
 }
 
 /* ── Version History panel ─────────────────────────────────────────── */
@@ -2564,6 +2668,13 @@ body > canvas[width="1920"][height="1080"] {
 .prop-btn:hover { border-color: var(--muted); }
 .prop-btn-row { display: flex; gap: 6px; }
 .prop-inline  { display: flex; gap: 8px; align-items: flex-end; }
+.prop-transform-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.prop-transform-grid .prop-input { padding: 7px 9px; }
+.prop-mini-note { font-size: 10px; line-height: 1.35; color: var(--muted); }
 .bg-type-tabs {
   display: flex; border-radius: 7px; overflow: hidden;
   border: 1px solid var(--border);
@@ -2635,6 +2746,42 @@ body > canvas[width="1920"][height="1080"] {
 .stock-coll-card img { width:100%; height:100%; object-fit:cover; display:block; }
 .stock-coll-label { position:absolute; inset:0; background:linear-gradient(to top,rgba(0,0,0,.7) 0%,rgba(0,0,0,0) 55%); display:flex; align-items:flex-end; padding:6px; }
 .stock-coll-name { color:#fff; font-size:10px; font-weight:700; line-height:1.2; }
+
+/* ── GIPHY Panel ────────────────────────────────────────────────────────── */
+.giphy-tabs { display:flex; margin-bottom:10px; border-bottom:1px solid var(--border); }
+.giphy-tab {
+  flex:1; padding:6px 2px; border:none; background:none; color:var(--muted);
+  font-size:10.5px; font-family:'DM Sans',sans-serif; font-weight:700;
+  cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px;
+  transition:color .15s,border-color .15s;
+}
+.giphy-tab.active { color:var(--accent); border-bottom-color:var(--accent); }
+.giphy-search-row { display:flex; gap:6px; margin-bottom:10px; }
+.giphy-search-row .prop-input { flex:1; min-width:0; }
+.giphy-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
+.giphy-item {
+  position:relative; aspect-ratio:1/1; border-radius:7px; overflow:hidden;
+  background:#061426; border:1px solid var(--border); cursor:pointer;
+  transition:border-color .12s, transform .12s, box-shadow .12s;
+}
+.giphy-item:hover { border-color:var(--accent); transform:translateY(-1px); box-shadow:0 5px 14px rgba(0,67,206,.16); }
+.giphy-item img { width:100%; height:100%; object-fit:contain; display:block; }
+.giphy-item::after {
+  content:'Add'; position:absolute; inset:auto 6px 6px 6px; text-align:center;
+  background:rgba(255,255,255,.92); color:#111827; border-radius:5px;
+  font-size:9px; font-weight:800; padding:3px 0; opacity:0;
+  transition:opacity .12s;
+}
+.giphy-item:hover::after { opacity:1; }
+.giphy-status { font-size:11px; color:var(--muted); text-align:center; padding:8px 0; min-height:26px; }
+.giphy-load-more {
+  width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:8px;
+  background:var(--surface2); color:var(--text); cursor:pointer; font-weight:700;
+  font-size:12px; font-family:'DM Sans',sans-serif;
+}
+.giphy-load-more:hover { border-color:var(--accent); color:var(--accent); background:var(--accent-bg); }
+.giphy-attribution { margin-top:10px; padding-top:8px; border-top:1px solid var(--border); font-size:10px; color:var(--muted); text-align:center; letter-spacing:.04em; }
+.giphy-attribution strong { color:var(--text); }
 .stock-coll-back { display:flex; align-items:center; gap:4px; background:none; border:none; color:var(--muted); font-size:11px; font-family:'DM Sans',sans-serif; cursor:pointer; padding:0 0 8px 0; }
 .stock-coll-back:hover { color:var(--text); }
 .stock-sentinel { height:1px; }
@@ -2751,8 +2898,29 @@ body > canvas[width="1920"][height="1080"] {
 }
 .layer-row:hover { background: var(--surface2); }
 .layer-row.selected { background: var(--accent-bg); border-left-color: var(--accent); }
+.layer-row.is-static .layer-name::after {
+  content: "static";
+  margin-left: 6px;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
 .layer-row.is-locked .layer-name { font-style: italic; color: var(--muted); }
 .layer-row.dragging { opacity: 0.35; }
+.layers-toolbar {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+.layers-toolbar .prop-btn { min-width: 0; padding: 6px 4px; }
 .layer-row-drag {
   color: var(--border); cursor: grab; flex-shrink: 0; line-height: 0;
 }
@@ -2890,8 +3058,49 @@ body > canvas[width="1920"][height="1080"] {
   background: #3b82f6;
   opacity: 0.85;
 }
+.guide-center {
+  background: #0ea5e9;
+  opacity: 1;
+  box-shadow: 0 0 0 1px rgba(14,165,233,0.20);
+}
 .guide-h { left: 0; right: 0; height: 1px; }
 .guide-v { top: 0; bottom: 0; width: 1px; }
+
+.selection-toolbar {
+  position: fixed;
+  display: none;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: 0 10px 32px rgba(0,0,0,.18);
+  z-index: 24;
+  transform: translateX(-50%);
+  pointer-events: auto;
+}
+.selection-toolbar.open { display: inline-flex; }
+.selection-toolbar button {
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.selection-toolbar button:hover { background: var(--surface2); color: var(--text); }
+.selection-toolbar button[disabled] { opacity: .35; cursor: default; pointer-events: none; }
+.selection-toolbar .sel-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+  margin: 0 2px;
+}
 
 #gridOverlay {
   position: absolute; inset: 0;
@@ -7789,7 +7998,7 @@ body.role-editor .admin-action {
 
 <div id="designerModal">
   <div class="designer-topbar">
-    <span class="designer-topbar-label">Designer</span>
+    <span class="designer-topbar-label"><span>Zigns</span><span>Designer</span></span>
     <input type="text" id="designerSlideName" placeholder="Slide name…" value="New Slide">
     <div style="display:flex;gap:4px;margin-left:12px">
       <button class="btn btn-secondary" id="btnUndo" title="Undo (Ctrl+Z)" onclick="designerUndo()" disabled
@@ -7811,6 +8020,13 @@ body.role-editor .admin-action {
     <div id="designerStatus" class="designer-status saved">
       <div class="status-dot"></div>
       <span class="status-text">Saved</span>
+    </div>
+    <div class="designer-zoom-controls" aria-label="Canvas zoom controls">
+      <button class="designer-zoom-btn" title="Zoom Out" onclick="designerZoomOut()" aria-label="Zoom out">−</button>
+      <button class="designer-zoom-btn" title="Fit Canvas" onclick="designerZoomFit()" aria-label="Fit canvas">
+        <span class="designer-zoom-label" id="designerZoomLabel">100%</span>
+      </button>
+      <button class="designer-zoom-btn" title="Zoom In" onclick="designerZoomIn()" aria-label="Zoom in">+</button>
     </div>
 
     <div class="designer-topbar-actions">
@@ -7891,6 +8107,15 @@ body.role-editor .admin-action {
             </svg>
             Paste image URL
           </button>
+          <button class="popover-item" onclick="designerImageFromStockPhotos()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round">
+              <rect x="4" y="5" width="14" height="12" rx="2"/>
+              <path d="M8 17v2h12V9h-2"/>
+              <circle cx="9" cy="9" r="1.2"/>
+              <path d="M4 14l4-3 3 2 3-4 4 5"/>
+            </svg>
+            Stock photos
+          </button>
           <button class="popover-item" onclick="designerImageFromGoogleDrive()">
             <img class="brand-logo-row" src="assets/brand/google-drive.png" alt="" aria-hidden="true">
             From Google Drive
@@ -7916,24 +8141,53 @@ body.role-editor .admin-action {
         </div>
         <input type="file" id="designerFileInput" accept="image/*"
                style="position:absolute;width:0;height:0;opacity:0;pointer-events:none">
+        <input type="file" id="designerReplaceImageInput" accept="image/*"
+               style="position:absolute;width:0;height:0;opacity:0;pointer-events:none">
       </div>
 
+      <!-- GIPHY browser -->
+      <button class="tool-btn" id="btnGiphy" title="GIPHY" onclick="toggleGiphyPanel()">
+        <svg width="19" height="19" viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="5" y="3" width="14" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/>
+          <path d="M14 3v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+          <rect x="7" y="5" width="2" height="14" fill="#00ff99"/>
+          <rect x="9" y="17" width="8" height="2" fill="#00ccff"/>
+          <rect x="17" y="9" width="2" height="8" fill="#9933ff"/>
+          <rect x="14" y="3" width="5" height="2" fill="#fff152"/>
+          <rect x="17" y="5" width="2" height="4" fill="#ff6666"/>
+        </svg>
+      </button>
+
       <!-- Shape tools -->
-      <button class="tool-btn" title="Add Rectangle" onclick="designerAddRect()">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="3" y="5" width="18" height="14" rx="2"/>
-        </svg>
-      </button>
-      <button class="tool-btn" title="Add Circle" onclick="designerAddCircle()">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="9"/>
-        </svg>
-      </button>
-      <button class="tool-btn" title="Add Line" onclick="designerAddLine()">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="3" y1="12" x2="21" y2="12"/>
-        </svg>
-      </button>
+      <div style="position:relative">
+        <button class="tool-btn" title="Shapes" onclick="toggleShapePopover(event)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round">
+            <path d="M12 3.5l4.6 7.8H7.4L12 3.5z"/>
+            <circle cx="7" cy="17" r="3.1"/>
+            <rect x="14" y="14" width="6" height="6" rx="1.4"/>
+          </svg>
+        </button>
+        <div class="tool-popover tool-popover-shapes" id="shapePopover">
+          <button class="popover-item" onclick="designerAddRectFromMenu()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="5" width="18" height="14" rx="2"/>
+            </svg>
+            Rectangle
+          </button>
+          <button class="popover-item" onclick="designerAddCircleFromMenu()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="9"/>
+            </svg>
+            Circle
+          </button>
+          <button class="popover-item" onclick="designerAddLineFromMenu()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="3" y1="12" x2="21" y2="12"/>
+            </svg>
+            Line
+          </button>
+        </div>
+      </div>
 
       <div class="tool-divider"></div>
 
@@ -8006,15 +8260,6 @@ body.role-editor .admin-action {
         </svg>
       </button>
 
-      <!-- Stock photos -->
-      <button class="tool-btn" id="btnStockPhotos" title="Stock Photos" onclick="toggleStockPanel()">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-          <rect x="3" y="3" width="18" height="18" rx="2"/>
-          <circle cx="8.5" cy="8.5" r="1.5"/>
-          <polyline points="21 15 16 10 5 21"/>
-        </svg>
-      </button>
-
       <!-- Insert Brand Logo (only shown when brand kit has a logo) -->
       <button class="tool-btn" id="btnInsertLogo" title="Insert Brand Logo" onclick="insertBrandLogo()" style="display:none">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
@@ -8057,6 +8302,50 @@ body.role-editor .admin-action {
         <canvas id="designerCanvas"></canvas>
         <div id="guideOverlay"></div>
         <div id="rulerGuidesOverlay"></div>
+        <div id="selectionToolbar" class="selection-toolbar" aria-label="Selection actions">
+          <button title="Duplicate" onclick="designerDuplicate()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="8" y="8" width="12" height="12" rx="2"/><path d="M4 16V6a2 2 0 0 1 2-2h10"/>
+            </svg>
+          </button>
+          <button id="selToolbarLock" title="Lock" onclick="designerToggleSelectedLock()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+          </button>
+          <button id="selToolbarGroup" title="Group" onclick="designerGroupSelection()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+              <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+            </svg>
+          </button>
+          <button id="selToolbarUngroup" title="Ungroup" onclick="designerUngroupSelection()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/>
+              <path d="M14 4h6v6M4 14v6h6"/>
+            </svg>
+          </button>
+          <span class="sel-divider"></span>
+          <button title="Align Left" onclick="designerAlignSelection('left')">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="3" x2="4" y2="21"/><rect x="8" y="6" width="10" height="4"/><rect x="8" y="14" width="6" height="4"/></svg>
+          </button>
+          <button title="Align Center" onclick="designerAlignSelection('center')">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="3" x2="12" y2="21"/><rect x="6" y="6" width="12" height="4"/><rect x="8" y="14" width="8" height="4"/></svg>
+          </button>
+          <button title="Align Middle" onclick="designerAlignSelection('middle')">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><rect x="6" y="5" width="4" height="14"/><rect x="14" y="7" width="4" height="10"/></svg>
+          </button>
+          <span class="sel-divider"></span>
+          <button id="selToolbarCrop" title="Crop Fill" onclick="designerImageCropFill()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></svg>
+          </button>
+          <button id="selToolbarReplace" title="Replace Image" onclick="replaceSelectedImageFromDevice()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M8 13l2.5-2.5L15 15l2-2 4 4"/><path d="M12 3v4M10 5h4"/></svg>
+          </button>
+          <button title="Delete" onclick="designerDeleteActive()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+          </button>
+        </div>
       </div>
       </div><!-- /#canvasArea -->
     </div>
@@ -8139,6 +8428,8 @@ body.role-editor .admin-action {
         <button class="ctx-item" id="ctxCopy"      onclick="hideCanvasCtxMenu();designerCopy()">Copy      <span class="ctx-shortcut">Ctrl+C</span></button>
         <button class="ctx-item" id="ctxPasteObj"  onclick="hideCanvasCtxMenu();designerPaste()">Paste    <span class="ctx-shortcut">Ctrl+V</span></button>
         <button class="ctx-item" id="ctxDup"       onclick="hideCanvasCtxMenu();designerDuplicate()">Duplicate <span class="ctx-shortcut">Ctrl+D</span></button>
+        <button class="ctx-item" id="ctxGroup"     onclick="hideCanvasCtxMenu();designerGroupSelection()">Group</button>
+        <button class="ctx-item" id="ctxUngroup"   onclick="hideCanvasCtxMenu();designerUngroupSelection()">Ungroup</button>
         <div class="ctx-divider"></div>
         <button class="ctx-item ctx-danger"         onclick="hideCanvasCtxMenu();designerDeleteActive()">Delete <span class="ctx-shortcut">Del</span></button>
         <div class="ctx-divider"></div>
@@ -8154,7 +8445,7 @@ body.role-editor .admin-action {
       <div id="ctxCanvasGroup" style="display:none">
         <button class="ctx-item" id="ctxPasteCanvas" onclick="hideCanvasCtxMenu();designerPaste()">Paste <span class="ctx-shortcut">Ctrl+V</span></button>
         <div class="ctx-divider"></div>
-        <button class="ctx-item" onclick="hideCanvasCtxMenu();if(fabricCanvas){fabricCanvas.discardActiveObject();const sel=new fabric.ActiveSelection(fabricCanvas.getObjects(),{canvas:fabricCanvas});fabricCanvas.setActiveObject(sel);fabricCanvas.requestRenderAll();}">Select All <span class="ctx-shortcut">Ctrl+A</span></button>
+        <button class="ctx-item" onclick="hideCanvasCtxMenu();if(fabricCanvas){setActiveCanvasObjects(fabricCanvas.getObjects().filter(canShowDesignerHoverOutline));}">Select All <span class="ctx-shortcut">Ctrl+A</span></button>
         <div class="ctx-divider"></div>
         <button class="ctx-item" onclick="hideCanvasCtxMenu();document.getElementById('bgColorInput').click()">
           <span style="display:flex;align-items:center;gap:8px">
@@ -8186,6 +8477,7 @@ body.role-editor .admin-action {
     </div>
 
     <div class="designer-props" id="designerProps">
+      <div class="designer-props-resizer" id="designerPropsResizer" title="Drag to resize panel"></div>
 
       <!-- Panel tab bar -->
       <div class="designer-panel-tabs">
@@ -8249,6 +8541,37 @@ body.role-editor .admin-action {
           <div class="icon-loading">Type a search or choose a category</div>
         </div>
         <div id="iconStatus" style="font-size:10px;color:var(--muted);text-align:center;padding:4px 0;margin-top:4px"></div>
+      </div>
+
+      <!-- GIPHY panel -->
+      <div id="giphyPanel" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div class="props-title" style="margin:0">GIPHY</div>
+          <button onclick="closeGiphyPanel()" title="Close" style="background:none;border:none;cursor:pointer;color:var(--muted);padding:2px;display:flex;align-items:center">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+        <div class="giphy-tabs">
+          <button class="giphy-tab active" data-giphy-tab="stickers" onclick="switchGiphyTab('stickers')">Stickers</button>
+          <button class="giphy-tab" data-giphy-tab="gifs" onclick="switchGiphyTab('gifs')">GIFs</button>
+          <button class="giphy-tab" data-giphy-tab="emoji" onclick="switchGiphyTab('emoji')">Emoji</button>
+          <button class="giphy-tab" data-giphy-tab="text" onclick="switchGiphyTab('text')">Text</button>
+        </div>
+        <div class="giphy-search-row">
+          <input type="text" id="giphySearchInput" class="prop-input" placeholder="Search GIPHY..."
+                 oninput="debouncedGiphySearch()" onkeydown="if(event.key==='Enter') searchGiphy()">
+          <button class="prop-btn" onclick="searchGiphy()" title="Search">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+          </button>
+        </div>
+        <div id="giphyGrid" class="giphy-grid"></div>
+        <div id="giphyStatus" class="giphy-status"></div>
+        <button class="giphy-load-more" id="giphyLoadMore" onclick="loadGiphyMore()" style="display:none">Load More</button>
+        <div class="giphy-attribution">Powered by <strong>GIPHY</strong></div>
       </div>
 
       <!-- Stock photos panel -->
@@ -8333,6 +8656,49 @@ body.role-editor .admin-action {
           </button>
         </div>
         <div id="historyList"><div class="history-loading">Loading…</div></div>
+      </div>
+
+      <!-- Shared transform controls -->
+      <div id="propsTransform" style="display:none">
+        <div class="props-title">Transform</div>
+        <div class="prop-group">
+          <div class="prop-transform-grid">
+            <div class="prop-row">
+              <div class="prop-label">X</div>
+              <input type="number" id="propObjX" class="prop-input" step="1" onchange="applyTransformProp('x', +this.value)">
+            </div>
+            <div class="prop-row">
+              <div class="prop-label">Y</div>
+              <input type="number" id="propObjY" class="prop-input" step="1" onchange="applyTransformProp('y', +this.value)">
+            </div>
+            <div class="prop-row">
+              <div class="prop-label">W</div>
+              <input type="number" id="propObjW" class="prop-input" min="1" step="1" onchange="applyTransformProp('w', +this.value)">
+            </div>
+            <div class="prop-row">
+              <div class="prop-label">H</div>
+              <input type="number" id="propObjH" class="prop-input" min="1" step="1" onchange="applyTransformProp('h', +this.value)">
+            </div>
+            <div class="prop-row" style="grid-column:1 / -1">
+              <div class="prop-label">Rotation</div>
+              <input type="number" id="propObjRot" class="prop-input" step="1" onchange="applyTransformProp('angle', +this.value)">
+            </div>
+          </div>
+          <div class="prop-btn-row">
+            <button class="prop-btn" onclick="designerAlignSelection('left')">Left</button>
+            <button class="prop-btn" onclick="designerAlignSelection('center')">Center</button>
+            <button class="prop-btn" onclick="designerAlignSelection('right')">Right</button>
+          </div>
+          <div class="prop-btn-row">
+            <button class="prop-btn" onclick="designerAlignSelection('top')">Top</button>
+            <button class="prop-btn" onclick="designerAlignSelection('middle')">Middle</button>
+            <button class="prop-btn" onclick="designerAlignSelection('bottom')">Bottom</button>
+          </div>
+          <div class="prop-btn-row">
+            <button class="prop-btn" onclick="designerDistributeSelection('horizontal')">Distribute H</button>
+            <button class="prop-btn" onclick="designerDistributeSelection('vertical')">Distribute V</button>
+          </div>
+        </div>
       </div>
 
       <!-- No selection: canvas background -->
@@ -8551,6 +8917,29 @@ body.role-editor .admin-action {
       <div id="propsImage" style="display:none">
         <div class="props-title">Image</div>
         <div class="prop-group">
+          <div class="prop-row">
+            <div class="prop-label">Replace</div>
+            <div class="prop-btn-row">
+              <button class="prop-btn" onclick="replaceSelectedImageFromDevice()">Upload</button>
+              <button class="prop-btn" onclick="replaceSelectedImageFromUrl()">URL</button>
+            </div>
+          </div>
+          <div class="prop-row">
+            <div class="prop-label">Crop / Fit</div>
+            <div class="prop-btn-row">
+              <button class="prop-btn" onclick="designerImageCropFill()">Crop Fill</button>
+              <button class="prop-btn" onclick="designerImageFitContain()">Fit</button>
+            </div>
+            <div class="prop-mini-note">Crop Fill keeps the current frame and crops the image from center.</div>
+          </div>
+          <div class="prop-row">
+            <div class="prop-label">Mask</div>
+            <div class="prop-btn-row">
+              <button class="prop-btn" onclick="designerApplyImageMask('roundRect')">Rounded</button>
+              <button class="prop-btn" onclick="designerApplyImageMask('circle')">Circle</button>
+              <button class="prop-btn" onclick="designerApplyImageMask('none')">None</button>
+            </div>
+          </div>
           <div class="prop-row">
             <div class="prop-label">Opacity</div>
             <input type="range" id="propImgOpacity" min="0" max="1" step="0.01" value="1" style="width:100%"
@@ -15568,7 +15957,7 @@ window.toast = (msg, err=false) => {
 
 // ── Slide Designer ────────────────────────────────────────────────────────
 const CANVAS_W = 1920;
-const CANVAS_EXTRA_PROPS = ['isLocked', 'animation', 'iconGroup', 'iconColor', 'isUnsplashAttrib'];
+const CANVAS_EXTRA_PROPS = ['isLocked', 'isTemplateStatic', 'zignsLayerLabel', 'zignsImageName', 'animation', 'iconGroup', 'iconColor', 'isUnsplashAttrib', 'isGiphyAsset', 'giphyId', 'giphyTitle', 'giphyUrl'];
 const CANVAS_H = 1080;
 let fabricCanvas    = null;
 let editingSlideIdx      = null; // null = new slide, number = editing existing
@@ -15576,6 +15965,11 @@ let editingGroupIdx      = null; // index in slides[] of group open in group edi
 let editingGroupSlideIdx = null; // index within group.slides[] while in designer; null = new
 
 let pendingTemplate = 'blank';
+const DESIGNER_ZOOM_MIN = 0.12;
+const DESIGNER_ZOOM_MAX = 2.5;
+const DESIGNER_ZOOM_STEP = 0.1;
+let designerFitZoom = 1;
+let designerZoom = 1;
 
 // ── AI Slide Generator ────────────────────────────────────────────────────
 
@@ -15757,6 +16151,7 @@ function loadAiJsonIntoCanvas() {
   fabricCanvas.loadFromJSON(aiCurrentJson, () => {
     fabricCanvas.getObjects().forEach(applyLockState);
     fabricCanvas.renderAll();
+    maybeStartGiphyAnimationLoop();
     historyPaused = false;
     historyStack = []; histIdx = -1;
     historySave();
@@ -15839,6 +16234,7 @@ function launchDesigner(existingSlide) {
   autoSaveNewSlideId = null;
   updateDesignerStatus('saved');
   applySafeZoneState();
+  initDesignerPropsResizer();
   requestAnimationFrame(() => {
     initFabricCanvas();
     if (existingSlide?.canvasJson) {
@@ -15846,6 +16242,7 @@ function launchDesigner(existingSlide) {
       fabricCanvas.loadFromJSON(existingSlide.canvasJson, () => {
         fabricCanvas.getObjects().forEach(applyLockState);
         fabricCanvas.renderAll();
+        maybeStartGiphyAnimationLoop();
         historyPaused = false;
         historyStack = []; histIdx = -1;
         historySave();
@@ -15949,7 +16346,18 @@ function doCloseDesigner() {
   stopAutoSaveTimer();
   designerDirty      = false;
   autoSaveNewSlideId = null;
+  if (giphyAnimationFrame) {
+    cancelAnimationFrame(giphyAnimationFrame);
+    giphyAnimationFrame = null;
+  }
   if (fabricCanvas) { fabricCanvas.dispose(); fabricCanvas = null; }
+  designerHoverObject = null;
+  designerFitZoom = 1;
+  designerZoom = 1;
+  updateDesignerZoomLabel();
+  designerSelectionToolbarSuspended = false;
+  designerCanvasScrollLock = null;
+  hideSelectionToolbar();
   clearGuides();
   gridVisible = false;
   const btn = document.getElementById('btnGrid');
@@ -15968,12 +16376,24 @@ function doCloseDesigner() {
   document.getElementById('stockCuratedGrid').innerHTML = '';
   document.getElementById('stockCollGrid').innerHTML = '';
   document.getElementById('stockCollPhotoGrid').innerHTML = '';
-  document.getElementById('btnStockPhotos').classList.remove('active');
+  document.getElementById('btnStockPhotos')?.classList.remove('active');
   activeStockTab = 'search';
   stockCuratedLoaded = false;
   stockCollectionsLoaded = false;
   document.querySelectorAll('.stock-tab').forEach((btn, i) => btn.classList.toggle('active', i === 0));
   document.querySelectorAll('.stock-tab-pane').forEach((p, i) => p.classList.toggle('active', i === 0));
+  // Reset GIPHY panel
+  giphyPanelOpen = false;
+  document.getElementById('giphyPanel').style.display = 'none';
+  document.getElementById('giphyGrid').innerHTML = '';
+  document.getElementById('giphyStatus').textContent = '';
+  document.getElementById('giphyLoadMore').style.display = 'none';
+  document.getElementById('btnGiphy')?.classList.remove('active');
+  giphyActiveTab = 'stickers';
+  giphyQuery = '';
+  giphyOffset = 0;
+  giphyHasMore = true;
+  document.querySelectorAll('.giphy-tab').forEach(btn => btn.classList.toggle('active', btn.dataset.giphyTab === 'stickers'));
   // Reset history panel
   historyPanelOpen = false;
   const hBtn = document.getElementById('btnHistory');
@@ -16052,13 +16472,15 @@ function stopAutoSaveTimer() {
 }
 
 // ── Element locking ────────────────────────────────────────────────────────
-// Apply lock/unlock visual+interaction state from obj.isLocked flag
+// Apply lock/unlock visual+interaction state from explicit locks and template-static objects.
 function applyLockState(obj) {
-  const locked = !!obj.isLocked;
+  const templateStatic = !!obj.isTemplateStatic;
+  const locked = !!obj.isLocked || templateStatic;
   obj.selectable    = !locked;
   obj.evented       = !locked;
   obj.hasControls   = !locked;
   obj.hasBorders    = !locked;
+  if (templateStatic) obj.editable = false;
 }
 
 // Draw a small padlock icon on locked objects after each canvas render
@@ -16096,9 +16518,136 @@ function installPadlockRenderer() {
     const ctx = fabricCanvas.getContext();
     fabricCanvas.getObjects().forEach(obj => {
       if (!obj.isLocked) return;
-      const br = obj.getBoundingRect(true);
+      const br = getViewportBounds(obj);
       drawPadlock(ctx, br.left, br.top, br.width, br.height);
     });
+  });
+}
+
+let designerHoverObject = null;
+let designerSelectionToolbarSuspended = false;
+let designerCanvasScrollLock = null;
+
+function canShowDesignerHoverOutline(obj) {
+  return !!obj
+    && obj.visible !== false
+    && !obj.isLocked
+    && !obj.isTemplateStatic
+    && obj.selectable !== false
+    && obj.evented !== false;
+}
+
+function getActiveCanvasObjects() {
+  const obj = fabricCanvas?.getActiveObject();
+  if (!obj) return [];
+  if (obj.type === 'activeSelection' && typeof obj.getObjects === 'function') {
+    return obj.getObjects().filter(canShowDesignerHoverOutline);
+  }
+  return canShowDesignerHoverOutline(obj) ? [obj] : [];
+}
+
+function hideSelectionToolbar() {
+  document.getElementById('selectionToolbar')?.classList.remove('open');
+}
+
+function beginCanvasScrollLock(evt) {
+  if (!evt?.target || !canShowDesignerHoverOutline(evt.target)) return;
+  const area = document.getElementById('canvasArea');
+  if (!area) return;
+  designerCanvasScrollLock = {
+    left: area.scrollLeft,
+    top: area.scrollTop,
+  };
+}
+
+function restoreCanvasScrollLock() {
+  if (!designerCanvasScrollLock) return;
+  const area = document.getElementById('canvasArea');
+  if (!area) return;
+  area.scrollLeft = designerCanvasScrollLock.left;
+  area.scrollTop = designerCanvasScrollLock.top;
+}
+
+function endCanvasScrollLock() {
+  restoreCanvasScrollLock();
+  designerCanvasScrollLock = null;
+}
+
+function suspendSelectionToolbar() {
+  designerSelectionToolbarSuspended = true;
+  hideSelectionToolbar();
+  restoreCanvasScrollLock();
+}
+
+function resumeSelectionToolbar() {
+  designerSelectionToolbarSuspended = false;
+  endCanvasScrollLock();
+  updateSelectionToolbar();
+}
+
+function updateSelectionToolbar() {
+  const toolbar = document.getElementById('selectionToolbar');
+  if (!toolbar || !fabricCanvas) return;
+  const obj = fabricCanvas.getActiveObject();
+  const editableObjects = getActiveCanvasObjects();
+  const frame = document.getElementById('canvasFrame');
+  if (!obj || !editableObjects.length || !frame || designerSelectionToolbarSuspended) {
+    hideSelectionToolbar();
+    return;
+  }
+
+  const frameRect = frame.getBoundingClientRect();
+  const br = getViewportBounds(obj);
+  const rawLeft = frameRect.left + br.left + br.width / 2;
+
+  toolbar.classList.add('open');
+  toolbar.style.visibility = 'hidden';
+  const toolbarW = toolbar.offsetWidth || 320;
+  const toolbarH = toolbar.offsetHeight || 40;
+  const toolbarViewportPad = 12;
+  const topbarClearance = 86;
+  const rotateHandleClearance = 58;
+  const preferredTop = frameRect.top + br.top - toolbarH - rotateHandleClearance;
+  const belowObjectTop = frameRect.top + br.top + br.height + 18;
+  const rawTop = preferredTop >= topbarClearance ? preferredTop : belowObjectTop;
+  const left = Math.max(12 + toolbarW / 2, Math.min(window.innerWidth - 12 - toolbarW / 2, rawLeft));
+  const top = Math.max(topbarClearance, Math.min(window.innerHeight - toolbarH - toolbarViewportPad, rawTop));
+  toolbar.style.left = `${Math.round(left)}px`;
+  toolbar.style.top = `${Math.round(top)}px`;
+  toolbar.style.visibility = '';
+
+  const isImage = editableObjects.length === 1 && editableObjects[0].type === 'image';
+  const canGroup = obj.type === 'activeSelection' && editableObjects.length > 1;
+  const canUngroup = obj.type === 'group' && !obj.iconGroup && !obj.isTemplateStatic;
+  document.getElementById('selToolbarCrop')?.toggleAttribute('disabled', !isImage);
+  document.getElementById('selToolbarReplace')?.toggleAttribute('disabled', !isImage);
+  document.getElementById('selToolbarGroup')?.toggleAttribute('disabled', !canGroup);
+  document.getElementById('selToolbarUngroup')?.toggleAttribute('disabled', !canUngroup);
+}
+
+function installHoverOutlineRenderer() {
+  fabricCanvas.on('mouse:over', e => {
+    const target = e.target;
+    designerHoverObject = canShowDesignerHoverOutline(target) ? target : null;
+    fabricCanvas.requestRenderAll();
+  });
+  fabricCanvas.on('mouse:out', e => {
+    if (!e.target || e.target === designerHoverObject) {
+      designerHoverObject = null;
+      fabricCanvas.requestRenderAll();
+    }
+  });
+  fabricCanvas.on('after:render', () => {
+    const obj = designerHoverObject;
+    if (!canShowDesignerHoverOutline(obj) || fabricCanvas.getActiveObject() === obj) return;
+    const br = getViewportBounds(obj);
+    const ctx = fabricCanvas.getContext();
+    ctx.save();
+    ctx.strokeStyle = 'rgba(0, 102, 255, 0.78)';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([]);
+    ctx.strokeRect(br.left, br.top, br.width, br.height);
+    ctx.restore();
   });
 }
 
@@ -16106,32 +16655,64 @@ function installPadlockRenderer() {
 const SNAP_THRESHOLD = 8;   // logical px — snap when within this distance
 const GRID_SIZE      = 40;  // logical px — grid cell size
 const GRID_SNAP_HYSTERESIS = 6; // logical px — prevents grid-boundary flicker
+const GRID_SOFT_SNAP_THRESHOLD = 10; // logical px — snap near grid, not every step
 let   gridVisible    = false;
 let   snapEnabled    = true; // snap-to-grid/objects toggle
 let   gridSnapDragState = null;
 
 // Return logical-space bounding box for an object
 function getLogBounds(obj) {
-  const zoom = fabricCanvas.getZoom();
-  const br   = obj.getBoundingRect(true); // canvas pixel space
-  const l = br.left  / zoom;
-  const t = br.top   / zoom;
-  const w = br.width / zoom;
-  const h = br.height / zoom;
+  const br = obj.getBoundingRect(true); // logical canvas coordinates, independent of zoom
+  const l = br.left;
+  const t = br.top;
+  const w = br.width;
+  const h = br.height;
   return { l, t, r: l + w, b: t + h, cx: l + w / 2, cy: t + h / 2, w, h };
+}
+
+function getViewportBounds(obj) {
+  const b = getLogBounds(obj);
+  const zoom = fabricCanvas?.getZoom() || 1;
+  return {
+    left: b.l * zoom,
+    top: b.t * zoom,
+    width: b.w * zoom,
+    height: b.h * zoom,
+  };
 }
 
 // Collect snap x-values and y-values from all other objects + canvas edges/center
 function getSnapSources(movingObj) {
   const xs = [0, CANVAS_W / 2, CANVAS_W];  // canvas left, center, right
   const ys = [0, CANVAS_H / 2, CANVAS_H];  // canvas top,  center, bottom
+  const centerXs = [];
+  const centerYs = [];
   fabricCanvas.getObjects().forEach(obj => {
     if (obj === movingObj) return;
     const b = getLogBounds(obj);
     xs.push(b.l, b.cx, b.r);
     ys.push(b.t, b.cy, b.b);
+    centerXs.push(b.cx);
+    centerYs.push(b.cy);
   });
-  return { xs, ys };
+  const distXs = [];
+  const distYs = [];
+  addEqualSpacingSnapSources(distXs, centerXs, CANVAS_W);
+  addEqualSpacingSnapSources(distYs, centerYs, CANVAS_H);
+  return { xs, ys, distXs, distYs };
+}
+
+function addEqualSpacingSnapSources(targets, centers, max) {
+  const usable = centers
+    .filter(v => Number.isFinite(v) && v >= 0 && v <= max)
+    .slice(0, 36);
+  for (let i = 0; i < usable.length; i++) {
+    for (let j = i + 1; j < usable.length; j++) {
+      const gap = Math.abs(usable[j] - usable[i]);
+      if (gap < 80) continue;
+      targets.push((usable[i] + usable[j]) / 2);
+    }
+  }
 }
 
 // Snap a value to the nearest source within threshold; returns { snapped, delta, matched }
@@ -16153,13 +16734,15 @@ function showGuides(hLogYs, vLogXs) {
   overlay.innerHTML = '';
   hLogYs.forEach(y => {
     const d = document.createElement('div');
-    d.className = 'guide-h';
+    const isCenter = Math.abs(y - CANVAS_H / 2) < 0.5;
+    d.className = `guide-h${isCenter ? ' guide-center' : ''}`;
     d.style.top = (y * zoom) + 'px';
     overlay.appendChild(d);
   });
   vLogXs.forEach(x => {
     const d = document.createElement('div');
-    d.className = 'guide-v';
+    const isCenter = Math.abs(x - CANVAS_W / 2) < 0.5;
+    d.className = `guide-v${isCenter ? ' guide-center' : ''}`;
     d.style.left = (x * zoom) + 'px';
     overlay.appendChild(d);
   });
@@ -16185,7 +16768,7 @@ function getCanvasPointer(evt) {
 
 function beginGridSnapDrag(evt) {
   resetGridSnapDragState();
-  if (!snapEnabled || !gridVisible || !evt?.target) return;
+  if (!snapEnabled || !evt?.target) return;
 
   const pointer = getCanvasPointer(evt);
   if (!pointer) return;
@@ -16202,8 +16785,8 @@ function beginGridSnapDrag(evt) {
     topStart: top,
     offX: left - bounds.l,
     offY: top - bounds.t,
-    snapL: Math.round(bounds.l / GRID_SIZE) * GRID_SIZE,
-    snapT: Math.round(bounds.t / GRID_SIZE) * GRID_SIZE,
+    snapL: null,
+    snapT: null,
   };
 }
 
@@ -16221,35 +16804,30 @@ function getGridSnapDrag(evt, obj, bounds) {
       topStart: top,
       offX: left - bounds.l,
       offY: top - bounds.t,
-      snapL: Math.round(bounds.l / GRID_SIZE) * GRID_SIZE,
-      snapT: Math.round(bounds.t / GRID_SIZE) * GRID_SIZE,
+      snapL: null,
+      snapT: null,
     };
   }
 
   return { state: gridSnapDragState, pointer };
 }
 
-function getStableGridSnap(state, key, rawValue) {
-  const current = Number.isFinite(state[key])
-    ? state[key]
-    : Math.round(rawValue / GRID_SIZE) * GRID_SIZE;
+function getSoftGridSnap(state, key, rawValue) {
+  const current = Number.isFinite(state[key]) ? state[key] : null;
   const candidate = Math.round(rawValue / GRID_SIZE) * GRID_SIZE;
+  const release = GRID_SOFT_SNAP_THRESHOLD + GRID_SNAP_HYSTERESIS;
 
-  if (candidate === current) {
-    state[key] = current;
+  if (current !== null && Math.abs(rawValue - current) <= release) {
     return current;
   }
 
-  const boundary = (current + candidate) / 2;
-  const crossedForward = candidate > current && rawValue >= boundary + GRID_SNAP_HYSTERESIS;
-  const crossedBackward = candidate < current && rawValue <= boundary - GRID_SNAP_HYSTERESIS;
-
-  if (crossedForward || crossedBackward) {
+  if (Math.abs(rawValue - candidate) <= GRID_SOFT_SNAP_THRESHOLD) {
     state[key] = candidate;
     return candidate;
   }
 
-  return current;
+  state[key] = null;
+  return rawValue;
 }
 
 // Apply grid CSS background to gridOverlay sized to current zoom
@@ -16344,12 +16922,15 @@ window.ctxSendToBack = function() {
 // ── Canvas right-click context menu ──────────────────────────────────────
 function showCanvasCtxMenu(x, y) {
   const menu = document.getElementById('canvasCtxMenu');
-  const hasObj = !!(fabricCanvas?.getActiveObject());
+  const activeObj = fabricCanvas?.getActiveObject();
+  const hasObj = !!activeObj;
   document.getElementById('ctxObjGroup').style.display    = hasObj ? '' : 'none';
   document.getElementById('ctxCanvasGroup').style.display = hasObj ? 'none' : '';
   const hasPaste = !!designerClipboard;
   document.getElementById('ctxPasteObj')?.toggleAttribute('disabled', !hasPaste);
   document.getElementById('ctxPasteCanvas')?.toggleAttribute('disabled', !hasPaste);
+  document.getElementById('ctxGroup')?.toggleAttribute('disabled', !(activeObj?.type === 'activeSelection' && getActiveCanvasObjects().length > 1));
+  document.getElementById('ctxUngroup')?.toggleAttribute('disabled', !(activeObj?.type === 'group' && !activeObj.iconGroup && !activeObj.isTemplateStatic));
   // Sync grid/snap labels
   const gridLbl = document.getElementById('ctxGridLabel');
   if (gridLbl) gridLbl.textContent = gridVisible ? 'Hide Grid' : 'Show Grid';
@@ -16380,7 +16961,7 @@ window.switchDesignerTab = function(tab) {
   // Show/hide the rest of the props panel children
   const props = document.getElementById('designerProps');
   [...props.children].forEach(el => {
-    if (el.id === 'layersContent' || el.classList.contains('designer-panel-tabs')) return;
+    if (el.id === 'layersContent' || el.id === 'designerPropsResizer' || el.classList.contains('designer-panel-tabs')) return;
     el.style.display = isLayers ? 'none' : '';
   });
   if (isLayers) renderLayersPanel();
@@ -16390,49 +16971,49 @@ window.switchDesignerTab = function(tab) {
 function onObjectMoving(e) {
   if (!snapEnabled) {
     resetGridSnapDragState();
+    clearGuides();
     return;
   }
 
   const obj  = e.target;
-  const b    = getLogBounds(obj);
+  let b      = getLogBounds(obj);
 
   // Offset between obj.left/top and bbox top-left (handles rotation & origin)
-  const offX = obj.left - b.l;
-  const offY = obj.top  - b.t;
+  let offX = obj.left - b.l;
+  let offY = obj.top  - b.t;
 
   let snapDX = null, snapDY = null;
   const hGuides = [], vGuides = [];
 
+  const drag = getGridSnapDrag(e, obj, b);
+  if (drag) {
+    const { state, pointer } = drag;
+    const rawLeft = state.leftStart + (pointer.x - state.pointerStart.x);
+    const rawTop = state.topStart + (pointer.y - state.pointerStart.y);
+    const rawBoundsLeft = rawLeft - state.offX;
+    const rawBoundsTop = rawTop - state.offY;
+    const snapL = getSoftGridSnap(state, 'snapL', rawBoundsLeft);
+    const snapT = getSoftGridSnap(state, 'snapT', rawBoundsTop);
+    obj.set({ left: snapL + state.offX, top: snapT + state.offY });
+    b = getLogBounds(obj);
+    offX = obj.left - b.l;
+    offY = obj.top  - b.t;
+  }
+
   if (gridVisible) {
-    const drag = getGridSnapDrag(e, obj, b);
-    if (drag) {
-      const { state, pointer } = drag;
-      const rawLeft = state.leftStart + (pointer.x - state.pointerStart.x);
-      const rawTop = state.topStart + (pointer.y - state.pointerStart.y);
-      const rawBoundsLeft = rawLeft - state.offX;
-      const rawBoundsTop = rawTop - state.offY;
-      const snapL = getStableGridSnap(state, 'snapL', rawBoundsLeft);
-      const snapT = getStableGridSnap(state, 'snapT', rawBoundsTop);
-      obj.set({ left: snapL + state.offX, top: snapT + state.offY });
-    } else {
-      const snapL = Math.round(b.l / GRID_SIZE) * GRID_SIZE;
-      const snapT = Math.round(b.t / GRID_SIZE) * GRID_SIZE;
-      obj.set({ left: snapL + offX, top: snapT + offY });
-    }
     clearGuides();
   } else {
-    resetGridSnapDragState();
     // Smart alignment snap
-    const { xs, ys } = getSnapSources(obj);
+    const { xs, ys, distXs, distYs } = getSnapSources(obj);
 
     // Check three x-probes: left edge, center, right edge
     const xProbes = [
-      { val: b.l,  apply: snap => snap          },  // snap left  → set bbox left
-      { val: b.cx, apply: snap => snap - b.w / 2 }, // snap center→ offset
-      { val: b.r,  apply: snap => snap - b.w     }, // snap right → offset
+      { val: b.l,  apply: snap => snap,           sources: xs },  // snap left  → set bbox left
+      { val: b.cx, apply: snap => snap - b.w / 2, sources: xs.concat(distXs) }, // center + equal spacing
+      { val: b.r,  apply: snap => snap - b.w,     sources: xs }, // snap right → offset
     ];
     for (const probe of xProbes) {
-      const hit = nearestSnap(probe.val, xs);
+      const hit = nearestSnap(probe.val, probe.sources);
       if (hit) {
         obj.left = probe.apply(hit.snapped) + offX;
         vGuides.push(hit.snapped);
@@ -16443,12 +17024,12 @@ function onObjectMoving(e) {
 
     // Check three y-probes: top edge, center, bottom edge
     const yProbes = [
-      { val: b.t,  apply: snap => snap          },
-      { val: b.cy, apply: snap => snap - b.h / 2 },
-      { val: b.b,  apply: snap => snap - b.h     },
+      { val: b.t,  apply: snap => snap,           sources: ys },
+      { val: b.cy, apply: snap => snap - b.h / 2, sources: ys.concat(distYs) },
+      { val: b.b,  apply: snap => snap - b.h,     sources: ys },
     ];
     for (const probe of yProbes) {
-      const hit = nearestSnap(probe.val, ys);
+      const hit = nearestSnap(probe.val, probe.sources);
       if (hit) {
         obj.top = probe.apply(hit.snapped) + offY;
         hGuides.push(hit.snapped);
@@ -16796,34 +17377,131 @@ window.addGuideFromInput = function(axis) {
   }
 })();
 
+function getDesignerFitZoom() {
+  const surround = document.getElementById('canvasArea') || document.getElementById('canvasSurround');
+  if (!surround) return 1;
+  const pad = 80;
+  return Math.min(
+    (surround.clientWidth  - pad) / CANVAS_W,
+    (surround.clientHeight - pad) / CANVAS_H,
+    1
+  );
+}
+
+function updateDesignerZoomLabel() {
+  const label = document.getElementById('designerZoomLabel');
+  if (label) label.textContent = `${Math.round(designerZoom * 100)}%`;
+}
+
+function setDesignerZoom(nextZoom) {
+  if (!fabricCanvas) return;
+  designerZoom = Math.max(DESIGNER_ZOOM_MIN, Math.min(DESIGNER_ZOOM_MAX, nextZoom));
+  const dispW = Math.round(CANVAS_W * designerZoom);
+  const dispH = Math.round(CANVAS_H * designerZoom);
+  fabricCanvas.setDimensions({ width: dispW, height: dispH });
+  fabricCanvas.setZoom(designerZoom);
+  fabricCanvas.calcOffset();
+  fabricCanvas.renderAll();
+  updateGridOverlay();
+  renderRulerGuides();
+  drawRulers();
+  updateDesignerZoomLabel();
+  updateSelectionToolbar();
+}
+
+window.designerZoomIn = function() {
+  setDesignerZoom(designerZoom + DESIGNER_ZOOM_STEP);
+};
+
+window.designerZoomOut = function() {
+  setDesignerZoom(designerZoom - DESIGNER_ZOOM_STEP);
+};
+
+window.designerZoomFit = function() {
+  designerFitZoom = getDesignerFitZoom();
+  setDesignerZoom(designerFitZoom);
+};
+
+const DESIGNER_PROPS_WIDTH_KEY = 'zigns.designer.propsWidth';
+const DESIGNER_PROPS_MIN_WIDTH = 240;
+const DESIGNER_PROPS_MAX_WIDTH = 520;
+
+function clampDesignerPropsWidth(value) {
+  return Math.max(DESIGNER_PROPS_MIN_WIDTH, Math.min(DESIGNER_PROPS_MAX_WIDTH, Math.round(value)));
+}
+
+function setDesignerPropsWidth(value, persist = true) {
+  const width = clampDesignerPropsWidth(value);
+  document.documentElement.style.setProperty('--designer-props-width', `${width}px`);
+  if (persist) {
+    try { localStorage.setItem(DESIGNER_PROPS_WIDTH_KEY, String(width)); } catch (_) {}
+  }
+  if (fabricCanvas) {
+    fabricCanvas.calcOffset();
+    drawRulers();
+    updateSelectionToolbar();
+  }
+}
+
+function initDesignerPropsResizer() {
+  const panel = document.getElementById('designerProps');
+  const handle = document.getElementById('designerPropsResizer');
+  if (!panel || !handle || initDesignerPropsResizer._done) return;
+  initDesignerPropsResizer._done = true;
+
+  const saved = Number.parseInt(localStorage.getItem(DESIGNER_PROPS_WIDTH_KEY) || '', 10);
+  if (Number.isFinite(saved)) setDesignerPropsWidth(saved, false);
+
+  handle.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    handle.classList.add('dragging');
+    const startX = e.clientX;
+    const startWidth = panel.getBoundingClientRect().width;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+
+    const onMove = ev => {
+      setDesignerPropsWidth(startWidth + (startX - ev.clientX));
+    };
+    const onUp = () => {
+      handle.classList.remove('dragging');
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+  });
+}
+
 function initFabricCanvas() {
   try {
     if (fabricCanvas) { fabricCanvas.dispose(); fabricCanvas = null; }
     historyReset();
 
-    const surround = document.getElementById('canvasArea') || document.getElementById('canvasSurround');
-    const pad = 80;
-    const scale = Math.min(
-      (surround.clientWidth  - pad) / CANVAS_W,
-      (surround.clientHeight - pad) / CANVAS_H,
-      1
-    );
+    const scale = getDesignerFitZoom();
     // Guard against zero/negative dimensions if layout hasn't settled yet
     if (scale <= 0) {
       setTimeout(initFabricCanvas, 100);
       return;
     }
-    const dispW = Math.round(CANVAS_W * scale);
-    const dispH = Math.round(CANVAS_H * scale);
+    designerFitZoom = scale;
+    designerZoom = scale;
+    const dispW = Math.round(CANVAS_W * designerZoom);
+    const dispH = Math.round(CANVAS_H * designerZoom);
 
     fabricCanvas = new fabric.Canvas('designerCanvas', {
       width:  dispW,
       height: dispH,
       backgroundColor: '#ffffff',
+      preserveObjectStacking: true,
     });
 
     // Keep logical coordinates in 1920×1080 space
-    fabricCanvas.setZoom(scale);
+    fabricCanvas.setZoom(designerZoom);
+    fabricCanvas.preserveObjectStacking = true;
+    updateDesignerZoomLabel();
 
     // Rubber-band selection styling
     fabricCanvas.selectionColor       = 'rgba(79,142,247,0.08)';
@@ -16850,7 +17528,15 @@ function initFabricCanvas() {
     fabricCanvas.on('selection:updated', updatePropsPanel);
     fabricCanvas.on('selection:cleared', updatePropsPanel);
     fabricCanvas.on('object:modified',   updatePropsPanel);
+    fabricCanvas.on('selection:created', updateSelectionToolbar);
+    fabricCanvas.on('selection:updated', updateSelectionToolbar);
+    fabricCanvas.on('selection:cleared', updateSelectionToolbar);
+    fabricCanvas.on('object:moving',     suspendSelectionToolbar);
+    fabricCanvas.on('object:scaling',    suspendSelectionToolbar);
+    fabricCanvas.on('object:rotating',   suspendSelectionToolbar);
+    fabricCanvas.on('object:modified',   updateSelectionToolbar);
     updatePropsPanel();
+    updateSelectionToolbar();
 
     // History events
     fabricCanvas.on('object:added',    historySave);
@@ -16868,6 +17554,7 @@ function initFabricCanvas() {
     renderLayersPanel();
 
     // Alignment guides & snapping
+    fabricCanvas.on('mouse:down',    beginCanvasScrollLock);
     fabricCanvas.on('mouse:down',    beginGridSnapDrag);
     fabricCanvas.on('object:moving', onObjectMoving);
     fabricCanvas.on('object:scaling', resetGridSnapDragState);
@@ -16875,6 +17562,7 @@ function initFabricCanvas() {
     fabricCanvas.on('mouse:up',      () => {
       resetGridSnapDragState();
       clearGuides();
+      resumeSelectionToolbar();
     });
     updateGridOverlay();
 
@@ -16890,6 +17578,7 @@ function initFabricCanvas() {
 
     // Padlock overlay for locked elements
     installPadlockRenderer();
+    installHoverOutlineRenderer();
 
     // Dirty-flag tracking — set whenever canvas content changes
     // historyPaused is true during loadFromJSON so the initial load won't mark dirty
@@ -16905,7 +17594,12 @@ function initFabricCanvas() {
     drawRulers();
     if (!initFabricCanvas._rulerResizeSetup) {
       initFabricCanvas._rulerResizeSetup = true;
-      window.addEventListener('resize', () => { if (fabricCanvas) drawRulers(); });
+      window.addEventListener('resize', () => {
+        if (!fabricCanvas) return;
+        designerFitZoom = getDesignerFitZoom();
+        drawRulers();
+        updateSelectionToolbar();
+      });
     }
 
     // Ruler mouse-cursor tracking
@@ -16927,6 +17621,12 @@ function initFabricCanvas() {
         if (ch) ch.style.display = 'none';
         if (cv) cv.style.display = 'none';
       });
+      canvasArea.addEventListener('scroll', () => {
+        if (!fabricCanvas) return;
+        restoreCanvasScrollLock();
+        drawRulers();
+        updateSelectionToolbar();
+      }, { passive: true });
     }
 
     // Delete key removes selected object
@@ -17033,6 +17733,324 @@ function designerPaste() {
   });
 }
 
+window.designerDeleteActive = designerDeleteActive;
+window.designerDuplicate = designerDuplicate;
+window.designerCopy = designerCopy;
+window.designerPaste = designerPaste;
+window.designerCut = designerCut;
+
+function markDesignerObjectModified(obj = fabricCanvas?.getActiveObject()) {
+  if (!fabricCanvas || !obj) return;
+  obj.setCoords?.();
+  fabricCanvas.renderAll();
+  fabricCanvas.fire('object:modified', { target: obj });
+  updatePropsPanel();
+  renderLayersPanel();
+  updateSelectionToolbar();
+}
+
+function setActiveCanvasObjects(objects) {
+  if (!fabricCanvas) return;
+  const editable = objects.filter(canShowDesignerHoverOutline);
+  fabricCanvas.discardActiveObject();
+  if (!editable.length) {
+    fabricCanvas.renderAll();
+    return;
+  }
+  if (editable.length === 1) {
+    fabricCanvas.setActiveObject(editable[0]);
+  } else {
+    fabricCanvas.setActiveObject(new fabric.ActiveSelection(editable, { canvas: fabricCanvas }));
+  }
+  fabricCanvas.renderAll();
+  updatePropsPanel();
+  renderLayersPanel();
+  updateSelectionToolbar();
+}
+
+function setObjectBoundsLeft(obj, left) {
+  const b = getLogBounds(obj);
+  obj.left = left + (obj.left - b.l);
+}
+
+function setObjectBoundsTop(obj, top) {
+  const b = getLogBounds(obj);
+  obj.top = top + (obj.top - b.t);
+}
+
+function setObjectCenterX(obj, cx) {
+  const b = getLogBounds(obj);
+  setObjectBoundsLeft(obj, cx - b.w / 2);
+}
+
+function setObjectCenterY(obj, cy) {
+  const b = getLogBounds(obj);
+  setObjectBoundsTop(obj, cy - b.h / 2);
+}
+
+window.designerToggleSelectedLock = function() {
+  const objects = getActiveCanvasObjects();
+  if (!objects.length) return;
+  objects.forEach(obj => {
+    if (obj.isTemplateStatic) return;
+    obj.isLocked = true;
+    applyLockState(obj);
+  });
+  fabricCanvas.discardActiveObject();
+  fabricCanvas.renderAll();
+  renderLayersPanel();
+  historySave();
+};
+
+window.designerGroupSelection = function() {
+  const obj = fabricCanvas?.getActiveObject();
+  if (!obj || obj.type !== 'activeSelection') {
+    toast('Select two or more objects to group.', true);
+    return;
+  }
+  const objects = getActiveCanvasObjects();
+  if (objects.length < 2) {
+    toast('Select two or more editable objects to group.', true);
+    return;
+  }
+  const group = obj.toGroup();
+  group.set({
+    zignsLayerLabel: group.zignsLayerLabel || `Group (${objects.length})`,
+    subTargetCheck: false,
+  });
+  applyLockState(group);
+  fabricCanvas.setActiveObject(group);
+  markDesignerObjectModified(group);
+};
+
+window.designerUngroupSelection = function() {
+  const obj = fabricCanvas?.getActiveObject();
+  if (!obj || obj.type !== 'group' || obj.iconGroup || obj.isTemplateStatic) {
+    toast('Select an editable group to ungroup.', true);
+    return;
+  }
+  const selection = obj.toActiveSelection();
+  selection.getObjects().forEach(applyLockState);
+  fabricCanvas.setActiveObject(selection);
+  markDesignerObjectModified(selection);
+};
+
+window.designerAlignSelection = function(mode) {
+  const active = fabricCanvas?.getActiveObject();
+  const objects = getActiveCanvasObjects();
+  if (!active || !objects.length) return;
+  const targetBounds = objects.length > 1
+    ? getLogBounds(active)
+    : { l: 0, t: 0, r: CANVAS_W, b: CANVAS_H, cx: CANVAS_W / 2, cy: CANVAS_H / 2, w: CANVAS_W, h: CANVAS_H };
+
+  objects.forEach(obj => {
+    const b = getLogBounds(obj);
+    if (mode === 'left') setObjectBoundsLeft(obj, targetBounds.l);
+    if (mode === 'center') setObjectCenterX(obj, targetBounds.cx);
+    if (mode === 'right') setObjectBoundsLeft(obj, targetBounds.r - b.w);
+    if (mode === 'top') setObjectBoundsTop(obj, targetBounds.t);
+    if (mode === 'middle') setObjectCenterY(obj, targetBounds.cy);
+    if (mode === 'bottom') setObjectBoundsTop(obj, targetBounds.b - b.h);
+    obj.setCoords?.();
+  });
+  markDesignerObjectModified(active);
+};
+
+window.designerDistributeSelection = function(axis) {
+  const active = fabricCanvas?.getActiveObject();
+  const objects = getActiveCanvasObjects();
+  if (!active || objects.length < 3) {
+    toast('Select at least three objects to distribute.', true);
+    return;
+  }
+  const sorted = [...objects].sort((a, b) => {
+    const ba = getLogBounds(a), bb = getLogBounds(b);
+    return axis === 'horizontal' ? ba.cx - bb.cx : ba.cy - bb.cy;
+  });
+  const first = getLogBounds(sorted[0]);
+  const last = getLogBounds(sorted[sorted.length - 1]);
+  const start = axis === 'horizontal' ? first.cx : first.cy;
+  const end = axis === 'horizontal' ? last.cx : last.cy;
+  const step = (end - start) / (sorted.length - 1);
+  sorted.slice(1, -1).forEach((obj, i) => {
+    const target = start + step * (i + 1);
+    if (axis === 'horizontal') setObjectCenterX(obj, target);
+    else setObjectCenterY(obj, target);
+    obj.setCoords?.();
+  });
+  markDesignerObjectModified(active);
+};
+
+function updateTransformControls(obj) {
+  const panel = document.getElementById('propsTransform');
+  if (!panel || !obj) return;
+  const b = getLogBounds(obj);
+  document.getElementById('propObjX').value = Math.round(b.l);
+  document.getElementById('propObjY').value = Math.round(b.t);
+  document.getElementById('propObjW').value = Math.round(b.w);
+  document.getElementById('propObjH').value = Math.round(b.h);
+  document.getElementById('propObjRot').value = Math.round(obj.angle || 0);
+  panel.style.display = 'block';
+}
+
+window.applyTransformProp = function(prop, value) {
+  const obj = fabricCanvas?.getActiveObject();
+  if (!obj || !Number.isFinite(value)) return;
+  const b = getLogBounds(obj);
+  if (prop === 'x') setObjectBoundsLeft(obj, value);
+  if (prop === 'y') setObjectBoundsTop(obj, value);
+  if (prop === 'w' && value > 0 && b.w > 0) obj.scaleX *= value / b.w;
+  if (prop === 'h' && value > 0 && b.h > 0) obj.scaleY *= value / b.h;
+  if (prop === 'angle') obj.set('angle', value);
+  markDesignerObjectModified(obj);
+};
+
+function getImageNaturalSize(img) {
+  const el = img?._originalElement || img?._element || {};
+  return {
+    width: el.naturalWidth || img.width || 1,
+    height: el.naturalHeight || img.height || 1,
+  };
+}
+
+function setImageCropToFrame(img, frameW, frameH) {
+  const natural = getImageNaturalSize(img);
+  const frameRatio = frameW / frameH;
+  const imageRatio = natural.width / natural.height;
+  let cropW = natural.width;
+  let cropH = natural.height;
+  if (imageRatio > frameRatio) cropW = natural.height * frameRatio;
+  else cropH = natural.width / frameRatio;
+  const cropX = Math.max(0, (natural.width - cropW) / 2);
+  const cropY = Math.max(0, (natural.height - cropH) / 2);
+  img.set({
+    cropX,
+    cropY,
+    width: cropW,
+    height: cropH,
+    scaleX: frameW / cropW,
+    scaleY: frameH / cropH,
+  });
+}
+
+function setImageFitToFrame(img, frameW, frameH) {
+  const natural = getImageNaturalSize(img);
+  const scale = Math.min(frameW / natural.width, frameH / natural.height);
+  img.set({
+    cropX: 0,
+    cropY: 0,
+    width: natural.width,
+    height: natural.height,
+    scaleX: scale,
+    scaleY: scale,
+  });
+}
+
+function getSelectedImage() {
+  const obj = fabricCanvas?.getActiveObject();
+  return obj?.type === 'image' ? obj : null;
+}
+
+window.designerImageCropFill = function() {
+  const img = getSelectedImage();
+  if (!img) return;
+  const frameW = img.getScaledWidth();
+  const frameH = img.getScaledHeight();
+  setImageCropToFrame(img, frameW, frameH);
+  markDesignerObjectModified(img);
+};
+
+window.designerImageFitContain = function() {
+  const img = getSelectedImage();
+  if (!img) return;
+  const frameW = img.getScaledWidth();
+  const frameH = img.getScaledHeight();
+  setImageFitToFrame(img, frameW, frameH);
+  markDesignerObjectModified(img);
+};
+
+window.designerApplyImageMask = function(shape) {
+  const img = getSelectedImage();
+  if (!img) return;
+  if (shape === 'none') {
+    img.set('clipPath', null);
+  } else if (shape === 'circle') {
+    img.set('clipPath', new fabric.Circle({
+      originX: 'center',
+      originY: 'center',
+      left: 0,
+      top: 0,
+      radius: Math.min(img.width, img.height) / 2,
+    }));
+  } else {
+    img.set('clipPath', new fabric.Rect({
+      originX: 'center',
+      originY: 'center',
+      left: 0,
+      top: 0,
+      width: img.width,
+      height: img.height,
+      rx: Math.min(img.width, img.height) * 0.08,
+      ry: Math.min(img.width, img.height) * 0.08,
+    }));
+  }
+  markDesignerObjectModified(img);
+};
+
+function replaceSelectedImageWithUrl(url, imageName = 'Image') {
+  return new Promise(resolve => {
+    const old = getSelectedImage();
+    if (!old || !url) { resolve(null); return; }
+    const imgEl = new Image();
+    if (!String(url).startsWith('blob:') && !String(url).startsWith('data:')) {
+      imgEl.crossOrigin = 'anonymous';
+    }
+    imgEl.onload = () => {
+      const frameW = old.getScaledWidth();
+      const frameH = old.getScaledHeight();
+      const index = fabricCanvas.getObjects().indexOf(old);
+      const replacement = new fabric.Image(imgEl);
+      replacement.set({
+        left: old.left,
+        top: old.top,
+        originX: old.originX,
+        originY: old.originY,
+        angle: old.angle || 0,
+        opacity: old.opacity ?? 1,
+        flipX: !!old.flipX,
+        flipY: !!old.flipY,
+        animation: old.animation,
+        zignsLayerLabel: old.zignsLayerLabel || imageName,
+        zignsImageName: imageName,
+      });
+      if (old.clipPath) replacement.set('clipPath', old.clipPath);
+      setImageCropToFrame(replacement, frameW, frameH);
+      fabricCanvas.remove(old);
+      fabricCanvas.add(replacement);
+      if (index >= 0) fabricCanvas.moveTo(replacement, index);
+      fabricCanvas.setActiveObject(replacement);
+      markDesignerObjectModified(replacement);
+      resolve(replacement);
+    };
+    imgEl.onerror = () => {
+      toast('Could not load replacement image.', true);
+      resolve(null);
+    };
+    imgEl.src = url;
+  });
+}
+
+window.replaceSelectedImageFromDevice = function() {
+  if (!getSelectedImage()) return;
+  document.getElementById('designerReplaceImageInput')?.click();
+};
+
+window.replaceSelectedImageFromUrl = async function() {
+  if (!getSelectedImage()) return;
+  const url = prompt('Paste the replacement image URL:');
+  if (url) await replaceSelectedImageWithUrl(url, 'Image');
+};
+
 function onDesignerKey(e) {
   if (!fabricCanvas) return;
   const tag = document.activeElement.tagName;
@@ -17044,6 +18062,11 @@ function onDesignerKey(e) {
   if (ctrl && e.key === 'z' && !e.shiftKey) { e.preventDefault(); designerUndo(); return; }
   if (ctrl && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) { e.preventDefault(); designerRedo(); return; }
 
+  // ── Zoom ───────────────────────────────────────────────────────────────
+  if (ctrl && (e.key === '+' || e.key === '=')) { e.preventDefault(); designerZoomIn();  return; }
+  if (ctrl && e.key === '-') { e.preventDefault(); designerZoomOut(); return; }
+  if (ctrl && e.key === '0') { e.preventDefault(); designerZoomFit(); return; }
+
   // ── Copy / Paste / Duplicate ───────────────────────────────────────────
   if (ctrl && e.key === 'c') { e.preventDefault(); designerCopy();      return; }
   if (ctrl && e.key === 'v') { e.preventDefault(); designerPaste();     return; }
@@ -17052,7 +18075,7 @@ function onDesignerKey(e) {
   // ── Select all ────────────────────────────────────────────────────────
   if (ctrl && e.key === 'a') {
     e.preventDefault();
-    const objs = fabricCanvas.getObjects();
+    const objs = fabricCanvas.getObjects().filter(canShowDesignerHoverOutline);
     if (!objs.length) return;
     fabricCanvas.setActiveObject(
       new fabric.ActiveSelection(objs, { canvas: fabricCanvas })
@@ -17121,6 +18144,7 @@ document.addEventListener('click', e => {
 
 // ── Layers Panel ──────────────────────────────────────────────────────────
 let layerDragIdx = null;
+let layerLastSelectedIdx = null;
 
 function getLayerIcon(obj) {
   if (obj.type === 'i-text' || obj.type === 'text')
@@ -17131,17 +18155,21 @@ function getLayerIcon(obj) {
     return `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/></svg>`;
   if (obj.type === 'line')
     return `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/></svg>`;
+  if (obj.type === 'group')
+    return `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><path d="M14 3h7v7M3 14v7h7"/></svg>`;
   // rect / other
   return `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/></svg>`;
 }
 
 function getLayerLabel(obj, idx) {
+  if (obj.zignsLayerLabel) return obj.zignsLayerLabel;
   if (obj.type === 'i-text' || obj.type === 'text')
-    return obj.text ? obj.text.slice(0, 18) : 'Text';
-  if (obj.type === 'image') return 'Image';
+    return obj.text ? `Text: ${obj.text.slice(0, 18)}` : 'Text';
+  if (obj.type === 'image') return obj.zignsImageName ? `Image: ${obj.zignsImageName}` : 'Image';
   if (obj.type === 'circle') return 'Circle';
   if (obj.type === 'line') return 'Line';
   if (obj.type === 'rect') return 'Rectangle';
+  if (obj.type === 'group') return `Group (${obj.getObjects?.().length || 0})`;
   return obj.type || 'Object';
 }
 
@@ -17156,22 +18184,37 @@ function renderLayersPanel() {
   }
 
   const activeObj = fabricCanvas.getActiveObject();
+  const activeObjects = new Set(getActiveCanvasObjects());
+  const toolbar = `
+    <div class="layers-toolbar">
+      <button class="prop-btn" onclick="layerSelectAllEditable()" title="Select all editable layers">All</button>
+      <button class="prop-btn" onclick="layerRenameSelected()" title="Rename selected layer">Name</button>
+      <button class="prop-btn" onclick="layerToggleSelectedVis()" title="Show or hide selected layers">Hide</button>
+      <button class="prop-btn" onclick="layerLockSelected()" title="Lock selected layers">Lock</button>
+      <button class="prop-btn" onclick="designerGroupSelection()" title="Group selected layers">Group</button>
+      <button class="prop-btn" onclick="designerUngroupSelection()" title="Ungroup selected group">Ungroup</button>
+      <button class="prop-btn" onclick="layerDeleteSelected()" title="Delete selected layers">Delete</button>
+      <button class="prop-btn" onclick="renderLayersPanel()" title="Refresh layers">Refresh</button>
+    </div>`;
+
   // Top layer first (highest index = top of stack)
   const rows = [...objs].reverse().map((obj, revIdx) => {
     const realIdx  = objs.length - 1 - revIdx;
-    const isSelected = obj === activeObj;
+    const isSelected = activeObjects.has(obj) || obj === activeObj;
     const isHidden   = obj.visible === false;
-    const isLocked   = !!obj.isLocked;
+    const isStatic   = !!obj.isTemplateStatic;
+    const isLocked   = !!obj.isLocked || isStatic;
     const eyeIcon    = isHidden
       ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`
       : `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
     const lockIcon   = isLocked
       ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`
       : `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>`;
+    const label = getLayerLabel(obj, realIdx);
     return `
-      <div class="layer-row${isSelected ? ' selected' : ''}${isLocked ? ' is-locked' : ''}"
-           draggable="true" data-idx="${realIdx}"
-           onclick="selectLayerObj(${realIdx})"
+      <div class="layer-row${isSelected ? ' selected' : ''}${isLocked ? ' is-locked' : ''}${isStatic ? ' is-static' : ''}"
+           draggable="${!isStatic}" data-idx="${realIdx}"
+           onclick="selectLayerObj(event,${realIdx})"
            ondragstart="layerDragStart(event,${realIdx})"
            ondragover="layerDragOver(event)"
            ondrop="layerDrop(event,${realIdx})">
@@ -17183,7 +18226,7 @@ function renderLayersPanel() {
           </svg>
         </span>
         <span class="layer-icon">${getLayerIcon(obj)}</span>
-        <span class="layer-name" title="${getLayerLabel(obj, realIdx)}">${getLayerLabel(obj, realIdx)}</span>
+        <span class="layer-name" title="${escAttr(label)}" ondblclick="renameLayerObj(event,${realIdx})">${escHtml(label)}</span>
         <div class="layer-row-actions">
           <button class="layer-vis${isHidden ? ' hidden' : ''}" title="${isHidden ? 'Show' : 'Hide'}"
                   onclick="event.stopPropagation();toggleLayerVis(${realIdx})">${eyeIcon}</button>
@@ -17199,22 +18242,34 @@ function renderLayersPanel() {
       </div>`;
   }).join('');
 
-  panel.innerHTML = rows;
+  panel.innerHTML = toolbar + rows;
 }
 
-window.selectLayerObj = function(idx) {
+window.selectLayerObj = function(eventOrIdx, maybeIdx) {
   if (!fabricCanvas) return;
+  const hasEvent = typeof eventOrIdx === 'object';
+  const idx = hasEvent ? maybeIdx : eventOrIdx;
   const obj = fabricCanvas.item(idx);
-  if (!obj || obj.isLocked) return;  // locked objects can't be canvas-selected
-  fabricCanvas.setActiveObject(obj);
-  fabricCanvas.renderAll();
-  updatePropsPanel();
+  if (!obj || obj.isLocked || obj.isTemplateStatic) return;  // locked/static objects can't be canvas-selected
+  const current = getActiveCanvasObjects();
+  if (hasEvent && (eventOrIdx.metaKey || eventOrIdx.ctrlKey)) {
+    const next = current.includes(obj) ? current.filter(o => o !== obj) : [...current, obj];
+    setActiveCanvasObjects(next);
+  } else if (hasEvent && eventOrIdx.shiftKey && layerLastSelectedIdx !== null) {
+    const lo = Math.min(layerLastSelectedIdx, idx);
+    const hi = Math.max(layerLastSelectedIdx, idx);
+    setActiveCanvasObjects(fabricCanvas.getObjects().slice(lo, hi + 1));
+  } else {
+    setActiveCanvasObjects([obj]);
+  }
+  layerLastSelectedIdx = idx;
 };
 
 window.toggleLayerLock = function(idx) {
   if (!fabricCanvas) return;
   const obj = fabricCanvas.item(idx);
   if (!obj) return;
+  if (obj.isTemplateStatic) return;
   obj.isLocked = !obj.isLocked;
   applyLockState(obj);
   if (obj.isLocked && fabricCanvas.getActiveObject() === obj) {
@@ -17250,13 +18305,66 @@ window.deleteLayerObj = function(idx) {
   if (!fabricCanvas) return;
   const obj = fabricCanvas.item(idx);
   if (!obj) return;
+  if (obj.isTemplateStatic) return;
   if (obj.isUnsplashAttrib && !confirm('Unsplash requires attribution — are you sure you want to remove this?')) return;
   fabricCanvas.remove(obj);
   fabricCanvas.discardActiveObject();
   fabricCanvas.renderAll();
 };
 
+window.renameLayerObj = function(event, idx) {
+  event?.stopPropagation?.();
+  const obj = fabricCanvas?.item(idx);
+  if (!obj || obj.isTemplateStatic) return;
+  const current = getLayerLabel(obj, idx);
+  const next = prompt('Layer name:', current);
+  if (!next) return;
+  obj.zignsLayerLabel = next.trim();
+  renderLayersPanel();
+  historySave();
+};
+
+window.layerRenameSelected = function() {
+  const objects = getActiveCanvasObjects();
+  if (objects.length !== 1) {
+    toast('Select one layer to rename.', true);
+    return;
+  }
+  const idx = fabricCanvas.getObjects().indexOf(objects[0]);
+  renameLayerObj(null, idx);
+};
+
+window.layerSelectAllEditable = function() {
+  if (!fabricCanvas) return;
+  setActiveCanvasObjects(fabricCanvas.getObjects().filter(canShowDesignerHoverOutline));
+};
+
+window.layerToggleSelectedVis = function() {
+  const objects = getActiveCanvasObjects();
+  if (!objects.length) return;
+  const shouldHide = objects.some(obj => obj.visible !== false);
+  objects.forEach(obj => { obj.visible = !shouldHide; });
+  fabricCanvas.discardActiveObject();
+  fabricCanvas.renderAll();
+  renderLayersPanel();
+  historySave();
+};
+
+window.layerLockSelected = function() {
+  designerToggleSelectedLock();
+};
+
+window.layerDeleteSelected = function() {
+  designerDeleteActive();
+};
+
 window.layerDragStart = function(event, idx) {
+  const obj = fabricCanvas?.item(idx);
+  if (!obj || obj.isTemplateStatic) {
+    event.preventDefault();
+    layerDragIdx = null;
+    return;
+  }
   layerDragIdx = idx;
   event.dataTransfer.effectAllowed = 'move';
 };
@@ -17271,7 +18379,7 @@ window.layerDrop = function(event, targetIdx) {
   if (layerDragIdx === null || layerDragIdx === targetIdx) return;
   const objs = fabricCanvas.getObjects();
   const dragObj = objs[layerDragIdx];
-  if (!dragObj) return;
+  if (!dragObj || dragObj.isTemplateStatic) return;
   // Move object to new z-index position
   fabricCanvas.moveTo(dragObj, targetIdx);
   fabricCanvas.renderAll();
@@ -17319,12 +18427,20 @@ function syncBgSwatch() {
 // ── Image tool ────────────────────────────────────────────────────────────
 window.toggleImagePopover = function(e) {
   e.stopPropagation();
+  document.getElementById('shapePopover')?.classList.remove('open');
   document.getElementById('imagePopover').classList.toggle('open');
+};
+
+window.toggleShapePopover = function(e) {
+  e.stopPropagation();
+  document.getElementById('imagePopover')?.classList.remove('open');
+  document.getElementById('shapePopover')?.classList.toggle('open');
 };
 
 // Close popover when clicking anywhere else
 document.addEventListener('click', () => {
   document.getElementById('imagePopover')?.classList.remove('open');
+  document.getElementById('shapePopover')?.classList.remove('open');
 });
 
 window.designerUploadImage = function() {
@@ -17336,6 +18452,11 @@ window.designerImageFromUrl = async function() {
   document.getElementById('imagePopover').classList.remove('open');
   const url = prompt('Paste an image URL:');
   if (url) await addImageToCanvas(url);
+};
+
+window.designerImageFromStockPhotos = function() {
+  document.getElementById('imagePopover').classList.remove('open');
+  openStockPanel();
 };
 
 window.designerImageFromDropbox = function() {
@@ -17369,34 +18490,90 @@ window.designerImageFromOneDrive = function() {
   _openOneDrivePicker('canvas');
 };
 
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error || new Error('Could not read image file.'));
+    reader.readAsDataURL(file);
+  });
+}
+
+function setFabricImageSource(img, src) {
+  if (!img || !src) return;
+  if (img._element) img._element.src = src;
+  if (img._originalElement) img._originalElement.src = src;
+  img.dirty = true;
+  fabricCanvas?.requestRenderAll();
+}
+
+function handleDesignerCloudUploadFailure(err, fallbackLabel = 'Image') {
+  console.warn('Designer cloud upload failed:', err);
+  toast(`${fallbackLabel} added locally. Cloud upload is unavailable right now.`, false);
+}
+
 document.getElementById('designerFileInput').addEventListener('change', async function() {
   const file = this.files[0];
   if (!file) return;
   this.value = '';
   if (!fabricCanvas) { toast('Canvas not ready — try reopening the designer.', true); return; }
 
-  // Show on canvas immediately via local blob URL (no CORS needed)
-  const blobUrl = URL.createObjectURL(file);
-  const fabricImg = await addImageToCanvas(blobUrl);
+  // Show on canvas immediately via data URL so a failed cloud upload does not leave
+  // an expiring blob URL in the saved canvas JSON.
+  let localUrl;
+  try {
+    localUrl = await readFileAsDataUrl(file);
+  } catch(e) {
+    toast(e.message || 'Could not read image file.', true);
+    return;
+  }
+  const fabricImg = await addImageToCanvas(localUrl, { imageName: file.name || 'Image' });
   if (!fabricImg) return;
 
   // Upload to S3 in background so the real URL gets stored on save
   toast('Saving to cloud…');
   try {
     const { url, key } = await s3Upload(file, 'signage/designer');
-    // Swap blob URL → CloudFront URL so canvas JSON serialises correctly
-    fabricImg._element.src = url;
-    if (fabricImg._originalElement) fabricImg._originalElement.src = url;
-    URL.revokeObjectURL(blobUrl);
+    // Swap local data URL → CloudFront URL so canvas JSON stays compact.
+    setFabricImageSource(fabricImg, url);
+    fabricImg.zignsImageName = file.name || 'Image';
     saveMediaRecord(url, file.name, 'image', key);
+    renderLayersPanel();
     toast('Saved to cloud ✓');
   } catch(e) {
-    toast('Cloud upload error: ' + e.message, true);
+    handleDesignerCloudUploadFailure(e, 'Image');
+  }
+});
+
+document.getElementById('designerReplaceImageInput').addEventListener('change', async function() {
+  const file = this.files[0];
+  if (!file) return;
+  this.value = '';
+  if (!fabricCanvas || !getSelectedImage()) return;
+  let localUrl;
+  try {
+    localUrl = await readFileAsDataUrl(file);
+  } catch(e) {
+    toast(e.message || 'Could not read image file.', true);
+    return;
+  }
+  const replaced = await replaceSelectedImageWithUrl(localUrl, file.name || 'Image');
+  if (!replaced) return;
+  toast('Saving replacement to cloud…');
+  try {
+    const { url, key } = await s3Upload(file, 'signage/designer');
+    setFabricImageSource(replaced, url);
+    replaced.zignsImageName = file.name || 'Image';
+    saveMediaRecord(url, file.name, 'image', key);
+    renderLayersPanel();
+    toast('Replacement saved ✓');
+  } catch(e) {
+    handleDesignerCloudUploadFailure(e, 'Replacement');
   }
 });
 
 // Returns a Promise<fabric.Image | null>
-function addImageToCanvas(url) {
+function addImageToCanvas(url, options = {}) {
   return new Promise(resolve => {
     if (!fabricCanvas) { resolve(null); return; }
     const imgEl = new Image();
@@ -17413,6 +18590,7 @@ function addImageToCanvas(url) {
         originY: 'center',
         scaleX:  scale,
         scaleY:  scale,
+        zignsImageName: options.imageName || 'Image',
       });
       fabricCanvas.add(img);
       fabricCanvas.setActiveObject(img);
@@ -17477,6 +18655,21 @@ window.designerAddLine = function() {
   fabricCanvas.add(line);
   fabricCanvas.setActiveObject(line);
   fabricCanvas.renderAll();
+};
+
+window.designerAddRectFromMenu = function() {
+  document.getElementById('shapePopover')?.classList.remove('open');
+  designerAddRect();
+};
+
+window.designerAddCircleFromMenu = function() {
+  document.getElementById('shapePopover')?.classList.remove('open');
+  designerAddCircle();
+};
+
+window.designerAddLineFromMenu = function() {
+  document.getElementById('shapePopover')?.classList.remove('open');
+  designerAddLine();
 };
 
 // ── Ticker Bar ────────────────────────────────────────────────────────────
@@ -17743,13 +18936,19 @@ function updatePropsPanel() {
   document.getElementById('propsIcon').style.display      = 'none';
   document.getElementById('propsTicker').style.display    = 'none';
   document.getElementById('propsAnimation').style.display = 'none';
+  document.getElementById('propsTransform').style.display = 'none';
 
   if (!obj) {
     document.getElementById('propsNone').style.display = 'block';
     return;
   }
+  updateTransformControls(obj);
 
   const t = obj.type;
+  if (t === 'activeSelection') {
+    return;
+  }
+
   if (t === 'tickerBar') {
     document.getElementById('propsTicker').style.display = 'block';
     document.getElementById('propTickerText').value     = obj.tickerText     || '';
@@ -17970,6 +19169,240 @@ window.sendBwd = function() {
   fabricCanvas.renderAll();
 };
 
+// ── GIPHY Browser ─────────────────────────────────────────────────────────
+const GIPHY_BASE = 'https://api.giphy.com/v1';
+const GIPHY_PAGE_SIZE = 18;
+const giphyItemMap = {};
+let giphyPanelOpen = false;
+let giphyActiveTab = 'stickers';
+let giphyApiKey = null;
+let giphyQuery = '';
+let giphyOffset = 0;
+let giphyHasMore = true;
+let giphyLoading = false;
+let giphySearchTimer = null;
+let giphyAnimationFrame = null;
+
+window.toggleGiphyPanel = function() {
+  giphyPanelOpen ? closeGiphyPanel() : openGiphyPanel();
+};
+
+function openGiphyPanel() {
+  giphyPanelOpen = true;
+  document.getElementById('btnGiphy')?.classList.add('active');
+  document.getElementById('giphyPanel').style.display = 'block';
+  window.closeIconPanel && window.closeIconPanel();
+  window.closeStockPanel && window.closeStockPanel();
+  closeHistoryPanel();
+  if (checkPanelOpen) window.closeCheckPanel();
+  ['propsNone','propsText','propsImage','propsShape','propsIcon','propsTicker','propsAnimation','propsTransform'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  if (!document.getElementById('giphyGrid').children.length) {
+    loadGiphyResults(false);
+  }
+}
+
+window.closeGiphyPanel = function(options = {}) {
+  giphyPanelOpen = false;
+  document.getElementById('btnGiphy')?.classList.remove('active');
+  const panel = document.getElementById('giphyPanel');
+  if (panel) panel.style.display = 'none';
+  if (!options.skipUpdate) updatePropsPanel();
+};
+
+window.switchGiphyTab = function(tab) {
+  giphyActiveTab = tab;
+  document.querySelectorAll('.giphy-tab').forEach(btn =>
+    btn.classList.toggle('active', btn.dataset.giphyTab === tab)
+  );
+  giphyOffset = 0;
+  giphyHasMore = true;
+  document.getElementById('giphyGrid').innerHTML = '';
+  loadGiphyResults(false);
+};
+
+window.debouncedGiphySearch = function() {
+  clearTimeout(giphySearchTimer);
+  giphySearchTimer = setTimeout(() => searchGiphy(), 450);
+};
+
+window.searchGiphy = function() {
+  giphyQuery = document.getElementById('giphySearchInput').value.trim();
+  giphyOffset = 0;
+  giphyHasMore = true;
+  document.getElementById('giphyGrid').innerHTML = '';
+  loadGiphyResults(false);
+};
+
+window.loadGiphyMore = function() {
+  loadGiphyResults(true);
+};
+
+async function ensureGiphyConfig() {
+  if (giphyApiKey) return true;
+  const status = document.getElementById('giphyStatus');
+  status.textContent = 'Connecting to GIPHY...';
+  try {
+    const res = await fetch('/api/giphy-config', { cache: 'no-store' });
+    if (!res.ok) throw new Error(String(res.status));
+    const data = await res.json();
+    giphyApiKey = String(data.apiKey || '').trim();
+    if (!giphyApiKey) {
+      giphyApiKey = null;
+      status.textContent = 'Add GIPHY_API_KEY or GIPHY_WEB_API_KEY to enable GIPHY search.';
+      return false;
+    }
+    status.textContent = '';
+    return true;
+  } catch (err) {
+    giphyApiKey = null;
+    status.textContent = 'GIPHY config is unavailable. Use the app dev server and set GIPHY_API_KEY.';
+    return false;
+  }
+}
+
+function giphyEndpointForActiveTab(query) {
+  const isGifTab = giphyActiveTab === 'gifs';
+  const mediaType = isGifTab ? 'gifs' : 'stickers';
+  let q = query;
+  if (giphyActiveTab === 'emoji') q = q ? `${q} emoji` : 'emoji';
+  if (giphyActiveTab === 'text')  q = q ? `${q} text` : 'animated text typography';
+  const mode = q ? 'search' : 'trending';
+  return { url: `${GIPHY_BASE}/${mediaType}/${mode}`, query: q };
+}
+
+async function loadGiphyResults(append = false) {
+  if (giphyLoading || (append && !giphyHasMore)) return;
+  const grid = document.getElementById('giphyGrid');
+  const status = document.getElementById('giphyStatus');
+  const moreBtn = document.getElementById('giphyLoadMore');
+  if (!append) {
+    giphyOffset = 0;
+    giphyHasMore = true;
+    moreBtn.style.display = 'none';
+  }
+  if (!(await ensureGiphyConfig())) return;
+
+  giphyLoading = true;
+  status.textContent = append ? 'Loading more...' : 'Loading...';
+  moreBtn.style.display = 'none';
+
+  try {
+    const { url, query } = giphyEndpointForActiveTab(giphyQuery);
+    const params = new URLSearchParams({
+      api_key: giphyApiKey,
+      limit: String(GIPHY_PAGE_SIZE),
+      offset: String(giphyOffset),
+      rating: 'pg',
+      lang: 'en',
+    });
+    if (query) params.set('q', query);
+    const res = await fetch(`${url}?${params.toString()}`);
+    if (!res.ok) throw new Error(String(res.status));
+    const data = await res.json();
+    const items = Array.isArray(data.data) ? data.data : [];
+    if (!append) grid.innerHTML = '';
+    renderGiphyItems(items);
+    giphyOffset += items.length;
+    giphyHasMore = items.length === GIPHY_PAGE_SIZE;
+    status.textContent = items.length || append ? '' : 'No GIPHY results found.';
+    moreBtn.style.display = giphyHasMore ? 'block' : 'none';
+  } catch (err) {
+    status.textContent = 'Could not load GIPHY results.';
+    giphyHasMore = false;
+  } finally {
+    giphyLoading = false;
+  }
+}
+
+function renderGiphyItems(items) {
+  const grid = document.getElementById('giphyGrid');
+  items.forEach(item => {
+    if (!item?.id) return;
+    giphyItemMap[item.id] = item;
+    const thumbUrl = getGiphyThumbUrl(item);
+    if (!thumbUrl) return;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'giphy-item';
+    btn.title = item.title || 'Add GIPHY asset';
+    btn.onclick = () => addGiphyToCanvas(item.id);
+    const img = document.createElement('img');
+    img.src = thumbUrl;
+    img.alt = item.title || 'GIPHY asset';
+    img.loading = 'lazy';
+    btn.appendChild(img);
+    grid.appendChild(btn);
+  });
+}
+
+function getGiphyThumbUrl(item) {
+  return item.images?.fixed_width_small?.webp
+    || item.images?.fixed_width_small?.url
+    || item.images?.preview_gif?.url
+    || item.images?.fixed_width?.webp
+    || item.images?.fixed_width?.url
+    || item.images?.original?.url
+    || '';
+}
+
+function getGiphyCanvasUrl(item) {
+  return item.images?.downsized?.url
+    || item.images?.downsized_medium?.url
+    || item.images?.original?.url
+    || item.images?.fixed_width?.url
+    || '';
+}
+
+window.addGiphyToCanvas = function(giphyId) {
+  const item = giphyItemMap[giphyId];
+  if (!item || !fabricCanvas) return;
+  const url = getGiphyCanvasUrl(item);
+  if (!url) return;
+  toast('Adding GIPHY asset...');
+  fabric.Image.fromURL(url, function(img) {
+    if (!img) { toast('Could not load GIPHY asset.', true); return; }
+    const maxW = CANVAS_W * (giphyActiveTab === 'gifs' ? 0.5 : 0.34);
+    const maxH = CANVAS_H * 0.55;
+    const scale = Math.min(maxW / (img.width || maxW), maxH / (img.height || maxH), 1);
+    img.set({
+      left: CANVAS_W / 2,
+      top: CANVAS_H / 2,
+      originX: 'center',
+      originY: 'center',
+      scaleX: scale,
+      scaleY: scale,
+      zignsImageName: item.title ? `GIPHY: ${item.title}` : 'GIPHY asset',
+      isGiphyAsset: true,
+      giphyId: item.id,
+      giphyTitle: item.title || '',
+      giphyUrl: item.url || url,
+    });
+    fabricCanvas.add(img);
+    fabricCanvas.setActiveObject(img);
+    fabricCanvas.renderAll();
+    historySave();
+    renderLayersPanel();
+    maybeStartGiphyAnimationLoop();
+    toast('GIPHY asset added ✓');
+  }, { crossOrigin: 'anonymous' });
+};
+
+function maybeStartGiphyAnimationLoop() {
+  if (giphyAnimationFrame || !fabricCanvas) return;
+  const tick = () => {
+    if (!fabricCanvas || !fabricCanvas.getObjects().some(obj => obj.isGiphyAsset)) {
+      giphyAnimationFrame = null;
+      return;
+    }
+    fabricCanvas.requestRenderAll();
+    giphyAnimationFrame = requestAnimationFrame(tick);
+  };
+  giphyAnimationFrame = requestAnimationFrame(tick);
+}
+
 // ── Stock Photos (Upgraded Unsplash Integration) ───────────────────────────
 const UNSPLASH_ACCESS_KEY = 'Ni1OZDAzJg2uQ-mRRoqMGDfxrC4dbG6jSYuSI-Gmils';
 const UNSPLASH_BASE = 'https://api.unsplash.com';
@@ -18023,10 +19456,12 @@ window.toggleStockPanel = function() {
 };
 
 function openStockPanel() {
-  document.getElementById('btnStockPhotos').classList.add('active');
+  document.getElementById('btnStockPhotos')?.classList.add('active');
   document.getElementById('stockPanel').style.display = 'block';
+  window.closeGiphyPanel && window.closeGiphyPanel();
+  window.closeIconPanel && window.closeIconPanel();
   if (checkPanelOpen) window.closeCheckPanel();
-  ['propsNone','propsText','propsImage','propsShape','propsIcon','propsTicker','propsAnimation'].forEach(id => {
+  ['propsNone','propsText','propsImage','propsShape','propsIcon','propsTicker','propsAnimation','propsTransform'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });
@@ -18038,7 +19473,7 @@ function openStockPanel() {
 }
 
 window.closeStockPanel = function() {
-  document.getElementById('btnStockPhotos').classList.remove('active');
+  document.getElementById('btnStockPhotos')?.classList.remove('active');
   document.getElementById('stockPanel').style.display = 'none';
   updatePropsPanel();
 };
@@ -18294,6 +19729,7 @@ window.addStockToCanvas = function(photoId) {
       left: fabricCanvas.width  / 2,
       top:  fabricCanvas.height / 2,
       originX: 'center', originY: 'center',
+      zignsImageName: photo.alt_description || photo.user?.name || 'Stock photo',
     });
     fabricCanvas.add(img);
     fabricCanvas.setActiveObject(img);
@@ -18502,7 +19938,7 @@ window.applyBgImage = function() {
 // ── Template System ───────────────────────────────────────────────────────
 let _tmplCanvas = null;    // offscreen canvas for thumbnail rendering (null = use fabricCanvas)
 let _tmplThumbnails = {}; // cache: templateName → jpeg dataUrl
-const TMPL_THUMB_CACHE_KEY = 'zigns-template-thumbs-v2026-05-18-safety-batch-5-claude-loto';
+const TMPL_THUMB_CACHE_KEY = 'zigns-template-thumbs-v2026-05-18-ops-warehouse-flow-v3-editor-locks';
 let _tmplThumbPersistTimer = null;
 let _tmplWarmupScheduled = false;
 
@@ -18655,8 +20091,9 @@ function openIconPanel() {
   document.getElementById('btnIcons').classList.add('active');
   document.getElementById('iconPanel').style.display = 'block';
   closeStockPanel();
+  window.closeGiphyPanel && window.closeGiphyPanel();
   if (checkPanelOpen) window.closeCheckPanel();
-  ['propsNone','propsText','propsImage','propsShape','propsIcon','propsTicker','propsAnimation'].forEach(id => {
+  ['propsNone','propsText','propsImage','propsShape','propsIcon','propsTicker','propsAnimation','propsTransform'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });
@@ -18920,7 +20357,8 @@ function openHistoryPanel() {
   window.closeCheckPanel  && window.closeCheckPanel();
   window.closeIconPanel   && window.closeIconPanel();
   window.closeStockPanel  && window.closeStockPanel();
-  ['propsNone','propsText','propsImage','propsShape','propsIcon','propsTicker','propsAnimation'].forEach(id => {
+  window.closeGiphyPanel  && window.closeGiphyPanel();
+  ['propsNone','propsText','propsImage','propsShape','propsIcon','propsTicker','propsAnimation','propsTransform'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });
@@ -19008,8 +20446,9 @@ function openCheckPanel() {
   document.getElementById('checkPanel').style.display = 'block';
   closeIconPanel();
   closeStockPanel();
+  window.closeGiphyPanel && window.closeGiphyPanel();
   closeHistoryPanel();
-  ['propsNone','propsText','propsImage','propsShape','propsIcon','propsTicker','propsAnimation'].forEach(id => {
+  ['propsNone','propsText','propsImage','propsShape','propsIcon','propsTicker','propsAnimation','propsTransform'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });
@@ -21942,6 +23381,997 @@ function renderLockoutTagoutChecklistClaudeDesign({
   });
 }
 
+function renderWarehouseTrafficFlowBoardCodexNative({
+  title = 'WAREHOUSE TRAFFIC FLOW',
+  subtitle = 'Forklift, pedestrian, and loading-zone routing',
+  zone = 'DOCKS 4-9',
+  shift = 'SHIFT A - 06:00 TO 14:00',
+  supervisor = 'SUPERVISOR: FLOOR LEAD',
+  status = 'ACTIVE ROUTE',
+  footer = 'MOVE SLOWLY - MAKE EYE CONTACT - KEEP AISLES CLEAR',
+} = {}) {
+  const W = CANVAS_W, H = CANVAS_H;
+  const cv = _tmplCanvas || fabricCanvas;
+  const ink = '#101820';
+  const ink2 = '#172332';
+  const ink3 = '#223246';
+  const panel = '#F8FAFC';
+  const line = 'rgba(255,255,255,0.12)';
+  const yellow = '#F5B500';
+  const yellowDark = '#B7791F';
+  const blue = '#3B82F6';
+  const green = '#22C55E';
+  const red = '#DC2626';
+  const bone = '#F8F1E3';
+  const muted = '#94A3B8';
+  const displayFont = 'Barlow Condensed';
+  const bodyFont = 'Inter';
+  const monoFont = 'JetBrains Mono';
+  const staticObj = { selectable: false, evented: false };
+
+  cv.backgroundColor = ink;
+  loadGoogleFont(displayFont);
+  loadGoogleFont(bodyFont);
+  loadGoogleFont(monoFont);
+
+  const add = (obj) => { cv.add(obj); return obj; };
+  const fRect = (left, top, width, height, opts = {}) => new fabric.Rect({
+    left, top, width, height,
+    rx: opts.rx || 0,
+    ry: opts.ry ?? opts.rx ?? 0,
+    ...opts,
+  });
+  const fCircle = (left, top, radius, opts = {}) => new fabric.Circle({
+    left, top, radius,
+    originX: 'center',
+    originY: 'center',
+    ...opts,
+  });
+  const fLine = (x1, y1, x2, y2, opts = {}) => new fabric.Line([x1, y1, x2, y2], {
+    strokeLineCap: 'round',
+    ...opts,
+  });
+  const fPath = (path, opts = {}) => new fabric.Path(path, opts);
+  const addGroup = (objects, opts = {}) => {
+    objects.forEach(obj => obj.set({ selectable: false, evented: false }));
+    return add(new fabric.Group(objects, {
+      selectable: true,
+      evented: true,
+      subTargetCheck: false,
+      ...opts,
+    }));
+  };
+  const addText = (text, left, top, opts = {}) => tmplText(text, left, top, {
+    fontFamily: bodyFont,
+    fill: bone,
+    editable: true,
+    ...opts,
+  });
+  const addArrow = (x1, y1, x2, y2, color, width = 18) => {
+    const angle = Math.atan2(y2 - y1, x2 - x1);
+    const head = width * 2.2;
+    const lineEndX = x2 - Math.cos(angle) * head * 0.55;
+    const lineEndY = y2 - Math.sin(angle) * head * 0.55;
+    const points = [
+      { x: x2, y: y2 },
+      { x: x2 - Math.cos(angle - Math.PI / 6) * head, y: y2 - Math.sin(angle - Math.PI / 6) * head },
+      { x: x2 - Math.cos(angle + Math.PI / 6) * head, y: y2 - Math.sin(angle + Math.PI / 6) * head },
+    ];
+    return addGroup([
+      fLine(x1, y1, lineEndX, lineEndY, { stroke: color, strokeWidth: width }),
+      new fabric.Polygon(points, { fill: color }),
+    ]);
+  };
+  const addForkliftGlyph = (cx, cy, scale = 1, color = yellow) => addGroup([
+    fRect(cx - 42 * scale, cy - 2 * scale, 78 * scale, 34 * scale, { fill: color, rx: 7 * scale }),
+    fRect(cx - 18 * scale, cy - 36 * scale, 34 * scale, 36 * scale, { fill: color, rx: 6 * scale }),
+    fLine(cx + 36 * scale, cy - 42 * scale, cx + 36 * scale, cy + 32 * scale, { stroke: color, strokeWidth: 8 * scale }),
+    fLine(cx + 54 * scale, cy - 42 * scale, cx + 54 * scale, cy + 32 * scale, { stroke: color, strokeWidth: 8 * scale }),
+    fLine(cx + 36 * scale, cy + 26 * scale, cx + 76 * scale, cy + 26 * scale, { stroke: color, strokeWidth: 8 * scale }),
+    fCircle(cx - 24 * scale, cy + 34 * scale, 13 * scale, { fill: ink }),
+    fCircle(cx + 24 * scale, cy + 34 * scale, 13 * scale, { fill: ink }),
+    fCircle(cx - 24 * scale, cy + 34 * scale, 6 * scale, { fill: color }),
+    fCircle(cx + 24 * scale, cy + 34 * scale, 6 * scale, { fill: color }),
+  ]);
+  const addPedestrianGlyph = (cx, cy, scale = 1, color = blue) => addGroup([
+    fCircle(cx, cy - 34 * scale, 13 * scale, { fill: color }),
+    fLine(cx, cy - 18 * scale, cx, cy + 18 * scale, { stroke: color, strokeWidth: 10 * scale }),
+    fLine(cx, cy - 2 * scale, cx - 28 * scale, cy + 14 * scale, { stroke: color, strokeWidth: 8 * scale }),
+    fLine(cx, cy - 2 * scale, cx + 26 * scale, cy + 8 * scale, { stroke: color, strokeWidth: 8 * scale }),
+    fLine(cx, cy + 18 * scale, cx - 22 * scale, cy + 54 * scale, { stroke: color, strokeWidth: 9 * scale }),
+    fLine(cx, cy + 18 * scale, cx + 24 * scale, cy + 54 * scale, { stroke: color, strokeWidth: 9 * scale }),
+  ]);
+  const addStopSign = (cx, cy, size = 72) => addGroup([
+    new fabric.Polygon(Array.from({ length: 8 }, (_, i) => {
+      const a = Math.PI / 8 + i * Math.PI / 4;
+      return { x: cx + Math.cos(a) * size * 0.48, y: cy + Math.sin(a) * size * 0.48 };
+    }), { fill: red }),
+    new fabric.Text('STOP', {
+      left: cx,
+      top: cy,
+      originX: 'center',
+      originY: 'center',
+      fill: '#ffffff',
+      fontFamily: displayFont,
+      fontSize: size * 0.34,
+      fontWeight: 'bold',
+    }),
+  ]);
+  const addRuleRow = (i, titleText, bodyText, color) => {
+    const y = 414 + i * 114;
+    tmplRect(1268, y, 540, 90, { fill: i % 2 ? 'rgba(16,24,36,0.04)' : 'rgba(16,24,36,0.07)', rx: 12, ...staticObj });
+    tmplRect(1268, y, 8, 90, { fill: color, rx: 0, ...staticObj });
+    addText(String(i + 1).padStart(2, '0'), 1322, y + 45, {
+      fontFamily: displayFont,
+      fontSize: 42,
+      fontWeight: 'bold',
+      fill: color,
+      boxWidth: 56,
+      boxHeight: 46,
+      fitToBox: true,
+      minFontSize: 28,
+    });
+    addText(titleText, 1374, y + 18, {
+      originX: 'left',
+      originY: 'top',
+      fontFamily: displayFont,
+      fontSize: 30,
+      fontWeight: 'bold',
+      fill: ink,
+      boxWidth: 370,
+      boxHeight: 32,
+      fitToBox: true,
+      minFontSize: 18,
+    });
+    addText(bodyText, 1374, y + 52, {
+      originX: 'left',
+      originY: 'top',
+      fontFamily: bodyFont,
+      fontSize: 17,
+      lineHeight: 1.18,
+      fill: '#475569',
+      boxWidth: 390,
+      boxHeight: 28,
+      fitToBox: true,
+      minFontSize: 12,
+    });
+  };
+
+  tmplRect(0, 0, W, H, { fill: ink, rx: 0, ...staticObj });
+  for (let x = -80; x < W + 80; x += 94) {
+    add(new fabric.Polygon([
+      { x, y: 0 },
+      { x: x + 44, y: 0 },
+      { x: x + 12, y: 34 },
+      { x: x - 32, y: 34 },
+    ], { fill: yellow, opacity: 0.95, ...staticObj }));
+    add(new fabric.Polygon([
+      { x, y: H - 34 },
+      { x: x + 44, y: H - 34 },
+      { x: x + 12, y: H },
+      { x: x - 32, y: H },
+    ], { fill: yellow, opacity: 0.95, ...staticObj }));
+  }
+
+  tmplRect(0, 34, W, 156, { fill: ink2, rx: 0, ...staticObj });
+  tmplRect(0, 184, W, 6, { fill: yellow, rx: 0, ...staticObj });
+  addText('OPERATIONS ROUTE BOARD', 64, 58, {
+    originX: 'left',
+    originY: 'top',
+    fontFamily: monoFont,
+    fontSize: 18,
+    fontWeight: 'bold',
+    charSpacing: 230,
+    fill: muted,
+    boxWidth: 720,
+    boxHeight: 24,
+    fitToBox: true,
+    minFontSize: 12,
+  });
+  addText(title, 64, 82, {
+    originX: 'left',
+    originY: 'top',
+    fontFamily: displayFont,
+    fontSize: 92,
+    fontWeight: 'bold',
+    fill: bone,
+    boxWidth: 1050,
+    boxHeight: 94,
+    fitToBox: true,
+    minFontSize: 58,
+  });
+  addText(subtitle, 1180, 76, {
+    originX: 'left',
+    originY: 'top',
+    fontFamily: bodyFont,
+    fontSize: 25,
+    fontWeight: 'bold',
+    lineHeight: 1.18,
+    fill: '#CBD5E1',
+    boxWidth: 520,
+    boxHeight: 72,
+    fitToBox: true,
+    minFontSize: 16,
+  });
+  tmplRect(1648, 58, 210, 72, { fill: 'rgba(245,181,0,0.16)', stroke: 'rgba(245,181,0,0.62)', strokeWidth: 2, rx: 8 });
+  addText(status, 1753, 94, {
+    fontFamily: displayFont,
+    fontSize: 30,
+    fontWeight: 'bold',
+    fill: yellow,
+    boxWidth: 176,
+    boxHeight: 36,
+    fitToBox: true,
+    minFontSize: 18,
+  });
+
+  tmplRect(56, 232, 1154, 648, { fill: panel, rx: 18, stroke: 'rgba(255,255,255,0.10)', strokeWidth: 2 });
+  tmplRect(80, 258, 1106, 596, { fill: '#E2E8F0', rx: 12, ...staticObj });
+  for (let x = 124; x < 1130; x += 112) tmplRect(x, 258, 1, 596, { fill: 'rgba(15,23,42,0.08)', rx: 0, ...staticObj });
+  for (let y = 306; y < 820; y += 94) tmplRect(80, y, 1106, 1, { fill: 'rgba(15,23,42,0.08)', rx: 0, ...staticObj });
+
+  tmplRect(134, 310, 426, 128, { fill: '#CBD5E1', rx: 8, ...staticObj });
+  tmplRect(654, 310, 468, 128, { fill: '#CBD5E1', rx: 8, ...staticObj });
+  tmplRect(134, 704, 324, 96, { fill: '#CBD5E1', rx: 8, ...staticObj });
+  tmplRect(786, 670, 336, 130, { fill: '#CBD5E1', rx: 8, ...staticObj });
+  ['STAGING', 'PACK / HOLD', 'RECEIVING', 'SHIPPING'].forEach((label, idx) => {
+    const pos = [
+      [350, 374, 320],
+      [888, 374, 340],
+      [296, 752, 250],
+      [954, 735, 260],
+    ][idx];
+    addText(label, pos[0], pos[1], {
+      fontFamily: monoFont,
+      fontSize: 20,
+      fontWeight: 'bold',
+      charSpacing: 180,
+      fill: 'rgba(15,23,42,0.48)',
+      boxWidth: pos[2],
+      boxHeight: 28,
+      fitToBox: true,
+      minFontSize: 14,
+    });
+  });
+
+  tmplRect(132, 474, 988, 94, { fill: 'rgba(245,181,0,0.18)', stroke: yellow, strokeWidth: 5, rx: 46, ...staticObj });
+  tmplRect(208, 584, 820, 58, { fill: 'rgba(59,130,246,0.16)', stroke: blue, strokeWidth: 4, rx: 29, ...staticObj });
+  tmplRect(560, 338, 70, 420, { fill: 'rgba(15,23,42,0.09)', rx: 10, ...staticObj });
+  tmplRect(624, 338, 8, 420, { fill: 'rgba(15,23,42,0.16)', rx: 0, ...staticObj });
+  tmplRect(558, 548, 76, 8, { fill: 'rgba(15,23,42,0.16)', rx: 0, ...staticObj });
+
+  addArrow(205, 521, 1050, 521, yellow, 20);
+  addArrow(1004, 521, 742, 716, yellow, 20);
+  addArrow(978, 614, 266, 614, blue, 13);
+  addArrow(260, 614, 330, 462, blue, 13);
+  addArrow(602, 720, 602, 372, 'rgba(15,23,42,0.52)', 12);
+
+  addForkliftGlyph(244, 520, 0.92, yellowDark);
+  addForkliftGlyph(920, 520, 0.92, yellowDark);
+  addPedestrianGlyph(372, 614, 0.70, blue);
+  addPedestrianGlyph(820, 614, 0.70, blue);
+  addStopSign(604, 552, 70);
+
+  [
+    ['FORKLIFT ONE-WAY', 176, 462, yellow],
+    ['PEDESTRIAN WALKWAY', 660, 650, blue],
+    ['STOP / LOOK', 646, 555, red],
+  ].forEach(([label, x, y, color]) => {
+    tmplRect(x, y, 212, 34, { fill: color, rx: 17, ...staticObj });
+    addText(label, x + 106, y + 17, {
+      fontFamily: monoFont,
+      fontSize: 14,
+      fontWeight: 'bold',
+      charSpacing: 80,
+      fill: color === yellow ? ink : '#ffffff',
+      boxWidth: 184,
+      boxHeight: 18,
+      fitToBox: true,
+      minFontSize: 10,
+    });
+  });
+
+  tmplRect(1260, 232, 604, 648, { fill: panel, rx: 18, stroke: 'rgba(255,255,255,0.10)', strokeWidth: 2 });
+  addText('ROUTE GUIDE', 1290, 268, {
+    originX: 'left',
+    originY: 'top',
+    fontFamily: monoFont,
+    fontSize: 18,
+    fontWeight: 'bold',
+    charSpacing: 240,
+    fill: '#64748B',
+    boxWidth: 320,
+    boxHeight: 24,
+    fitToBox: true,
+    minFontSize: 12,
+  });
+  addText(zone, 1290, 300, {
+    originX: 'left',
+    originY: 'top',
+    fontFamily: displayFont,
+    fontSize: 58,
+    fontWeight: 'bold',
+    fill: ink,
+    boxWidth: 360,
+    boxHeight: 62,
+    fitToBox: true,
+    minFontSize: 34,
+  });
+  tmplRect(1660, 270, 152, 74, { fill: 'rgba(34,197,94,0.12)', stroke: green, strokeWidth: 2, rx: 10 });
+  addText('CLEAR', 1736, 307, {
+    fontFamily: displayFont,
+    fontSize: 34,
+    fontWeight: 'bold',
+    fill: '#15803D',
+    boxWidth: 118,
+    boxHeight: 38,
+    fitToBox: true,
+    minFontSize: 22,
+  });
+  tmplRect(1290, 376, 520, 3, { fill: yellow, rx: 2, ...staticObj });
+  addRuleRow(0, 'FORKLIFTS USE YELLOW LANES', 'One-way travel only. No passing in active aisles.', yellowDark);
+  addRuleRow(1, 'PEDESTRIANS USE BLUE WALKWAYS', 'Cross only at marked breaks and make eye contact.', blue);
+  addRuleRow(2, 'KEEP DOCK DOORS CLEAR', 'No staging in red stop zones or emergency paths.', red);
+  addRuleRow(3, 'REPORT BLOCKED AISLES', 'Call the floor lead before rerouting traffic.', green);
+
+  tmplRect(56, 916, W - 112, 104, { fill: ink2, rx: 12, stroke: line, strokeWidth: 1 });
+  [
+    ['ZONE', zone, 96, 310],
+    ['SHIFT', shift, 474, 370],
+    ['CONTACT', supervisor, 910, 390],
+  ].forEach(([label, value, x, width]) => {
+    addText(label, x, 942, {
+      originX: 'left',
+      originY: 'top',
+      fontFamily: monoFont,
+      fontSize: 14,
+      fontWeight: 'bold',
+      charSpacing: 180,
+      fill: muted,
+      boxWidth: width,
+      boxHeight: 18,
+      fitToBox: true,
+      minFontSize: 10,
+    });
+    addText(value, x, 966, {
+      originX: 'left',
+      originY: 'top',
+      fontFamily: displayFont,
+      fontSize: 32,
+      fontWeight: 'bold',
+      fill: bone,
+      boxWidth: width,
+      boxHeight: 38,
+      fitToBox: true,
+      minFontSize: 18,
+    });
+  });
+  tmplRect(1408, 940, 420, 56, { fill: 'rgba(245,181,0,0.12)', stroke: 'rgba(245,181,0,0.45)', strokeWidth: 1.5, rx: 8 });
+  addText(footer, 1618, 968, {
+    fontFamily: displayFont,
+    fontSize: 24,
+    fontWeight: 'bold',
+    fill: yellow,
+    boxWidth: 370,
+    boxHeight: 32,
+    fitToBox: true,
+    minFontSize: 14,
+  });
+}
+
+function renderWarehouseTrafficFlowBoard({
+  eyebrow = 'OPERATIONS - SITE PLAN',
+  title = 'WAREHOUSE TRAFFIC FLOW',
+  facility = 'PLANT B - BLDG B-2',
+  clock = '06:30',
+  zone = 'DOCKS 4-9',
+  activeRoute = 'CLOCKWISE LOOP',
+  condition = 'CLEAR',
+  lastUpdated = '18 MAY - 06:30',
+  mapTitle = 'SITE PLAN - BUILDING B',
+  shift = 'DAY - SHIFT A',
+  contact = 'OPS x4810',
+  footerNote = 'EYES UP - HEADPHONES OUT AROUND FORKLIFT LANES',
+} = {}) {
+  const W = CANVAS_W, H = CANVAS_H;
+  const cv = _tmplCanvas || fabricCanvas;
+  const ink = '#0E141C';
+  const ink2 = '#18222F';
+  const ink3 = '#25303D';
+  const ink4 = '#2E3A48';
+  const bone = '#F2EFE9';
+  const muted = '#8A96A6';
+  const amber = '#F5B500';
+  const amberDeep = '#B98800';
+  const blue = '#2A6FDB';
+  const red = '#D8232A';
+  const green = '#1F9C5A';
+  const displayFont = 'Barlow Condensed';
+  const bodyFont = 'Inter';
+  const monoFont = 'JetBrains Mono';
+  const locked = { selectable: false, evented: false, isTemplateStatic: true };
+  const conditionUpper = String(condition || '').toUpperCase();
+  const conditionColor = conditionUpper.includes('RESTRICT') || conditionUpper.includes('STOP')
+    ? red
+    : conditionUpper.includes('CAUTION')
+      ? amber
+      : green;
+  const conditionTextFill = conditionColor === amber ? ink : '#ffffff';
+
+  cv.backgroundColor = ink;
+  loadGoogleFont(displayFont);
+  loadGoogleFont(bodyFont);
+  loadGoogleFont(monoFont);
+
+  const add = (obj) => { cv.add(obj); return obj; };
+  const fRect = (left, top, width, height, opts = {}) => new fabric.Rect({
+    left, top, width, height,
+    rx: opts.rx || 0,
+    ry: opts.ry ?? opts.rx ?? 0,
+    ...opts,
+  });
+  const fCircle = (left, top, radius, opts = {}) => new fabric.Circle({
+    left, top, radius,
+    originX: 'center',
+    originY: 'center',
+    ...opts,
+  });
+  const fLine = (x1, y1, x2, y2, opts = {}) => new fabric.Line([x1, y1, x2, y2], {
+    strokeLineCap: 'round',
+    strokeLineJoin: 'round',
+    ...opts,
+  });
+  const fText = (text, left, top, opts = {}) => new fabric.Text(String(text ?? ''), {
+    left,
+    top,
+    originX: 'center',
+    originY: 'center',
+    fontFamily: bodyFont,
+    fill: bone,
+    ...opts,
+  });
+  const addGroup = (objects, opts = {}) => {
+    const isStatic = opts.isTemplateStatic !== false;
+    objects.forEach(obj => obj.set({
+      selectable: false,
+      evented: false,
+      isTemplateStatic: isStatic,
+    }));
+    return add(new fabric.Group(objects, {
+      selectable: !isStatic,
+      evented: !isStatic,
+      isTemplateStatic: isStatic,
+      subTargetCheck: false,
+      ...opts,
+    }));
+  };
+  const addText = (text, left, top, opts = {}) => tmplText(text, left, top, {
+    fontFamily: bodyFont,
+    fill: bone,
+    editable: true,
+    ...opts,
+  });
+  const addStaticText = (text, left, top, opts = {}) => {
+    const obj = addText(text, left, top, {
+      editable: false,
+      ...opts,
+    });
+    obj.set({ selectable: false, evented: false, editable: false, isTemplateStatic: true });
+    return obj;
+  };
+  const addStaticCluster = (zignsLayerLabel, draw) => {
+    const start = cv.getObjects().length;
+    draw();
+    const objects = cv.getObjects().slice(start);
+    objects.forEach(obj => cv.remove(obj));
+    if (!objects.length) return null;
+    return addGroup(objects, { zignsLayerLabel });
+  };
+  const addChevron = (cx, cy, rot = 0, color = ink, size = 26) => {
+    const pts = [
+      { x: cx - size * 0.25, y: cy - size * 0.34 },
+      { x: cx + size * 0.22, y: cy },
+      { x: cx - size * 0.25, y: cy + size * 0.34 },
+    ];
+    const poly = new fabric.Polyline(pts, {
+      fill: '',
+      stroke: color,
+      strokeWidth: size * 0.18,
+      strokeLineCap: 'round',
+      strokeLineJoin: 'round',
+      angle: rot,
+      originX: 'center',
+      originY: 'center',
+      ...locked,
+    });
+    cv.add(poly);
+    return poly;
+  };
+  const addHatches = (x, y, w, h, vertical = false) => {
+    const step = 26;
+    const color = 'rgba(14,20,28,0.18)';
+    if (vertical) {
+      for (let yy = y - 20; yy < y + h + 30; yy += step) {
+        add(fLine(x + 6, yy, x + w - 6, yy + 20, { stroke: color, strokeWidth: 4, ...locked }));
+      }
+      return;
+    }
+    for (let xx = x - 20; xx < x + w + 30; xx += step) {
+      add(fLine(xx, y + h - 4, xx + 20, y + 4, { stroke: color, strokeWidth: 4, ...locked }));
+    }
+  };
+  const addZebra = (x, y, w, h, vertical = false) => {
+    const step = 18;
+    const fill = 'rgba(255,255,255,0.18)';
+    if (vertical) {
+      for (let yy = y; yy < y + h; yy += step) tmplRect(x, yy, w, 8, { fill, rx: 0, ...locked });
+      return;
+    }
+    for (let xx = x; xx < x + w; xx += step) tmplRect(xx, y, 8, h, { fill, rx: 0, ...locked });
+  };
+  const addTruck = (x, y) => addGroup([
+    fRect(x, y + 14, 100, 24, { fill: ink4, stroke: muted, strokeWidth: 1.5, rx: 4 }),
+    fRect(x + 58, y, 30, 16, { fill: ink4, stroke: muted, strokeWidth: 1.5, rx: 3 }),
+    fRect(x + 12, y + 36, 14, 4, { fill: muted, rx: 2 }),
+    fRect(x + 72, y + 36, 14, 4, { fill: muted, rx: 2 }),
+  ]);
+  const addStopDiamond = (cx, cy, label) => {
+    add(new fabric.Polygon([
+      { x: cx, y: cy - 34 },
+      { x: cx + 34, y: cy },
+      { x: cx, y: cy + 34 },
+      { x: cx - 34, y: cy },
+    ], { fill: 'rgba(216,35,42,0.20)', ...locked }));
+    return addGroup([
+      new fabric.Polygon([
+        { x: cx, y: cy - 28 },
+        { x: cx + 28, y: cy },
+        { x: cx, y: cy + 28 },
+        { x: cx - 28, y: cy },
+      ], { fill: red, stroke: '#ffffff', strokeWidth: 3 }),
+      fText(label, cx, cy, {
+        fontFamily: displayFont,
+        fontSize: label.length > 4 ? 14 : 17,
+        fontWeight: 'bold',
+        fill: '#ffffff',
+      }),
+    ]);
+  };
+  const addZone = ({ x, y, w, h, name, sub, fill = 'rgba(46,58,72,0.70)', stroke = 'rgba(255,255,255,0.08)', nameFill = bone }) => {
+    tmplRect(x, y, w, h, { fill, stroke, strokeWidth: 2, rx: 8, ...locked });
+    addStaticText(name, x + 24, y + 22, {
+      originX: 'left',
+      originY: 'top',
+      fontFamily: displayFont,
+      fontSize: 24,
+      fontWeight: 'bold',
+      charSpacing: 90,
+      fill: nameFill,
+      boxWidth: w - 48,
+      boxHeight: 28,
+      fitToBox: true,
+      minFontSize: 16,
+    });
+    addStaticText(sub, x + 24, y + 58, {
+      originX: 'left',
+      originY: 'top',
+      fontFamily: monoFont,
+      fontSize: 13,
+      fontWeight: 'bold',
+      charSpacing: 110,
+      fill: muted,
+      boxWidth: w - 48,
+      boxHeight: 18,
+      fitToBox: true,
+      minFontSize: 9,
+    });
+  };
+  const addLegendRow = (i, color, titleText, bodyText) => {
+    const x = 1402 + (i % 2) * 228;
+    const y = 328 + Math.floor(i / 2) * 72;
+    tmplRect(x, y + 4, 34, 18, { fill: color, rx: 3, ...locked });
+    if (color === red) {
+      add(new fabric.Polygon([
+        { x: x + 17, y },
+        { x: x + 34, y: y + 17 },
+        { x: x + 17, y: y + 34 },
+        { x, y: y + 17 },
+      ], { fill: red, ...locked }));
+    }
+    addStaticText(titleText, x + 48, y, {
+      originX: 'left',
+      originY: 'top',
+      fontFamily: displayFont,
+      fontSize: 18,
+      fontWeight: 'bold',
+      fill: bone,
+      boxWidth: 156,
+      boxHeight: 22,
+      fitToBox: true,
+      minFontSize: 12,
+    });
+    addStaticText(bodyText, x + 48, y + 24, {
+      originX: 'left',
+      originY: 'top',
+      fontFamily: bodyFont,
+      fontSize: 12,
+      fill: muted,
+      boxWidth: 154,
+      boxHeight: 26,
+      fitToBox: true,
+      minFontSize: 9,
+    });
+  };
+  const addRuleRow = (i, color, number, titleText, bodyText) => {
+    const y = 552 + i * 96;
+    tmplRect(1402, y, 440, 82, { fill: ink3, rx: 8, ...locked });
+    tmplRect(1402, y, 6, 82, { fill: color, rx: 0, ...locked });
+    addStaticText(number, 1444, y + 42, {
+      fontFamily: displayFont,
+      fontSize: 36,
+      fontWeight: 'bold',
+      fill: color,
+      boxWidth: 48,
+      boxHeight: 40,
+      fitToBox: true,
+      minFontSize: 24,
+    });
+    addText(titleText, 1490, y + 16, {
+      originX: 'left',
+      originY: 'top',
+      fontFamily: displayFont,
+      fontSize: 23,
+      fontWeight: 'bold',
+      fill: bone,
+      boxWidth: 310,
+      boxHeight: 28,
+      fitToBox: true,
+      minFontSize: 15,
+    });
+    addText(bodyText, 1490, y + 48, {
+      originX: 'left',
+      originY: 'top',
+      fontFamily: bodyFont,
+      fontSize: 13,
+      fill: muted,
+      boxWidth: 318,
+      boxHeight: 24,
+      fitToBox: true,
+      minFontSize: 9,
+    });
+  };
+
+  tmplRect(0, 0, W, H, { fill: ink, rx: 0, ...locked });
+
+  tmplRect(0, 0, W, 160, { fill: ink2, rx: 0, ...locked });
+  tmplRect(0, 156, W, 4, { fill: amber, rx: 0, ...locked });
+  tmplRect(56, 30, 100, 100, { fill: amber, rx: 12, ...locked });
+  addGroup([
+    fLine(90, 102, 116, 102, { stroke: ink, strokeWidth: 7 }),
+    fLine(116, 102, 116, 72, { stroke: ink, strokeWidth: 7 }),
+    new fabric.Polygon([
+      { x: 105, y: 78 },
+      { x: 116, y: 60 },
+      { x: 127, y: 78 },
+    ], { fill: ink }),
+    fCircle(89, 102, 5, { fill: ink }),
+  ]);
+  addText(eyebrow, 180, 42, {
+    originX: 'left',
+    originY: 'top',
+    fontFamily: displayFont,
+    fontSize: 22,
+    fontWeight: 'bold',
+    charSpacing: 300,
+    fill: 'rgba(242,239,233,0.62)',
+    boxWidth: 960,
+    boxHeight: 28,
+    fitToBox: true,
+    minFontSize: 14,
+  });
+  addText(title, 180, 70, {
+    originX: 'left',
+    originY: 'top',
+    fontFamily: displayFont,
+    fontSize: 96,
+    fontWeight: 'bold',
+    fill: bone,
+    boxWidth: 1260,
+    boxHeight: 88,
+    fitToBox: true,
+    minFontSize: 56,
+  });
+  addText(facility, 1500, 58, {
+    originX: 'left',
+    originY: 'top',
+    fontFamily: monoFont,
+    fontSize: 16,
+    fontWeight: 'bold',
+    charSpacing: 120,
+    fill: muted,
+    boxWidth: 320,
+    boxHeight: 24,
+    fitToBox: true,
+    minFontSize: 11,
+  });
+  addText(clock, 1500, 90, {
+    originX: 'left',
+    originY: 'top',
+    fontFamily: displayFont,
+    fontSize: 34,
+    fontWeight: 'bold',
+    fill: bone,
+    boxWidth: 220,
+    boxHeight: 38,
+    fitToBox: true,
+    minFontSize: 20,
+  });
+
+  tmplRect(0, 160, W, 88, { fill: ink2, rx: 0, stroke: 'rgba(255,255,255,0.08)', strokeWidth: 1, ...locked });
+  const statusCells = [
+    ['ZONE', zone, 56, 320, bone],
+    ['ACTIVE ROUTE', activeRoute, 520, 360, amber],
+    ['LAST UPDATED', lastUpdated, 1620, 244, muted],
+  ];
+  statusCells.forEach(([label, value, x, width, valueFill], i) => {
+    if (i) tmplRect(x - 20, 184, 1, 40, { fill: 'rgba(255,255,255,0.08)', rx: 0, ...locked });
+    addStaticText(label, x, 176, {
+      originX: 'left',
+      originY: 'top',
+      fontFamily: monoFont,
+      fontSize: 14,
+      fontWeight: 'bold',
+      charSpacing: 210,
+      fill: muted,
+      boxWidth: width,
+      boxHeight: 18,
+      fitToBox: true,
+      minFontSize: 10,
+    });
+    addText(value, x, 198, {
+      originX: 'left',
+      originY: 'top',
+      fontFamily: displayFont,
+      fontSize: i === 2 ? 20 : 36,
+      fontWeight: 'bold',
+      fill: valueFill,
+      boxWidth: width,
+      boxHeight: i === 2 ? 28 : 42,
+      fitToBox: true,
+      minFontSize: i === 2 ? 12 : 20,
+    });
+  });
+  tmplRect(980, 188, 240, 52, { fill: conditionColor, rx: 8, ...locked });
+  add(fCircle(1002, 214, 6, { fill: conditionTextFill, ...locked }));
+  addText(condition, 1100, 214, {
+    fontFamily: displayFont,
+    fontSize: 30,
+    fontWeight: 'bold',
+    fill: conditionTextFill,
+    boxWidth: 176,
+    boxHeight: 34,
+    fitToBox: true,
+    minFontSize: 18,
+  });
+
+  tmplRect(56, 276, 1300, 676, { fill: ink2, stroke: 'rgba(255,255,255,0.08)', strokeWidth: 1, rx: 12, ...locked });
+  addText(mapTitle, 80, 296, {
+    originX: 'left',
+    originY: 'top',
+    fontFamily: displayFont,
+    fontSize: 30,
+    fontWeight: 'bold',
+    charSpacing: 80,
+    fill: bone,
+    boxWidth: 560,
+    boxHeight: 34,
+    fitToBox: true,
+    minFontSize: 18,
+  });
+  addStaticText('PLAN VIEW - NORTH', 1088, 300, {
+    originX: 'left',
+    originY: 'top',
+    fontFamily: monoFont,
+    fontSize: 12,
+    fontWeight: 'bold',
+    charSpacing: 90,
+    fill: muted,
+    boxWidth: 160,
+    boxHeight: 18,
+    fitToBox: true,
+    minFontSize: 9,
+  });
+  add(fCircle(1306, 306, 14, { fill: '', stroke: muted, strokeWidth: 2, ...locked }));
+  addStaticText('N', 1306, 306, {
+    fontFamily: displayFont,
+    fontSize: 15,
+    fontWeight: 'bold',
+    fill: bone,
+    boxWidth: 20,
+    boxHeight: 18,
+    fitToBox: true,
+  });
+
+  const mx = 80, my = 340, mw = 1252, mh = 596;
+  tmplRect(mx, my, mw, mh, { fill: ink3, rx: 8, ...locked });
+  for (let x = mx + 40; x < mx + mw; x += 40) tmplRect(x, my, 1, mh, { fill: 'rgba(255,255,255,0.035)', rx: 0, ...locked });
+  for (let y = my + 40; y < my + mh; y += 40) tmplRect(mx, y, mw, 1, { fill: 'rgba(255,255,255,0.035)', rx: 0, ...locked });
+  tmplRect(120, 420, 1172, 480, { fill: 'rgba(255,255,255,0.01)', stroke: 'rgba(255,255,255,0.10)', strokeWidth: 2, rx: 6, ...locked });
+
+  addStaticText('RECEIVING DOCKS - 04 / 09', 136, 396, {
+    originX: 'left',
+    originY: 'top',
+    fontFamily: monoFont,
+    fontSize: 12,
+    fontWeight: 'bold',
+    charSpacing: 110,
+    fill: muted,
+    boxWidth: 330,
+    boxHeight: 16,
+    fitToBox: true,
+    minFontSize: 9,
+  });
+  [4,5,6,7,8,9].forEach((n, i) => {
+    const x = 142 + i * 162;
+    addTruck(x + 8, 370);
+    tmplRect(x, 420, 120, 50, { fill: ink4, stroke: muted, strokeWidth: 2, rx: 4, ...locked });
+    addStaticText(String(n).padStart(2, '0'), x + 60, 446, {
+      fontFamily: displayFont,
+      fontSize: 27,
+      fontWeight: 'bold',
+      fill: bone,
+      boxWidth: 88,
+      boxHeight: 30,
+      fitToBox: true,
+      minFontSize: 18,
+    });
+  });
+
+  addZone({
+    x: 155, y: 470, w: 1100, h: 60,
+    name: 'RECEIVING ZONE',
+    sub: 'INBOUND PALLETS - CLEAR WITHIN 30 MIN',
+    fill: 'rgba(31,156,90,0.16)',
+    stroke: 'rgba(31,156,90,0.45)',
+  });
+
+  addStaticCluster('Forklift route track', () => {
+    tmplRect(155, 530, 1100, 30, { fill: amber, rx: 0, ...locked }); addHatches(155, 530, 1100, 30);
+    tmplRect(1200, 560, 55, 320, { fill: amber, rx: 0, ...locked }); addHatches(1200, 560, 55, 320, true);
+    tmplRect(155, 860, 1100, 30, { fill: amber, rx: 0, ...locked }); addHatches(155, 860, 1100, 30);
+    tmplRect(155, 560, 55, 320, { fill: amber, rx: 0, ...locked }); addHatches(155, 560, 55, 320, true);
+    for (let i = 0; i < 10; i++) addChevron(244 + i * 94, 545, 0, ink, 24);
+    for (let i = 0; i < 6; i++) addChevron(1228, 606 + i * 45, 90, ink, 24);
+    for (let i = 0; i < 10; i++) addChevron(1160 - i * 94, 875, 180, ink, 24);
+    for (let i = 0; i < 6; i++) addChevron(182, 828 - i * 45, -90, ink, 24);
+  });
+
+  addStaticCluster('Pedestrian walkway', () => {
+    tmplRect(260, 560, 36, 340, { fill: blue, rx: 0, ...locked }); addZebra(260, 560, 36, 340, true);
+    tmplRect(296, 700, 420, 32, { fill: blue, rx: 0, ...locked }); addZebra(296, 700, 420, 32);
+  });
+
+  addStaticCluster('Stop/look markers', () => {
+    addStopDiamond(210, 532, 'STOP');
+    addStopDiamond(210, 880, 'STOP');
+    addStopDiamond(716, 700, 'LOOK');
+  });
+
+  addZone({ x: 305, y: 590, w: 460, h: 120, name: 'STAGING', sub: 'AISLES S-01 TO S-04' });
+  addZone({ x: 785, y: 590, w: 410, h: 120, name: 'PACK / HOLD', sub: 'AISLES P-01 TO P-06' });
+  addZone({
+    x: 785, y: 740, w: 410, h: 160,
+    name: 'SHIPPING',
+    sub: 'OUTBOUND - TRAILER DROPS ONLY',
+    fill: 'rgba(216,35,42,0.16)',
+    stroke: 'rgba(216,35,42,0.55)',
+  });
+  addZone({ x: 305, y: 730, w: 440, h: 88, name: 'CHARGING BAY', sub: 'FORKLIFT CELLS 1-6', fill: 'rgba(46,58,72,0.55)' });
+  addZone({ x: 305, y: 826, w: 440, h: 60, name: 'RETURNS HOLD', sub: 'TAG AND QUARANTINE', fill: 'rgba(46,58,72,0.55)' });
+
+  tmplRect(162, 836, 112, 24, { fill: ink, stroke: amber, strokeWidth: 1.5, rx: 4, ...locked });
+  addStaticText('YOU ARE HERE', 218, 848, {
+    fontFamily: displayFont,
+    fontSize: 14,
+    fontWeight: 'bold',
+    fill: bone,
+    boxWidth: 90,
+    boxHeight: 16,
+    fitToBox: true,
+    minFontSize: 10,
+  });
+  add(fCircle(210, 880, 18, { fill: 'rgba(245,181,0,0.20)', ...locked }));
+  add(fCircle(210, 880, 11, { fill: '#ffffff', stroke: amber, strokeWidth: 4, ...locked }));
+
+  tmplRect(1380, 276, 484, 210, { fill: ink2, stroke: 'rgba(255,255,255,0.08)', strokeWidth: 1, rx: 12, ...locked });
+  addStaticText('ROUTE LEGEND', 1402, 296, {
+    originX: 'left',
+    originY: 'top',
+    fontFamily: monoFont,
+    fontSize: 12,
+    fontWeight: 'bold',
+    charSpacing: 160,
+    fill: muted,
+  });
+  addLegendRow(0, amber, 'FORKLIFT LANE', 'One-way loop');
+  addLegendRow(1, blue, 'PEDESTRIAN', 'Walking only');
+  addLegendRow(2, red, 'STOP / LOOK', 'Mandatory full stop');
+  addLegendRow(3, green, 'CLEAR ZONE', 'Open during shift');
+
+  tmplRect(1380, 498, 484, 454, { fill: ink2, stroke: 'rgba(255,255,255,0.08)', strokeWidth: 1, rx: 12, ...locked });
+  addStaticText('ROUTE RULES', 1402, 520, {
+    originX: 'left',
+    originY: 'top',
+    fontFamily: monoFont,
+    fontSize: 12,
+    fontWeight: 'bold',
+    charSpacing: 160,
+    fill: muted,
+  });
+  addRuleRow(0, amber, '01', 'FORKLIFTS USE YELLOW LANES', 'One-way clockwise loop. Horn at every intersection.');
+  addRuleRow(1, blue, '02', 'PEDESTRIANS USE BLUE WALKWAYS', 'Stay inside the blue stripe. No shortcuts through lanes.');
+  addRuleRow(2, red, '03', 'KEEP DOCK DOORS CLEAR', 'No staging within 8 ft of active dock doors.');
+  addRuleRow(3, green, '04', 'REPORT BLOCKED AISLES', 'Call Operations on x4810 before rerouting traffic.');
+
+  tmplRect(0, 952, W, 128, { fill: ink2, stroke: 'rgba(255,255,255,0.08)', strokeWidth: 1, rx: 0, ...locked });
+  [
+    ['ZONE', zone, 56, 250],
+    ['SHIFT', shift, 360, 300],
+    ['CONTACT', contact, 720, 260],
+    ['UPDATED', lastUpdated, 1080, 300],
+  ].forEach(([label, value, x, width]) => {
+    addStaticText(label, x, 970, {
+      originX: 'left',
+      originY: 'top',
+      fontFamily: monoFont,
+      fontSize: 14,
+      fontWeight: 'bold',
+      charSpacing: 190,
+      fill: muted,
+      boxWidth: width,
+      boxHeight: 18,
+      fitToBox: true,
+      minFontSize: 10,
+    });
+    addText(value, x, 996, {
+      originX: 'left',
+      originY: 'top',
+      fontFamily: displayFont,
+      fontSize: 30,
+      fontWeight: 'bold',
+      fill: bone,
+      boxWidth: width,
+      boxHeight: 34,
+      fitToBox: true,
+      minFontSize: 18,
+    });
+  });
+  tmplRect(1504, 972, 360, 76, { fill: 'rgba(245,181,0,0.08)', stroke: amber, strokeWidth: 2, rx: 8, ...locked });
+  add(fCircle(1542, 1010, 18, { fill: amber, ...locked }));
+  addStaticText('!', 1542, 1010, {
+    fontFamily: displayFont,
+    fontSize: 28,
+    fontWeight: 'bold',
+    fill: ink,
+    boxWidth: 20,
+    boxHeight: 30,
+    fitToBox: true,
+  });
+  addText(footerNote, 1580, 990, {
+    originX: 'left',
+    originY: 'top',
+    fontFamily: displayFont,
+    fontSize: 19,
+    fontWeight: 'bold',
+    lineHeight: 0.95,
+    fill: bone,
+    boxWidth: 250,
+    boxHeight: 42,
+    fitToBox: true,
+    minFontSize: 12,
+  });
+}
+
 const EXTRA_TEMPLATE_RENDERERS = {
   annualreview: () => renderMetricsBoard({
     bg: '#14213a',
@@ -22368,29 +24798,7 @@ const EXTRA_TEMPLATE_RENDERERS = {
     photoId: TEMPLATE_BG_PHOTOS.qualitycheckpoint.photoId,
     photoOverlay: TEMPLATE_BG_PHOTOS.qualitycheckpoint.overlay,
   }),
-  warehousetrafficflow: () => renderDirectoryBoard({
-    bg: '#f8fafc',
-    accent: '#f59e0b',
-    title: 'WAREHOUSE FLOW',
-    subtitle: 'Forklift, pedestrian, and loading-zone routing',
-    mapLabel: 'TRAFFIC',
-    mapTitle: 'ONE-WAY AISLES',
-    listTitle: 'ROUTE GUIDE',
-    listItems: [
-      'Forklifts use yellow lanes',
-      'Pedestrians use blue walkways',
-      'Keep dock doors clear',
-      'Stop at blind corners',
-      'Report blocked aisles',
-    ],
-    footer: 'MOVE SLOWLY AND STAY ALERT',
-    leftFill: '#78350f',
-    rightFill: '#ffffff',
-    titleFill: '#10213a',
-    textFill: '#475569',
-    photoId: TEMPLATE_BG_PHOTOS.warehousetrafficflow.photoId,
-    photoOverlay: TEMPLATE_BG_PHOTOS.warehousetrafficflow.overlay,
-  }),
+  warehousetrafficflow: () => renderWarehouseTrafficFlowBoard(),
   campusmap: () => renderDirectoryBoard({
     bg: '#f7fbff',
     accent: '#2563eb',

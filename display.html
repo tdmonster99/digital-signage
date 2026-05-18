@@ -607,6 +607,27 @@
   }
 
   let pendingAnimations = [];   // populated by loadDesignedSlide, consumed by crossfadeTo
+  let designedGiphyFrame = null;
+
+  function startDesignedGiphyLoopIfNeeded() {
+    if (designedGiphyFrame) return;
+    if (!displayFabric.getObjects().some(obj => obj.isGiphyAsset)) return;
+    const tick = () => {
+      if (stageDesigned.style.opacity === "0" || !displayFabric.getObjects().some(obj => obj.isGiphyAsset)) {
+        designedGiphyFrame = null;
+        return;
+      }
+      displayFabric.requestRenderAll();
+      designedGiphyFrame = requestAnimationFrame(tick);
+    };
+    designedGiphyFrame = requestAnimationFrame(tick);
+  }
+
+  function stopDesignedGiphyLoop() {
+    if (!designedGiphyFrame) return;
+    cancelAnimationFrame(designedGiphyFrame);
+    designedGiphyFrame = null;
+  }
 
   // ── Ticker ────────────────────────────────────────────────────────────────
   const tickerWrap  = document.getElementById('tickerWrap');
@@ -2375,6 +2396,7 @@
   }
 
   function _hideAllStages() {
+    stopDesignedGiphyLoop();
     active.style.opacity         = "0";
     stageDesigned.style.opacity  = "0";
     stageVideo.style.opacity     = "0"; videoEl.pause(); videoEl.src = "";
@@ -2410,6 +2432,7 @@
       }
       _hideAllStages();
       revealStage(stageDesigned, tx);
+      startDesignedGiphyLoopIfNeeded();
       // Fire entrance animations after the selected transition completes.
       if (pendingAnimations.length) {
         const batch = pendingAnimations.slice();

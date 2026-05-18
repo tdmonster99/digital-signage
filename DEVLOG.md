@@ -4,6 +4,57 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-18 — Codex — Polish Slide Designer Editing Controls
+
+Improved the Fabric.js slide designer editing surface.
+
+- **Zoom**: Added topbar zoom controls with zoom in, zoom out, fit-to-canvas, keyboard shortcuts, and synchronized rulers/grid overlays at each zoom level.
+- **Toolbar**: Grouped rectangle, circle, and line under a Shapes popover, and moved Stock Photos into the Add Image menu with a distinct stock-photo icon.
+- **Canvas editing**: Added instant topbar hover labels, stronger center alignment guide styling, hover outlines for editable objects, and select-all filtering so locked/template-static objects are skipped.
+- **Selection toolbar**: Added a floating contextual toolbar with duplicate, lock, group, ungroup, alignment, image crop, image replace, and delete actions.
+- **Precision controls**: Added X/Y/W/H/rotation fields plus align and distribute controls in the Properties panel for selected objects.
+- **Image editing**: Added replace-from-upload, replace-from-URL, crop-fill, fit-contain, rounded mask, circle mask, and clear-mask actions for image objects.
+- **Layers**: Added cleaner layer names, group labels, multi-select with shift/meta-click, rename, bulk hide, bulk lock, bulk delete, and group/ungroup actions.
+- **Snapping**: Added center-based equal-spacing snap candidates so objects can line up into evenly spaced rows/columns more like Canva.
+- **Overlay stability**: Fixed hover outlines, padlock overlays, transform math, and the floating selection toolbar to use the correct zoom-aware coordinate space; the toolbar now hides during drags and canvas scroll is locked while moving objects.
+- **Upload fallback**: Switched designer image uploads to a local data URL first, then CloudFront after a successful upload, so failed cloud uploads no longer leave dead blob URLs on the canvas.
+- **Grid snapping**: Added 40px grid snap candidates even when the grid overlay is hidden; the grid button now controls visibility while the snap button controls snapping behavior.
+- **Panel polish**: Changed the top-left label to two-line Zigns Designer, refreshed the Shapes icon, and added a draggable right-panel resize handle with persisted width.
+- **Upload reliability**: Added a same-origin `/api/upload-file` fallback so uploads retry server-side when direct browser-to-S3 PUTs are blocked by CORS/network policy.
+- **Snap refinement**: Made hover outlines solid, changed grid snapping to soft-near-grid snapping, and removed grid points from visible guide suggestions so dragging produces fewer guide lines.
+- **Resize affordance**: Added a visible grip on the right-panel resize handle so the adjustable panel is discoverable.
+- **Follow-up polish**: Exposed duplicate/copy/paste/delete helpers for toolbar/context-menu actions, kept the right-panel grip visible in both Properties and Layers tabs, and replaced the checkerboard stage with a solid Zigns-blue background.
+- **Selection toolbar placement**: Raised the floating object toolbar above the rotate handle, with a below-object fallback for selections near the top of the viewport.
+- **GIPHY browser**: Added a left-toolbar GIPHY panel with Stickers, GIFs, Emoji, and Text tabs, direct GIPHY search/trending calls, Powered by GIPHY attribution, and one-click Fabric.js insertion with source metadata preserved in canvas JSON.
+- **GIPHY playback**: Added lightweight render loops in the designer and display player so animated GIPHY assets can advance while the editor/player canvas is visible.
+- **GIPHY config**: Added `/api/giphy-config` so the browser can read a public GIPHY web key from `GIPHY_API_KEY` or `GIPHY_WEB_API_KEY` without hard-coding credentials in `admin.html`.
+- **Local GIPHY setup**: Made `/api/giphy-config` read `.env.local` as a local-dev fallback when `vercel dev` does not expose the new key through `process.env`.
+- **GIPHY retry**: Kept missing-key responses from being cached in the browser so the panel can recover after local setup changes.
+
+---
+
+## 2026-05-18 — Codex — Ingest Claude Design Warehouse Traffic Flow
+
+Translated the Claude Design Warehouse Traffic Flow export into the existing Operations template renderer.
+
+- **Warehouse Traffic Flow**: Promoted the Claude Design site-plan concept into a darker, signage-grade Fabric.js renderer with dock doors, closed-loop forklift lane, pedestrian walkway, stop/look markers, legend, route rules, status strip, and footer.
+- **Assets**: Kept the translated template fully primitive with Fabric shapes, hatches, chevrons, and glyphs so no new bitmap assets are required.
+- **Editor behavior**: Marked route-map structure as template-static, grouped the forklift track, pedestrian walkway, and stop/look markers into labeled layer items, and preserved object stacking while dragging so edits do not pull objects forward.
+- **Comparison**: Renamed the earlier Codex-native renderer to `renderWarehouseTrafficFlowBoardCodexNative` so it remains available as a fallback/reference while the catalog uses the Claude Design version.
+- **Cache**: Bumped the local thumbnail cache key so the gallery regenerates the Operations preview.
+
+---
+
+## 2026-05-18 — Codex — Document template production workflow
+
+Captured the repeatable Zigns template production process so Codex can run the workflow without relying on limited Claude Design usage.
+
+- **Workflow**: Added a template production runbook covering Codex-native generation, optional Claude Design ingest, implementation rules, QA checks, and validation.
+- **Spec**: Added a `ZignsTemplateSpec` planning format to bridge visual concepts into editable Fabric.js renderers.
+- **Prompts**: Added reusable prompts for Codex-native template creation, Claude Design briefs, and Codex ingestion of external design exports.
+
+---
+
 ## 2026-05-18 — Codex — Add Claude Design Lockout/Tagout template
 
 Translated the Claude Design export into the Zigns template renderer workflow.
