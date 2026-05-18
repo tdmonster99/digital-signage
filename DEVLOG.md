@@ -4,6 +4,40 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-05-18 — Codex — Add Lockout/Tagout Checklist template
+
+Added a new dedicated safety template for Lockout/Tagout energy isolation checklists.
+
+- **Lockout/Tagout Checklist**: Rebuilt the concept image as an editable Fabric.js renderer with custom diagonal caution stripes, high-contrast panels, and step-by-step chevron checklists.
+- **Template catalog**: Added `lockouttagoutchecklist` metadata to `EXTRA_TEMPLATE_CATALOG` and background photo mapping.
+- **Cache**: Bumped the local thumbnail cache key to regenerate the gallery thumbnails.
+
+---
+
+## 2026-05-18 — Codex — Add industrial safety and operations templates
+
+Expanded the template catalog with three original industrial-focused templates.
+
+- **Lockout/Tagout Checklist**: A safety protocol list for energy isolation procedures.
+- **First Aid Station**: High-visibility emergency wayfinding and contact board.
+- **Shift Quality Alert**: Warning-style alert for critical production quality issues.
+- **Operations**: Bumped the template thumbnail cache key to regenerate the gallery with the new additions.
+
+---
+
+## 2026-05-17 — Codex — Expand safety and operations templates
+
+Started the higher-quality Zigns template catalog pass using competitor research as a framework, without copying competitor designs.
+
+- **Template catalog**: added an Operations category and ten original safety/operations templates covering fire alerts, severe weather, evacuation routes, visitor safety, incident-free days, production targets, shift handoff, maintenance notices, quality checkpoints, and warehouse traffic flow.
+- **Template rendering**: reused the existing editable Fabric template helpers so the new designs remain structured, searchable, thumbnail-rendered, and brand-kit compatible; tightened warning-board surfaces so photo backgrounds cannot overpower body copy.
+- **Imagegen workflow trial**: generated a Maintenance Notice concept image, translated it into an editable Fabric renderer with dedicated content surfaces, then added a locked generated concept plate for a closer trace pass while keeping the visible template copy editable.
+- **Maintenance Notice polish**: replaced cropped concept icons with individually generated transparent PNG pictograms, added a generated warning-triangle mark, grouped the service-window clock icon as one editable object, widened the first-row text columns so the editable copy no longer overlaps, and tightened icon padding to keep the bottom badges inside the footer bar.
+- **Template gallery responsiveness**: made template preview clicks interrupt low-priority thumbnail warmup, stopped gallery open from immediately queuing a full thumbnail render pass, surfaced empty preview renders as errors instead of blank modals, and switched the Maintenance Notice concept plate to a lighter JPEG asset.
+- **Thumbnail cache**: bumped the local template thumbnail cache key so the expanded catalog regenerates with the new cards.
+
+---
+
 ## 2026-05-17 — Codex — Normalize app modal form controls
 
 Aligned the older app modals with the newer RSS Ticker form styling.

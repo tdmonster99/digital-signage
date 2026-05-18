@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -6979,6 +6979,7 @@ body.role-editor .admin-action {
       <button class="gallery-cat" onclick="setGalleryCat(this,'business')">Business</button>
       <button class="gallery-cat" onclick="setGalleryCat(this,'office')">Office</button>
       <button class="gallery-cat" onclick="setGalleryCat(this,'safety')">Safety</button>
+      <button class="gallery-cat" onclick="setGalleryCat(this,'operations')">Operations</button>
       <button class="gallery-cat" onclick="setGalleryCat(this,'wayfinding')">Wayfinding</button>
       <button class="gallery-cat" onclick="setGalleryCat(this,'restaurant')">Restaurant</button>
       <button class="gallery-cat" onclick="setGalleryCat(this,'retail')">Retail</button>
@@ -9751,6 +9752,8 @@ let currentOrgId  = null;
 let currentRole   = 'admin';
 let currentUser   = null;
 let currentOrg    = null;
+let currentSubscription = null;
+let planEntitlementsReady = false;
 let orgUnsub      = null;
 let _orgListenerOrgId = null;
 let unsubscribe   = null;
@@ -9840,6 +9843,7 @@ function subscribeToOrg(orgId) {
       if (!snap.exists()) return;
       currentOrg          = { id: orgId, ...snap.data() };
       currentSubscription = currentOrg.subscription || null;
+      planEntitlementsReady = true;
 
       // Refresh role from member list in case another admin changed it
       if (currentUser?.uid) {
@@ -9879,6 +9883,8 @@ onAuthStateChanged(auth, async user => {
     _authSessionStartedAt = Date.now();
     _bootReadyAt = 0;
     _showLoadRetryCounts.clear();
+    currentSubscription = null;
+    planEntitlementsReady = false;
     const tokenResult = await user.getIdTokenResult().catch(e => {
       console.warn('Could not inspect auth token:', e.message);
       return null;
@@ -9901,6 +9907,8 @@ onAuthStateChanged(auth, async user => {
     _authSessionStartedAt = 0;
     _bootReadyAt = 0;
     _showLoadRetryCounts.clear();
+    currentSubscription = null;
+    planEntitlementsReady = false;
     cleanupRealtimeListeners();
     window.location.replace('/login');
   }
@@ -10272,6 +10280,7 @@ async function initUserAndOrg(user) {
 
   // Load subscription from org doc
   currentSubscription = currentOrg?.subscription || null;
+  planEntitlementsReady = true;
   syncPlanEntitlements();
 
   applyRole(currentRole);
@@ -10594,8 +10603,6 @@ const APP_FEATURE_REQUIREMENTS = {
 const STARTER_TEMPLATE_IDS = new Set(['blank', 'corporateannouncement', 'employeeofmonth', 'nowhiring', 'dailyspecial']);
 const PREMIUM_TEMPLATE_IDS = new Set(['kpidashboard', 'instagramwall', 'socialpromo']);
 
-let currentSubscription = null;
-
 function canonicalPlanKey(plan) {
   if (plan === 'starter') return 'standard';
   if (plan === 'pro') return 'premium';
@@ -10618,6 +10625,10 @@ function getSubscription() {
   return currentSubscription || { plan: 'free', status: 'active', ...PLAN_LIMITS.free };
 }
 
+function planEntitlementsAreLoading() {
+  return !!(currentUser || auth.currentUser) && !planEntitlementsReady;
+}
+
 function currentPlanKey() {
   return canonicalPlanKey(getSubscription().plan || 'free');
 }
@@ -10629,6 +10640,7 @@ function hasFeature(feature) {
 
 function guardFeature(feature, customTitle, customMessage) {
   if (!feature || hasFeature(feature)) return true;
+  if (planEntitlementsAreLoading()) return true;
   const copy = FEATURE_UPGRADE_COPY[feature] || {};
   window.showUpgradePrompt(
     customTitle || copy.title || 'Upgrade required',
@@ -10654,11 +10666,12 @@ function syncPlanEntitlements() {
 }
 
 function syncAppEntitlements() {
+  const planLoading = planEntitlementsAreLoading();
   document.querySelectorAll('#appsGrid .app-card').forEach(card => {
     if (card.classList.contains('app-coming-soon')) return;
     const handler = Object.keys(APP_FEATURE_REQUIREMENTS).find(fn => (card.getAttribute('onclick') || '').includes(fn));
     const feature = handler ? APP_FEATURE_REQUIREMENTS[handler] : null;
-    const locked = !!feature && !hasFeature(feature);
+    const locked = !planLoading && !!feature && !hasFeature(feature);
     card.classList.toggle('app-plan-locked', locked);
     let badge = card.querySelector('.app-card-plan-badge');
     if (locked) {
@@ -10675,11 +10688,12 @@ function syncAppEntitlements() {
 }
 
 function syncTemplateEntitlements() {
+  const planLoading = planEntitlementsAreLoading();
   document.querySelectorAll('#galleryGrid .tmpl-card').forEach(card => {
     const match = (card.getAttribute('onclick') || '').match(/selectTemplate\('([^']+)'\)/);
     const templateName = match ? match[1] : null;
     const feature = templateRequiredFeature(templateName);
-    const locked = !!feature && !hasFeature(feature);
+    const locked = !planLoading && !!feature && !hasFeature(feature);
     card.classList.toggle('tmpl-plan-locked', locked);
     let badge = card.querySelector('.tmpl-plan-badge');
     if (locked) {
@@ -10696,6 +10710,7 @@ function syncTemplateEntitlements() {
 }
 
 function syncSettingsEntitlements() {
+  const planLoading = planEntitlementsAreLoading();
   document.querySelectorAll('.settings-hub-row').forEach(row => {
     const click = row.getAttribute('onclick') || '';
     const feature = click.includes("showPage('brandkit')")
@@ -10703,7 +10718,7 @@ function syncSettingsEntitlements() {
       : click.includes("showSettingsSub('approval')")
         ? 'approvalWorkflow'
         : null;
-    row.classList.toggle('plan-row-locked', !!feature && !hasFeature(feature));
+    row.classList.toggle('plan-row-locked', !planLoading && !!feature && !hasFeature(feature));
   });
 }
 
@@ -13134,6 +13149,7 @@ window.openTemplatePreview = async function(templateName) {
     toast('Fabric.js failed to load — check your internet connection and refresh.', true);
     return;
   }
+  cancelTemplateThumbnailWarmup();
   const modal = document.getElementById('slidePreviewModal');
   const img = document.getElementById('slidePreviewImg');
   const name = document.getElementById('slidePreviewName');
@@ -13156,7 +13172,8 @@ window.openTemplatePreview = async function(templateName) {
     if (requestId !== slidePreviewRequestId) return;
     const url = await getDesignedSlidePreviewUrl(slide);
     if (requestId !== slidePreviewRequestId) return;
-    if (url) img.src = url;
+    if (!url) throw new Error('Preview image was empty. Try again in a moment.');
+    img.src = url;
     img.classList.remove('is-loading');
     if (useBtn) {
       useBtn.disabled = false;
@@ -13172,6 +13189,10 @@ window.openTemplatePreview = async function(templateName) {
       useBtn.textContent = 'Use Template';
     }
     toast('Template preview failed: ' + e.message, true);
+  } finally {
+    if (document.getElementById('templateGallery')?.style.display === 'flex') {
+      scheduleTemplateThumbnailWarmup();
+    }
   }
 };
 
@@ -13190,6 +13211,7 @@ window.useTemplatePreview = async function() {
   if (!name || templateInsertBusy) return;
   if (!guardTemplateAccess(name)) return;
   if (!auth.currentUser) { toast('Sign in first to use templates.', true); return; }
+  cancelTemplateThumbnailWarmup();
 
   const useBtn = document.getElementById('slidePreviewUseTemplate');
   templateInsertBusy = true;
@@ -15771,7 +15793,6 @@ function openTemplateGallery() {
   Object.entries(_tmplThumbnails).forEach(([n, url]) => applyTmplThumb(n, url));
   filterGallery();
   scheduleTemplateThumbnailWarmup();
-  setTimeout(generateTemplateThumbnails, 40);
 }
 
 window.closeTemplateGallery = function() {
@@ -18374,7 +18395,7 @@ window.applyBgImage = function() {
 // ── Template System ───────────────────────────────────────────────────────
 let _tmplCanvas = null;    // offscreen canvas for thumbnail rendering (null = use fabricCanvas)
 let _tmplThumbnails = {}; // cache: templateName → jpeg dataUrl
-const TMPL_THUMB_CACHE_KEY = 'zigns-template-thumbs-v2026-04-21-richer';
+const TMPL_THUMB_CACHE_KEY = 'zigns-template-thumbs-v2026-05-18-safety-batch-2';
 let _tmplThumbPersistTimer = null;
 let _tmplWarmupScheduled = false;
 
@@ -18394,6 +18415,7 @@ function resolveTemplatePhotoUrl(photoRef) {
   }
   if (typeof photoRef !== 'string') return '';
   if (photoRef.startsWith('http://') || photoRef.startsWith('https://')) return photoRef;
+  if (photoRef.startsWith('/') || photoRef.startsWith('./') || photoRef.startsWith('assets/')) return photoRef;
   if (!_tmplPhotoUrls[photoRef]) _tmplPhotoUrls[photoRef] = getUnsplashPhotoUrl(photoRef, 960, 72);
   return _tmplPhotoUrls[photoRef];
 }
@@ -19438,6 +19460,16 @@ const TEMPLATE_BG_PHOTOS = {
   fireexit: { photoId: 'hgGZAmpg7Yg', overlay: 'rgba(20,83,45,0.40)' },
   hazardwarning: { photoId: 'Vl69MKWSFrE', overlay: 'rgba(153,27,27,0.58)' },
   emergencyalert: { photoId: 'FuPgL5QqxLE', overlay: 'rgba(153,27,27,0.66)' },
+  firealert: { photoId: 'Vl69MKWSFrE', overlay: 'rgba(127,29,29,0.66)' },
+  severeweatheralert: { photoId: 'aJO87vEMNT8', overlay: 'rgba(15,23,42,0.62)' },
+  evacuationroute: { photoId: 'hgGZAmpg7Yg', overlay: 'rgba(20,83,45,0.38)' },
+  visitorsafetyrules: { photoId: 'https://images.pexels.com/photos/11139140/pexels-photo-11139140.jpeg?cs=srgb&dl=pexels-moonlightshotz-11139140.jpg&fm=jpg', overlay: 'rgba(15,23,42,0.24)' },
+  incidentfreedays: { photoId: '7jY0NKqO_eE', overlay: 'rgba(8,16,28,0.54)' },
+  productiontarget: { photoId: 'w9fjPbFOpD4', overlay: 'rgba(8,16,28,0.56)' },
+  shifthandoff: { photoId: 'https://images.pexels.com/photos/7163354/pexels-photo-7163354.jpeg?cs=srgb&dl=pexels-shkrabaanthony-7163354.jpg&fm=jpg', overlay: 'rgba(7,10,18,0.22)' },
+  maintenancenotice: { photoId: '/assets/templates/maintenance-notice-concept.jpg', overlay: '' },
+  qualitycheckpoint: { photoId: 'w9fjPbFOpD4', overlay: 'rgba(8,16,28,0.48)' },
+  warehousetrafficflow: { photoId: 'https://images.pexels.com/photos/11139140/pexels-photo-11139140.jpeg?cs=srgb&dl=pexels-moonlightshotz-11139140.jpg&fm=jpg', overlay: 'rgba(15,23,42,0.26)' },
   campusmap: { photoId: 'aJO87vEMNT8', overlay: 'rgba(7,15,31,0.22)' },
   floordirectory: { photoId: 'hgGZAmpg7Yg', overlay: 'rgba(15,27,41,0.18)' },
   visitordirections: { photoId: 'FuPgL5QqxLE', overlay: 'rgba(79,142,247,0.16)' },
@@ -19450,6 +19482,10 @@ const TEMPLATE_BG_PHOTOS = {
   flashsale: { photoId: 'NRZ8YEp7taw', overlay: 'rgba(220,38,38,0.18)' },
   productlaunch: { photoId: 'P2FTV6GMV5Y', overlay: 'rgba(16,33,58,0.12)' },
   joinqueue: { photoId: 'NojU4b79RfY', overlay: 'rgba(16,33,58,0.22)' },
+  lockouttagout: { photoId: 'https://images.pexels.com/photos/11139140/pexels-photo-11139140.jpeg?cs=srgb&dl=pexels-moonlightshotz-11139140.jpg&fm=jpg', overlay: 'rgba(220,38,38,0.22)' },
+  firstaidstation: { photoId: 'hgGZAmpg7Yg', overlay: 'rgba(22,163,74,0.34)' },
+  shiftqualityalert: { photoId: 'w9fjPbFOpD4', overlay: 'rgba(245,158,11,0.24)' },
+  lockouttagoutchecklist: { photoId: 'https://images.pexels.com/photos/11139140/pexels-photo-11139140.jpeg?cs=srgb&dl=pexels-moonlightshotz-11139140.jpg&fm=jpg', overlay: 'rgba(30,30,30,0.85)' },
 };
 
 function renderAnnouncementPoster({
@@ -19985,6 +20021,12 @@ function renderWarningBoard({
   loadGoogleFont('Montserrat');
   loadGoogleFont('Open Sans');
   if (photoId) tmplBgPhoto(photoId, photoOverlay);
+  const lightCopy = /#fff|rgba?\(\s*255\s*,\s*255\s*,\s*255/i.test(`${titleFill} ${textFill}`);
+  const titleSurface = lightCopy ? 'rgba(15,23,42,0.88)' : 'rgba(255,255,255,0.94)';
+  const bodySurface = lightCopy ? 'rgba(15,23,42,0.84)' : 'rgba(255,255,255,0.92)';
+  const surfaceStroke = lightCopy ? 'rgba(255,255,255,0.16)' : 'rgba(15,23,42,0.12)';
+  const rowFillA = lightCopy ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.96)';
+  const rowFillB = lightCopy ? 'rgba(255,255,255,0.07)' : 'rgba(248,250,252,0.96)';
   tmplRect(0, 0, W, 22, { fill: danger, rx: 0 });
   tmplRect(0, 22, W, 14, { fill: accent, rx: 0 });
   tmplText('!', W * 0.12, H * 0.22, {
@@ -19995,7 +20037,12 @@ function renderWarningBoard({
     fontFamily: 'Montserrat',
     shadow: new fabric.Shadow({ color: 'rgba(0,0,0,0.15)', blur: 18, offsetX: 0, offsetY: 4 }),
   });
-  tmplRect(W * 0.22, H * 0.16, W * 0.66, H * 0.18, { fill: 'rgba(255,255,255,0.72)', rx: 20, stroke: 'rgba(220,38,38,0.2)', strokeWidth: 2 });
+  tmplRect(W * 0.22, H * 0.15, W * 0.66, H * 0.21, {
+    fill: titleSurface,
+    rx: 22,
+    stroke: surfaceStroke,
+    strokeWidth: 2,
+  });
   tmplText(title, W * 0.55, H * 0.24, {
     fontSize: 102,
     fontWeight: 'bold',
@@ -20009,7 +20056,7 @@ function renderWarningBoard({
     maxFontSize: 102,
   });
   if (subtitle) {
-    tmplText(subtitle, W * 0.55, H * 0.33, {
+    tmplText(subtitle, W * 0.55, H * 0.325, {
       fontSize: 38,
       fill: textFill,
       textAlign: 'center',
@@ -20021,28 +20068,43 @@ function renderWarningBoard({
       maxFontSize: 38,
     });
   }
+  tmplRect(W * 0.23, H * 0.42, W * 0.66, H * 0.40, {
+    fill: bodySurface,
+    rx: 24,
+    stroke: surfaceStroke,
+    strokeWidth: 2,
+  });
   steps.slice(0, 3).forEach((step, i) => {
-    const y = H * (0.49 + i * 0.13);
-    tmplRect(W * 0.26, y - H * 0.038, W * 0.60, H * 0.08, {
-      fill: i % 2 === 0 ? 'rgba(220,38,38,0.10)' : 'rgba(217,119,6,0.08)',
+    const y = H * (0.50 + i * 0.115);
+    tmplRect(W * 0.27, y - H * 0.040, W * 0.58, H * 0.08, {
+      fill: i % 2 === 0 ? rowFillA : rowFillB,
       rx: 14,
+      stroke: surfaceStroke,
+      strokeWidth: 1,
     });
-    tmplText(step, W * 0.56, y, {
+    tmplRect(W * 0.30, y - H * 0.022, 12, H * 0.044, { fill: accent, rx: 6 });
+    tmplText(step, W * 0.58, y, {
       fontSize: 32,
       fill: textFill,
       textAlign: 'center',
       fontFamily: 'Open Sans',
       fontWeight: '600',
       fitToBox: true,
-      boxWidth: W * 0.52,
+      boxWidth: W * 0.48,
       boxHeight: H * 0.06,
       minFontSize: 22,
       maxFontSize: 32,
     });
   });
   if (footer) {
-    tmplRect(W * 0.28, H * 0.89, W * 0.56, 4, { fill: danger, rx: 2 });
-    tmplText(footer, W * 0.56, H * 0.94, {
+    tmplRect(W * 0.30, H * 0.865, W * 0.52, H * 0.09, {
+      fill: bodySurface,
+      rx: 20,
+      stroke: surfaceStroke,
+      strokeWidth: 2,
+    });
+    tmplRect(W * 0.34, H * 0.88, W * 0.44, 4, { fill: danger, rx: 2 });
+    tmplText(footer, W * 0.56, H * 0.925, {
       fontSize: 28,
       fill: textFill,
       textAlign: 'center',
@@ -20054,6 +20116,313 @@ function renderWarningBoard({
       maxFontSize: 28,
     });
   }
+}
+
+function renderMaintenanceNoticeBoard({
+  bg = '#f8fafc',
+  accent = '#f97316',
+  danger = '#c2410c',
+  title = 'MAINTENANCE NOTICE',
+  serviceWindow = '2 PM - 4 PM',
+  steps = [],
+  footer = 'YOUR SAFETY IS OUR PRIORITY',
+  contact = 'CONTACT FACILITIES',
+  phone = '555-010-0100',
+  photoId = '',
+  photoOverlay = '',
+} = {}) {
+  const W = CANVAS_W, H = CANVAS_H;
+  const cv = _tmplCanvas || fabricCanvas;
+  cv.backgroundColor = bg;
+  const titleFont = 'Arial Black';
+  const headingFont = 'Impact';
+  const serviceFont = 'Arial Black';
+  const bodyFont = 'Arial';
+  const navy = '#0b1a2a';
+  const orange = accent;
+  const orangeDark = '#df7a00';
+  const whitePanel = '#ffffff';
+  const stroke = 'rgba(15,23,42,0.18)';
+  const iconBase = '/assets/templates/maintenance-icons/generated';
+  if (photoId) tmplBgPhoto(photoId, photoOverlay);
+
+  const addLine = (x1, y1, x2, y2, opts = {}) => {
+    const obj = new fabric.Line([x1, y1, x2, y2], {
+      stroke: opts.stroke || '#ffffff',
+      strokeWidth: opts.strokeWidth || 4,
+      selectable: true,
+      ...opts,
+    });
+    cv.add(obj);
+    return obj;
+  };
+  const addCircle = (left, top, radius, opts = {}) => {
+    const obj = new fabric.Circle({
+      left,
+      top,
+      radius,
+      originX: 'center',
+      originY: 'center',
+      selectable: true,
+      ...opts,
+    });
+    cv.add(obj);
+    return obj;
+  };
+  const addTriangle = (left, top, width, height, opts = {}) => {
+    const obj = new fabric.Triangle({
+      left,
+      top,
+      width,
+      height,
+      originX: 'center',
+      originY: 'center',
+      selectable: true,
+      ...opts,
+    });
+    cv.add(obj);
+    return obj;
+  };
+  const addClockIcon = (centerX, centerY, radius, opts = {}) => {
+    const strokeColor = opts.stroke || orangeDark;
+    const strokeWidth = opts.strokeWidth || 6;
+    const circle = new fabric.Circle({
+      left: 0,
+      top: 0,
+      radius,
+      originX: 'center',
+      originY: 'center',
+      fill: 'rgba(255,255,255,0)',
+      stroke: strokeColor,
+      strokeWidth,
+      selectable: false,
+      evented: false,
+    });
+    const hourHand = new fabric.Line([0, 0, 0, -radius * 0.58], {
+      stroke: strokeColor,
+      strokeWidth,
+      strokeLineCap: 'round',
+      selectable: false,
+      evented: false,
+    });
+    const minuteHand = new fabric.Line([0, 0, radius * 0.62, radius * 0.50], {
+      stroke: strokeColor,
+      strokeWidth,
+      strokeLineCap: 'round',
+      selectable: false,
+      evented: false,
+    });
+    const group = new fabric.Group([circle, hourHand, minuteHand], {
+      left: centerX,
+      top: centerY,
+      originX: 'center',
+      originY: 'center',
+      selectable: true,
+      evented: true,
+      subTargetCheck: false,
+      ...opts,
+    });
+    cv.add(group);
+    return group;
+  };
+  const addImageAsset = (src, left, top, width, height, opts = {}) => {
+    const url = typeof resolveTemplatePhotoUrl === 'function' ? resolveTemplatePhotoUrl(src) : src;
+    if (!url) return null;
+    const target = cv;
+    if (_tmplCanvas) _tmplPhotoPending++;
+    fabric.Image.fromURL(url, (img) => {
+      if (_tmplCanvas) _tmplPhotoPending--;
+      if (!img) return;
+      img.set({
+        left,
+        top,
+        originX: 'left',
+        originY: 'top',
+        scaleX: width / img.width,
+        scaleY: height / img.height,
+        selectable: true,
+        ...opts,
+      });
+      target.add(img);
+      target.renderAll();
+    }, { crossOrigin: 'anonymous' });
+    return null;
+  };
+
+  const panelX = W * 0.111;
+  const panelW = W * 0.778;
+  const topY = H * 0.078;
+  const topH = H * 0.392;
+  tmplRect(panelX, topY, panelW, topH, {
+    fill: whitePanel,
+    rx: 32,
+    stroke,
+    strokeWidth: 2,
+    shadow: new fabric.Shadow({ color: 'rgba(0,0,0,0.28)', blur: 26, offsetX: 0, offsetY: 10 }),
+  });
+
+  addLine(W * 0.36, H * 0.142, W * 0.46, H * 0.142, { stroke: orangeDark, strokeWidth: 3 });
+  addLine(W * 0.54, H * 0.142, W * 0.64, H * 0.142, { stroke: orangeDark, strokeWidth: 3 });
+  const warningW = W * 0.076;
+  const warningH = H * 0.102;
+  addImageAsset(`${iconBase}/warning-triangle.png`, W * 0.50 - warningW / 2, H * 0.083, warningW, warningH);
+
+  tmplText(title, W * 0.50, H * 0.255, {
+    fontSize: 122,
+    fill: navy,
+    fontFamily: titleFont,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    charSpacing: 4,
+    fitToBox: true,
+    boxWidth: W * 0.74,
+    boxHeight: H * 0.17,
+    minFontSize: 72,
+    maxFontSize: 122,
+  });
+  addLine(panelX + W * 0.03, H * 0.355, panelX + panelW - W * 0.03, H * 0.355, { stroke: orangeDark, strokeWidth: 3 });
+
+  const serviceY = H * 0.407;
+  const clockX = panelX + W * 0.055;
+  const clockR = W * 0.0215;
+  addClockIcon(clockX, serviceY, clockR, { stroke: orangeDark, strokeWidth: 6 });
+  tmplText('SCHEDULED SERVICE WINDOW', panelX + W * 0.09, serviceY, {
+    fontSize: 36,
+    fill: navy,
+    fontFamily: serviceFont,
+    fontWeight: 'bold',
+    originX: 'left',
+    textAlign: 'left',
+    fitToBox: true,
+    boxWidth: W * 0.40,
+    boxHeight: H * 0.055,
+    minFontSize: 26,
+    maxFontSize: 36,
+  });
+  addLine(W * 0.555, serviceY - H * 0.03, W * 0.555, serviceY + H * 0.03, { stroke: 'rgba(15,23,42,0.35)', strokeWidth: 3 });
+  tmplText(serviceWindow, W * 0.705, serviceY, {
+    fontSize: 64,
+    fill: orangeDark,
+    fontFamily: headingFont,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    fitToBox: true,
+    boxWidth: W * 0.28,
+    boxHeight: H * 0.075,
+    minFontSize: 36,
+    maxFontSize: 64,
+  });
+
+  const defaultRows = [
+    ['WORK IN PROGRESS', 'AUTHORIZED PERSONNEL ONLY', 'cone'],
+    ['KEEP CLEAR', 'PLEASE AVOID THIS AREA', 'walk'],
+    ['THANK YOU', footer, 'clipboard'],
+  ];
+  const rowData = defaultRows.map((row, i) => {
+    const value = String(steps[i] || '');
+    if (!value) return row;
+    const parts = value.split('|').map(part => part.trim()).filter(Boolean);
+    return [parts[0] || row[0], parts[1] || row[1], row[2]];
+  });
+  const rowX = panelX;
+  const rowW = panelW;
+  const rowH = H * 0.103;
+  const iconW = W * 0.11;
+  const firstRowY = H * 0.493;
+  const rowGap = H * 0.109;
+  const rowPrimaryX = rowX + iconW + W * 0.02;
+  const rowDividerX = rowX + W * 0.41;
+  const rowSecondaryX = rowDividerX + W * 0.032;
+  const rowPrimaryW = rowDividerX - rowPrimaryX - W * 0.028;
+  const rowSecondaryW = rowX + rowW - rowSecondaryX - W * 0.035;
+  const rowIconInsetX = W * 0.004;
+  const rowIconInsetY = H * 0.004;
+
+  rowData.forEach(([primary, secondary, icon], i) => {
+    const y = firstRowY + i * rowGap;
+    const cy = y + rowH / 2;
+    tmplRect(rowX, y, rowW, rowH, {
+      fill: whitePanel,
+      rx: 15,
+      stroke,
+      strokeWidth: 2,
+      shadow: new fabric.Shadow({ color: 'rgba(0,0,0,0.20)', blur: 12, offsetX: 0, offsetY: 5 }),
+    });
+    addImageAsset(
+      `${iconBase}/${icon}.png`,
+      rowX + rowIconInsetX,
+      y + rowIconInsetY,
+      iconW - rowIconInsetX * 2,
+      rowH - rowIconInsetY * 2
+    );
+    tmplText(primary, rowPrimaryX, cy, {
+      fontSize: 54,
+      fill: navy,
+      fontFamily: headingFont,
+      fontWeight: 'bold',
+      originX: 'left',
+      textAlign: 'left',
+      fitToBox: true,
+      boxWidth: rowPrimaryW,
+      boxHeight: H * 0.07,
+      minFontSize: 34,
+      maxFontSize: 54,
+    });
+    addLine(rowDividerX, cy - H * 0.03, rowDividerX, cy + H * 0.03, { stroke: 'rgba(15,23,42,0.40)', strokeWidth: 3 });
+    tmplText(secondary, rowSecondaryX, cy, {
+      fontSize: 31,
+      fill: navy,
+      fontFamily: bodyFont,
+      fontWeight: 'bold',
+      originX: 'left',
+      textAlign: 'left',
+      fitToBox: true,
+      boxWidth: rowSecondaryW,
+      boxHeight: H * 0.055,
+      minFontSize: 20,
+      maxFontSize: 31,
+    });
+  });
+
+  const footerY = H * 0.835;
+  tmplRect(0, footerY, W, H - footerY, { fill: '#0d1b2a', rx: 0 });
+  const footerItems = [
+    { x: W * 0.18, label: 'QUESTIONS?', value: contact, icon: 'headset' },
+    { x: W * 0.48, label: 'FACILITIES', value: phone, icon: 'phone' },
+    { x: W * 0.76, label: 'PLANNED WORK', value: 'TODAY', icon: 'calendar' },
+  ];
+  [W * 0.36, W * 0.64].forEach(x => addLine(x, footerY + H * 0.035, x, H - H * 0.035, { stroke: 'rgba(255,255,255,0.72)', strokeWidth: 2 }));
+  footerItems.forEach((item) => {
+    const iconX = item.x - W * 0.055;
+    const iconY = footerY + H * 0.075;
+    const footerIcon = item.icon === 'headset' ? 'questions' : item.icon;
+    const footerIconSize = W * 0.062;
+    addImageAsset(`${iconBase}/${footerIcon}.png`, iconX - footerIconSize / 2, iconY - footerIconSize / 2, footerIconSize, footerIconSize);
+    tmplText(item.label, item.x, footerY + H * 0.073, {
+      fontSize: 30,
+      fill: '#ffffff',
+      fontFamily: headingFont,
+      fontWeight: 'bold',
+      originX: 'left',
+      fitToBox: true,
+      boxWidth: W * 0.16,
+      boxHeight: H * 0.035,
+      minFontSize: 20,
+      maxFontSize: 30,
+    });
+    tmplText(item.value, item.x, footerY + H * 0.112, {
+      fontSize: 28,
+      fill: item.icon === 'phone' || item.icon === 'calendar' ? orange : '#ffffff',
+      fontFamily: bodyFont,
+      fontWeight: 'bold',
+      originX: 'left',
+      fitToBox: true,
+      boxWidth: W * 0.18,
+      boxHeight: H * 0.038,
+      minFontSize: 18,
+      maxFontSize: 28,
+    });
+  });
 }
 
 function renderQRBoard({
@@ -20290,6 +20659,263 @@ function renderSplitWelcomeBoard({
       maxFontSize: 28,
     });
   }
+}
+
+function renderLockoutTagoutChecklist({
+  bg = '#1a1d21',
+  accent = '#ffcc00',
+  danger = '#dc2626',
+  title = 'LOCKOUT / TAGOUT CHECKLIST',
+  subtitle = 'FOLLOW ALL STEPS BEFORE STARTING MAINTENANCE.',
+  machineId = '[MACHINE/STATION ID]',
+  stepsTitle = 'REQUIRED SAFETY STEPS',
+  steps = [
+    'NOTIFY AFFECTED PERSONNEL',
+    'SHUT DOWN EQUIPMENT',
+    'ISOLATE ENERGY SOURCES\n(e.g., Electrical, Hydraulic, Pneumatic)',
+    'APPLY LOCKS & TAGS',
+    'RELEASE STORED ENERGY\n(e.g., Gravity, Pressure, Springs)',
+    'VERIFY ISOLATION (Try-out Test)'
+  ],
+  statusTitle = 'EQUIPMENT STATUS',
+  statusText = '[STATUS]',
+  statusDetails = '[DATE]\n[TIME]\n[WORK ORDER NO.]',
+  photoId = '',
+  photoOverlay = 'rgba(0,0,0,0.65)',
+} = {}) {
+  const W = CANVAS_W, H = CANVAS_H;
+  const cv = _tmplCanvas || fabricCanvas;
+  cv.backgroundColor = bg;
+
+  loadGoogleFont('Montserrat');
+  loadGoogleFont('Open Sans');
+  loadGoogleFont('Impact');
+
+  if (photoId) tmplBgPhoto(photoId, photoOverlay);
+
+  // Top and bottom yellow/black warning stripes
+  const stripeH = 30;
+  const drawStripes = (y) => {
+    tmplRect(0, y, W, stripeH, { fill: '#111111' });
+    for (let i = -stripeH; i < W; i += 60) {
+      const poly = new fabric.Polygon([
+        {x: i, y: y},
+        {x: i + 30, y: y},
+        {x: i + stripeH + 30, y: y + stripeH},
+        {x: i + stripeH, y: y + stripeH}
+      ], { fill: accent, selectable: false });
+      cv.add(poly);
+    }
+  };
+  drawStripes(0);
+  drawStripes(H - stripeH);
+
+  // Top Header Banner
+  const headerY = stripeH + 10;
+  tmplRect(W * 0.05, headerY, W * 0.9, 130, { fill: accent, rx: 12, stroke: '#111', strokeWidth: 4 });
+  tmplRect(W * 0.05 + 10, headerY + 10, W * 0.9 - 20, 110, { fill: 'transparent', stroke: 'rgba(0,0,0,0.1)', strokeWidth: 2, rx: 8 });
+
+  tmplText(title, W * 0.5, headerY + 35, {
+    fontSize: 76,
+    fill: '#111111',
+    fontFamily: 'Impact',
+    textAlign: 'center',
+    originX: 'center',
+    originY: 'top',
+    charSpacing: 30,
+    fitToBox: true,
+    boxWidth: W * 0.85,
+    boxHeight: 76,
+    minFontSize: 30
+  });
+
+  tmplText(subtitle, W * 0.5, headerY + 115, {
+    fontSize: 26,
+    fill: '#111111',
+    fontFamily: 'Montserrat',
+    fontWeight: 'bold',
+    textAlign: 'center',
+    originX: 'center',
+    originY: 'bottom',
+    charSpacing: 20,
+    fitToBox: true,
+    boxWidth: W * 0.85,
+    boxHeight: 30,
+    minFontSize: 16
+  });
+
+  // Machine ID
+  const midY = headerY + 130 + 15;
+  tmplRect(W * 0.3, midY, W * 0.4, 50, { fill: '#111111', rx: 12, stroke: '#555', strokeWidth: 2 });
+  tmplText(machineId, W * 0.5, midY + 25, {
+    fontSize: 28,
+    fill: '#ffffff',
+    fontFamily: 'Montserrat',
+    fontWeight: 'bold',
+    textAlign: 'center',
+    originX: 'center',
+    originY: 'center',
+    charSpacing: 40,
+    fitToBox: true,
+    boxWidth: W * 0.36,
+    boxHeight: 30,
+    minFontSize: 16
+  });
+
+  // Main Panels
+  const leftX = W * 0.05;
+  const leftY = midY + 50 + 20;
+  const leftW = W * 0.53;
+  const panelH = H - leftY - stripeH - 20;
+
+  // Left Panel
+  tmplRect(leftX, leftY, leftW, panelH, { fill: '#22252a', rx: 12, stroke: '#444', strokeWidth: 2 });
+
+  tmplText(stepsTitle, leftX + leftW/2, leftY + 30, {
+    fontSize: 34,
+    fill: '#ffffff',
+    fontFamily: 'Montserrat',
+    fontWeight: 'bold',
+    textAlign: 'center',
+    originX: 'center',
+    originY: 'top',
+    charSpacing: 30
+  });
+
+  tmplRect(leftX + 20, leftY + 75, leftW - 40, 2, { fill: '#444' });
+
+  // Steps
+  const stepH = (panelH - 90) / 6;
+  const stepStartY = leftY + 85;
+  steps.forEach((step, i) => {
+    const y = stepStartY + i * stepH;
+    const boxH = stepH - 12;
+    tmplRect(leftX + 20, y, leftW - 40, boxH, { fill: '#16181b', rx: 8, stroke: '#333', strokeWidth: 2 });
+
+    // Number chevron
+    const chevronW = 70;
+    const poly = new fabric.Polygon([
+      {x: 0, y: 0},
+      {x: chevronW - 20, y: 0},
+      {x: chevronW, y: boxH/2},
+      {x: chevronW - 20, y: boxH},
+      {x: 0, y: boxH}
+    ], {
+      fill: accent,
+      left: leftX + 20,
+      top: y,
+      originX: 'left',
+      originY: 'top'
+    });
+    cv.add(poly);
+
+    tmplText((i+1)+'.', leftX + 20 + chevronW/2 - 5, y + boxH/2, {
+      fontSize: 42,
+      fill: '#111111',
+      fontFamily: 'Impact',
+      originX: 'center',
+      originY: 'center'
+    });
+
+    tmplText(step, leftX + 20 + chevronW + 20, y + boxH/2, {
+      fontSize: 26,
+      fill: '#ffffff',
+      fontFamily: 'Montserrat',
+      fontWeight: 'bold',
+      originX: 'left',
+      originY: 'center',
+      fitToBox: true,
+      boxWidth: leftW - chevronW - 100,
+      boxHeight: boxH - 10,
+      minFontSize: 16
+    });
+
+    // Checkbox outline
+    tmplRect(leftX + leftW - 70, y + boxH/2 - 20, 40, 40, { fill: 'transparent', stroke: '#888', strokeWidth: 3, rx: 4 });
+  });
+
+  // Right Panels
+  const rightX = leftX + leftW + 20;
+  const rightW = W - rightX - W * 0.05;
+
+  const statusH = panelH * 0.65;
+  tmplRect(rightX, leftY, rightW, statusH, { fill: '#22252a', rx: 12, stroke: '#444', strokeWidth: 2 });
+
+  tmplText(statusTitle, rightX + rightW/2, leftY + 30, {
+    fontSize: 34,
+    fill: '#ffffff',
+    fontFamily: 'Montserrat',
+    fontWeight: 'bold',
+    textAlign: 'center',
+    originX: 'center',
+    originY: 'top',
+    charSpacing: 30
+  });
+
+  tmplRect(rightX + 20, leftY + 75, rightW - 40, 2, { fill: '#444' });
+
+  // Status Box
+  tmplText(statusText, rightX + rightW/2, leftY + 160, {
+    fontSize: 72,
+    fill: '#ffffff',
+    fontFamily: 'Impact',
+    textAlign: 'center',
+    originX: 'center',
+    originY: 'center',
+    charSpacing: 10,
+    fitToBox: true,
+    boxWidth: rightW - 40,
+    boxHeight: 90,
+    minFontSize: 30
+  });
+
+  tmplText(statusDetails, rightX + rightW/2, leftY + 250, {
+    fontSize: 28,
+    fill: '#aaaaaa',
+    fontFamily: 'Montserrat',
+    fontWeight: 'bold',
+    textAlign: 'center',
+    originX: 'center',
+    originY: 'top',
+    lineHeight: 1.6,
+    fitToBox: true,
+    boxWidth: rightW - 40,
+    boxHeight: 120,
+    minFontSize: 16
+  });
+
+  // Icons Panel
+  const iconsY = leftY + statusH + 20;
+  const iconsH = panelH - statusH - 20;
+  tmplRect(rightX, iconsY, rightW, iconsH, { fill: '#16181b', rx: 12, stroke: danger, strokeWidth: 3 });
+
+  const iconLabels = [
+    { label: 'LOCK\nIT OUT', color: danger, icon: '🔒' },
+    { label: 'TAG\nIT OUT', color: accent, icon: '🏷️' },
+    { label: 'VERIFY\nSAFE', color: '#22c55e', icon: '✋' },
+    { label: 'SUPERVISOR\nSIGN-OFF', color: '#ffffff', icon: '👷' }
+  ];
+
+  const iconSpace = rightW / 4;
+  iconLabels.forEach((item, i) => {
+    const cx = rightX + i * iconSpace + iconSpace/2;
+    tmplText(item.icon, cx, iconsY + iconsH*0.4, {
+      fontSize: 56,
+      textAlign: 'center',
+      originX: 'center',
+      originY: 'center'
+    });
+    tmplText(item.label, cx, iconsY + iconsH*0.75, {
+      fontSize: 16,
+      fill: item.color,
+      fontFamily: 'Montserrat',
+      fontWeight: 'bold',
+      textAlign: 'center',
+      originX: 'center',
+      originY: 'center',
+      lineHeight: 1.2
+    });
+  });
 }
 
 const EXTRA_TEMPLATE_RENDERERS = {
@@ -20548,6 +21174,199 @@ const EXTRA_TEMPLATE_RENDERERS = {
     photoId: TEMPLATE_BG_PHOTOS.emergencyalert.photoId,
     photoOverlay: TEMPLATE_BG_PHOTOS.emergencyalert.overlay,
   }),
+  firealert: () => renderWarningBoard({
+    bg: '#2a0f12',
+    accent: '#f97316',
+    danger: '#dc2626',
+    title: 'FIRE ALERT',
+    subtitle: 'Evacuate the area and follow posted exit routes',
+    steps: [
+      'Leave belongings behind',
+      'Use stairs, not elevators',
+      'Report to the assembly point',
+    ],
+    footer: 'WAIT FOR THE ALL-CLEAR',
+    titleFill: '#ffffff',
+    textFill: 'rgba(255,255,255,0.84)',
+    photoId: TEMPLATE_BG_PHOTOS.firealert.photoId,
+    photoOverlay: TEMPLATE_BG_PHOTOS.firealert.overlay,
+  }),
+  severeweatheralert: () => renderWarningBoard({
+    bg: '#0f172a',
+    accent: '#38bdf8',
+    danger: '#f59e0b',
+    title: 'WEATHER ALERT',
+    subtitle: 'Move to the designated shelter area immediately',
+    steps: [
+      'Avoid windows and exterior doors',
+      'Bring radios and emergency supplies',
+      'Wait for supervisor instructions',
+    ],
+    footer: 'SHELTER UNTIL THE ALL-CLEAR',
+    titleFill: '#ffffff',
+    textFill: 'rgba(255,255,255,0.84)',
+    photoId: TEMPLATE_BG_PHOTOS.severeweatheralert.photoId,
+    photoOverlay: TEMPLATE_BG_PHOTOS.severeweatheralert.overlay,
+  }),
+  evacuationroute: () => renderDirectoryBoard({
+    bg: '#f1faf4',
+    accent: '#16a34a',
+    title: 'EVACUATION ROUTE',
+    subtitle: 'Follow the nearest marked path to the assembly point',
+    mapLabel: 'ROUTE',
+    mapTitle: 'SAFE EXIT',
+    listTitle: 'DIRECTIONS',
+    listItems: [
+      'Exit through Corridor B',
+      'Turn right at the east stairwell',
+      'Proceed to Assembly Area 2',
+      'Check in with your floor lead',
+      'Remain outside until cleared',
+    ],
+    footer: 'DO NOT RE-ENTER THE BUILDING',
+    leftFill: '#14532d',
+    rightFill: '#ffffff',
+    titleFill: '#14532d',
+    textFill: '#166534',
+    photoId: TEMPLATE_BG_PHOTOS.evacuationroute.photoId,
+    photoOverlay: TEMPLATE_BG_PHOTOS.evacuationroute.overlay,
+  }),
+  visitorsafetyrules: () => renderListBoard({
+    bg: '#f8fafc',
+    accent: '#0f766e',
+    title: 'VISITOR SAFETY',
+    kicker: 'BEFORE YOU ENTER',
+    subtitle: 'Please follow these rules while on site',
+    items: [
+      'Check in and wear your visitor badge',
+      'Stay with your host at all times',
+      'Use marked walkways only',
+      'Report unsafe conditions immediately',
+      'Follow posted PPE requirements',
+    ],
+    footer: 'THANK YOU FOR HELPING KEEP THIS SITE SAFE',
+    panelFill: 'rgba(255,255,255,0.90)',
+    titleFill: '#10213a',
+    textFill: '#334155',
+    bulletFill: '#0f766e',
+    photoId: TEMPLATE_BG_PHOTOS.visitorsafetyrules.photoId,
+    photoOverlay: TEMPLATE_BG_PHOTOS.visitorsafetyrules.overlay,
+    photoLayout: 'split',
+    photoLabel: 'VISITOR',
+  }),
+  incidentfreedays: () => renderAnnouncementPoster({
+    bg: '#101827',
+    accent: '#22c55e',
+    title: '60 DAYS SAFE',
+    subtitle: 'Without a recordable incident',
+    footer: 'THANK YOU FOR WORKING CAREFULLY',
+    badge: 'SAFETY MILESTONE',
+    titleFont: 'Anton',
+    subtitleFont: 'Open Sans',
+    titleSize: 166,
+    subtitleSize: 52,
+    footerSize: 32,
+    subtitleFill: 'rgba(255,255,255,0.84)',
+    footerFill: 'rgba(187,247,208,0.86)',
+    titleSpacing: 18,
+    photoId: TEMPLATE_BG_PHOTOS.incidentfreedays.photoId,
+    photoOverlay: TEMPLATE_BG_PHOTOS.incidentfreedays.overlay,
+  }),
+  productiontarget: () => renderMetricsBoard({
+    bg: '#111827',
+    accent: '#22c55e',
+    title: 'PRODUCTION TARGET',
+    subtitle: 'Track pace, output, and quality for the current shift',
+    metrics: [
+      { label: 'TARGET', value: '14,000', delta: 'Units planned', valueFill: '#bbf7d0', deltaFill: '#86efac' },
+      { label: 'CURRENT', value: '11,860', delta: '85% complete', valueFill: '#ffffff', deltaFill: '#86efac' },
+      { label: 'PACE', value: '+4%', delta: 'Ahead of plan', valueFill: '#bbf7d0', deltaFill: '#86efac' },
+      { label: 'QUALITY', value: '99.1%', delta: 'First-pass yield', valueFill: '#ffffff', deltaFill: '#86efac' },
+    ],
+    footer: 'LINE 4 · SHIFT B · TODAY',
+    photoId: TEMPLATE_BG_PHOTOS.productiontarget.photoId,
+    photoOverlay: TEMPLATE_BG_PHOTOS.productiontarget.overlay,
+  }),
+  shifthandoff: () => renderListBoard({
+    bg: '#f3f7fb',
+    accent: '#2563eb',
+    title: 'SHIFT HANDOFF',
+    kicker: 'NEXT TEAM BRIEF',
+    subtitle: 'Key updates before the next shift starts',
+    items: [
+      'Line 2 restarted at 2:15 PM',
+      'Packaging supplies are staged',
+      'Quality hold remains in Zone C',
+      'Maintenance ticket open for Press 4',
+      'Review priority orders first',
+    ],
+    footer: 'CONFIRM OWNERS BEFORE LEAVING THE FLOOR',
+    photoId: TEMPLATE_BG_PHOTOS.shifthandoff.photoId,
+    photoOverlay: TEMPLATE_BG_PHOTOS.shifthandoff.overlay,
+    photoLayout: 'split',
+    photoLabel: 'HANDOFF',
+  }),
+  maintenancenotice: () => renderMaintenanceNoticeBoard({
+    bg: '#f8fafc',
+    accent: '#f97316',
+    danger: '#c2410c',
+    title: 'MAINTENANCE NOTICE',
+    serviceWindow: '2 PM - 4 PM',
+    steps: [
+      'WORK IN PROGRESS|AUTHORIZED PERSONNEL ONLY',
+      'KEEP CLEAR|PLEASE AVOID THIS AREA',
+      'THANK YOU|YOUR SAFETY IS OUR PRIORITY',
+    ],
+    footer: 'YOUR SAFETY IS OUR PRIORITY',
+    contact: 'CONTACT FACILITIES',
+    phone: '555-010-0100',
+    photoId: TEMPLATE_BG_PHOTOS.maintenancenotice.photoId,
+    photoOverlay: TEMPLATE_BG_PHOTOS.maintenancenotice.overlay,
+  }),
+  qualitycheckpoint: () => renderListBoard({
+    bg: '#eef7ff',
+    accent: '#2563eb',
+    title: 'QUALITY CHECKPOINT',
+    kicker: 'INSPECTION REMINDERS',
+    subtitle: 'Verify the critical items before release',
+    items: [
+      'Confirm batch number and label match',
+      'Inspect seal, surface, and packaging',
+      'Record sample results in the log',
+      'Escalate nonconformance immediately',
+      'Sign off before moving to staging',
+    ],
+    footer: 'QUALITY FIRST · EVERY ORDER',
+    panelFill: 'rgba(255,255,255,0.92)',
+    titleFill: '#10213a',
+    textFill: '#334155',
+    bulletFill: '#2563eb',
+    photoId: TEMPLATE_BG_PHOTOS.qualitycheckpoint.photoId,
+    photoOverlay: TEMPLATE_BG_PHOTOS.qualitycheckpoint.overlay,
+  }),
+  warehousetrafficflow: () => renderDirectoryBoard({
+    bg: '#f8fafc',
+    accent: '#f59e0b',
+    title: 'WAREHOUSE FLOW',
+    subtitle: 'Forklift, pedestrian, and loading-zone routing',
+    mapLabel: 'TRAFFIC',
+    mapTitle: 'ONE-WAY AISLES',
+    listTitle: 'ROUTE GUIDE',
+    listItems: [
+      'Forklifts use yellow lanes',
+      'Pedestrians use blue walkways',
+      'Keep dock doors clear',
+      'Stop at blind corners',
+      'Report blocked aisles',
+    ],
+    footer: 'MOVE SLOWLY AND STAY ALERT',
+    leftFill: '#78350f',
+    rightFill: '#ffffff',
+    titleFill: '#10213a',
+    textFill: '#475569',
+    photoId: TEMPLATE_BG_PHOTOS.warehousetrafficflow.photoId,
+    photoOverlay: TEMPLATE_BG_PHOTOS.warehousetrafficflow.overlay,
+  }),
   campusmap: () => renderDirectoryBoard({
     bg: '#f7fbff',
     accent: '#2563eb',
@@ -20761,6 +21580,52 @@ const EXTRA_TEMPLATE_RENDERERS = {
     leftTitle: 'SCAN',
     photoId: TEMPLATE_BG_PHOTOS.joinqueue.photoId,
     photoOverlay: TEMPLATE_BG_PHOTOS.joinqueue.overlay,
+  }),
+  lockouttagout: () => renderListBoard({
+    title: 'LOCKOUT / TAGOUT CHECKLIST',
+    kicker: 'SAFETY PROTOCOL',
+    subtitle: 'Ensure all steps are completed before servicing equipment.',
+    items: [
+      'Identify energy sources',
+      'Notify affected employees',
+      'Isolate energy sources',
+      'Apply lockout devices',
+      'Verify isolation',
+    ],
+    footer: 'SAFETY FIRST - ZERO HARM',
+    accent: '#dc2626',
+    bg: '#fff2f2',
+    photoId: TEMPLATE_BG_PHOTOS.lockouttagout.photoId,
+    photoOverlay: TEMPLATE_BG_PHOTOS.lockouttagout.overlay,
+  }),
+  firstaidstation: () => renderAnnouncementPoster({
+    badge: 'EMERGENCY',
+    title: 'FIRST AID STATION',
+    subtitle: 'Location: Main Warehouse, Pillar 14B',
+    footer: 'In case of emergency, dial 911 or contact Floor Supervisor.',
+    accent: '#16a34a',
+    bg: '#f1faf4',
+    photoId: TEMPLATE_BG_PHOTOS.firstaidstation.photoId,
+    photoOverlay: TEMPLATE_BG_PHOTOS.firstaidstation.overlay,
+  }),
+  lockouttagoutchecklist: () => renderLockoutTagoutChecklist({
+    photoId: TEMPLATE_BG_PHOTOS.lockouttagoutchecklist.photoId,
+    photoOverlay: TEMPLATE_BG_PHOTOS.lockouttagoutchecklist.overlay,
+  }),
+  shiftqualityalert: () => renderWarningBoard({
+    title: 'QUALITY ALERT',
+    subtitle: 'Critical quality issue detected on Line 4.',
+    steps: [
+      'Check dimension tolerances',
+      'Verify surface finish',
+      'Notify Quality Manager',
+    ],
+    footer: 'DO NOT SHIP SUSPECT PARTS',
+    accent: '#f59e0b',
+    danger: '#dc2626',
+    bg: '#fff7ed',
+    photoId: TEMPLATE_BG_PHOTOS.shiftqualityalert.photoId,
+    photoOverlay: TEMPLATE_BG_PHOTOS.shiftqualityalert.overlay,
   }),
 };
 
@@ -21363,6 +22228,16 @@ const EXTRA_TEMPLATE_CATALOG = [
   { key:'fireexit', title:'Fire Exit', desc:'Directional evacuation sign and route guidance', category:'safety', preview:'directory', accent:'#16a34a', bg:'#f1faf4', tag:'SAFETY' },
   { key:'hazardwarning', title:'Hazard Warning', desc:'Red alert panel with critical instructions', category:'safety', preview:'warning', accent:'#dc2626', bg:'#fff2f2', tag:'SAFETY' },
   { key:'emergencyalert', title:'Emergency Alert', desc:'High-visibility incident notification', category:'safety', preview:'warning', accent:'#991b1b', bg:'#2a0f12', tag:'SAFETY' },
+  { key:'firealert', title:'Fire Alert', desc:'Immediate evacuation message with exit instructions', category:'safety', preview:'warning', accent:'#dc2626', bg:'#2a0f12', tag:'SAFETY' },
+  { key:'severeweatheralert', title:'Severe Weather Alert', desc:'Shelter-in-place instructions for storm events', category:'safety', preview:'warning', accent:'#38bdf8', bg:'#0f172a', tag:'SAFETY' },
+  { key:'evacuationroute', title:'Evacuation Route', desc:'Exit route and assembly-point guidance', category:'safety', preview:'directory', accent:'#16a34a', bg:'#f1faf4', tag:'SAFETY' },
+  { key:'visitorsafetyrules', title:'Visitor Safety Rules', desc:'Entry reminders for guests and contractors', category:'safety', preview:'list', accent:'#0f766e', bg:'#f8fafc', tag:'SAFETY' },
+  { key:'incidentfreedays', title:'Incident-Free Days', desc:'Safety milestone counter for the current site', category:'safety', preview:'announcement', accent:'#22c55e', bg:'#101827', tag:'SAFETY' },
+  { key:'productiontarget', title:'Production Target', desc:'Shift target board with output and quality metrics', category:'operations', preview:'metrics', accent:'#22c55e', bg:'#111827', tag:'OPS' },
+  { key:'shifthandoff', title:'Shift Handoff', desc:'Next-team brief with priorities and blockers', category:'operations', preview:'list', accent:'#2563eb', bg:'#f3f7fb', tag:'OPS' },
+  { key:'maintenancenotice', title:'Maintenance Notice', desc:'Scheduled service notice for affected areas', category:'operations', preview:'warning', accent:'#f97316', bg:'#fff7ed', tag:'OPS' },
+  { key:'qualitycheckpoint', title:'Quality Checkpoint', desc:'Inspection checklist before release or staging', category:'operations', preview:'list', accent:'#2563eb', bg:'#eef7ff', tag:'OPS' },
+  { key:'warehousetrafficflow', title:'Warehouse Traffic Flow', desc:'Forklift and pedestrian route guidance', category:'operations', preview:'directory', accent:'#f59e0b', bg:'#f8fafc', tag:'OPS' },
   { key:'campusmap', title:'Campus Map', desc:'Site map and arrival points', category:'wayfinding', preview:'directory', accent:'#2563eb', bg:'#f7fbff', tag:'WAYFINDING' },
   { key:'floordirectory', title:'Floor Directory', desc:'Room index with floor-by-floor navigation', category:'wayfinding', preview:'directory', accent:'#0f1b29', bg:'#ffffff', tag:'WAYFINDING' },
   { key:'visitordirections', title:'Visitor Directions', desc:'Lobby arrows and destination guidance', category:'wayfinding', preview:'directory', accent:'#4f8ef7', bg:'#edf4ff', tag:'WAYFINDING' },
@@ -21375,6 +22250,10 @@ const EXTRA_TEMPLATE_CATALOG = [
   { key:'flashsale', title:'Flash Sale', desc:'Limited-time promotion with bold urgency', category:'retail', preview:'announcement', accent:'#dc2626', bg:'#fef2f2', tag:'RETAIL' },
   { key:'productlaunch', title:'Product Launch', desc:'Minimal product reveal with hero copy', category:'retail', preview:'announcement', accent:'#2563eb', bg:'#ffffff', tag:'RETAIL' },
   { key:'joinqueue', title:'Join Queue', desc:'Scan to join the line or check in', category:'events', preview:'qr', accent:'#2563eb', bg:'#f8fbff', tag:'EVENTS' },
+  { key:'lockouttagout', title:'Lockout/Tagout', desc:'Energy isolation checklist for equipment maintenance', category:'safety', preview:'list', accent:'#dc2626', bg:'#fff2f2', tag:'SAFETY' },
+  { key:'lockouttagoutchecklist', title:'Lockout/Tagout Checklist', desc:'Remind workers of required lockout steps before maintenance', category:'safety', preview:'list', accent:'#ffcc00', bg:'#22252a', tag:'SAFETY' },
+  { key:'firstaidstation', title:'First Aid Station', desc:'Emergency medical station location and instructions', category:'safety', preview:'announcement', accent:'#16a34a', bg:'#f1faf4', tag:'SAFETY' },
+  { key:'shiftqualityalert', title:'Quality Alert', desc:'High-visibility quality defect notice for production lines', category:'operations', preview:'warning', accent:'#f59e0b', bg:'#fff7ed', tag:'OPS' },
 ];
 
 const TMPL_THUMB_NAMES = [
@@ -21674,20 +22553,18 @@ async function prefetchTmplPhotoUrls() {
   return _tmplPhotoPrefetchPromise;
 }
 
-async function prepareTemplateAssets({ waitForFonts = true } = {}) {
+async function prepareTemplateAssets({ waitForFonts = true, waitForPhotos = true } = {}) {
   TMPL_FONTS.forEach(loadGoogleFont);
   const photoTask = prefetchTmplPhotoUrls();
-  if (!waitForFonts || !document.fonts?.load) {
-    await photoTask;
-    return;
-  }
-  await Promise.allSettled([
-    photoTask,
-    Promise.race([
+  const tasks = [];
+  if (waitForPhotos) tasks.push(photoTask);
+  if (waitForFonts && document.fonts?.load) {
+    tasks.push(Promise.race([
       Promise.allSettled(TMPL_FONTS.map(f => document.fonts.load(`bold 72px "${f}"`))),
       new Promise(r => setTimeout(r, 1200))
-    ])
-  ]);
+    ]));
+  }
+  if (tasks.length) await Promise.allSettled(tasks);
 }
 
 async function waitForTemplatePhotos(name, timeoutMs = 2000) {
@@ -21741,12 +22618,19 @@ if (document.readyState === 'loading') {
 }
 
 let _tmplThumbJob = null;
+let _tmplThumbJobGenerationId = null;
 let _tmplRenderQueue = Promise.resolve();
+let _tmplThumbGenerationId = 0;
 
 function queueTemplateRender(task) {
   const run = _tmplRenderQueue.catch(() => {}).then(task);
   _tmplRenderQueue = run.catch(() => {});
   return run;
+}
+
+function cancelTemplateThumbnailWarmup() {
+  _tmplThumbGenerationId += 1;
+  _tmplWarmupScheduled = false;
 }
 
 function scheduleTemplateThumbnailWarmup() {
@@ -21761,17 +22645,26 @@ function scheduleTemplateThumbnailWarmup() {
 }
 
 async function generateTemplateThumbnails() {
-  if (_tmplThumbJob) return _tmplThumbJob;
-  _tmplThumbJob = queueTemplateRender(generateTemplateThumbnailsImpl);
+  const generationId = _tmplThumbGenerationId;
+  if (_tmplThumbJob) {
+    if (_tmplThumbJobGenerationId !== generationId) {
+      return _tmplThumbJob.finally(() => generateTemplateThumbnails());
+    }
+    return _tmplThumbJob;
+  }
+  _tmplThumbJobGenerationId = generationId;
+  _tmplThumbJob = queueTemplateRender(() => generateTemplateThumbnailsImpl(generationId));
   try {
     await _tmplThumbJob;
   } finally {
     _tmplThumbJob = null;
+    _tmplThumbJobGenerationId = null;
   }
 }
 
-async function generateTemplateThumbnailsImpl() {
+async function generateTemplateThumbnailsImpl(generationId = _tmplThumbGenerationId) {
   if (typeof fabric === 'undefined') return;
+  if (generationId !== _tmplThumbGenerationId) return;
   removeOffscreenFabricArtifacts();
 
   // Restore cached thumbnails immediately on subsequent gallery opens
@@ -21780,7 +22673,8 @@ async function generateTemplateThumbnailsImpl() {
   if (!pending.length) return;
 
   // Start fonts/photo hydration without blocking first thumbnail render.
-  await prepareTemplateAssets({ waitForFonts: false });
+  await prepareTemplateAssets({ waitForFonts: false, waitForPhotos: false });
+  if (generationId !== _tmplThumbGenerationId) return;
 
   const el = createDetachedFabricCanvas();
   try {
@@ -21788,13 +22682,15 @@ async function generateTemplateThumbnailsImpl() {
 
     // Step 3: Render each template
     for (const name of pending) {
+      if (generationId !== _tmplThumbGenerationId) return;
       _tmplCanvas.clear();
       _tmplCanvas.backgroundColor = '#ffffff';
       _tmplPhotoPending = 0;
       applyTemplate(name);
 
-      // Wait for photos to finish loading (up to 2s), then a short settle
-      await waitForTemplatePhotos(name, 2000);
+      // Thumbnail warmup is low-priority; keep it responsive to preview clicks.
+      await waitForTemplatePhotos(name, 700);
+      if (generationId !== _tmplThumbGenerationId) return;
 
       _tmplCanvas.renderAll();
       try {
