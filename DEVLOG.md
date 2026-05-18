@@ -8,8 +8,8 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 Added a new dedicated safety template for Lockout/Tagout energy isolation checklists.
 
-- **Lockout/Tagout Checklist**: Rebuilt the concept image as an editable Fabric.js renderer with custom diagonal caution stripes, high-contrast panels, and step-by-step chevron checklists.
-- **Template catalog**: Added `lockouttagoutchecklist` metadata to `EXTRA_TEMPLATE_CATALOG` and background photo mapping.
+- **Lockout/Tagout Checklist**: Generated a polished concept image, saved it as a local concept plate, added a separate clean industrial background plate, and rebuilt the template as an editable Fabric.js renderer with a red safety header, checklist rows, lock/tag panel, and bottom status band.
+- **Template catalog**: Updated `lockouttagoutchecklist` metadata and background photo mapping so it appears under Safety with the stronger concept-driven preview.
 - **Cache**: Bumped the local thumbnail cache key to regenerate the gallery thumbnails.
 
 ---

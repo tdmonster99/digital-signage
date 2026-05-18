@@ -16105,8 +16105,10 @@ function installPadlockRenderer() {
 // ── Smart alignment guides & snapping ────────────────────────────────────
 const SNAP_THRESHOLD = 8;   // logical px — snap when within this distance
 const GRID_SIZE      = 40;  // logical px — grid cell size
+const GRID_SNAP_HYSTERESIS = 6; // logical px — prevents grid-boundary flicker
 let   gridVisible    = false;
 let   snapEnabled    = true; // snap-to-grid/objects toggle
+let   gridSnapDragState = null;
 
 // Return logical-space bounding box for an object
 function getLogBounds(obj) {
@@ -16168,6 +16170,88 @@ function clearGuides() {
   if (overlay) overlay.innerHTML = '';
 }
 
+function resetGridSnapDragState() {
+  gridSnapDragState = null;
+}
+
+function getCanvasPointer(evt) {
+  if (!fabricCanvas || !evt?.e) return null;
+  try {
+    return fabricCanvas.getPointer(evt.e);
+  } catch (err) {
+    return null;
+  }
+}
+
+function beginGridSnapDrag(evt) {
+  resetGridSnapDragState();
+  if (!snapEnabled || !gridVisible || !evt?.target) return;
+
+  const pointer = getCanvasPointer(evt);
+  if (!pointer) return;
+
+  const obj = evt.target;
+  const bounds = getLogBounds(obj);
+  const left = Number(obj.left) || 0;
+  const top = Number(obj.top) || 0;
+
+  gridSnapDragState = {
+    obj,
+    pointerStart: { x: pointer.x, y: pointer.y },
+    leftStart: left,
+    topStart: top,
+    offX: left - bounds.l,
+    offY: top - bounds.t,
+    snapL: Math.round(bounds.l / GRID_SIZE) * GRID_SIZE,
+    snapT: Math.round(bounds.t / GRID_SIZE) * GRID_SIZE,
+  };
+}
+
+function getGridSnapDrag(evt, obj, bounds) {
+  const pointer = getCanvasPointer(evt);
+  if (!pointer) return null;
+
+  if (!gridSnapDragState || gridSnapDragState.obj !== obj) {
+    const left = Number(obj.left) || 0;
+    const top = Number(obj.top) || 0;
+    gridSnapDragState = {
+      obj,
+      pointerStart: { x: pointer.x, y: pointer.y },
+      leftStart: left,
+      topStart: top,
+      offX: left - bounds.l,
+      offY: top - bounds.t,
+      snapL: Math.round(bounds.l / GRID_SIZE) * GRID_SIZE,
+      snapT: Math.round(bounds.t / GRID_SIZE) * GRID_SIZE,
+    };
+  }
+
+  return { state: gridSnapDragState, pointer };
+}
+
+function getStableGridSnap(state, key, rawValue) {
+  const current = Number.isFinite(state[key])
+    ? state[key]
+    : Math.round(rawValue / GRID_SIZE) * GRID_SIZE;
+  const candidate = Math.round(rawValue / GRID_SIZE) * GRID_SIZE;
+
+  if (candidate === current) {
+    state[key] = current;
+    return current;
+  }
+
+  const boundary = (current + candidate) / 2;
+  const crossedForward = candidate > current && rawValue >= boundary + GRID_SNAP_HYSTERESIS;
+  const crossedBackward = candidate < current && rawValue <= boundary - GRID_SNAP_HYSTERESIS;
+
+  if (crossedForward || crossedBackward) {
+    state[key] = candidate;
+    return candidate;
+  }
+
+  return current;
+}
+
 // Apply grid CSS background to gridOverlay sized to current zoom
 function updateGridOverlay() {
   const go   = document.getElementById('gridOverlay');
@@ -16184,6 +16268,8 @@ function updateGridOverlay() {
 window.toggleDesignerGrid = function() {
   gridVisible = !gridVisible;
   document.getElementById('btnGrid').classList.toggle('grid-active', gridVisible);
+  resetGridSnapDragState();
+  clearGuides();
   updateGridOverlay();
 };
 
@@ -16192,6 +16278,7 @@ window.toggleDesignerSnap = function() {
   const btn = document.getElementById('btnSnap');
   btn.classList.toggle('grid-active', snapEnabled);
   btn.title = snapEnabled ? 'Snap to Grid / Objects (on)' : 'Snap to Grid / Objects (off)';
+  resetGridSnapDragState();
   if (!snapEnabled) clearGuides();
 };
 
@@ -16301,10 +16388,12 @@ window.switchDesignerTab = function(tab) {
 
 // ── object:moving handler ────────────────────────────────────────────────
 function onObjectMoving(e) {
-  if (!snapEnabled) return;
+  if (!snapEnabled) {
+    resetGridSnapDragState();
+    return;
+  }
 
   const obj  = e.target;
-  const zoom = fabricCanvas.getZoom();
   const b    = getLogBounds(obj);
 
   // Offset between obj.left/top and bbox top-left (handles rotation & origin)
@@ -16315,12 +16404,24 @@ function onObjectMoving(e) {
   const hGuides = [], vGuides = [];
 
   if (gridVisible) {
-    // Grid snap: snap bounding-box top-left to nearest grid point
-    const snapL = Math.round(b.l / GRID_SIZE) * GRID_SIZE;
-    const snapT = Math.round(b.t / GRID_SIZE) * GRID_SIZE;
-    obj.left = snapL + offX;
-    obj.top  = snapT + offY;
+    const drag = getGridSnapDrag(e, obj, b);
+    if (drag) {
+      const { state, pointer } = drag;
+      const rawLeft = state.leftStart + (pointer.x - state.pointerStart.x);
+      const rawTop = state.topStart + (pointer.y - state.pointerStart.y);
+      const rawBoundsLeft = rawLeft - state.offX;
+      const rawBoundsTop = rawTop - state.offY;
+      const snapL = getStableGridSnap(state, 'snapL', rawBoundsLeft);
+      const snapT = getStableGridSnap(state, 'snapT', rawBoundsTop);
+      obj.set({ left: snapL + state.offX, top: snapT + state.offY });
+    } else {
+      const snapL = Math.round(b.l / GRID_SIZE) * GRID_SIZE;
+      const snapT = Math.round(b.t / GRID_SIZE) * GRID_SIZE;
+      obj.set({ left: snapL + offX, top: snapT + offY });
+    }
+    clearGuides();
   } else {
+    resetGridSnapDragState();
     // Smart alignment snap
     const { xs, ys } = getSnapSources(obj);
 
@@ -16767,8 +16868,14 @@ function initFabricCanvas() {
     renderLayersPanel();
 
     // Alignment guides & snapping
+    fabricCanvas.on('mouse:down',    beginGridSnapDrag);
     fabricCanvas.on('object:moving', onObjectMoving);
-    fabricCanvas.on('mouse:up',      clearGuides);
+    fabricCanvas.on('object:scaling', resetGridSnapDragState);
+    fabricCanvas.on('object:rotating', resetGridSnapDragState);
+    fabricCanvas.on('mouse:up',      () => {
+      resetGridSnapDragState();
+      clearGuides();
+    });
     updateGridOverlay();
 
     // Right-click context menu on canvas.
@@ -18395,7 +18502,7 @@ window.applyBgImage = function() {
 // ── Template System ───────────────────────────────────────────────────────
 let _tmplCanvas = null;    // offscreen canvas for thumbnail rendering (null = use fabricCanvas)
 let _tmplThumbnails = {}; // cache: templateName → jpeg dataUrl
-const TMPL_THUMB_CACHE_KEY = 'zigns-template-thumbs-v2026-05-18-safety-batch-2';
+const TMPL_THUMB_CACHE_KEY = 'zigns-template-thumbs-v2026-05-18-safety-batch-4';
 let _tmplThumbPersistTimer = null;
 let _tmplWarmupScheduled = false;
 
@@ -19485,7 +19592,7 @@ const TEMPLATE_BG_PHOTOS = {
   lockouttagout: { photoId: 'https://images.pexels.com/photos/11139140/pexels-photo-11139140.jpeg?cs=srgb&dl=pexels-moonlightshotz-11139140.jpg&fm=jpg', overlay: 'rgba(220,38,38,0.22)' },
   firstaidstation: { photoId: 'hgGZAmpg7Yg', overlay: 'rgba(22,163,74,0.34)' },
   shiftqualityalert: { photoId: 'w9fjPbFOpD4', overlay: 'rgba(245,158,11,0.24)' },
-  lockouttagoutchecklist: { photoId: 'https://images.pexels.com/photos/11139140/pexels-photo-11139140.jpeg?cs=srgb&dl=pexels-moonlightshotz-11139140.jpg&fm=jpg', overlay: 'rgba(30,30,30,0.85)' },
+  lockouttagoutchecklist: { photoId: '/assets/templates/lockout-tagout-checklist-bg.jpg', overlay: 'rgba(7,10,16,0.34)' },
 };
 
 function renderAnnouncementPoster({
@@ -20918,6 +21025,923 @@ function renderLockoutTagoutChecklist({
   });
 }
 
+function renderLockoutTagoutChecklistConcept({
+  bg = '#111827',
+  accent = '#facc15',
+  danger = '#b91c1c',
+  title = 'LOCKOUT/TAGOUT CHECKLIST',
+  machineId = 'MAIN PUMP - P-102A',
+  equipmentLocation = 'LOCATION: PUMP ROOM 2',
+  authorizedPerson = 'JORDAN SMITH',
+  authorizedMeta = 'ID: 4257  |  DEPT: MAINTENANCE',
+  restartStatus = 'NOT RESTARTED',
+  photoId = '',
+  photoOverlay = 'rgba(7,10,16,0.22)',
+} = {}) {
+  const W = CANVAS_W, H = CANVAS_H;
+  const cv = _tmplCanvas || fabricCanvas;
+  cv.backgroundColor = bg;
+  const red = danger;
+  const redDark = '#7f1010';
+  const redBright = '#d71920';
+  const ink = '#101820';
+  const panel = 'rgba(255,255,255,0.965)';
+  const panelSoft = 'rgba(255,255,255,0.92)';
+  const line = 'rgba(15,23,42,0.14)';
+  const titleFont = 'Impact';
+  const headingFont = 'Impact';
+  const bodyFont = 'Open Sans';
+  const steps = [
+    { title: 'VERIFY ZERO ENERGY', body: 'Confirm equipment is de-energized and no stored energy remains.', icon: 'search' },
+    { title: 'ISOLATE', body: 'Identify and operate all energy isolation points to disconnect equipment.', icon: 'switch' },
+    { title: 'LOCK', body: 'Apply personal lock(s) to all isolation points. Ensure locks are secure.', icon: 'lock' },
+    { title: 'TAG', body: 'Attach a lockout tag with name, date, and reason. Do not remove.', icon: 'tag' },
+    { title: 'TEST', body: 'Attempt start or test function to verify zero energy.', icon: 'bolt' },
+  ];
+
+  loadGoogleFont('Anton');
+  loadGoogleFont('Montserrat');
+  loadGoogleFont('Open Sans');
+  if (photoId) tmplBgPhoto(photoId, photoOverlay);
+  tmplRect(0, 0, W, H, { fill: 'rgba(7,10,16,0.18)', rx: 0, selectable: false, evented: false });
+
+  const addGroup = (objects, opts = {}) => {
+    objects.forEach(obj => obj.set({ selectable: false, evented: false }));
+    const group = new fabric.Group(objects, {
+      selectable: true,
+      evented: true,
+      subTargetCheck: false,
+      ...opts,
+    });
+    cv.add(group);
+    return group;
+  };
+  const fRect = (left, top, width, height, opts = {}) => new fabric.Rect({
+    left,
+    top,
+    width,
+    height,
+    rx: opts.rx || 0,
+    ry: opts.ry ?? opts.rx ?? 0,
+    ...opts,
+  });
+  const fCircle = (left, top, radius, opts = {}) => new fabric.Circle({
+    left,
+    top,
+    radius,
+    originX: 'center',
+    originY: 'center',
+    ...opts,
+  });
+  const fLine = (x1, y1, x2, y2, opts = {}) => new fabric.Line([x1, y1, x2, y2], {
+    strokeLineCap: 'round',
+    ...opts,
+  });
+  const fText = (text, left, top, opts = {}) => new fabric.Text(String(text), {
+    left,
+    top,
+    originX: 'center',
+    originY: 'center',
+    fontFamily: 'Arial',
+    fill: '#ffffff',
+    ...opts,
+  });
+  const fPath = (path, opts = {}) => new fabric.Path(path, opts);
+  const fGear = (cx, cy, outerRadius, innerRadius, teeth = 10, opts = {}) => {
+    const points = [];
+    for (let i = 0; i < teeth * 2; i++) {
+      const radius = i % 2 === 0 ? outerRadius : innerRadius;
+      const angle = -Math.PI / 2 + (i * Math.PI) / teeth;
+      points.push({
+        x: cx + Math.cos(angle) * radius,
+        y: cy + Math.sin(angle) * radius,
+      });
+    }
+    return new fabric.Polygon(points, opts);
+  };
+  const addStripeBand = (left, top, width, height, colorA = '#111827', colorB = accent) => {
+    tmplRect(left, top, width, height, { fill: colorA, rx: 0, selectable: false, evented: false });
+    for (let x = left - height; x < left + width; x += height * 1.8) {
+      const poly = new fabric.Polygon([
+        { x, y: top },
+        { x: x + height * 0.78, y: top },
+        { x: x + height * 1.78, y: top + height },
+        { x: x + height, y: top + height },
+      ], { fill: colorB, selectable: false, evented: false });
+      cv.add(poly);
+    }
+  };
+  const addLockMark = (cx, cy, size, color = '#ffffff') => {
+    const bodyW = size * 0.56;
+    const bodyH = size * 0.42;
+    return addGroup([
+      fPath(`M ${cx - size * 0.20} ${cy - size * 0.06}
+        C ${cx - size * 0.20} ${cy - size * 0.34}, ${cx + size * 0.20} ${cy - size * 0.34}, ${cx + size * 0.20} ${cy - size * 0.06}`, {
+        fill: '',
+        stroke: color,
+        strokeWidth: size * 0.09,
+        strokeLineCap: 'round',
+      }),
+      fRect(cx - bodyW / 2, cy - size * 0.04, bodyW, bodyH, { fill: color, rx: size * 0.06 }),
+      fCircle(cx, cy + size * 0.13, size * 0.045, { fill: redDark }),
+      fRect(cx - size * 0.018, cy + size * 0.15, size * 0.036, size * 0.13, { fill: redDark, rx: size * 0.01 }),
+    ]);
+  };
+  const addTagMark = (cx, cy, size, color = '#ffffff') => {
+    const w = size * 0.48;
+    const h = size * 0.62;
+    return addGroup([
+      new fabric.Polygon([
+        { x: cx - w * 0.5, y: cy - h * 0.28 },
+        { x: cx - w * 0.08, y: cy - h * 0.5 },
+        { x: cx + w * 0.5, y: cy - h * 0.06 },
+        { x: cx + w * 0.16, y: cy + h * 0.5 },
+        { x: cx - w * 0.5, y: cy + h * 0.28 },
+      ], { fill: color }),
+      fCircle(cx - w * 0.06, cy - h * 0.21, size * 0.045, { fill: redDark }),
+      fLine(cx + w * 0.02, cy - h * 0.12, cx + w * 0.28, cy + h * 0.04, { stroke: redDark, strokeWidth: size * 0.04 }),
+      fLine(cx - w * 0.04, cy + h * 0.02, cx + w * 0.18, cy + h * 0.16, { stroke: redDark, strokeWidth: size * 0.04 }),
+    ]);
+  };
+  const addStepIcon = (kind, cx, cy, size, color = red) => {
+    const items = [];
+    if (kind === 'search') {
+      items.push(fCircle(cx - size * 0.06, cy - size * 0.06, size * 0.22, { fill: '', stroke: color, strokeWidth: size * 0.07 }));
+      items.push(fLine(cx + size * 0.10, cy + size * 0.11, cx + size * 0.30, cy + size * 0.31, { stroke: color, strokeWidth: size * 0.08 }));
+    } else if (kind === 'switch') {
+      items.push(fRect(cx - size * 0.18, cy - size * 0.26, size * 0.36, size * 0.52, { fill: color, rx: size * 0.06 }));
+      items.push(fCircle(cx, cy - size * 0.13, size * 0.045, { fill: '#ffffff' }));
+      items.push(fLine(cx, cy - size * 0.02, cx, cy + size * 0.16, { stroke: '#ffffff', strokeWidth: size * 0.06 }));
+      items.push(fLine(cx - size * 0.08, cy + size * 0.08, cx + size * 0.08, cy + size * 0.08, { stroke: '#ffffff', strokeWidth: size * 0.05 }));
+    } else if (kind === 'lock') {
+      items.push(fPath(`M ${cx - size * 0.14} ${cy - size * 0.08}
+        C ${cx - size * 0.14} ${cy - size * 0.28}, ${cx + size * 0.14} ${cy - size * 0.28}, ${cx + size * 0.14} ${cy - size * 0.08}`, {
+        fill: '',
+        stroke: color,
+        strokeWidth: size * 0.06,
+        strokeLineCap: 'round',
+      }));
+      items.push(fRect(cx - size * 0.25, cy - size * 0.06, size * 0.50, size * 0.42, { fill: color, rx: size * 0.05 }));
+      items.push(fCircle(cx, cy + size * 0.11, size * 0.04, { fill: '#ffffff' }));
+      items.push(fRect(cx - size * 0.015, cy + size * 0.13, size * 0.03, size * 0.11, { fill: '#ffffff' }));
+    } else if (kind === 'tag') {
+      items.push(new fabric.Polygon([
+        { x: cx - size * 0.30, y: cy - size * 0.04 },
+        { x: cx - size * 0.02, y: cy - size * 0.30 },
+        { x: cx + size * 0.34, y: cy - size * 0.14 },
+        { x: cx + size * 0.08, y: cy + size * 0.28 },
+        { x: cx - size * 0.30, y: cy + size * 0.18 },
+      ], { fill: color }));
+      items.push(fCircle(cx + size * 0.03, cy - size * 0.15, size * 0.04, { fill: '#ffffff' }));
+    } else {
+      items.push(fPath(`M ${cx + size * 0.02} ${cy - size * 0.36}
+        L ${cx - size * 0.26} ${cy + size * 0.05}
+        L ${cx - size * 0.04} ${cy + size * 0.05}
+        L ${cx - size * 0.16} ${cy + size * 0.38}
+        L ${cx + size * 0.28} ${cy - size * 0.10}
+        L ${cx + size * 0.04} ${cy - size * 0.10} Z`, { fill: color }));
+    }
+    return addGroup(items);
+  };
+  const addStatusIcon = (kind, cx, cy, size) => {
+    const items = [fCircle(cx, cy, size * 0.5, { fill: redBright })];
+    if (kind === 'equipment') {
+      items.push(fGear(cx, cy, size * 0.30, size * 0.23, 10, { fill: '#ffffff' }));
+      items.push(fCircle(cx, cy, size * 0.16, { fill: redBright }));
+      items.push(fCircle(cx, cy, size * 0.07, { fill: '#ffffff' }));
+    } else if (kind === 'person') {
+      items.push(fCircle(cx, cy - size * 0.12, size * 0.13, { fill: '#ffffff' }));
+      items.push(fPath(`M ${cx - size * 0.25} ${cy + size * 0.24}
+        C ${cx - size * 0.18} ${cy - size * 0.02}, ${cx + size * 0.18} ${cy - size * 0.02}, ${cx + size * 0.25} ${cy + size * 0.24} Z`, { fill: '#ffffff' }));
+    } else {
+      items.push(fPath(`M ${cx - size * 0.18} ${cy + size * 0.02}
+        A ${size * 0.22} ${size * 0.22} 0 1 0 ${cx + size * 0.13} ${cy - size * 0.16}`, {
+        fill: '',
+        stroke: '#ffffff',
+        strokeWidth: size * 0.08,
+        strokeLineCap: 'round',
+      }));
+      items.push(new fabric.Polygon([
+        { x: cx + size * 0.24, y: cy - size * 0.23 },
+        { x: cx + size * 0.24, y: cy },
+        { x: cx + size * 0.02, y: cy - size * 0.10 },
+      ], { fill: '#ffffff' }));
+    }
+    return addGroup(items);
+  };
+  const addWarningTriangle = (cx, cy, size, fill = accent, textFill = '#111827') => addGroup([
+    new fabric.Polygon([
+      { x: cx, y: cy - size * 0.44 },
+      { x: cx + size * 0.46, y: cy + size * 0.38 },
+      { x: cx - size * 0.46, y: cy + size * 0.38 },
+    ], { fill }),
+    fText('!', cx, cy + size * 0.05, {
+      fill: textFill,
+      fontFamily: 'Arial Black',
+      fontWeight: 'bold',
+      fontSize: size * 0.54,
+    }),
+  ]);
+
+  const headerX = W * 0.035;
+  const headerY = H * 0.035;
+  const headerW = W * 0.93;
+  const headerH = H * 0.155;
+  tmplRect(headerX, headerY, headerW, headerH, { fill: red, rx: 18, stroke: '#450a0a', strokeWidth: 2 });
+  tmplRect(headerX, headerY, headerW, headerH, { fill: 'rgba(255,255,255,0.06)', rx: 18 });
+  for (let i = 0; i < 8; i++) {
+    tmplRect(headerX + i * 23, headerY, 10, headerH, { fill: 'rgba(255,255,255,0.08)', angle: 28, rx: 0 });
+    tmplRect(headerX + headerW - 160 + i * 23, headerY, 10, headerH, { fill: 'rgba(0,0,0,0.12)', angle: 28, rx: 0 });
+  }
+  addLockMark(headerX + 120, headerY + headerH / 2 + 2, 118, '#ffffff');
+  addTagMark(headerX + 205, headerY + headerH / 2 + 5, 94, '#ffffff');
+  tmplRect(headerX + 300, headerY + 26, 2, headerH - 52, { fill: 'rgba(255,255,255,0.52)', rx: 1 });
+  tmplText(title, headerX + 1040, headerY + headerH / 2 + 2, {
+    fontSize: 94,
+    fill: '#ffffff',
+    fontFamily: titleFont,
+    textAlign: 'center',
+    charSpacing: 14,
+    fitToBox: true,
+    boxWidth: headerW - 390,
+    boxHeight: headerH - 28,
+    minFontSize: 58,
+    maxFontSize: 94,
+  });
+
+  const mainY = H * 0.225;
+  const checklistX = W * 0.06;
+  const checklistW = W * 0.555;
+  const checklistH = H * 0.49;
+  tmplRect(checklistX, mainY, checklistW, checklistH, { fill: panel, rx: 18, stroke: 'rgba(0,0,0,0.45)', strokeWidth: 2 });
+  const rowH = checklistH / steps.length;
+  steps.forEach((step, i) => {
+    const y = mainY + i * rowH;
+    if (i > 0) tmplRect(checklistX + 112, y, checklistW - 132, 1.5, { fill: line, rx: 0 });
+    tmplRect(checklistX, y, 112, rowH, { fill: i === 0 ? redBright : red, rx: i === 0 ? 18 : 0 });
+    if (i === steps.length - 1) tmplRect(checklistX, y + rowH - 18, 112, 18, { fill: red, rx: 18 });
+    tmplText(String(i + 1).padStart(2, '0'), checklistX + 56, y + rowH / 2, {
+      fontSize: 46,
+      fill: '#ffffff',
+      fontFamily: titleFont,
+      textAlign: 'center',
+      fitToBox: true,
+      boxWidth: 84,
+      boxHeight: rowH - 18,
+      minFontSize: 34,
+      maxFontSize: 46,
+    });
+    addStepIcon(step.icon, checklistX + 166, y + rowH / 2, 68, red);
+    tmplText(step.title, checklistX + 310, y + rowH / 2, {
+      originX: 'left',
+      fontSize: 38,
+      fill: ink,
+      fontFamily: headingFont,
+      charSpacing: 4,
+      fitToBox: true,
+      boxWidth: 315,
+      boxHeight: rowH - 20,
+      minFontSize: 24,
+      maxFontSize: 38,
+    });
+    tmplText(step.body, checklistX + 640, y + rowH / 2, {
+      originX: 'left',
+      fontSize: 21,
+      fill: '#111827',
+      fontFamily: bodyFont,
+      lineHeight: 1.22,
+      fitToBox: true,
+      boxWidth: 315,
+      boxHeight: rowH - 24,
+      minFontSize: 14,
+      maxFontSize: 21,
+    });
+    tmplRect(checklistX + checklistW - 88, y + rowH / 2 - 23, 46, 46, {
+      fill: '#ffffff',
+      stroke: red,
+      strokeWidth: 4,
+      rx: 8,
+    });
+  });
+
+  const rightX = W * 0.63;
+  const rightW = W * 0.31;
+  const rightH = checklistH;
+  tmplRect(rightX, mainY, rightW, rightH, { fill: panelSoft, rx: 18, stroke: 'rgba(0,0,0,0.42)', strokeWidth: 2 });
+  const tagX = rightX + rightW * 0.20;
+  const tagY = mainY + 54;
+  const tagW = rightW * 0.36;
+  const tagH = rightH * 0.70;
+  cv.add(new fabric.Polygon([
+    { x: tagX + tagW * 0.5, y: tagY },
+    { x: tagX + tagW, y: tagY + tagW * 0.25 },
+    { x: tagX + tagW, y: tagY + tagH },
+    { x: tagX, y: tagY + tagH },
+    { x: tagX, y: tagY + tagW * 0.25 },
+  ], { fill: red, stroke: redDark, strokeWidth: 3, selectable: true }));
+  addGroup([
+    fCircle(tagX + tagW * 0.5, tagY + 40, 20, { fill: '#f8fafc', stroke: '#7f1d1d', strokeWidth: 4 }),
+    fCircle(tagX + tagW * 0.5, tagY + 40, 10, { fill: '#4b5563' }),
+  ]);
+  tmplText('AUTHORIZED\nPERSONNEL\nONLY', tagX + tagW * 0.5, tagY + tagH * 0.34, {
+    fontSize: 44,
+    fill: '#ffffff',
+    fontFamily: headingFont,
+    textAlign: 'center',
+    lineHeight: 0.94,
+    fitToBox: true,
+    boxWidth: tagW * 0.80,
+    boxHeight: tagH * 0.34,
+    minFontSize: 30,
+    maxFontSize: 44,
+  });
+  tmplRect(tagX + tagW * 0.14, tagY + tagH * 0.58, tagW * 0.72, 3, { fill: 'rgba(255,255,255,0.82)', rx: 1 });
+  tmplText('This energy source\nhas been locked out.\nUnauthorized removal\nwill result in action.', tagX + tagW * 0.5, tagY + tagH * 0.72, {
+    fontSize: 19,
+    fill: '#ffffff',
+    fontFamily: bodyFont,
+    textAlign: 'center',
+    lineHeight: 1.18,
+    fitToBox: true,
+    boxWidth: tagW * 0.78,
+    boxHeight: tagH * 0.22,
+    minFontSize: 13,
+    maxFontSize: 19,
+  });
+  addStripeBand(tagX, tagY + tagH - 38, tagW, 38, '#ffffff', red);
+
+  const lockCx = rightX + rightW * 0.72;
+  const lockTop = mainY + 150;
+  addGroup([
+    fPath(`M ${lockCx - 54} ${lockTop + 112}
+      C ${lockCx - 54} ${lockTop - 28}, ${lockCx + 54} ${lockTop - 28}, ${lockCx + 54} ${lockTop + 112}`, {
+      fill: '',
+      stroke: '#111111',
+      strokeWidth: 26,
+      strokeLineCap: 'round',
+    }),
+    fRect(lockCx - 82, lockTop + 108, 164, 184, { fill: red, rx: 22, stroke: redDark, strokeWidth: 6 }),
+    fRect(lockCx - 62, lockTop + 134, 124, 38, { fill: '#ffffff', rx: 18 }),
+    fText('DANGER', lockCx, lockTop + 153, { fill: red, fontFamily: 'Arial Black', fontSize: 24 }),
+    fRect(lockCx - 62, lockTop + 184, 124, 75, { fill: '#ffffff', rx: 5 }),
+    fText('LOCKED OUT', lockCx, lockTop + 207, { fill: '#111827', fontFamily: 'Arial Black', fontSize: 18 }),
+    fText('DO NOT REMOVE', lockCx, lockTop + 234, { fill: '#111827', fontFamily: 'Arial Black', fontSize: 14 }),
+  ]);
+  addStripeBand(lockCx - 62, lockTop + 260, 124, 28, '#ffffff', red);
+  tmplRect(rightX, mainY + rightH - 48, rightW, 48, { fill: accent, rx: 0 });
+  addStripeBand(rightX, mainY + rightH - 48, 112, 48, '#111827', accent);
+  addStripeBand(rightX + rightW - 64, mainY + rightH - 48, 64, 48, '#111827', accent);
+  addWarningTriangle(rightX + 76, mainY + rightH - 24, 46, accent, '#111827');
+  tmplText('AUTHORIZED PERSONNEL ONLY', rightX + rightW * 0.56, mainY + rightH - 23, {
+    fontSize: 24,
+    fill: '#111827',
+    fontFamily: 'Arial Black',
+    textAlign: 'center',
+    fitToBox: true,
+    boxWidth: rightW * 0.60,
+    boxHeight: 38,
+    minFontSize: 18,
+    maxFontSize: 24,
+  });
+
+  const infoX = W * 0.06;
+  const infoY = H * 0.75;
+  const infoW = W * 0.88;
+  const infoH = H * 0.155;
+  tmplRect(infoX, infoY, infoW, infoH, {
+    fill: 'rgba(17,24,39,0.93)',
+    rx: 22,
+    stroke: 'rgba(255,255,255,0.84)',
+    strokeWidth: 2,
+  });
+  const colW = infoW / 3;
+  [
+    { kind: 'equipment', label: 'EQUIPMENT', value: machineId, sub: equipmentLocation },
+    { kind: 'person', label: 'AUTHORIZED PERSON', value: authorizedPerson, sub: authorizedMeta },
+    { kind: 'restart', label: 'RESTART STATUS', value: restartStatus, sub: 'RESTART ONLY WITH AUTHORIZATION', valueFill: red },
+  ].forEach((item, i) => {
+    const x = infoX + i * colW;
+    if (i > 0) tmplRect(x, infoY + 30, 2, infoH - 60, { fill: 'rgba(255,255,255,0.55)', rx: 1 });
+    addStatusIcon(item.kind, x + 84, infoY + infoH / 2, 92);
+    tmplText(item.label, x + 170, infoY + 42, {
+      originX: 'left',
+      fontSize: 26,
+      fill: '#ffffff',
+      fontFamily: 'Arial Black',
+      fitToBox: true,
+      boxWidth: colW - 205,
+      boxHeight: 34,
+      minFontSize: 18,
+      maxFontSize: 26,
+    });
+    tmplRect(x + 170, infoY + 72, colW - 225, 50, { fill: '#f8fafc', rx: 7, stroke: 'rgba(255,255,255,0.36)', strokeWidth: 1 });
+    tmplText(item.value, x + 190, infoY + 97, {
+      originX: 'left',
+      fontSize: 26,
+      fill: item.valueFill || ink,
+      fontFamily: 'Arial Black',
+      fitToBox: true,
+      boxWidth: colW - 260,
+      boxHeight: 36,
+      minFontSize: 16,
+      maxFontSize: 26,
+    });
+    tmplText(item.sub, x + 170, infoY + 143, {
+      originX: 'left',
+      fontSize: 18,
+      fill: 'rgba(255,255,255,0.82)',
+      fontFamily: bodyFont,
+      fitToBox: true,
+      boxWidth: colW - 205,
+      boxHeight: 30,
+      minFontSize: 12,
+      maxFontSize: 18,
+    });
+  });
+
+  tmplRect(0, H - 80, W * 0.45, 80, { fill: red, rx: 0 });
+  addWarningTriangle(74, H - 40, 52, '#ffffff', red);
+  tmplText('FOLLOW PROCEDURE. STAY SAFE. PROTECT LIVES.', 160, H - 40, {
+    originX: 'left',
+    fontSize: 34,
+    fill: '#ffffff',
+    fontFamily: headingFont,
+    fitToBox: true,
+    boxWidth: W * 0.34,
+    boxHeight: 54,
+    minFontSize: 22,
+    maxFontSize: 34,
+  });
+  tmplRect(W * 0.45, H - 80, W * 0.55, 80, { fill: 'rgba(17,24,39,0.96)', rx: 0 });
+  tmplRect(W * 0.45 + 28, H - 62, 2, 44, { fill: 'rgba(255,255,255,0.65)', rx: 1 });
+  tmplText('IF UNSURE, STOP AND CONTACT SUPERVISOR.', W * 0.56, H - 40, {
+    originX: 'left',
+    fontSize: 28,
+    fill: '#ffffff',
+    fontFamily: 'Montserrat',
+    fontWeight: 'bold',
+    fitToBox: true,
+    boxWidth: W * 0.34,
+    boxHeight: 46,
+    minFontSize: 18,
+    maxFontSize: 28,
+  });
+  addStripeBand(W * 0.78, H - 80, W * 0.22, 80, 'rgba(17,24,39,0)', 'rgba(255,255,255,0.16)');
+}
+
+function renderLockoutTagoutChecklistClaudeDesign({
+  status = 'LOCKED OUT',
+  facility = 'PLANT A - BAY 3',
+  equipment = 'MAIN PUMP - P-102A',
+  tagId = 'TAG-4257',
+  workOrder = 'WO-88210',
+  location = 'PUMP ROOM 2',
+  authorizedBy = 'JORDAN SMITH',
+  shift = 'DAY SHIFT - A',
+  dateTime = '18 MAY 2026 - 06:30',
+} = {}) {
+  const W = CANVAS_W, H = CANVAS_H;
+  const cv = _tmplCanvas || fabricCanvas;
+  const ink = '#0E141C';
+  const ink2 = '#18222F';
+  const ink3 = '#25303D';
+  const red = '#D8232A';
+  const redDeep = '#9C1318';
+  const amber = '#F5B500';
+  const green = '#1F9C5A';
+  const bone = '#F2EFE9';
+  const muted = '#8A96A6';
+  const displayFont = 'Barlow Condensed';
+  const bodyFont = 'Inter';
+  const monoFont = 'JetBrains Mono';
+  const staticObj = { selectable: false, evented: false };
+
+  cv.backgroundColor = ink;
+  loadGoogleFont(displayFont);
+  loadGoogleFont(bodyFont);
+  loadGoogleFont(monoFont);
+
+  const add = (obj) => { cv.add(obj); return obj; };
+  const fRect = (left, top, width, height, opts = {}) => new fabric.Rect({
+    left, top, width, height,
+    rx: opts.rx || 0,
+    ry: opts.ry ?? opts.rx ?? 0,
+    ...opts,
+  });
+  const fCircle = (left, top, radius, opts = {}) => new fabric.Circle({
+    left, top, radius,
+    originX: 'center',
+    originY: 'center',
+    ...opts,
+  });
+  const fLine = (x1, y1, x2, y2, opts = {}) => new fabric.Line([x1, y1, x2, y2], {
+    strokeLineCap: 'round',
+    ...opts,
+  });
+  const fPath = (path, opts = {}) => new fabric.Path(path, opts);
+  const addGroup = (objects, opts = {}) => {
+    objects.forEach(obj => obj.set({ selectable: false, evented: false }));
+    return add(new fabric.Group(objects, {
+      selectable: true,
+      evented: true,
+      subTargetCheck: false,
+      ...opts,
+    }));
+  };
+  const addText = (text, left, top, opts = {}) => tmplText(text, left, top, {
+    fontFamily: bodyFont,
+    fill: bone,
+    editable: true,
+    ...opts,
+  });
+  const addStripeBand = (top) => {
+    tmplRect(0, top, W, 28, { fill: '#111417', rx: 0, ...staticObj });
+    for (let x = -36; x < W + 72; x += 72) {
+      add(new fabric.Polygon([
+        { x, y: top },
+        { x: x + 36, y: top },
+        { x: x + 8, y: top + 28 },
+        { x: x - 28, y: top + 28 },
+      ], { fill: amber, ...staticObj }));
+    }
+  };
+  const addSlashMarks = (left, top, width, height, color = 'rgba(255,255,255,0.16)') => {
+    for (let x = left; x < left + width + height; x += 28) {
+      add(fLine(x, top + height, x + height, top, {
+        stroke: color,
+        strokeWidth: 10,
+        ...staticObj,
+      }));
+    }
+  };
+  const addLockGlyph = (cx, cy, size, color = bone, cutout = ink) => addGroup([
+    fPath(`M ${cx - size * 0.24} ${cy - size * 0.05}
+      C ${cx - size * 0.24} ${cy - size * 0.34}, ${cx + size * 0.24} ${cy - size * 0.34}, ${cx + size * 0.24} ${cy - size * 0.05}`, {
+      fill: '',
+      stroke: color,
+      strokeWidth: size * 0.07,
+      strokeLineCap: 'round',
+    }),
+    fRect(cx - size * 0.34, cy - size * 0.04, size * 0.68, size * 0.54, { fill: color, rx: size * 0.07 }),
+    fCircle(cx, cy + size * 0.17, size * 0.055, { fill: cutout }),
+    fRect(cx - size * 0.02, cy + size * 0.21, size * 0.04, size * 0.14, { fill: cutout, rx: size * 0.012 }),
+  ]);
+  const addTagGlyph = (cx, cy, size, color = bone, cutout = ink) => addGroup([
+    new fabric.Polygon([
+      { x: cx, y: cy - size * 0.46 },
+      { x: cx + size * 0.34, y: cy - size * 0.32 },
+      { x: cx + size * 0.34, y: cy + size * 0.42 },
+      { x: cx, y: cy + size * 0.46 },
+      { x: cx - size * 0.34, y: cy + size * 0.42 },
+      { x: cx - size * 0.34, y: cy - size * 0.32 },
+    ], { fill: color }),
+    fCircle(cx, cy - size * 0.24, size * 0.07, { fill: cutout }),
+    fRect(cx - size * 0.24, cy - size * 0.04, size * 0.48, size * 0.035, { fill: cutout, rx: 2, opacity: 0.85 }),
+    fRect(cx - size * 0.24, cy + size * 0.10, size * 0.40, size * 0.035, { fill: cutout, rx: 2, opacity: 0.62 }),
+    fRect(cx - size * 0.24, cy + size * 0.24, size * 0.48, size * 0.035, { fill: cutout, rx: 2, opacity: 0.62 }),
+  ]);
+  const addStepIcon = (kind, cx, cy, size, color = bone) => {
+    const sw = size * 0.08;
+    const common = { fill: '', stroke: color, strokeWidth: sw, strokeLineCap: 'round', strokeLineJoin: 'round' };
+    if (kind === 'notify') {
+      return addGroup([
+        fPath(`M ${cx - size * 0.28} ${cy + size * 0.08}
+          A ${size * 0.28} ${size * 0.28} 0 0 1 ${cx + size * 0.28} ${cy + size * 0.08}
+          L ${cx + size * 0.28} ${cy + size * 0.22}
+          L ${cx + size * 0.38} ${cy + size * 0.34}
+          L ${cx - size * 0.38} ${cy + size * 0.34}
+          L ${cx - size * 0.28} ${cy + size * 0.22} Z`, common),
+        fPath(`M ${cx - size * 0.08} ${cy + size * 0.42} Q ${cx} ${cy + size * 0.50} ${cx + size * 0.08} ${cy + size * 0.42}`, common),
+      ]);
+    }
+    if (kind === 'isolate') {
+      return addGroup([
+        fRect(cx - size * 0.30, cy - size * 0.24, size * 0.60, size * 0.48, { fill: '', stroke: color, strokeWidth: sw, rx: size * 0.05 }),
+        fLine(cx, cy - size * 0.44, cx, cy - size * 0.24, common),
+        fLine(cx, cy + size * 0.24, cx, cy + size * 0.44, common),
+        fCircle(cx, cy, size * 0.07, { fill: color }),
+      ]);
+    }
+    if (kind === 'lock') return addLockGlyph(cx, cy, size, color, ink2);
+    if (kind === 'tag') {
+      return addGroup([
+        fPath(`M ${cx + size * 0.05} ${cy - size * 0.42}
+          H ${cx + size * 0.36} V ${cy - size * 0.10}
+          L ${cx - size * 0.12} ${cy + size * 0.38}
+          L ${cx - size * 0.42} ${cy + size * 0.08} Z`, common),
+        fCircle(cx + size * 0.22, cy - size * 0.26, size * 0.045, { fill: '', stroke: color, strokeWidth: sw }),
+      ]);
+    }
+    if (kind === 'release') {
+      return addGroup([
+        fCircle(cx, cy, size * 0.36, { fill: '', stroke: color, strokeWidth: sw }),
+        fLine(cx, cy - size * 0.38, cx, cy - size * 0.06, common),
+      ]);
+    }
+    return addGroup([
+      fPath(`M ${cx + size * 0.08} ${cy - size * 0.42}
+        L ${cx - size * 0.28} ${cy + size * 0.08}
+        H ${cx - size * 0.02}
+        L ${cx - size * 0.16} ${cy + size * 0.42}
+        L ${cx + size * 0.30} ${cy - size * 0.16}
+        H ${cx + size * 0.04} Z`, common),
+    ]);
+  };
+
+  addStripeBand(0);
+  addStripeBand(H - 28);
+  tmplRect(0, 28, W, 168, { fill: red, rx: 0, ...staticObj });
+  tmplRect(0, 190, W, 6, { fill: redDeep, rx: 0, ...staticObj });
+  tmplRect(56, 54, 116, 116, { fill: 'rgba(255,255,255,0.12)', stroke: '#ffffff', strokeWidth: 4, rx: 12 });
+  addLockGlyph(114, 116, 84, '#ffffff', red);
+  addText('SAFETY PROCEDURE - OSHA 1910.147', 210, 68, {
+    originX: 'left',
+    originY: 'top',
+    fontFamily: displayFont,
+    fontSize: 24,
+    fontWeight: 'bold',
+    charSpacing: 300,
+    fill: 'rgba(255,255,255,0.78)',
+    boxWidth: 1060,
+    boxHeight: 32,
+    fitToBox: true,
+  });
+  addText('LOCKOUT / TAGOUT', 210, 96, {
+    originX: 'left',
+    originY: 'top',
+    fontFamily: displayFont,
+    fontSize: 122,
+    fontWeight: 'bold',
+    fill: '#ffffff',
+    boxWidth: 1200,
+    boxHeight: 116,
+    fitToBox: true,
+    minFontSize: 72,
+  });
+  addText(facility, 1618, 48, {
+    originX: 'left',
+    originY: 'top',
+    fontFamily: monoFont,
+    fontSize: 16,
+    fontWeight: 'bold',
+    charSpacing: 160,
+    fill: 'rgba(255,255,255,0.72)',
+    boxWidth: 246,
+    boxHeight: 42,
+    fitToBox: true,
+    minFontSize: 12,
+  });
+
+  tmplRect(0, 196, W, 88, { fill: ink2, rx: 0, ...staticObj });
+  tmplRect(0, 283, W, 1, { fill: 'rgba(255,255,255,0.08)', rx: 0, ...staticObj });
+  const fields = [
+    ['EQUIPMENT', equipment, 56, 258],
+    ['TAG ID', tagId, 420, 224],
+    ['WORK ORDER', workOrder, 710, 240],
+    ['LOCATION', location, 1010, 270],
+  ];
+  fields.forEach(([label, value, x, width], idx) => {
+    if (idx) tmplRect(x - 28, 214, 1, 52, { fill: 'rgba(255,255,255,0.07)', rx: 0, ...staticObj });
+    addText(label, x, 213, {
+      originX: 'left',
+      originY: 'top',
+      fontFamily: monoFont,
+      fontSize: 15,
+      fontWeight: 'bold',
+      charSpacing: 210,
+      fill: muted,
+      boxWidth: width,
+      boxHeight: 18,
+      fitToBox: true,
+      minFontSize: 11,
+    });
+    addText(value, x, 237, {
+      originX: 'left',
+      originY: 'top',
+      fontFamily: displayFont,
+      fontSize: 34,
+      fontWeight: 'bold',
+      fill: bone,
+      boxWidth: width,
+      boxHeight: 40,
+      fitToBox: true,
+      minFontSize: 20,
+    });
+  });
+
+  const steps = [
+    { title: 'NOTIFY', body: 'Inform affected personnel before shutting equipment down.', icon: 'notify', done: true },
+    { title: 'ISOLATE', body: 'Disconnect every energy source: electrical, hydraulic, pneumatic, thermal.', icon: 'isolate', done: true },
+    { title: 'LOCK', body: 'Apply personal lock to each isolation point. One worker, one key.', icon: 'lock', active: true },
+    { title: 'TAG', body: 'Attach a danger tag with name, date, and reason. Do not remove.', icon: 'tag' },
+    { title: 'RELEASE', body: 'Bleed, block, or restrain stored or residual energy.', icon: 'release' },
+    { title: 'TEST', body: 'Attempt normal startup to verify zero energy state.', icon: 'test' },
+  ];
+  const listX = 56;
+  const listY = 318;
+  const rowW = 1212;
+  const rowH = 82;
+  const rowGap = 12;
+  steps.forEach((step, idx) => {
+    const y = listY + idx * (rowH + rowGap);
+    const isActive = !!step.active;
+    const rule = isActive ? amber : red;
+    tmplRect(listX, y, rowW, rowH, { fill: ink2, rx: 6, stroke: 'rgba(0,0,0,0.28)', strokeWidth: 1, ...staticObj });
+    tmplRect(listX, y, 6, rowH, { fill: rule, rx: 0, ...staticObj });
+    addText(String(idx + 1).padStart(2, '0'), listX + 70, y + rowH / 2, {
+      fontFamily: displayFont,
+      fontSize: 58,
+      fontWeight: 'bold',
+      fill: isActive ? amber : bone,
+      boxWidth: 72,
+      boxHeight: 62,
+      fitToBox: true,
+      minFontSize: 38,
+    });
+    addStepIcon(step.icon, listX + 172, y + rowH / 2, 44, bone);
+    addText(step.title, listX + 220, y + 16, {
+      originX: 'left',
+      originY: 'top',
+      fontFamily: displayFont,
+      fontSize: 30,
+      fontWeight: 'bold',
+      charSpacing: 60,
+      fill: bone,
+      boxWidth: 720,
+      boxHeight: 32,
+      fitToBox: true,
+      minFontSize: 20,
+    });
+    addText(step.body, listX + 220, y + 50, {
+      originX: 'left',
+      originY: 'top',
+      fontFamily: bodyFont,
+      fontSize: 18,
+      lineHeight: 1.2,
+      fill: '#B4BECC',
+      boxWidth: 800,
+      boxHeight: 30,
+      fitToBox: true,
+      minFontSize: 13,
+    });
+    tmplRect(listX + rowW - 84, y + 17, 48, 48, {
+      fill: step.done ? bone : 'rgba(255,255,255,0.03)',
+      stroke: bone,
+      strokeWidth: 3,
+      rx: 8,
+    });
+    if (step.done) {
+      add(fPath(`M ${listX + rowW - 74} ${y + 42} L ${listX + rowW - 61} ${y + 55} L ${listX + rowW - 39} ${y + 28}`, {
+        fill: '',
+        stroke: ink,
+        strokeWidth: 6,
+        strokeLineCap: 'round',
+        strokeLineJoin: 'round',
+        selectable: true,
+      }));
+    }
+  });
+
+  const statusPalette = status === 'CLEAR TO RESTART'
+    ? { bg: green, fg: '#ffffff', sub: 'All locks removed. Equipment cleared by supervisor.' }
+    : status === 'WORK IN PROGRESS'
+      ? { bg: amber, fg: ink, sub: 'Maintenance underway. Restart prohibited until signed off.' }
+      : { bg: red, fg: '#ffffff', sub: 'Energy isolated. Do not operate, energize, or remove locks.' };
+  tmplRect(1324, 320, 540, 254, { fill: statusPalette.bg, rx: 10, ...staticObj });
+  addSlashMarks(1760, 320, 120, 80, statusPalette.fg === ink ? 'rgba(14,20,28,0.15)' : 'rgba(255,255,255,0.16)');
+  addText('CURRENT STATUS', 1356, 348, {
+    originX: 'left',
+    originY: 'top',
+    fontFamily: monoFont,
+    fontSize: 17,
+    fontWeight: 'bold',
+    charSpacing: 210,
+    fill: statusPalette.fg === ink ? 'rgba(14,20,28,0.68)' : 'rgba(255,255,255,0.78)',
+    boxWidth: 470,
+    boxHeight: 22,
+    fitToBox: true,
+    minFontSize: 12,
+  });
+  addText(status, 1356, 382, {
+    originX: 'left',
+    originY: 'top',
+    fontFamily: displayFont,
+    fontSize: 82,
+    fontWeight: 'bold',
+    fill: statusPalette.fg,
+    boxWidth: 470,
+    boxHeight: 86,
+    fitToBox: true,
+    minFontSize: 48,
+  });
+  addText(statusPalette.sub, 1358, 492, {
+    originX: 'left',
+    originY: 'top',
+    fontFamily: bodyFont,
+    fontSize: 20,
+    fontWeight: 'bold',
+    lineHeight: 1.22,
+    fill: statusPalette.fg === ink ? 'rgba(14,20,28,0.76)' : 'rgba(255,255,255,0.86)',
+    boxWidth: 448,
+    boxHeight: 58,
+    fitToBox: true,
+    minFontSize: 14,
+  });
+
+  tmplRect(1324, 594, 540, 296, { fill: ink2, stroke: 'rgba(255,255,255,0.08)', strokeWidth: 1, rx: 8, ...staticObj });
+  addText('REQUIRED DEVICES', 1346, 618, {
+    originX: 'left',
+    originY: 'top',
+    fontFamily: monoFont,
+    fontSize: 16,
+    fontWeight: 'bold',
+    charSpacing: 220,
+    fill: muted,
+  });
+  [
+    { x: 1346, title: 'PERSONAL LOCK', draw: () => addLockGlyph(1470, 746, 150, bone, ink3) },
+    { x: 1605, title: 'DANGER TAG', draw: () => addTagGlyph(1728, 746, 150, bone, ink3) },
+  ].forEach(item => {
+    tmplRect(item.x, 654, 249, 220, { fill: ink3, rx: 10, ...staticObj });
+    item.draw();
+    addText(item.title, item.x + 124, 838, {
+      fontFamily: displayFont,
+      fontSize: 22,
+      fontWeight: 'bold',
+      charSpacing: 80,
+      fill: bone,
+      boxWidth: 210,
+      boxHeight: 26,
+      fitToBox: true,
+      minFontSize: 16,
+    });
+  });
+
+  tmplRect(0, 924, W, 128, { fill: ink2, rx: 0, ...staticObj });
+  const footerFields = [
+    ['AUTHORIZED BY', authorizedBy, 56, 310],
+    ['SHIFT', shift, 470, 260],
+    ['DATE - TIME', dateTime, 890, 360],
+  ];
+  footerFields.forEach(([label, value, x, width]) => {
+    addText(label, x, 948, {
+      originX: 'left',
+      originY: 'top',
+      fontFamily: monoFont,
+      fontSize: 14,
+      fontWeight: 'bold',
+      charSpacing: 210,
+      fill: muted,
+      boxWidth: width,
+      boxHeight: 18,
+      fitToBox: true,
+      minFontSize: 10,
+    });
+    addText(value, x, 974, {
+      originX: 'left',
+      originY: 'top',
+      fontFamily: displayFont,
+      fontSize: 30,
+      fontWeight: 'bold',
+      fill: bone,
+      boxWidth: width,
+      boxHeight: 36,
+      fitToBox: true,
+      minFontSize: 18,
+    });
+  });
+  tmplRect(1556, 950, 320, 76, {
+    fill: 'rgba(255,255,255,0.02)',
+    stroke: 'rgba(255,255,255,0.22)',
+    strokeWidth: 1.5,
+    strokeDashArray: [8, 6],
+    rx: 4,
+  });
+  add(fCircle(1594, 988, 18, { fill: amber, selectable: true }));
+  addText('!', 1594, 988, {
+    fontFamily: displayFont,
+    fontSize: 27,
+    fontWeight: 'bold',
+    fill: ink,
+    boxWidth: 24,
+    boxHeight: 30,
+    fitToBox: true,
+  });
+  addText('IF UNSURE,\nSTOP AND CALL\nSUPERVISOR', 1632, 965, {
+    originX: 'left',
+    originY: 'top',
+    fontFamily: displayFont,
+    fontSize: 20,
+    fontWeight: 'bold',
+    lineHeight: 0.9,
+    fill: bone,
+    boxWidth: 220,
+    boxHeight: 50,
+    fitToBox: true,
+    minFontSize: 14,
+  });
+}
+
 const EXTRA_TEMPLATE_RENDERERS = {
   annualreview: () => renderMetricsBoard({
     bg: '#14213a',
@@ -21608,7 +22632,7 @@ const EXTRA_TEMPLATE_RENDERERS = {
     photoId: TEMPLATE_BG_PHOTOS.firstaidstation.photoId,
     photoOverlay: TEMPLATE_BG_PHOTOS.firstaidstation.overlay,
   }),
-  lockouttagoutchecklist: () => renderLockoutTagoutChecklist({
+  lockouttagoutchecklist: () => renderLockoutTagoutChecklistConcept({
     photoId: TEMPLATE_BG_PHOTOS.lockouttagoutchecklist.photoId,
     photoOverlay: TEMPLATE_BG_PHOTOS.lockouttagoutchecklist.overlay,
   }),
@@ -22251,7 +23275,7 @@ const EXTRA_TEMPLATE_CATALOG = [
   { key:'productlaunch', title:'Product Launch', desc:'Minimal product reveal with hero copy', category:'retail', preview:'announcement', accent:'#2563eb', bg:'#ffffff', tag:'RETAIL' },
   { key:'joinqueue', title:'Join Queue', desc:'Scan to join the line or check in', category:'events', preview:'qr', accent:'#2563eb', bg:'#f8fbff', tag:'EVENTS' },
   { key:'lockouttagout', title:'Lockout/Tagout', desc:'Energy isolation checklist for equipment maintenance', category:'safety', preview:'list', accent:'#dc2626', bg:'#fff2f2', tag:'SAFETY' },
-  { key:'lockouttagoutchecklist', title:'Lockout/Tagout Checklist', desc:'Remind workers of required lockout steps before maintenance', category:'safety', preview:'list', accent:'#ffcc00', bg:'#22252a', tag:'SAFETY' },
+  { key:'lockouttagoutchecklist', title:'Lockout/Tagout Checklist', desc:'Energy isolation checklist before maintenance work begins', category:'safety', preview:'warning', accent:'#d71920', bg:'#111827', tag:'SAFETY' },
   { key:'firstaidstation', title:'First Aid Station', desc:'Emergency medical station location and instructions', category:'safety', preview:'announcement', accent:'#16a34a', bg:'#f1faf4', tag:'SAFETY' },
   { key:'shiftqualityalert', title:'Quality Alert', desc:'High-visibility quality defect notice for production lines', category:'operations', preview:'warning', accent:'#f59e0b', bg:'#fff7ed', tag:'OPS' },
 ];
