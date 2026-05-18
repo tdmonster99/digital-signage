@@ -18502,7 +18502,7 @@ window.applyBgImage = function() {
 // ── Template System ───────────────────────────────────────────────────────
 let _tmplCanvas = null;    // offscreen canvas for thumbnail rendering (null = use fabricCanvas)
 let _tmplThumbnails = {}; // cache: templateName → jpeg dataUrl
-const TMPL_THUMB_CACHE_KEY = 'zigns-template-thumbs-v2026-05-18-safety-batch-4';
+const TMPL_THUMB_CACHE_KEY = 'zigns-template-thumbs-v2026-05-18-safety-batch-5-claude-loto';
 let _tmplThumbPersistTimer = null;
 let _tmplWarmupScheduled = false;
 
@@ -22632,10 +22632,7 @@ const EXTRA_TEMPLATE_RENDERERS = {
     photoId: TEMPLATE_BG_PHOTOS.firstaidstation.photoId,
     photoOverlay: TEMPLATE_BG_PHOTOS.firstaidstation.overlay,
   }),
-  lockouttagoutchecklist: () => renderLockoutTagoutChecklistConcept({
-    photoId: TEMPLATE_BG_PHOTOS.lockouttagoutchecklist.photoId,
-    photoOverlay: TEMPLATE_BG_PHOTOS.lockouttagoutchecklist.overlay,
-  }),
+  lockouttagoutchecklist: () => renderLockoutTagoutChecklistClaudeDesign(),
   shiftqualityalert: () => renderWarningBoard({
     title: 'QUALITY ALERT',
     subtitle: 'Critical quality issue detected on Line 4.',
@@ -23548,7 +23545,7 @@ let _tmplPhotoPending = 0; // count of in-flight image loads on _tmplCanvas
 const TMPL_PHOTO_IDS = [...new Set(Object.values(TEMPLATE_BG_PHOTOS).map(v => v.photoId))];
 const TMPL_PHOTO_TEMPLATES = new Set(Object.keys(TEMPLATE_BG_PHOTOS));
 
-const TMPL_FONTS = ['Anton','Bebas Neue','Montserrat','Open Sans','Playfair Display','Raleway','Nunito'];
+const TMPL_FONTS = ['Anton','Bebas Neue','Montserrat','Open Sans','Playfair Display','Raleway','Nunito','Barlow Condensed','Inter','JetBrains Mono'];
 let _tmplPhotoPrefetchPromise = null;
 
 function preloadImage(url) {

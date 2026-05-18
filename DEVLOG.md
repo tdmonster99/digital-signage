@@ -4,13 +4,13 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
-## 2026-05-18 — Codex — Add Lockout/Tagout Checklist template
+## 2026-05-18 — Codex — Add Claude Design Lockout/Tagout template
 
-Added a new dedicated safety template for Lockout/Tagout energy isolation checklists.
+Translated the Claude Design export into the Zigns template renderer workflow.
 
-- **Lockout/Tagout Checklist**: Generated a polished concept image, saved it as a local concept plate, added a separate clean industrial background plate, and rebuilt the template as an editable Fabric.js renderer with a red safety header, checklist rows, lock/tag panel, and bottom status band.
-- **Template catalog**: Updated `lockouttagoutchecklist` metadata and background photo mapping so it appears under Safety with the stronger concept-driven preview.
-- **Cache**: Bumped the local thumbnail cache key to regenerate the gallery thumbnails.
+- **Lockout/Tagout Checklist**: Added a Claude Design-inspired Fabric.js renderer with editable text fields, primitive lock/tag/checklist glyphs, hazard bands, status panel, required-devices panel, and sign-off footer.
+- **Template catalog**: Pointed `lockouttagoutchecklist` at the new renderer while keeping the Safety catalog entry intact.
+- **Cache**: Bumped the local thumbnail cache key again so the gallery regenerates with the Claude Design version.
 
 ---
 
