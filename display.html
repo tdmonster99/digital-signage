@@ -2708,6 +2708,22 @@
     return data.slideStorageVersion >= 2 || data.publishedStorage === 'subcollection';
   }
 
+  function shouldProbeUnmarkedSubcollections(data = {}) {
+    return data &&
+      !Array.isArray(data.slides) &&
+      !Array.isArray(data.draftSlides) &&
+      data.slideStorageVersion === undefined &&
+      data.publishedStorage === undefined &&
+      data.draftStorage === undefined;
+  }
+
+  function shouldLoadDraftSubcollection(data = {}) {
+    if (!isPreviewMode) return false;
+    return data.draftStorage === 'subcollection' ||
+      Number.isFinite(data.draftSlidesCount) ||
+      shouldProbeUnmarkedSubcollections(data);
+  }
+
   function normalizeStoredSlide(docSnap) {
     const data = docSnap.data() || {};
     const { order, updatedAt, ...slide } = data;
@@ -2723,6 +2739,18 @@
       orderBy('order', 'asc')
     ));
     return snap.docs.map(normalizeStoredSlide);
+  }
+
+  async function loadDraftSlidesForPreview(slideshowId, data = {}) {
+    if (!isPreviewMode) return undefined;
+    if (shouldLoadDraftSubcollection(data)) {
+      const snap = await getDocs(query(
+        collection(db, 'slideshows', slideshowId, 'draftSlides'),
+        orderBy('order', 'asc')
+      ));
+      return snap.docs.map(normalizeStoredSlide);
+    }
+    return Array.isArray(data.draftSlides) ? data.draftSlides : undefined;
   }
 
   async function loadPreviewSlideshowFromServer(slideshowId, reason = "") {
@@ -2745,6 +2773,7 @@
       return {
         ...(result.data || {}),
         slides: Array.isArray(result.slides) ? result.slides : [],
+        ...(Array.isArray(result.draftSlides) && { draftSlides: result.draftSlides }),
       };
     } catch (e) {
       console.warn(`[Preview] Server fallback failed for ${slideshowId}:`, e.message);
@@ -2754,14 +2783,26 @@
 
   async function resolvePublishedSlideshow(slideshowId, data = {}) {
     try {
+      const [publishedSlides, draftSlides] = await Promise.all([
+        loadPublishedSlides(slideshowId, data),
+        loadDraftSlidesForPreview(slideshowId, data),
+      ]);
+      const shouldUseDraftPreview = isPreviewMode && draftSlides !== undefined;
       return {
         ...data,
-        slides: await loadPublishedSlides(slideshowId, data),
+        slides: shouldUseDraftPreview ? draftSlides : publishedSlides,
+        ...(draftSlides !== undefined && { draftSlides }),
       };
     } catch (e) {
       if (isPreviewMode) {
         const fallback = await loadPreviewSlideshowFromServer(slideshowId, e.message || String(e));
-        if (fallback) return fallback;
+        if (fallback) {
+          const shouldUseDraftPreview = fallback.draftSlides !== undefined;
+          return {
+            ...fallback,
+            slides: shouldUseDraftPreview ? fallback.draftSlides : fallback.slides,
+          };
+        }
       }
       throw e;
     }
@@ -2879,7 +2920,7 @@
     activeSlideshowId = slideshowId;
 
     // Serve cached content immediately so TVs never go black. Admin preview mode
-    // should show the current published state, so it bypasses local player cache.
+    // bypasses player cache so it can show the current editable draft state.
     const cached = isPreviewMode ? null : loadCache(slideshowId);
     if (cached) {
       loader.style.display = "none";

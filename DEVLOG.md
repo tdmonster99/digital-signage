@@ -30,6 +30,9 @@ Improved the Fabric.js slide designer editing surface.
 - **GIPHY config**: Added `/api/giphy-config` so the browser can read a public GIPHY web key from `GIPHY_API_KEY` or `GIPHY_WEB_API_KEY` without hard-coding credentials in `admin.html`.
 - **Local GIPHY setup**: Made `/api/giphy-config` read `.env.local` as a local-dev fallback when `vercel dev` does not expose the new key through `process.env`.
 - **GIPHY retry**: Kept missing-key responses from being cached in the browser so the panel can recover after local setup changes.
+- **Toolbar labels**: Added persistent text labels to the left designer toolbar and removed the left-toolbar hover tooltip behavior.
+- **Preview draft state**: Updated display preview loading to prefer draft slide collections when present, so deleted YouTube slides and other draft edits clear from dashboard preview immediately.
+- **Preview reliability**: Widened the labeled left toolbar to avoid horizontal scrolling and switched designed-slide previews to live Fabric preview canvases so multi-image slides render fully even when image export is blocked by cross-origin media.
 
 ---
 

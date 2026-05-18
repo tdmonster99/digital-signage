@@ -1606,15 +1606,27 @@ section.content {
   gap: 14px; padding: 24px;
 }
 #slidePreviewModal.open { display: flex; }
-#slidePreviewImg {
+#slidePreviewImg,
+#slidePreviewCanvasWrap {
   width: min(92vw, 1280px);
   max-height: 78vh;
   aspect-ratio: 16 / 9;
   display: block;
   background: #fff;
   border-radius: 10px; box-shadow: 0 8px 48px rgba(0,0,0,0.5);
+  overflow: hidden;
+}
+#slidePreviewImg {
   object-fit: contain;
 }
+#slidePreviewCanvasWrap { display: none; }
+#slidePreviewCanvasWrap canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+#slidePreviewModal.canvas-preview #slidePreviewImg { display: none; }
+#slidePreviewModal.canvas-preview #slidePreviewCanvasWrap { display: block; }
 #slidePreviewImg.is-loading { background: rgba(255,255,255,0.10); }
 #slidePreviewName {
   color: rgba(255,255,255,0.75); font-size: 14px; font-weight: 500;
@@ -1948,39 +1960,46 @@ section.content {
 
 /* Left tool strip */
 .designer-toolbar {
-  width: 52px;
+  width: 98px;
+  box-sizing: border-box;
   background: var(--surface);
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 12px 0;
-  gap: 4px;
+  padding: 10px 6px;
+  gap: 3px;
   flex-shrink: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 .tool-btn {
-  width: 36px; height: 36px;
+  width: 82px; min-height: 48px;
+  box-sizing: border-box;
   border-radius: 8px;
   border: none; background: none;
   color: var(--muted);
-  display: flex; align-items: center; justify-content: center;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
   position: relative;
+  padding: 5px 4px;
 }
 .tool-btn:hover { background: var(--surface2); color: var(--text); }
 .tool-btn.active { background: var(--accent-bg); color: var(--accent); }
-.tool-btn[title]:hover::after {
-  content: attr(title);
-  position: absolute; left: calc(100% + 10px); top: 50%;
-  transform: translateY(-50%);
-  background: var(--surface2); border: 1px solid var(--border);
-  color: var(--text); font-size: 12px; white-space: nowrap;
-  padding: 4px 10px; border-radius: 6px;
-  pointer-events: none; z-index: 10;
+.tool-label {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0;
 }
 .tool-divider {
-  width: 28px; height: 1px;
+  width: 74px; height: 1px;
   background: var(--border);
   margin: 4px 0;
 }
@@ -1988,7 +2007,7 @@ section.content {
 .tool-popover {
   display: none;
   position: absolute;
-  left: 52px; top: 0;
+  left: calc(100% + 6px); top: 0;
   background: var(--surface2);
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -2102,7 +2121,19 @@ section.content {
   overflow: hidden;
   flex-shrink: 0;
 }
-.tv-bezel img { width: 100%; height: 100%; display: block; object-fit: contain; }
+.tv-bezel img,
+.tv-preview-canvas-wrap { width: 100%; height: 100%; display: block; object-fit: contain; }
+.tv-preview-canvas-wrap {
+  display: none;
+  background: #fff;
+}
+.tv-preview-canvas-wrap canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+#tvPreviewOverlay.canvas-preview #tvPreviewImg { display: none; }
+#tvPreviewOverlay.canvas-preview .tv-preview-canvas-wrap { display: block; }
 #tvReadabilityOverlay { position: absolute; inset: 0; pointer-events: none; }
 .tv-controls {
   display: flex; gap: 10px; margin-top: 18px; align-items: center; flex-wrap: wrap; justify-content: center;
@@ -7929,6 +7960,7 @@ body.role-editor .admin-action {
 <div id="slidePreviewModal" onclick="if(event.target===this)closeSlidePreview()">
   <button id="slidePreviewClose" onclick="closeSlidePreview()" aria-label="Close preview">✕</button>
   <img id="slidePreviewImg" src="" alt="">
+  <div id="slidePreviewCanvasWrap" aria-label="Designed slide preview"></div>
   <div id="slidePreviewName"></div>
   <div id="slidePreviewActions">
     <button class="btn btn-secondary" id="slidePreviewCustomizeTemplate" onclick="customizeTemplatePreview()">Customize</button>
@@ -7940,6 +7972,7 @@ body.role-editor .admin-action {
 <div id="tvPreviewOverlay">
   <div class="tv-bezel" id="tvBezelFrame">
     <img id="tvPreviewImg" alt="Slide preview">
+    <div id="tvPreviewCanvasWrap" class="tv-preview-canvas-wrap" aria-label="Designed slide preview"></div>
     <div id="tvReadabilityOverlay"></div>
   </div>
   <div class="tv-controls">
@@ -8076,21 +8109,23 @@ body.role-editor .admin-action {
   <div class="designer-body">
     <!-- Left toolbar -->
     <div class="designer-toolbar">
-      <button class="tool-btn" title="Add Text" onclick="designerAddText()">
+      <button class="tool-btn" aria-label="Add Text" onclick="designerAddText()">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/>
           <line x1="12" y1="4" x2="12" y2="20"/>
         </svg>
+        <span class="tool-label">Text</span>
       </button>
 
       <!-- Image tool + popover -->
       <div style="position:relative">
-        <button class="tool-btn" title="Add Image" onclick="toggleImagePopover(event)">
+        <button class="tool-btn" aria-label="Add Image" onclick="toggleImagePopover(event)">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <rect x="3" y="3" width="18" height="18" rx="2"/>
             <circle cx="8.5" cy="8.5" r="1.5"/>
             <polyline points="21 15 16 10 5 21"/>
           </svg>
+          <span class="tool-label">Image</span>
         </button>
         <div class="tool-popover" id="imagePopover">
           <button class="popover-item" onclick="designerUploadImage()">
@@ -8146,7 +8181,7 @@ body.role-editor .admin-action {
       </div>
 
       <!-- GIPHY browser -->
-      <button class="tool-btn" id="btnGiphy" title="GIPHY" onclick="toggleGiphyPanel()">
+      <button class="tool-btn" id="btnGiphy" aria-label="GIPHY" onclick="toggleGiphyPanel()">
         <svg width="19" height="19" viewBox="0 0 24 24" aria-hidden="true">
           <rect x="5" y="3" width="14" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/>
           <path d="M14 3v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
@@ -8156,16 +8191,18 @@ body.role-editor .admin-action {
           <rect x="14" y="3" width="5" height="2" fill="#fff152"/>
           <rect x="17" y="5" width="2" height="4" fill="#ff6666"/>
         </svg>
+        <span class="tool-label">GIPHY</span>
       </button>
 
       <!-- Shape tools -->
       <div style="position:relative">
-        <button class="tool-btn" title="Shapes" onclick="toggleShapePopover(event)">
+        <button class="tool-btn" aria-label="Shapes" onclick="toggleShapePopover(event)">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round">
             <path d="M12 3.5l4.6 7.8H7.4L12 3.5z"/>
             <circle cx="7" cy="17" r="3.1"/>
             <rect x="14" y="14" width="6" height="6" rx="1.4"/>
           </svg>
+          <span class="tool-label">Shapes</span>
         </button>
         <div class="tool-popover tool-popover-shapes" id="shapePopover">
           <button class="popover-item" onclick="designerAddRectFromMenu()">
@@ -8192,8 +8229,9 @@ body.role-editor .admin-action {
       <div class="tool-divider"></div>
 
       <!-- Background color — hidden color input triggered by button -->
-      <button class="tool-btn" title="Background Color" onclick="document.getElementById('bgColorInput').click()">
+      <button class="tool-btn" aria-label="Background Color" onclick="document.getElementById('bgColorInput').click()">
         <div class="bg-swatch" id="bgSwatch"></div>
+        <span class="tool-label">Bg</span>
       </button>
       <input type="color" id="bgColorInput" value="#ffffff"
              style="position:absolute;width:0;height:0;opacity:0;pointer-events:none">
@@ -8201,80 +8239,89 @@ body.role-editor .admin-action {
       <div class="tool-divider"></div>
 
       <!-- Keyboard shortcuts help -->
-      <button class="tool-btn" id="btnShortcuts" title="Keyboard Shortcuts" onclick="toggleShortcutsPanel(event)">
+      <button class="tool-btn" id="btnShortcuts" aria-label="Keyboard Shortcuts" onclick="toggleShortcutsPanel(event)">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
           <circle cx="12" cy="12" r="10"/>
           <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
           <line x1="12" y1="17" x2="12.01" y2="17"/>
         </svg>
+        <span class="tool-label">Help</span>
       </button>
 
       <!-- Grid toggle -->
-      <button class="tool-btn" id="btnGrid" title="Toggle Grid (40px)" onclick="toggleDesignerGrid()">
+      <button class="tool-btn" id="btnGrid" aria-label="Toggle Grid" onclick="toggleDesignerGrid()">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
           <path d="M3 3h18v18H3z"/><line x1="3" y1="9" x2="21" y2="9"/>
           <line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/>
           <line x1="15" y1="3" x2="15" y2="21"/>
         </svg>
+        <span class="tool-label">Grid</span>
       </button>
 
       <!-- Snap toggle (on by default) -->
-      <button class="tool-btn grid-active" id="btnSnap" title="Snap to Grid / Objects (on)" onclick="toggleDesignerSnap()">
+      <button class="tool-btn grid-active" id="btnSnap" aria-label="Snap to Grid and Objects" onclick="toggleDesignerSnap()">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
           <path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>
           <circle cx="12" cy="12" r="3"/>
           <path d="M6.34 6.34l2.83 2.83M14.83 14.83l2.83 2.83M14.83 9.17l2.83-2.83M6.34 17.66l2.83-2.83"/>
         </svg>
+        <span class="tool-label">Snap</span>
       </button>
 
       <div class="tool-divider"></div>
 
       <!-- Center Horizontally -->
-      <button class="tool-btn" title="Center Horizontally (selection)" onclick="designerCenterH()">
+      <button class="tool-btn" aria-label="Center Horizontally" onclick="designerCenterH()">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
           <line x1="12" y1="2" x2="12" y2="22"/><rect x="4" y="7" width="16" height="10" rx="2"/>
         </svg>
+        <span class="tool-label">Center X</span>
       </button>
 
       <!-- Center Vertically -->
-      <button class="tool-btn" title="Center Vertically (selection)" onclick="designerCenterV()">
+      <button class="tool-btn" aria-label="Center Vertically" onclick="designerCenterV()">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
           <line x1="2" y1="12" x2="22" y2="12"/><rect x="7" y="4" width="10" height="16" rx="2"/>
         </svg>
+        <span class="tool-label">Center Y</span>
       </button>
 
       <div class="tool-divider"></div>
 
       <!-- Safe zone -->
-      <button class="tool-btn" id="btnSafeZone" title="Safe Zone — Content outside this area may be cropped on some TVs" onclick="toggleSafeZone()">
+      <button class="tool-btn" id="btnSafeZone" aria-label="Safe Zone" onclick="toggleSafeZone()">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
           <rect x="2" y="4" width="20" height="16" rx="2"/>
           <rect x="5" y="7" width="14" height="10" rx="1" stroke-dasharray="3 2"/>
         </svg>
+        <span class="tool-label">Safe Zone</span>
       </button>
 
       <!-- Icons -->
-      <button class="tool-btn" id="btnIcons" title="Icons" onclick="toggleIconPanel()">
+      <button class="tool-btn" id="btnIcons" aria-label="Icons" onclick="toggleIconPanel()">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
           <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
         </svg>
+        <span class="tool-label">Icons</span>
       </button>
 
       <!-- Insert Brand Logo (only shown when brand kit has a logo) -->
-      <button class="tool-btn" id="btnInsertLogo" title="Insert Brand Logo" onclick="insertBrandLogo()" style="display:none">
+      <button class="tool-btn" id="btnInsertLogo" aria-label="Insert Brand Logo" onclick="insertBrandLogo()" style="display:none">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
           <rect x="3" y="3" width="18" height="18" rx="2"/>
           <path d="M3 9h18M9 21V9"/>
         </svg>
+        <span class="tool-label">Logo</span>
       </button>
 
       <!-- Ticker bar -->
-      <button class="tool-btn" title="Add Ticker Bar" onclick="designerAddTicker()">
+      <button class="tool-btn" aria-label="Add Ticker Bar" onclick="designerAddTicker()">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
           <rect x="2" y="15" width="20" height="6" rx="1.5"/>
           <line x1="5" y1="18" x2="9" y2="18"/><line x1="11" y1="18" x2="15" y2="18"/>
           <polyline points="17 16.5 19 18 17 19.5"/>
         </svg>
+        <span class="tool-label">Ticker</span>
       </button>
     </div>
 
@@ -13488,7 +13535,8 @@ window.openSlidePreview = async function(idx) {
   const name = document.getElementById('slidePreviewName');
   const requestId = ++slidePreviewRequestId;
   templatePreviewName = null;
-  modal.classList.remove('template-preview');
+  modal.classList.remove('template-preview', 'canvas-preview');
+  disposeDesignedPreview('slide');
 
   let url = null;
   if (s.type === 'designed') {
@@ -13496,9 +13544,28 @@ window.openSlidePreview = async function(idx) {
     img.classList.add('is-loading');
     img.alt = s.name ? `${s.name} preview` : 'Slide preview';
     name.textContent = s.name || '';
-    modal.classList.add('open');
-    url = await getDesignedSlidePreviewUrl(s);
-    if (requestId !== slidePreviewRequestId) return;
+    modal.classList.add('open', 'canvas-preview');
+    try {
+      await renderDesignedPreviewCanvas(s.canvasJson, 'slidePreviewCanvasWrap', 'slide');
+      if (requestId !== slidePreviewRequestId) {
+        disposeDesignedPreview('slide');
+        return;
+      }
+      img.classList.remove('is-loading');
+      return;
+    } catch (err) {
+      console.warn('Designed slide preview render failed:', err);
+      if (requestId !== slidePreviewRequestId) return;
+      url = getDesignedSlideThumbUrl(s);
+      if (!url) {
+        img.classList.remove('is-loading');
+        modal.classList.remove('open', 'canvas-preview');
+        toast('Preview failed: ' + err.message, true);
+        return;
+      }
+      showSlidePreviewImage(url, s.name ? `${s.name} preview` : 'Slide preview');
+      return;
+    }
   } else {
     url = s.type === 'youtube' ? getYoutubeThumbUrl(s.videoId || s.youtubeId || s.url || '', 'hqdefault')
         : (s.type === 'webpage' || s.type === 'video' || s.type === 'audio' || s.type === 'clock') ? null
@@ -13520,7 +13587,8 @@ window.openSlidePreview = async function(idx) {
 window.closeSlidePreview = function() {
   slidePreviewRequestId += 1;
   const modal = document.getElementById('slidePreviewModal');
-  modal.classList.remove('open', 'template-preview');
+  modal.classList.remove('open', 'template-preview', 'canvas-preview');
+  disposeDesignedPreview('slide');
   const img = document.getElementById('slidePreviewImg');
   img.removeAttribute('src');
   img.classList.remove('is-loading');
@@ -13544,6 +13612,8 @@ window.openTemplatePreview = async function(templateName) {
   const name = document.getElementById('slidePreviewName');
   const useBtn = document.getElementById('slidePreviewUseTemplate');
   const requestId = ++slidePreviewRequestId;
+  disposeDesignedPreview('slide');
+  modal.classList.remove('canvas-preview');
 
   templatePreviewName = templateName;
   img.removeAttribute('src');
@@ -13559,10 +13629,9 @@ window.openTemplatePreview = async function(templateName) {
   try {
     const slide = await buildTemplateSlideFromName(templateName, { uploadThumbnail: false });
     if (requestId !== slidePreviewRequestId) return;
-    const url = await getDesignedSlidePreviewUrl(slide);
+    await renderDesignedPreviewCanvas(slide.canvasJson, 'slidePreviewCanvasWrap', 'slide');
     if (requestId !== slidePreviewRequestId) return;
-    if (!url) throw new Error('Preview image was empty. Try again in a moment.');
-    img.src = url;
+    modal.classList.add('canvas-preview');
     img.classList.remove('is-loading');
     if (useBtn) {
       useBtn.disabled = false;
@@ -15137,6 +15206,98 @@ function getDesignedSlideThumbUrl(slide) {
   return slide?.thumbnailUrl || firstImageSrcFromCanvasJson(slide?.canvasJson);
 }
 
+let slidePreviewFabric = null;
+let tvPreviewFabric = null;
+let tvPreviewRequestId = 0;
+
+function disposeDesignedPreview(kind) {
+  if (kind === 'slide') {
+    if (slidePreviewFabric) {
+      try { slidePreviewFabric.dispose(); } catch(_) {}
+      slidePreviewFabric = null;
+    }
+    const wrap = document.getElementById('slidePreviewCanvasWrap');
+    if (wrap) wrap.innerHTML = '';
+    return;
+  }
+  if (kind === 'tv') {
+    if (tvPreviewFabric) {
+      try { tvPreviewFabric.dispose(); } catch(_) {}
+      tvPreviewFabric = null;
+    }
+    const wrap = document.getElementById('tvPreviewCanvasWrap');
+    if (wrap) wrap.innerHTML = '';
+  }
+}
+
+function setDesignedPreviewInstance(kind, canvas) {
+  if (kind === 'slide') slidePreviewFabric = canvas;
+  else if (kind === 'tv') tvPreviewFabric = canvas;
+}
+
+async function renderDesignedPreviewCanvas(canvasJson, wrapId, kind) {
+  if (!canvasJson || typeof fabric === 'undefined') throw new Error('Fabric.js is not loaded.');
+
+  let data;
+  try {
+    data = typeof canvasJson === 'string' ? JSON.parse(canvasJson) : canvasJson;
+  } catch (err) {
+    throw new Error('Invalid canvas JSON: ' + err.message);
+  }
+
+  collectCanvasFontFamilies(data).forEach(loadGoogleFont);
+  disposeDesignedPreview(kind);
+
+  const wrap = document.getElementById(wrapId);
+  if (!wrap) throw new Error('Preview surface is unavailable.');
+  const canvasEl = document.createElement('canvas');
+  canvasEl.width = CANVAS_W;
+  canvasEl.height = CANVAS_H;
+  canvasEl.style.width = '100%';
+  canvasEl.style.height = '100%';
+  wrap.appendChild(canvasEl);
+
+  const previewCanvas = new fabric.StaticCanvas(canvasEl, {
+    width: CANVAS_W,
+    height: CANVAS_H,
+    renderOnAddRemove: false,
+  });
+  setDesignedPreviewInstance(kind, previewCanvas);
+
+  try {
+    await new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error('Preview canvas load timed out.')), 15000);
+      try {
+        previewCanvas.loadFromJSON(sanitizeCanvasJson(JSON.stringify(data)), () => {
+          clearTimeout(timer);
+          if (!previewCanvas.backgroundColor) previewCanvas.backgroundColor = '#ffffff';
+          previewCanvas.renderAll();
+          resolve();
+        });
+      } catch (err) {
+        clearTimeout(timer);
+        reject(err);
+      }
+    });
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    previewCanvas.renderAll();
+    return previewCanvas;
+  } catch (err) {
+    disposeDesignedPreview(kind);
+    throw err;
+  }
+}
+
+function showSlidePreviewImage(url, altText = 'Slide preview') {
+  const modal = document.getElementById('slidePreviewModal');
+  const img = document.getElementById('slidePreviewImg');
+  disposeDesignedPreview('slide');
+  modal.classList.remove('canvas-preview');
+  img.src = url;
+  img.alt = altText;
+  img.classList.remove('is-loading');
+}
+
 function collectCanvasFontFamilies(canvasJson) {
   const fonts = new Set();
   if (!canvasJson) return fonts;
@@ -16282,24 +16443,49 @@ window.toggleSafeZone = function() {
 };
 
 // ── TV Preview ─────────────────────────────────────────────────────────────
-window.openTvPreview = function() {
+window.openTvPreview = async function() {
   if (!fabricCanvas) return;
-  let dataUrl;
-  try {
-    dataUrl = fabricCanvas.toDataURL({ format: 'jpeg', quality: 0.92 });
-  } catch(e) {
-    try { dataUrl = fabricCanvas.toDataURL({ format: 'png' }); }
-    catch(e2) { toast('Preview failed — canvas has cross-origin images.', true); return; }
-  }
-  document.getElementById('tvPreviewImg').src = dataUrl;
+  const requestId = ++tvPreviewRequestId;
+  const overlay = document.getElementById('tvPreviewOverlay');
+  const img = document.getElementById('tvPreviewImg');
   document.getElementById('tvReadabilityOverlay').innerHTML = '';
   document.getElementById('tvReadabilityMsg').textContent = '';
   document.getElementById('tvReadabilityMsg').style.color = '#aaa';
-  document.getElementById('tvPreviewOverlay').style.display = 'flex';
+  img.removeAttribute('src');
+  overlay.classList.add('canvas-preview');
+  overlay.style.display = 'flex';
+
+  try {
+    const canvasJson = sanitizeCanvasJson(JSON.stringify(fabricCanvas.toJSON(CANVAS_EXTRA_PROPS)));
+    await renderDesignedPreviewCanvas(canvasJson, 'tvPreviewCanvasWrap', 'tv');
+    if (requestId !== tvPreviewRequestId) disposeDesignedPreview('tv');
+  } catch(e) {
+    console.warn('Canvas preview render failed:', e);
+    if (requestId !== tvPreviewRequestId) return;
+    overlay.classList.remove('canvas-preview');
+    disposeDesignedPreview('tv');
+    let dataUrl;
+    try {
+      dataUrl = fabricCanvas.toDataURL({ format: 'jpeg', quality: 0.92 });
+    } catch(e1) {
+      try { dataUrl = fabricCanvas.toDataURL({ format: 'png' }); }
+      catch(e2) {
+        overlay.style.display = 'none';
+        toast('Preview failed — one or more images blocked canvas export.', true);
+        return;
+      }
+    }
+    img.src = dataUrl;
+  }
 };
 
 window.closeTvPreview = function() {
-  document.getElementById('tvPreviewOverlay').style.display = 'none';
+  tvPreviewRequestId += 1;
+  const overlay = document.getElementById('tvPreviewOverlay');
+  overlay.style.display = 'none';
+  overlay.classList.remove('canvas-preview');
+  document.getElementById('tvPreviewImg').removeAttribute('src');
+  disposeDesignedPreview('tv');
 };
 
 window.runReadabilityCheck = function() {
