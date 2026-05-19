@@ -37,6 +37,7 @@ Improved the Fabric.js slide designer editing surface.
 - **Invite acceptance**: Preserved invite links through login/account creation so `/admin.html?invite=...` returns to the invitation after authentication, with invited-user copy on the login page.
 - **Slide bulk delete**: Added click-to-select slide cards with blue selected borders, shift-click range selection, a bulk-selection action bar, and Delete Selected for removing multiple slides at once.
 - **Invite onboarding UX**: Added invite metadata lookup, clearer accept-invite copy, a primary email-account creation path for new invited users, and exact mismatch guidance when OAuth returns a different email than the invited address.
+- **Invite onboarding guard**: Marked accepted invite users as onboarded and limited onboarding resume to the organization owner, so invited smoke-test/member accounts do not restart setup.
 
 ---
 

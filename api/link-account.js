@@ -902,6 +902,7 @@ module.exports = async function handler(req, res) {
           role,
           email: cleanEmail,
           displayName: req.body.displayName || '',
+          onboardingComplete: true,
         }, { merge: true });
         tx.set(invRef, {
           status: 'accepted',

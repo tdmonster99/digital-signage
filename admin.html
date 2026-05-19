@@ -10779,8 +10779,11 @@ async function initUserAndOrg(user) {
     if (!orgSnap) return;
     currentOrg = orgSnap.exists() ? { id: currentOrgId, ...orgSnap.data() } : null;
 
-    // Resume onboarding if not completed
-    if (!userData.onboardingComplete) setTimeout(showOnboarding, 200);
+    // Resume onboarding only for the org owner. Invited members may have no
+    // onboardingComplete flag yet, but they should not restart org setup.
+    if (!userData.onboardingComplete && currentOrg?.ownerId === user.uid) {
+      setTimeout(showOnboarding, 200);
+    }
     }
   } else if (inviteId) {
     await acceptInvitation(inviteId, user);
