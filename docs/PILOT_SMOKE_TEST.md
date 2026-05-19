@@ -101,6 +101,8 @@ What it checks:
 
 If the authenticated account is not an Admin, the browser pass still checks editor-safe flows and reports the admin-only invite/emergency coverage as skipped. Use a dedicated Admin account in the `Zigns Smoke Test` org for full pilot coverage.
 
+The browser smoke runner defaults to a 60-second wait budget because production sign-in and first admin-shell boot can be slower than static page checks.
+
 Optional mutating CRUD pass:
 
 ```bash

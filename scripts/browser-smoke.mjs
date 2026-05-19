@@ -36,7 +36,7 @@ const config = {
   headed: Boolean(args.headed || process.env.ZIGNS_BROWSER_HEADED === '1'),
   keepOpen: Boolean(args['keep-open'] || process.env.ZIGNS_BROWSER_KEEP_OPEN === '1'),
   mutate: Boolean(args.mutate || process.env.ZIGNS_BROWSER_MUTATE === '1'),
-  timeoutMs: Number.parseInt(args.timeout || process.env.ZIGNS_BROWSER_TIMEOUT_MS || '20000', 10),
+  timeoutMs: Number.parseInt(args.timeout || process.env.ZIGNS_BROWSER_TIMEOUT_MS || '60000', 10),
 };
 
 const results = [];
