@@ -276,6 +276,15 @@ async function main() {
     assert(!usersBlock[0].includes('allow read, write: if request.auth != null && request.auth.uid == uid;'), 'firestore.rules still allows broad user self-writes');
   });
 
+  await check('Static invitation rules', async () => {
+    const rulesText = await readText('firestore.rules');
+    const inviteBlock = rulesText.match(/match \/invitations\/\{inviteId\} \{[\s\S]*?\n    \}/);
+    assert(inviteBlock, 'firestore.rules is missing invitations/{inviteId} rules');
+    assert(rulesText.includes('Invitation lookup, creation, cancellation, resend, and acceptance all run'), 'firestore.rules is missing the server-owned invitation note');
+    assert(inviteBlock[0].includes('allow read, create, update: if false;'), 'firestore.rules still allows client invitation reads or writes');
+    assert(inviteBlock[0].includes('allow delete: if false;'), 'firestore.rules still allows client invitation deletes');
+  });
+
   await check('Static screen org scoping guard', async () => {
     const adminHtml = await readText('admin.html');
     assert(adminHtml.includes('Screens listener waiting for organization context'), 'admin.html is missing the screen org readiness guard');

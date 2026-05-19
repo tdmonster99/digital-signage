@@ -284,24 +284,11 @@ service cloud.firestore {
 
     // ----------------------------------------------------------------
     // invitations/{inviteId}
-    // Admins create invitations; invitees read and accept their own.
-    // Invitee is matched by verified email from the Firebase Auth token.
+    // Invitation lookup, creation, cancellation, resend, and acceptance all run
+    // through server APIs so role, status, and membership updates stay atomic.
     // ----------------------------------------------------------------
     match /invitations/{inviteId} {
-      allow read: if isSignedIn() && (
-        isAdmin(resource.data.orgId)
-        || request.auth.token.email == resource.data.email
-      );
-
-      // Only admins can invite new members.
-      allow create: if isAdmin(request.resource.data.orgId);
-
-      // Admins can cancel; invitees can accept their own invitation.
-      allow update: if isSignedIn() && (
-        isAdmin(resource.data.orgId)
-        || request.auth.token.email == resource.data.email
-      );
-
+      allow read, create, update: if false;
       allow delete: if false;
     }
 
