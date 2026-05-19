@@ -12948,22 +12948,16 @@ function getAdminEmails() {
 }
 
 function notifyApproval(type, payload = {}) {
-  const to = payload.to || [];
-  if (!to.length) return;
-  fetch('/api/send-invite', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({
-      type: 'approval',
-      action: type,
-      to,
-      orgName: currentOrg?.name || 'Zigns',
-      showName: payload.showName || getApprovalShowName(payload.showId || currentShowId),
-      actorEmail: currentUser?.email || '',
-      note: payload.note || '',
-    }),
-  }).then(async r => {
-    if (!r.ok) console.warn('Approval email failed:', r.status, await r.text().catch(() => ''));
+  if (!currentUser) return;
+  callAccountApi('sendApprovalNotification', {
+    approvalAction: type,
+    showId: payload.showId || currentShowId,
+    recipientEmails: payload.to || [],
+    note: payload.note || '',
+  }, true).then(result => {
+    if (!result.emailSent && result.emailError) {
+      console.warn('Approval email skipped:', result.emailError);
+    }
   }).catch(err => console.warn('Approval email error:', err.message));
 }
 

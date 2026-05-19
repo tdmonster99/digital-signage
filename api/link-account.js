@@ -254,6 +254,83 @@ async function sendTeamInvitationEmail({ email, inviteId, inviterEmail, orgName,
   }
 }
 
+async function sendApprovalNotificationEmail({ to, action, orgName, showName, actorEmail, note }) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return { sent: false, error: 'Email service not configured.' };
+
+  const labels = {
+    submitted: { subject: 'Slideshow submitted for review', title: 'Slideshow submitted', body: 'A slideshow draft is ready for admin review.' },
+    approved:  { subject: 'Your slideshow was approved',    title: 'Slideshow approved',  body: 'Your submitted draft was approved and published.' },
+    rejected:  { subject: 'Changes requested on slideshow', title: 'Changes requested',   body: 'An admin reviewed your draft and requested changes.' },
+  };
+  const copy = labels[action];
+  if (!copy) return { sent: false, error: 'Unknown approval notification.' };
+
+  const recipients = [...new Set((Array.isArray(to) ? to : [to]).map(validateEmail))];
+  if (!recipients.length) return { sent: false, error: 'No approval notification recipients.' };
+
+  const orgNameSafe  = escHtmlEmail(orgName || 'Zigns');
+  const showNameSafe = escHtmlEmail(showName || 'Slideshow');
+  const actorSafe    = escHtmlEmail(actorEmail || 'Zigns');
+  const noteSafe     = escHtmlEmail(note || '');
+  const noteBlock    = noteSafe
+    ? `<p style="margin:18px 0 0;padding:12px 14px;border-left:3px solid #ef4444;background:#fff7f7;color:#555555;font-size:14px;line-height:1.5">${noteSafe}</p>`
+    : '';
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#f5f5f5;font-family:'Segoe UI',Arial,sans-serif">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:40px 0">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.08)">
+        <tr><td style="background:#111111;padding:28px 40px">
+          <div style="font-size:20px;font-weight:700;color:#ffffff;letter-spacing:-0.3px">Zigns</div>
+        </td></tr>
+        <tr><td style="padding:36px 40px">
+          <p style="margin:0 0 8px;font-size:22px;font-weight:700;color:#111111">${copy.title}</p>
+          <p style="margin:0 0 18px;font-size:15px;color:#555555;line-height:1.6">
+            ${copy.body}<br>
+            <strong style="color:#111111">${showNameSafe}</strong> in <strong style="color:#111111">${orgNameSafe}</strong>.
+          </p>
+          <p style="margin:0 0 24px;font-size:13px;color:#777777">Action by ${actorSafe}</p>
+          ${noteBlock}
+          <table cellpadding="0" cellspacing="0" style="margin:28px 0 0">
+            <tr><td style="background:#0043ce;border-radius:8px;padding:13px 24px">
+              <a href="https://app.zigns.io/admin.html" style="color:#ffffff;font-size:14px;font-weight:700;text-decoration:none">Open Zigns</a>
+            </td></tr>
+          </table>
+        </td></tr>
+        <tr><td style="padding:20px 40px;border-top:1px solid #eeeeee">
+          <p style="margin:0;font-size:12px;color:#aaaaaa">You received this because content approval is enabled for your Zigns organization.</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
+
+  try {
+    const upstream = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'Zigns <hello@zigns.io>',
+        to: recipients,
+        subject: copy.subject,
+        html,
+      }),
+    });
+    const data = await upstream.json().catch(() => ({}));
+    if (!upstream.ok) {
+      return { sent: false, error: data?.message || `Email error ${upstream.status}` };
+    }
+    return { sent: true, id: data?.id || null };
+  } catch (err) {
+    return { sent: false, error: err.message };
+  }
+}
+
 async function claimPendingSubscription(db, email, orgId) {
   const cleanEmail = normalizeEmail(email);
   if (!cleanEmail || !orgId) return null;
@@ -1972,6 +2049,72 @@ module.exports = async function handler(req, res) {
         fallbackShowId,
         reassignedScreensCount: screenOps.length,
         updatedSchedulesCount: scheduleOps.length,
+      });
+    }
+
+    if (req.body.action === 'sendApprovalNotification') {
+      const { userData, orgId, role } = await loadUserContext(db, uid);
+      const approvalAction = String(req.body.approvalAction || '').trim().toLowerCase();
+      if (!['submitted', 'approved', 'rejected'].includes(approvalAction)) {
+        return res.status(400).json({ error: 'Invalid approval notification action' });
+      }
+      requireRole(role, approvalAction === 'submitted' ? ['admin', 'editor'] : ['admin']);
+
+      const showId = normalizeShowId(req.body.showId);
+      const showRef = db.doc(`slideshows/${showId}`);
+      const [orgSnap, showSnap] = await Promise.all([
+        db.doc(`organizations/${orgId}`).get(),
+        showRef.get(),
+      ]);
+      if (!orgSnap.exists) return res.status(404).json({ error: 'Organization not found' });
+      if (!showSnap.exists) return res.status(404).json({ error: 'Slideshow not found' });
+
+      const orgData = orgSnap.data() || {};
+      const showData = showSnap.data() || {};
+      if (showData.orgId !== orgId) return res.status(403).json({ error: 'Slideshow is not in your organization' });
+      const orgShows = Array.isArray(orgData.slideshows) ? orgData.slideshows : [];
+      const showMeta = orgShows.find(show => show && show.id === showId) || {};
+      const memberEmails = new Set((Array.isArray(orgData.members) ? orgData.members : [])
+        .map(member => normalizeEmail(member?.email))
+        .filter(Boolean));
+      const adminEmails = (Array.isArray(orgData.members) ? orgData.members : [])
+        .filter(member => member && member.role === 'admin')
+        .map(member => normalizeEmail(member.email))
+        .filter(Boolean);
+
+      let recipients = [];
+      if (approvalAction === 'submitted') {
+        recipients = adminEmails;
+      } else {
+        const requested = Array.isArray(req.body.recipientEmails) ? req.body.recipientEmails : [];
+        const fallback = [
+          showData.reviewSubmittedBy?.email,
+          showData.draftBy?.email,
+          showData.publishedBy?.email,
+        ];
+        recipients = [...requested, ...fallback]
+          .map(normalizeEmail)
+          .filter(emailAddr => emailAddr && memberEmails.has(emailAddr));
+      }
+      recipients = [...new Set(recipients)];
+
+      if (!recipients.length) {
+        return res.json({ ok: true, emailSent: false, emailError: 'No eligible approval notification recipients.' });
+      }
+
+      const emailResult = await sendApprovalNotificationEmail({
+        to: recipients,
+        action: approvalAction,
+        orgName: orgData.name || 'Zigns',
+        showName: showMeta.name || showData.name || 'Slideshow',
+        actorEmail: userData.email || email || '',
+        note: String(req.body.note || '').trim().slice(0, 1000),
+      });
+      return res.json({
+        ok: true,
+        emailSent: emailResult.sent,
+        emailError: emailResult.error || null,
+        emailId: emailResult.id || null,
       });
     }
 

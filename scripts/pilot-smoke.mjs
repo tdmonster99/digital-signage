@@ -209,6 +209,7 @@ async function main() {
     'shouldProbeUnmarkedSubcollections',
     "callAccountApi('createOrganization'",
     "callAccountApi('saveOrganizationSettings'",
+    "callAccountApi('sendApprovalNotification'",
     'createInvitation',
     "callAccountApi('removeMember'",
     'emailSent',
@@ -299,11 +300,21 @@ async function main() {
     assert(!adminHtml.includes('if (!hasCount && !hasInlineSlides)'), 'admin.html still trusts stale zero slideshow count metadata');
   });
 
-  await check('Static invite sender', () => assertFileContains('api/link-account.js', [
+  await check('Static authenticated email senders', async () => {
+    const adminHtml = await readText('admin.html');
+    assert(!adminHtml.includes("fetch('/api/send-invite'"), 'admin.html still calls the public email endpoint');
+    await assertFileContains('api/link-account.js', [
     'sendTeamInvitationEmail',
+    'sendApprovalNotificationEmail',
+    "req.body.action === 'sendApprovalNotification'",
     'Zigns <hello@zigns.io>',
     'emailSent',
-  ]));
+    ]);
+    await assertFileContains('api/send-invite.js', [
+      'Email sends now require authenticated account actions.',
+      'status(410)',
+    ]);
+  });
 
   await check('Static CAP test actions', () => assertFileContains('api/link-account.js', [
     'sendCapTestAlert',
