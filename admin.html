@@ -1632,6 +1632,7 @@ section.content {
   position: absolute; top: 6px; right: 6px;
   display: flex; gap: 4px;
   opacity: 0; transition: opacity 0.15s;
+  z-index: 6;
 }
 .slide-card:hover .slide-actions { opacity: 1; }
 .slide-tag-row {
@@ -1649,6 +1650,46 @@ section.content {
   backdrop-filter: blur(6px);
   transition: background 0.15s;
   box-shadow: 0 2px 8px rgba(0,0,0,0.65), 0 0 0 1px rgba(0,0,0,0.18);
+  position: relative;
+}
+.slide-actions .icon-btn[data-tooltip]::before,
+.slide-actions .icon-btn[data-tooltip]::after {
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  transition: opacity .08s ease, transform .08s ease;
+  z-index: 20;
+}
+.slide-actions .icon-btn[data-tooltip]::before {
+  content: "";
+  top: calc(100% + 3px);
+  right: 10px;
+  border: 5px solid transparent;
+  border-bottom-color: rgba(17,24,39,.96);
+  transform: translateY(-2px);
+}
+.slide-actions .icon-btn[data-tooltip]::after {
+  content: attr(data-tooltip);
+  top: calc(100% + 12px);
+  right: 0;
+  max-width: 160px;
+  padding: 6px 8px;
+  border-radius: 7px;
+  background: rgba(17,24,39,.96);
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(0,0,0,.22);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  transform: translateY(-2px);
+}
+.slide-actions .icon-btn[data-tooltip]:hover::before,
+.slide-actions .icon-btn[data-tooltip]:hover::after,
+.slide-actions .icon-btn[data-tooltip]:focus-visible::before,
+.slide-actions .icon-btn[data-tooltip]:focus-visible::after {
+  opacity: 1;
+  transform: translateY(0);
 }
 .icon-btn.del    { background: #c0392bdd; }
 .icon-btn.del:hover { background: #e05252; }
@@ -15574,6 +15615,16 @@ function isSlideSelectionControlTarget(target) {
   return Boolean(target?.closest?.('button,input,label,select,textarea,a,.slide-actions'));
 }
 
+function hydrateSlideActionTooltips(scope) {
+  scope.querySelectorAll('.slide-actions .icon-btn[title]').forEach(btn => {
+    const label = btn.getAttribute('title');
+    if (!label) return;
+    btn.dataset.tooltip = label;
+    btn.setAttribute('aria-label', label);
+    btn.removeAttribute('title');
+  });
+}
+
 function setSlideSelection(idx, selected) {
   const slide = slides[idx];
   if (!slide) return;
@@ -15880,6 +15931,7 @@ function renderGrid() {
   }).join("");
 
   // Drag-to-reorder and select
+  hydrateSlideActionTooltips(grid);
   grid.querySelectorAll(".slide-card").forEach(card => {
     card.addEventListener("click", e => {
       if (dragSrcIdx !== null || isSlideSelectionControlTarget(e.target)) return;

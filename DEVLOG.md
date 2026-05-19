@@ -38,6 +38,7 @@ Improved the Fabric.js slide designer editing surface.
 - **Slide bulk delete**: Added click-to-select slide cards with blue selected borders, shift-click range selection, a bulk-selection action bar, and Delete Selected for removing multiple slides at once.
 - **Invite onboarding UX**: Added invite metadata lookup, clearer accept-invite copy, a primary email-account creation path for new invited users, and exact mismatch guidance when OAuth returns a different email than the invited address.
 - **Invite onboarding guard**: Marked accepted invite users as onboarded and limited onboarding resume to the organization owner, so invited smoke-test/member accounts do not restart setup.
+- **Slide action tooltips**: Added instant styled hover/focus tooltips for slide-card action icons so edit, hide/show, preview, duplicate, delete, tags, and expiration controls are self-explanatory.
 
 ---
 
