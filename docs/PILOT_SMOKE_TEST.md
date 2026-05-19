@@ -128,6 +128,18 @@ npm run smoke:tags -- --base-url https://app.zigns.io
 
 The tag propagation pass creates temporary screen, media, slideshow, published slide, and draft slide records, verifies org tag rename/delete propagation across all of them, then removes the temporary records. Only run it against a dedicated test organization.
 
+Run the rules denial pass after deploying Firestore rules or changing auth/org/team/invite security:
+
+```bash
+ZIGNS_SMOKE_EMAIL="pilot-admin@example.com" \
+ZIGNS_SMOKE_PASSWORD="use-a-dedicated-test-password" \
+ZIGNS_SMOKE_EXPECTED_ORG="Zigns Smoke Test" \
+ZIGNS_SMOKE_EXPECTED_ROLE="admin" \
+npm run smoke:rules -- --base-url https://app.zigns.io
+```
+
+The rules denial pass verifies production Firestore rules reject browser-client attempts to self-edit role/org membership, modify organization subscription/member fields, create organizations, and read/write invitations directly. Forbidden writes use failing preconditions so they do not mutate data even if a rule accidentally opens.
+
 ## Account And Role Smoke
 
 | Step | Expected Result |

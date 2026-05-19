@@ -407,6 +407,14 @@ async function main() {
     'Delete tag propagates',
   ]));
 
+  await check('Static rules denial smoke script', () => assertFileContains('scripts/rules-denial-smoke.mjs', [
+    'Zigns rules denial smoke',
+    'NEVER_UPDATE_TIME',
+    'Deny user role self-write',
+    'Deny organization subscription write',
+    'Deny invitation collection read',
+  ]));
+
   if (!config.staticOnly) {
     await check('Live login page', () => checkPublicPage('/login.html', 'Zigns'));
     await check('Live admin shell', () => checkPublicPage('/admin.html', 'Dashboard'));
