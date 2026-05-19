@@ -6,7 +6,8 @@
     "smoke:static": "node scripts/pilot-smoke.mjs --static",
     "smoke:browser": "node scripts/browser-smoke.mjs",
     "smoke:tags": "node scripts/tag-propagation-smoke.mjs",
-    "smoke:rules": "node scripts/rules-denial-smoke.mjs"
+    "smoke:rules": "node scripts/rules-denial-smoke.mjs",
+    "smoke:rendering": "node scripts/rendering-smoke.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.0.0",

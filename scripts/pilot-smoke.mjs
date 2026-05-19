@@ -366,6 +366,7 @@ async function main() {
     'broadcasts',
     'playlist_slide_skipped',
     'playerVersion',
+    'startPreviewFallbackPolling',
   ]));
 
   await check('Static screen diagnostics panel', () => assertFileContains('admin.html', [
@@ -390,6 +391,7 @@ async function main() {
     'Tags, Priority, And Emergency Smoke',
     'Team Invite Smoke',
     'Browser Smoke',
+    'Rendering Smoke',
     'tag propagation pass',
     'CAP Alert Smoke',
   ]));
@@ -413,6 +415,13 @@ async function main() {
     'Deny user role self-write',
     'Deny organization subscription write',
     'Deny invitation collection read',
+  ]));
+
+  await check('Static rendering smoke script', () => assertFileContains('scripts/rendering-smoke.mjs', [
+    'Zigns rendering smoke',
+    'display.html?slideshow=',
+    'Display preview renders slide mix',
+    'Republish removes deleted YouTube slide',
   ]));
 
   if (!config.staticOnly) {

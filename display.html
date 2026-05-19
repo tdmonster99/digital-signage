@@ -2831,6 +2831,40 @@
     }
   }
 
+  let previewFallbackPollTimer = null;
+
+  function previewFallbackToPlaylist(fallback) {
+    if (!fallback) return null;
+    const shouldUseDraftPreview = fallback.draftSlides !== undefined;
+    return {
+      ...fallback,
+      slides: shouldUseDraftPreview ? fallback.draftSlides : fallback.slides,
+    };
+  }
+
+  function stopPreviewFallbackPolling() {
+    if (previewFallbackPollTimer) {
+      clearInterval(previewFallbackPollTimer);
+      previewFallbackPollTimer = null;
+    }
+  }
+
+  function startPreviewFallbackPolling(slideshowId) {
+    if (!isPreviewMode || !slideshowId || previewFallbackPollTimer) return;
+    previewFallbackPollTimer = setInterval(async () => {
+      if (activeSlideshowId !== slideshowId) {
+        stopPreviewFallbackPolling();
+        return;
+      }
+      const fallback = await loadPreviewSlideshowFromServer(slideshowId, 'preview fallback polling');
+      const playlist = previewFallbackToPlaylist(fallback);
+      if (!playlist || activeSlideshowId !== slideshowId) return;
+      setOffline(false);
+      errBox.style.display = "none";
+      applyPlaylist(playlist);
+    }, 2500);
+  }
+
   async function resolvePublishedSlideshow(slideshowId, data = {}) {
     try {
       const [publishedSlides, draftSlides] = await Promise.all([
@@ -2846,13 +2880,8 @@
     } catch (e) {
       if (isPreviewMode) {
         const fallback = await loadPreviewSlideshowFromServer(slideshowId, e.message || String(e));
-        if (fallback) {
-          const shouldUseDraftPreview = fallback.draftSlides !== undefined;
-          return {
-            ...fallback,
-            slides: shouldUseDraftPreview ? fallback.draftSlides : fallback.slides,
-          };
-        }
+        const playlist = previewFallbackToPlaylist(fallback);
+        if (playlist) return playlist;
       }
       throw e;
     }
@@ -2966,6 +2995,7 @@
 
   function subscribeToSlideshow(slideshowId) {
     if (slideshowUnsub) { slideshowUnsub(); slideshowUnsub = null; }
+    stopPreviewFallbackPolling();
     clearTimeout(reconnectTimer);
     activeSlideshowId = slideshowId;
 
@@ -2986,6 +3016,7 @@
         reconnectBackoff = 5000;         // reset backoff on any successful event
         lastUpdateTime   = Date.now();
         setOffline(false);
+        stopPreviewFallbackPolling();
         if (snap.exists()) {
           const data = snap.data();
           let resolved;
@@ -3017,11 +3048,13 @@
 
         if (isPreviewMode) {
           const fallback = await loadPreviewSlideshowFromServer(slideshowId, err.message || String(err));
+          const playlist = previewFallbackToPlaylist(fallback);
           if (activeSlideshowId !== slideshowId) return;
-          if (fallback) {
+          if (playlist) {
             setOffline(false);
             errBox.style.display = "none";
-            applyPlaylist(fallback);
+            applyPlaylist(playlist);
+            startPreviewFallbackPolling(slideshowId);
             return;
           }
         }

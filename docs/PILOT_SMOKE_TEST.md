@@ -128,6 +128,20 @@ npm run smoke:tags -- --base-url https://app.zigns.io
 
 The tag propagation pass creates temporary screen, media, slideshow, published slide, and draft slide records, verifies org tag rename/delete propagation across all of them, then removes the temporary records. Only run it against a dedicated test organization.
 
+## Rendering Smoke
+
+Run the rendering smoke when validating preview/player rendering bugs such as multi-slide playback, designed Fabric slides, and deleted YouTube content lingering in preview:
+
+```bash
+ZIGNS_SMOKE_EMAIL="pilot-admin@example.com" \
+ZIGNS_SMOKE_PASSWORD="use-a-dedicated-test-password" \
+ZIGNS_SMOKE_EXPECTED_ORG="Zigns Smoke Test" \
+ZIGNS_SMOKE_EXPECTED_ROLE="admin" \
+npm run smoke:rendering -- --base-url https://app.zigns.io
+```
+
+The rendering pass creates a temporary slideshow, publishes image, Fabric-designed, and YouTube slides, opens the live display preview in a real browser, verifies the rendered stages cycle, republishes after deleting the YouTube slide, confirms the preview no longer shows the YouTube stage, then deletes the temporary slideshow. It requires an Admin smoke account because cleanup deletes the temporary slideshow.
+
 Run the rules denial pass after deploying Firestore rules or changing auth/org/team/invite security:
 
 ```bash
