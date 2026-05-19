@@ -6,6 +6,9 @@ import fs from 'node:fs';
 import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
+import { loadSmokeEnv } from './smoke-env.mjs';
+
+loadSmokeEnv();
 
 function parseArgs(argv) {
   const out = {};
@@ -453,6 +456,8 @@ async function click(cdp, selector) {
 }
 
 async function runReadOnlyAuthenticatedChecks(cdp) {
+  let sessionDetails = null;
+
   await check('Authenticated login/session', async () => {
     await fill(cdp, '#authEmail', config.email);
     await fill(cdp, '#authPassword', config.password);
@@ -475,17 +480,34 @@ async function runReadOnlyAuthenticatedChecks(cdp) {
     })()`);
     if (config.expectedRole) assert(String(details.role || '').toLowerCase() === config.expectedRole.toLowerCase(), `expected role ${config.expectedRole}, got ${details.role || 'unknown'}`);
     if (config.expectedOrg) assert(details.org === config.expectedOrg, `expected org ${config.expectedOrg}, got ${details.org || 'unknown'}`);
+    sessionDetails = details;
     return `user=${details.email || config.email}; org=${details.org || 'unknown'}; role=${details.role || 'unknown'}`;
   });
 
-  await check('Team invite modal opens', async () => {
-    await evaluate(cdp, `window.showPage('settings'); window.showSettingsSub?.('team'); window.openInviteModal?.(); true`);
-    await waitFor(cdp, `getComputedStyle(document.querySelector('#inviteModal')).display !== 'none'`, 'invite modal');
-    const role = await evaluate(cdp, `document.querySelector('#inviteRole')?.value || ''`);
-    assert(role === 'editor', `expected invite role default editor, got ${role || 'blank'}`);
-    await evaluate(cdp, `window.closeInviteModal?.(); true`);
-    return 'invite modal defaulted to editor';
-  });
+  if (!sessionDetails) {
+    warn('Authenticated follow-up checks', 'skipped; login/session check did not pass');
+    return null;
+  }
+
+  if (!config.expectedOrg || !config.expectedRole) {
+    warn('Smoke account expectations', 'set ZIGNS_BROWSER_EXPECTED_ORG and ZIGNS_BROWSER_EXPECTED_ROLE so org/role drift fails early');
+  }
+
+  const actualRole = String(sessionDetails.role || '').toLowerCase();
+  const isAdmin = actualRole === 'admin';
+
+  if (isAdmin) {
+    await check('Team invite modal opens', async () => {
+      await evaluate(cdp, `window.showPage('settings'); window.showSettingsSub?.('team'); window.openInviteModal?.(); true`);
+      await waitFor(cdp, `getComputedStyle(document.querySelector('#inviteModal')).display !== 'none'`, 'invite modal');
+      const role = await evaluate(cdp, `document.querySelector('#inviteRole')?.value || ''`);
+      assert(role === 'editor', `expected invite role default editor, got ${role || 'blank'}`);
+      await evaluate(cdp, `window.closeInviteModal?.(); true`);
+      return 'invite modal defaulted to editor';
+    });
+  } else {
+    warn('Admin-only browser checks', `skipped team invite and emergency manager; authenticated role is ${sessionDetails.role || 'unknown'}`);
+  }
 
   await check('Slideshow tags modal opens', async () => {
     await evaluate(cdp, `window.showPage('slideshows'); window.openShowOptions?.(); true`);
@@ -509,19 +531,21 @@ async function runReadOnlyAuthenticatedChecks(cdp) {
     return labels.join(', ');
   });
 
-  await check('Emergency playlist manager opens', async () => {
-    await evaluate(cdp, `window.showPage('screens'); window.openEmergencyPlaylistManager?.(); true`);
-    await waitFor(cdp, `getComputedStyle(document.querySelector('#emergencyPlaylistManagerModal')).display !== 'none'`, 'emergency playlist manager');
-    const details = await evaluate(cdp, `(() => ({
-      hasPanel: Boolean(document.querySelector('#emergencyPlaylistPanel')),
-      hasAudit: Boolean(document.querySelector('#emergencyAuditPanel') && document.querySelector('#emergencyAuditList')),
-      hasSummary: Boolean(document.querySelector('#emergencyPlaylistManagerSummary')?.textContent?.trim()),
-      rowCount: document.querySelectorAll('#emergencyPlaylistManagerList .emergency-playlist-row').length,
-    }))()`);
-    assert(details.hasPanel && details.hasAudit && details.hasSummary, 'emergency playlist manager missing expected shell');
-    await evaluate(cdp, `window.closeEmergencyPlaylistManager?.(); true`);
-    return `manager rows=${details.rowCount}`;
-  });
+  if (isAdmin) {
+    await check('Emergency playlist manager opens', async () => {
+      await evaluate(cdp, `window.showPage('screens'); window.openEmergencyPlaylistManager?.(); true`);
+      await waitFor(cdp, `getComputedStyle(document.querySelector('#emergencyPlaylistManagerModal')).display !== 'none'`, 'emergency playlist manager');
+      const details = await evaluate(cdp, `(() => ({
+        hasPanel: Boolean(document.querySelector('#emergencyPlaylistPanel')),
+        hasAudit: Boolean(document.querySelector('#emergencyAuditPanel') && document.querySelector('#emergencyAuditList')),
+        hasSummary: Boolean(document.querySelector('#emergencyPlaylistManagerSummary')?.textContent?.trim()),
+        rowCount: document.querySelectorAll('#emergencyPlaylistManagerList .emergency-playlist-row').length,
+      }))()`);
+      assert(details.hasPanel && details.hasAudit && details.hasSummary, 'emergency playlist manager missing expected shell');
+      await evaluate(cdp, `window.closeEmergencyPlaylistManager?.(); true`);
+      return `manager rows=${details.rowCount}`;
+    });
+  }
 
   await check('Pairing modal opens', async () => {
     await evaluate(cdp, `window.showPage('screens'); window.openAddScreenModal?.(); true`);
@@ -544,6 +568,8 @@ async function runReadOnlyAuthenticatedChecks(cdp) {
     await evaluate(cdp, `window.closeIssueReportModal?.(); true`);
     return 'issue report context generated';
   });
+
+  return sessionDetails;
 }
 
 async function runMutatingChecks(cdp) {
@@ -648,9 +674,18 @@ async function main() {
     if (!config.email || !config.password) {
       warn('Authenticated browser flow', 'skipped; set ZIGNS_BROWSER_EMAIL and ZIGNS_BROWSER_PASSWORD for a dedicated test account');
     } else {
-      await runReadOnlyAuthenticatedChecks(cdp);
-      if (config.mutate) await runMutatingChecks(cdp);
-      else warn('Slideshow CRUD smoke', 'skipped; set ZIGNS_BROWSER_MUTATE=1 to create/tag/delete a temporary slideshow');
+      const sessionDetails = await runReadOnlyAuthenticatedChecks(cdp);
+      if (config.mutate) {
+        if (!sessionDetails) {
+          warn('Slideshow CRUD smoke', 'skipped; authenticated session did not complete');
+        } else if (String(sessionDetails.role || '').toLowerCase() !== 'admin') {
+          warn('Slideshow CRUD smoke', `skipped; mutating emergency playlist coverage requires an admin smoke account, got ${sessionDetails.role || 'unknown'}`);
+        } else {
+          await runMutatingChecks(cdp);
+        }
+      } else {
+        warn('Slideshow CRUD smoke', 'skipped; set ZIGNS_BROWSER_MUTATE=1 to create/tag/delete a temporary slideshow');
+      }
     }
   } finally {
     ws?.close();

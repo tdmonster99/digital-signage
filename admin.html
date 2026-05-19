@@ -11896,55 +11896,9 @@ window.cancelInvite = async function(inviteId) {
 window.removeMember = async function(uid, email) {
   if (!confirm(`Remove ${email} from the team?`)) return;
   try {
-    const orgSnap = await getDoc(doc(db, 'organizations', currentOrgId));
-    if (!orgSnap.exists()) return;
-    const orgData = orgSnap.data();
-    const members = orgData.members || [];
-    const member  = members.find(m => m.uid === uid);
-    if (!member) { toast('Member not found.', true); return; }
-
-    // Guard: refuse to remove the org owner — they own billing and can't be ejected
-    if (orgData.ownerId && uid === orgData.ownerId) {
-      toast('Cannot remove the organization owner.', true); return;
-    }
-
-    // Guard: refuse to remove the last remaining admin (would orphan the org)
-    if (member.role === 'admin') {
-      const remainingAdmins = members.filter(m => m.uid !== uid && m.role === 'admin').length;
-      if (remainingAdmins === 0) {
-        toast('Cannot remove the last admin. Promote another member to admin first.', true); return;
-      }
-    }
-
-    // Filter by uid — robust against any field drift (displayName changes, addedAt formatting, etc.)
-    // arrayRemove(member) silently no-ops when fields don't match exactly, so we don't use it.
-    const newMembers = members.filter(m => m.uid !== uid);
-
-    // Soft-delete audit record — preserves who/when/by-whom for future audit needs.
-    // Capped at 50 entries to avoid the org doc growing unbounded.
-    const removedRecord = {
-      uid:             member.uid,
-      email:           member.email,
-      displayName:     member.displayName || '',
-      role:            member.role,
-      addedAt:         member.addedAt || null,
-      removedAt:       new Date().toISOString(),
-      removedBy:       currentUser?.uid || null,
-      removedByEmail:  currentUser?.email || null,
-    };
-    const existingRemoved = Array.isArray(orgData.removedMembers) ? orgData.removedMembers : [];
-    const newRemoved      = [...existingRemoved, removedRecord].slice(-50);
-
-    await updateDoc(doc(db, 'organizations', currentOrgId), {
-      members:        newMembers,
-      removedMembers: newRemoved,
-    });
-    // Remove user record so they get a fresh org on next login
-    await updateDoc(doc(db, 'users', uid), { orgId: null }).catch(() => {});
+    const result = await callAccountApi('removeMember', { memberUid: uid }, true);
     toast(`${email} removed from team`);
-    // Refresh org
-    const refreshSnap = await getDoc(doc(db, 'organizations', currentOrgId));
-    currentOrg = { id: currentOrgId, ...refreshSnap.data() };
+    currentOrg = result.org || currentOrg;
     renderTeamPage();
     logActivity('Removed ' + email + ' from team');
   } catch(e) { toast('Error: ' + e.message, true); }

@@ -34,6 +34,8 @@ Issue reports copied: yes/no
 
 ## Scripted Sanity Checks
 
+The smoke scripts automatically load `ZIGNS_*` values from `.env.local` or `.env` when those variables are not already exported in the shell. They intentionally ignore unrelated keys so normal app secrets are not pulled into the smoke process.
+
 Run the no-network static check before or after a deploy:
 
 ```bash
@@ -71,6 +73,7 @@ node scripts/pilot-smoke.mjs --base-url https://app.zigns.io
 Notes:
 - The authenticated check supports Firebase email/password accounts. Google OAuth sign-in still needs a browser/manual run.
 - Do not use a real user's personal password for this script. Create a dedicated test account when we are ready for automated authenticated checks.
+- Set `ZIGNS_SMOKE_EXPECTED_ORG` and `ZIGNS_SMOKE_EXPECTED_ROLE` for authenticated runs so org/role drift fails early.
 - The invite send check creates or reuses a pending invite and verifies that Resend accepted the email for delivery. The tester still needs to confirm inbox delivery manually.
 - Add `--json` when piping results into another tool.
 
@@ -95,6 +98,8 @@ What it checks:
 - Screens -> Emergency Audit panel is present.
 - Add Screen pairing modal opens or shows the screen-limit prompt.
 - Profile issue report modal opens with copied context.
+
+If the authenticated account is not an Admin, the browser pass still checks editor-safe flows and reports the admin-only invite/emergency coverage as skipped. Use a dedicated Admin account in the `Zigns Smoke Test` org for full pilot coverage.
 
 Optional mutating CRUD pass:
 

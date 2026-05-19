@@ -111,6 +111,16 @@ function validateEmail(value) {
   return email;
 }
 
+function validateUid(value, label = 'uid') {
+  const uid = String(value || '').trim();
+  if (!uid || uid.length > 128 || uid.includes('/')) {
+    const error = new Error(`${label} required`);
+    error.statusCode = 400;
+    throw error;
+  }
+  return uid;
+}
+
 function sanitizeInviteRole(value) {
   const role = String(value || 'editor').trim().toLowerCase();
   if (!INVITE_ROLES.has(role)) {
@@ -1077,6 +1087,82 @@ module.exports = async function handler(req, res) {
         emailError: emailResult.error || null,
         emailId: emailResult.id || null,
       });
+    }
+
+    if (req.body.action === 'removeMember') {
+      const { orgId, role } = await loadUserContext(db, uid);
+      requireRole(role, ['admin']);
+      const memberUid = validateUid(req.body.memberUid, 'memberUid');
+      if (memberUid === uid) return res.status(400).json({ error: 'You cannot remove yourself from the team.' });
+
+      const orgRef = db.doc(`organizations/${orgId}`);
+      const memberRef = db.doc(`users/${memberUid}`);
+      const now = new Date().toISOString();
+
+      const result = await db.runTransaction(async tx => {
+        const [orgSnap, memberSnap] = await Promise.all([tx.get(orgRef), tx.get(memberRef)]);
+        if (!orgSnap.exists) {
+          const error = new Error('Organization not found');
+          error.statusCode = 404;
+          throw error;
+        }
+
+        const orgData = orgSnap.data() || {};
+        const members = Array.isArray(orgData.members) ? orgData.members : [];
+        const member = members.find(item => item && item.uid === memberUid);
+        if (!member) {
+          const error = new Error('Member not found.');
+          error.statusCode = 404;
+          throw error;
+        }
+
+        if (orgData.ownerId && memberUid === orgData.ownerId) {
+          const error = new Error('Cannot remove the organization owner.');
+          error.statusCode = 409;
+          throw error;
+        }
+
+        if (member.role === 'admin') {
+          const remainingAdmins = members.filter(item => item && item.uid !== memberUid && item.role === 'admin').length;
+          if (remainingAdmins === 0) {
+            const error = new Error('Cannot remove the last admin. Promote another member to admin first.');
+            error.statusCode = 409;
+            throw error;
+          }
+        }
+
+        const nextMembers = members.filter(item => item && item.uid !== memberUid);
+        const removedRecord = {
+          uid: member.uid,
+          email: member.email || '',
+          displayName: member.displayName || '',
+          role: member.role || 'viewer',
+          addedAt: member.addedAt || null,
+          removedAt: now,
+          removedBy: uid,
+          removedByEmail: email || '',
+        };
+        const existingRemoved = Array.isArray(orgData.removedMembers) ? orgData.removedMembers : [];
+        const nextRemoved = [...existingRemoved, removedRecord].slice(-50);
+        const nextOrg = { id: orgId, ...orgData, members: nextMembers, removedMembers: nextRemoved };
+
+        tx.set(orgRef, { members: nextMembers, removedMembers: nextRemoved }, { merge: true });
+        if (memberSnap.exists) {
+          const memberData = memberSnap.data() || {};
+          if (!memberData.orgId || memberData.orgId === orgId) {
+            tx.set(memberRef, {
+              orgId: null,
+              removedFromOrgId: orgId,
+              removedFromOrgAt: now,
+              removedFromOrgBy: uid,
+            }, { merge: true });
+          }
+        }
+
+        return { org: nextOrg, removedMember: removedRecord };
+      });
+
+      return res.json({ ok: true, ...result });
     }
 
     if (req.body.action === 'pairScreen') {

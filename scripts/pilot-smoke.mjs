@@ -3,6 +3,9 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { loadSmokeEnv } from './smoke-env.mjs';
+
+loadSmokeEnv();
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -205,6 +208,7 @@ async function main() {
     'clearEmergencyBroadcast',
     'shouldProbeUnmarkedSubcollections',
     'createInvitation',
+    "callAccountApi('removeMember'",
     'emailSent',
     'showOptionsModal',
     'showOptionsTags',
@@ -224,6 +228,13 @@ async function main() {
     'isStaleScreen',
     'screens-stale-banner',
     'screen-stale-chip',
+  ]));
+
+  await check('Static team removal API', () => assertFileContains('api/link-account.js', [
+    "req.body.action === 'removeMember'",
+    'Cannot remove the organization owner.',
+    'Cannot remove the last admin. Promote another member to admin first.',
+    'removedMembers',
   ]));
 
   await check('Static screen org scoping guard', async () => {
