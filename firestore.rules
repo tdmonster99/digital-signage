@@ -62,11 +62,31 @@ service cloud.firestore {
 
     // ----------------------------------------------------------------
     // users/{uid}
-    // Users can only read and write their own document.
-    // Server-side admin SDK (screen-monitor, stripe-webhook) bypasses rules.
+    // Users can read their own document and update preferences/tokens. Org
+    // membership, role, and email identity are server-owned.
     // ----------------------------------------------------------------
     match /users/{uid} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow create: if false;
+      allow update: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'onboardingComplete',
+          'firstName',
+          'lastName',
+          'timezone',
+          'dateFormat',
+          'timeFormat',
+          'firstDay',
+          'newsletter',
+          'notifOffline',
+          'notifOnline',
+          'notifNewLogin',
+          'fcmToken',
+          'fcmUpdatedAt',
+          'canvaToken'
+        ]);
+      allow delete: if false;
     }
 
     // ----------------------------------------------------------------

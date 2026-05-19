@@ -265,6 +265,17 @@ async function main() {
     assert(!rulesText.includes('allow update: if isAdmin(orgId);'), 'firestore.rules still allows broad organization updates');
   });
 
+  await check('Static user document rules', async () => {
+    const rulesText = await readText('firestore.rules');
+    const usersBlock = rulesText.match(/match \/users\/\{uid\} \{[\s\S]*?\n    \}/);
+    assert(usersBlock, 'firestore.rules is missing users/{uid} rules');
+    assert(rulesText.includes('membership, role, and email identity are server-owned'), 'firestore.rules is missing the user ownership note');
+    assert(usersBlock[0].includes('allow create: if false;'), 'firestore.rules still allows client user document creates');
+    assert(usersBlock[0].includes("'onboardingComplete'"), 'firestore.rules is missing onboardingComplete from safe user fields');
+    assert(usersBlock[0].includes("'canvaToken'"), 'firestore.rules is missing canvaToken from safe user fields');
+    assert(!usersBlock[0].includes('allow read, write: if request.auth != null && request.auth.uid == uid;'), 'firestore.rules still allows broad user self-writes');
+  });
+
   await check('Static screen org scoping guard', async () => {
     const adminHtml = await readText('admin.html');
     assert(adminHtml.includes('Screens listener waiting for organization context'), 'admin.html is missing the screen org readiness guard');
