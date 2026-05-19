@@ -10309,6 +10309,19 @@ function subscribeToOrg(orgId) {
   );
 }
 
+function loginRedirectUrl() {
+  const params = new URLSearchParams();
+  const inviteId = new URLSearchParams(window.location.search).get('invite');
+  if (inviteId) {
+    params.set('invite', inviteId);
+  } else {
+    const currentPath = window.location.pathname + window.location.search + window.location.hash;
+    if (currentPath && currentPath !== '/') params.set('continue', currentPath);
+  }
+  const qs = params.toString();
+  return '/login' + (qs ? '?' + qs : '');
+}
+
 // ── Auth ──────────────────────────────────────────────────────────────────
 onAuthStateChanged(auth, async user => {
   const badge = document.getElementById("liveBadge");
@@ -10328,7 +10341,7 @@ onAuthStateChanged(auth, async user => {
     if (tokenResult?.claims?.screen === true || !user.email) {
       cleanupRealtimeListeners();
       await signOut(auth).catch(() => {});
-      window.location.replace('/login');
+      window.location.replace(loginRedirectUrl());
       return;
     }
 
@@ -10346,7 +10359,7 @@ onAuthStateChanged(auth, async user => {
     currentSubscription = null;
     planEntitlementsReady = false;
     cleanupRealtimeListeners();
-    window.location.replace('/login');
+    window.location.replace(loginRedirectUrl());
   }
 });
 
@@ -15209,9 +15222,40 @@ function getDesignedSlideThumbUrl(slide) {
 let slidePreviewFabric = null;
 let tvPreviewFabric = null;
 let tvPreviewRequestId = 0;
+let slidePreviewGiphyFrame = null;
+let tvPreviewGiphyFrame = null;
+
+function cancelDesignedPreviewGiphyLoop(kind) {
+  if (kind === 'slide' && slidePreviewGiphyFrame) {
+    cancelAnimationFrame(slidePreviewGiphyFrame);
+    slidePreviewGiphyFrame = null;
+  }
+  if (kind === 'tv' && tvPreviewGiphyFrame) {
+    cancelAnimationFrame(tvPreviewGiphyFrame);
+    tvPreviewGiphyFrame = null;
+  }
+}
+
+function startDesignedPreviewGiphyLoop(kind, canvas) {
+  if (!canvas || !configureGiphyObjects(canvas)) return;
+  cancelDesignedPreviewGiphyLoop(kind);
+  const tick = () => {
+    const current = kind === 'slide' ? slidePreviewFabric : tvPreviewFabric;
+    if (current !== canvas) {
+      cancelDesignedPreviewGiphyLoop(kind);
+      return;
+    }
+    canvas.requestRenderAll();
+    if (kind === 'slide') slidePreviewGiphyFrame = requestAnimationFrame(tick);
+    else tvPreviewGiphyFrame = requestAnimationFrame(tick);
+  };
+  if (kind === 'slide') slidePreviewGiphyFrame = requestAnimationFrame(tick);
+  else tvPreviewGiphyFrame = requestAnimationFrame(tick);
+}
 
 function disposeDesignedPreview(kind) {
   if (kind === 'slide') {
+    cancelDesignedPreviewGiphyLoop('slide');
     if (slidePreviewFabric) {
       try { slidePreviewFabric.dispose(); } catch(_) {}
       slidePreviewFabric = null;
@@ -15221,6 +15265,7 @@ function disposeDesignedPreview(kind) {
     return;
   }
   if (kind === 'tv') {
+    cancelDesignedPreviewGiphyLoop('tv');
     if (tvPreviewFabric) {
       try { tvPreviewFabric.dispose(); } catch(_) {}
       tvPreviewFabric = null;
@@ -15271,6 +15316,7 @@ async function renderDesignedPreviewCanvas(canvasJson, wrapId, kind) {
         previewCanvas.loadFromJSON(sanitizeCanvasJson(JSON.stringify(data)), () => {
           clearTimeout(timer);
           if (!previewCanvas.backgroundColor) previewCanvas.backgroundColor = '#ffffff';
+          configureGiphyObjects(previewCanvas);
           previewCanvas.renderAll();
           resolve();
         });
@@ -15280,6 +15326,7 @@ async function renderDesignedPreviewCanvas(canvasJson, wrapId, kind) {
       }
     });
     await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    startDesignedPreviewGiphyLoop(kind, previewCanvas);
     previewCanvas.renderAll();
     return previewCanvas;
   } catch (err) {
@@ -16132,6 +16179,55 @@ const DESIGNER_ZOOM_STEP = 0.1;
 let designerFitZoom = 1;
 let designerZoom = 1;
 
+function isGiphyFabricObject(obj) {
+  return Boolean(obj?.isGiphyAsset || obj?.giphyId ||
+    (typeof obj?.giphyUrl === 'string' && obj.giphyUrl.includes('giphy')) ||
+    (typeof obj?.src === 'string' && obj.src.includes('giphy')));
+}
+
+function disableFabricObjectCache(obj) {
+  if (!obj) return;
+  if (typeof obj.set === 'function') {
+    obj.set({
+      objectCaching: false,
+      noScaleCache: false,
+      statefullCache: false,
+    });
+  }
+  obj.objectCaching = false;
+  obj.noScaleCache = false;
+  obj.statefullCache = false;
+  obj.dirty = true;
+}
+
+function configureGiphyFabricObject(obj) {
+  if (!isGiphyFabricObject(obj)) return false;
+  disableFabricObjectCache(obj);
+  return true;
+}
+
+function configureGiphyObjectTree(obj) {
+  if (!obj) return false;
+  const children = Array.isArray(obj._objects) ? obj._objects
+    : Array.isArray(obj.objects) ? obj.objects
+      : [];
+  let found = isGiphyFabricObject(obj);
+  children.forEach(child => {
+    if (configureGiphyObjectTree(child)) found = true;
+  });
+  if (found) disableFabricObjectCache(obj);
+  return found;
+}
+
+function configureGiphyObjects(canvas) {
+  if (!canvas || typeof canvas.getObjects !== 'function') return false;
+  let found = false;
+  canvas.getObjects().forEach(obj => {
+    if (configureGiphyObjectTree(obj)) found = true;
+  });
+  return found;
+}
+
 // ── AI Slide Generator ────────────────────────────────────────────────────
 
 const AI_LOADING_MSGS = [
@@ -16269,6 +16365,7 @@ function renderAiPreview(canvasJson) {
     const tmp = new fabric.StaticCanvas(el, { width: 1920, height: 1080, renderOnAddRemove: false });
     tmp.loadFromJSON(canvasJson, () => {
       try {
+        configureGiphyObjects(tmp);
         tmp.renderAll();
         let dataUrl;
         try { dataUrl = tmp.toDataURL({ format: 'jpeg', quality: 0.88 }); }
@@ -16311,6 +16408,7 @@ function loadAiJsonIntoCanvas() {
   historyPaused = true;
   fabricCanvas.loadFromJSON(aiCurrentJson, () => {
     fabricCanvas.getObjects().forEach(applyLockState);
+    configureGiphyObjects(fabricCanvas);
     fabricCanvas.renderAll();
     maybeStartGiphyAnimationLoop();
     historyPaused = false;
@@ -16402,6 +16500,7 @@ function launchDesigner(existingSlide) {
       historyPaused = true;
       fabricCanvas.loadFromJSON(existingSlide.canvasJson, () => {
         fabricCanvas.getObjects().forEach(applyLockState);
+        configureGiphyObjects(fabricCanvas);
         fabricCanvas.renderAll();
         maybeStartGiphyAnimationLoop();
         historyPaused = false;
@@ -19565,7 +19664,11 @@ window.addGiphyToCanvas = function(giphyId) {
       giphyId: item.id,
       giphyTitle: item.title || '',
       giphyUrl: item.url || url,
+      objectCaching: false,
+      noScaleCache: false,
+      statefullCache: false,
     });
+    configureGiphyFabricObject(img);
     fabricCanvas.add(img);
     fabricCanvas.setActiveObject(img);
     fabricCanvas.renderAll();
@@ -19578,8 +19681,9 @@ window.addGiphyToCanvas = function(giphyId) {
 
 function maybeStartGiphyAnimationLoop() {
   if (giphyAnimationFrame || !fabricCanvas) return;
+  if (!configureGiphyObjects(fabricCanvas)) return;
   const tick = () => {
-    if (!fabricCanvas || !fabricCanvas.getObjects().some(obj => obj.isGiphyAsset)) {
+    if (!fabricCanvas || !configureGiphyObjects(fabricCanvas)) {
       giphyAnimationFrame = null;
       return;
     }
@@ -20076,7 +20180,9 @@ function historyLoad(json) {
   historyPaused = true;
   fabricCanvas.loadFromJSON(json, () => {
     fabricCanvas.getObjects().forEach(applyLockState);
+    configureGiphyObjects(fabricCanvas);
     fabricCanvas.renderAll();
+    maybeStartGiphyAnimationLoop();
     historyPaused = false;
     updatePropsPanel();
     renderLayersPanel();
@@ -20600,7 +20706,10 @@ async function executeRestore(versionId) {
     // 3. Load into canvas
     await new Promise((resolve, reject) => {
       fabricCanvas.loadFromJSON(canvasJson, () => {
+        fabricCanvas.getObjects().forEach(applyLockState);
+        configureGiphyObjects(fabricCanvas);
         fabricCanvas.renderAll();
+        maybeStartGiphyAnimationLoop();
         resolve();
       });
     });

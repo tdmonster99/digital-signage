@@ -33,6 +33,8 @@ Improved the Fabric.js slide designer editing surface.
 - **Toolbar labels**: Added persistent text labels to the left designer toolbar and removed the left-toolbar hover tooltip behavior.
 - **Preview draft state**: Updated display preview loading to prefer draft slide collections when present, so deleted YouTube slides and other draft edits clear from dashboard preview immediately.
 - **Preview reliability**: Widened the labeled left toolbar to avoid horizontal scrolling and switched designed-slide previews to live Fabric preview canvases so multi-image slides render fully even when image export is blocked by cross-origin media.
+- **GIPHY animation**: Disabled Fabric object caching for GIPHY assets and their parent groups, and added preview-canvas animation loops so inserted GIPHY GIFs animate in the editor, preview modals, and display player.
+- **Invite acceptance**: Preserved invite links through login/account creation so `/admin.html?invite=...` returns to the invitation after authentication, with invited-user copy on the login page.
 
 ---
 

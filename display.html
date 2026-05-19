@@ -609,11 +609,60 @@
   let pendingAnimations = [];   // populated by loadDesignedSlide, consumed by crossfadeTo
   let designedGiphyFrame = null;
 
+  function isGiphyFabricObject(obj) {
+    return Boolean(obj?.isGiphyAsset || obj?.giphyId ||
+      (typeof obj?.giphyUrl === 'string' && obj.giphyUrl.includes('giphy')) ||
+      (typeof obj?.src === 'string' && obj.src.includes('giphy')));
+  }
+
+  function disableFabricObjectCache(obj) {
+    if (!obj) return;
+    if (typeof obj.set === 'function') {
+      obj.set({
+        objectCaching: false,
+        noScaleCache: false,
+        statefullCache: false,
+      });
+    }
+    obj.objectCaching = false;
+    obj.noScaleCache = false;
+    obj.statefullCache = false;
+    obj.dirty = true;
+  }
+
+  function configureGiphyFabricObject(obj) {
+    if (!isGiphyFabricObject(obj)) return false;
+    disableFabricObjectCache(obj);
+    return true;
+  }
+
+  function configureGiphyObjectTree(obj) {
+    if (!obj) return false;
+    const children = Array.isArray(obj._objects) ? obj._objects
+      : Array.isArray(obj.objects) ? obj.objects
+        : [];
+    let found = isGiphyFabricObject(obj);
+    children.forEach(child => {
+      if (configureGiphyObjectTree(child)) found = true;
+    });
+    if (found) disableFabricObjectCache(obj);
+    return found;
+  }
+
+  function configureGiphyObjects(canvas) {
+    if (!canvas || typeof canvas.getObjects !== 'function') return false;
+    let found = false;
+    canvas.getObjects().forEach(obj => {
+      if (configureGiphyObjectTree(obj)) found = true;
+    });
+    return found;
+  }
+
   function startDesignedGiphyLoopIfNeeded() {
     if (designedGiphyFrame) return;
-    if (!displayFabric.getObjects().some(obj => obj.isGiphyAsset)) return;
+    if (!configureGiphyObjects(displayFabric)) return;
     const tick = () => {
-      if (stageDesigned.style.opacity === "0" || !displayFabric.getObjects().some(obj => obj.isGiphyAsset)) {
+      if (stageDesigned.style.opacity === "0" || !configureGiphyObjects(displayFabric)) {
         designedGiphyFrame = null;
         return;
       }
@@ -844,6 +893,7 @@
           if (tickerCfg) renderTicker(tickerCfg);
           else stopTicker();
           pendingAnimations = [];
+          const hasGiphyAssets = configureGiphyObjects(displayFabric);
           displayFabric.getObjects().forEach(obj => {
             const a = obj.animation;
             if (!a || !a.type || a.type === 'none') return;
@@ -859,7 +909,7 @@
             for (const k in init) obj.set(k, init[k]);
             pendingAnimations.push({ obj, type: a.type, delay: a.delay || 0, duration: a.duration || 0.8, orig });
           });
-          if (pendingAnimations.length) displayFabric.renderAll();
+          if (pendingAnimations.length || hasGiphyAssets) displayFabric.renderAll();
           resolve();
         });
       } catch(e) {

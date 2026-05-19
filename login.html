@@ -126,6 +126,17 @@
     font-size: 12px; color: #6b7280; line-height: 1.45;
     margin: -16px 0 22px;
   }
+  .invite-note {
+    display: none;
+    padding: 10px 12px;
+    border: 1px solid #bfdbfe;
+    border-radius: 8px;
+    background: #eff6ff;
+    color: #1d4ed8;
+    font-size: 12px;
+    line-height: 1.45;
+    margin: -14px 0 20px;
+  }
 
   .provider-btn {
     display: flex; align-items: center; gap: 10px;
@@ -272,7 +283,8 @@
     <!-- Sign in view -->
     <div id="signInView">
       <div class="card-title">Welcome back</div>
-      <div class="card-sub">Sign in to your account</div>
+      <div class="card-sub" id="signInSub">Sign in to your account</div>
+      <div class="invite-note" id="signInInviteNote">Sign in with the invited email address to accept your Zigns invitation.</div>
 
       <button class="provider-btn" id="googleBtn">
         <img src="assets/brand/google-g.png" alt="" aria-hidden="true" style="width:18px;height:18px;object-fit:contain;flex-shrink:0">
@@ -311,8 +323,9 @@
     <div id="registerView" style="display:none">
       <div class="early-access-badge">Early Access</div>
       <div class="card-title">Create account</div>
-      <div class="card-sub">Start managing real screens today</div>
+      <div class="card-sub" id="registerSub">Start managing real screens today</div>
       <div class="early-access-note">Official launch is coming late May / early June. Some integrations and polish may continue to evolve during Early Access.</div>
+      <div class="invite-note" id="registerInviteNote">Create your account with the invited email address to join this Zigns organization.</div>
       <div class="field">
         <label>Email</label>
         <input type="email" id="regEmail" placeholder="you@example.com" autocomplete="email">
@@ -379,8 +392,37 @@ const app  = initializeApp({
 });
 const auth = getAuth(app);
 
+const loginRouteParams = new URLSearchParams(window.location.search);
+const inviteId = loginRouteParams.get('invite');
+const continuePath = loginRouteParams.get('continue');
+
+function localContinuePath(path) {
+  if (!path) return '';
+  try {
+    const url = new URL(path, window.location.origin);
+    if (url.origin !== window.location.origin) return '';
+    if (url.pathname === '/login' || url.pathname === '/login.html') return '';
+    return url.pathname + url.search + url.hash;
+  } catch(_) {
+    return '';
+  }
+}
+
+function postAuthRedirectUrl() {
+  if (inviteId) return '/admin.html?invite=' + encodeURIComponent(inviteId);
+  return localContinuePath(continuePath) || '/';
+}
+
+if (inviteId) {
+  document.getElementById('signInSub').textContent = 'Sign in to accept your invitation';
+  document.getElementById('registerSub').textContent = 'Create an account to accept your invitation';
+  document.getElementById('signInInviteNote').style.display = 'block';
+  document.getElementById('registerInviteNote').style.display = 'block';
+}
+
 // Redirect to app when signed in (handles both popup and redirect flows)
-onAuthStateChanged(auth, user => { if (user) window.location.replace('/'); });
+onAuthStateChanged(auth, user => { if (user) window.location.replace(postAuthRedirectUrl()); });
+
 
 let authBusy = false;
 
