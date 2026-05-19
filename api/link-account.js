@@ -39,6 +39,13 @@ const PLAN_LIMITS = {
   starter: { usersAllowed: 3 },
   pro: { usersAllowed: 10 },
 };
+const FREE_SUBSCRIPTION = {
+  plan: 'free',
+  status: 'active',
+  screensAllowed: 1,
+  usersAllowed: 1,
+  storageGb: 1,
+};
 const INVITE_ROLES = new Set(['admin', 'editor', 'viewer']);
 const CAP_STATE_CODES = new Set([
   'AL','AK','AZ','AR','CA','CO','CT','DE','DC','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN',
@@ -121,6 +128,10 @@ function validateUid(value, label = 'uid') {
   return uid;
 }
 
+function sanitizeDisplayName(value) {
+  return String(value || '').trim().replace(/\s+/g, ' ').slice(0, 80);
+}
+
 function sanitizeInviteRole(value) {
   const role = String(value || 'editor').trim().toLowerCase();
   if (!INVITE_ROLES.has(role)) {
@@ -144,6 +155,35 @@ function planUserLimit(subscription = {}) {
   const base = PLAN_LIMITS[plan] || PLAN_LIMITS.free;
   const limit = Number(subscription.usersAllowed ?? base.usersAllowed ?? 1);
   return Number.isFinite(limit) && limit > 0 ? limit : 1;
+}
+
+function canonicalPlanKey(plan) {
+  if (plan === 'starter') return 'standard';
+  if (plan === 'pro') return 'premium';
+  if (plan === 'ea') return 'early-adopter';
+  return plan || 'free';
+}
+
+function planHasFeature(subscription = {}, feature) {
+  const plan = canonicalPlanKey(subscription.plan || 'free');
+  if (feature === 'approvalWorkflow') {
+    return ['premium', 'early-adopter', 'pilot', 'enterprise'].includes(plan);
+  }
+  return false;
+}
+
+function sanitizeOrgName(value) {
+  const name = String(value || '').trim().replace(/\s+/g, ' ').slice(0, 80);
+  if (!name) {
+    const error = new Error('Organization name required');
+    error.statusCode = 400;
+    throw error;
+  }
+  return name;
+}
+
+function sanitizeOptionalOrgText(value, max = 80) {
+  return String(value || '').trim().replace(/\s+/g, ' ').slice(0, max);
 }
 
 async function sendTeamInvitationEmail({ email, inviteId, inviterEmail, orgName, role }) {
@@ -842,6 +882,98 @@ module.exports = async function handler(req, res) {
         .map(doc => ({ id: doc.id, ...(doc.data() || {}) }))
         .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
       return res.json({ ok: true, inviteId: invites[0]?.id || null });
+    }
+
+    if (req.body.action === 'createOrganization') {
+      const cleanEmail = validateEmail(email);
+      const displayName = sanitizeDisplayName(req.body.displayName);
+      const now = new Date().toISOString();
+      const orgId = crypto.randomUUID();
+      const orgName = (displayName || cleanEmail.split('@')[0]) + "'s Organization";
+      const orgRef = db.doc(`organizations/${orgId}`);
+      const userRef = db.doc(`users/${uid}`);
+      const showId = `${orgId}_main`;
+
+      const result = await db.runTransaction(async tx => {
+        const userSnap = await tx.get(userRef);
+        if (userSnap.exists) {
+          const userData = userSnap.data() || {};
+          if (userData.orgId) {
+            const error = new Error('This account already belongs to an organization.');
+            error.statusCode = 409;
+            throw error;
+          }
+        }
+
+        const member = {
+          uid,
+          email: cleanEmail,
+          displayName,
+          role: 'admin',
+          addedAt: now,
+        };
+        const orgData = {
+          name: orgName,
+          ownerId: uid,
+          members: [member],
+          slideshows: [{ id: showId, name: 'Main Slideshow' }],
+          createdAt: now,
+          subscription: { ...FREE_SUBSCRIPTION, grantedAt: now, updatedAt: now },
+        };
+        const userData = {
+          orgId,
+          role: 'admin',
+          email: cleanEmail,
+          displayName,
+        };
+
+        tx.create(orgRef, orgData);
+        tx.set(userRef, userData, { merge: true });
+
+        return {
+          user: { id: uid, ...userData },
+          org: { id: orgId, ...orgData },
+        };
+      });
+
+      return res.json({ ok: true, ...result });
+    }
+
+    if (req.body.action === 'saveOrganizationSettings') {
+      const { userData, orgId, role } = await loadUserContext(db, uid);
+      requireRole(role, ['admin']);
+
+      const incoming = req.body.settings || {};
+      const patch = {};
+      if (Object.prototype.hasOwnProperty.call(incoming, 'name')) {
+        patch.name = sanitizeOrgName(incoming.name);
+      }
+      if (Object.prototype.hasOwnProperty.call(incoming, 'customIndustry')) {
+        const customIndustry = sanitizeOptionalOrgText(incoming.customIndustry, 80);
+        if (customIndustry) patch.customIndustry = customIndustry;
+      }
+      if (Object.prototype.hasOwnProperty.call(incoming, 'approvalRequired')) {
+        patch.approvalRequired = incoming.approvalRequired === true;
+        patch.approvalUpdatedAt = new Date().toISOString();
+        patch.approvalUpdatedBy = { uid, email: userData.email || email };
+      }
+      if (!Object.keys(patch).length) {
+        const error = new Error('No organization settings to save');
+        error.statusCode = 400;
+        throw error;
+      }
+
+      const orgRef = db.doc(`organizations/${orgId}`);
+      const orgSnap = await orgRef.get();
+      if (!orgSnap.exists) return res.status(404).json({ error: 'Organization not found' });
+      const orgData = orgSnap.data() || {};
+      if (Object.prototype.hasOwnProperty.call(patch, 'approvalRequired')
+          && !planHasFeature(orgData.subscription || {}, 'approvalWorkflow')) {
+        return res.status(402).json({ error: 'Approval workflow requires Premium.' });
+      }
+
+      await orgRef.set(patch, { merge: true });
+      return res.json({ ok: true, settings: patch });
     }
 
     if (req.body.action === 'acceptInvitation') {

@@ -75,14 +75,17 @@ service cloud.firestore {
     match /organizations/{orgId} {
       allow read: if isMember(orgId);
 
-      // Any authenticated user can create an org as long as they are
-      // the declared owner — covers the initial onboarding flow.
-      allow create: if isSignedIn()
-        && request.resource.data.ownerId == request.auth.uid;
+      // Organization creation is handled by /api/link-account so the server
+      // controls subscription defaults, owner metadata, and initial membership.
+      allow create: if false;
 
-      // Only admins can rename the org, manage members, etc.
-      // Stripe subscription updates are done via admin SDK (bypasses rules).
-      allow update: if isAdmin(orgId);
+      // Organization settings, membership, and subscription changes are handled
+      // by server APIs. The only browser-writeable org field is a short-lived
+      // screen limit enforcement lease used to dedupe concurrent admin tabs.
+      allow update: if isAdmin(orgId)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'screenLimitEnforcement'
+        ]);
 
       allow delete: if false;
 

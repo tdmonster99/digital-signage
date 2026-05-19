@@ -10740,6 +10740,12 @@ async function callAccountApi(action, payload = {}, forceRefresh = false) {
   return result;
 }
 
+async function saveOrganizationSettings(settings, opts = {}) {
+  const result = await callAccountApi('saveOrganizationSettings', { settings }, opts.forceRefresh === true);
+  if (currentOrg) Object.assign(currentOrg, result.settings || {});
+  return result.settings || {};
+}
+
 async function getBootstrapFallbackSnap(ref, user, label) {
   const boot = await loadAccountBootstrap(user);
   if (!boot) return null;
@@ -10929,23 +10935,19 @@ async function tryMergeAccount(user) {
 }
 
 async function createOrg(user) {
-  const orgId = crypto.randomUUID();
-  currentOrgId = orgId;
-  currentRole  = 'admin';
+  try {
+    const result = await callAccountApi('createOrganization', {
+      displayName: user.displayName || '',
+    }, true);
+    currentOrg   = result.org || null;
+    currentOrgId = result.user?.orgId || currentOrg?.id || null;
+    currentRole  = result.user?.role || 'admin';
+  } catch(e) {
+    console.error('Organization creation failed:', e);
+    showBootError('Could not create your organization. Please reload and try again.', e.message);
+    return;
+  }
 
-  const orgData = {
-    name:       (user.displayName || user.email.split('@')[0]) + "'s Organization",
-    ownerId:    user.uid,
-    members:    [{ uid: user.uid, email: user.email, displayName: user.displayName || '', role: 'admin', addedAt: new Date().toISOString() }],
-    slideshows: [{ id: orgId + '_main', name: 'Main Slideshow' }],
-    createdAt:  new Date().toISOString(),
-    subscription: { plan: 'free', status: 'active', ...PLAN_LIMITS.free },
-  };
-
-  await setDoc(doc(db, 'organizations', orgId), orgData);
-  await setDoc(doc(db, 'users', user.uid), { orgId, role: 'admin', email: user.email, displayName: user.displayName || '' });
-
-  currentOrg = { id: orgId, ...orgData };
   // Will show onboarding after loadShowsFromOrg + loadBrandKit complete
   setTimeout(showOnboarding, 200);
 }
@@ -11600,9 +11602,9 @@ window.obNavigate = function(dir) {
       if (name) updates.name = name;
       if (customIndustry) updates.customIndustry = customIndustry;
       if (Object.keys(updates).length && currentOrgId) {
-        updateDoc(doc(db, 'organizations', currentOrgId), updates)
-          .then(() => { if (currentOrg) Object.assign(currentOrg, updates); })
-          .catch(() => {});
+        saveOrganizationSettings(updates).catch(e => {
+          console.warn('Could not save onboarding organization settings:', e.message);
+        });
       }
     }
     // Build template grid before showing step 2
@@ -11779,8 +11781,7 @@ window.saveOrgName = async function() {
   const name = document.getElementById('orgNameInput').value.trim();
   if (!name || !currentOrgId) return;
   try {
-    await updateDoc(doc(db, 'organizations', currentOrgId), { name });
-    currentOrg.name = name;
+    await saveOrganizationSettings({ name });
     toast('Organization name saved ✓');
   } catch(e) { toast('Save failed: ' + e.message, true); }
 };
@@ -13114,12 +13115,7 @@ window.saveApprovalSettings = async function() {
   }
   const enabled = !!document.getElementById('approvalRequiredToggle')?.checked;
   try {
-    await setDoc(doc(db, 'organizations', currentOrgId), {
-      approvalRequired: enabled,
-      approvalUpdatedAt: new Date().toISOString(),
-      approvalUpdatedBy: currentUser ? { uid: currentUser.uid, email: currentUser.email } : null,
-    }, { merge: true });
-    currentOrg = { ...(currentOrg || {}), approvalRequired: enabled };
+    await saveOrganizationSettings({ approvalRequired: enabled });
     updateSettingsHubStatus();
     syncPublishButtonState(document.getElementById('btnPushWrap')?.style.display !== 'none');
     toast(enabled ? 'Content approval enabled' : 'Content approval disabled');

@@ -207,6 +207,8 @@ async function main() {
     'setEmergencyBroadcast',
     'clearEmergencyBroadcast',
     'shouldProbeUnmarkedSubcollections',
+    "callAccountApi('createOrganization'",
+    "callAccountApi('saveOrganizationSettings'",
     'createInvitation',
     "callAccountApi('removeMember'",
     'emailSent',
@@ -236,6 +238,32 @@ async function main() {
     'Cannot remove the last admin. Promote another member to admin first.',
     'removedMembers',
   ]));
+
+  await check('Static organization creation API', async () => {
+    const adminHtml = await readText('admin.html');
+    const apiText = await readText('api/link-account.js');
+    const rulesText = await readText('firestore.rules');
+    const createOrgMatch = adminHtml.match(/async function createOrg\(user\) \{[\s\S]*?\n\}/);
+    assert(createOrgMatch, 'admin.html is missing createOrg(user)');
+    assert(createOrgMatch[0].includes("callAccountApi('createOrganization'"), 'createOrg still bypasses the account API');
+    assert(!createOrgMatch[0].includes("setDoc(doc(db, 'organizations'"), 'createOrg still writes organizations directly');
+    assert(apiText.includes("req.body.action === 'createOrganization'"), 'api/link-account.js is missing createOrganization');
+    assert(apiText.includes('FREE_SUBSCRIPTION'), 'api/link-account.js is missing server-controlled free subscription defaults');
+    assert(rulesText.includes('allow create: if false;'), 'firestore.rules still allows client organization creates');
+  });
+
+  await check('Static organization settings API', async () => {
+    const adminHtml = await readText('admin.html');
+    const apiText = await readText('api/link-account.js');
+    const rulesText = await readText('firestore.rules');
+    assert(apiText.includes("req.body.action === 'saveOrganizationSettings'"), 'api/link-account.js is missing saveOrganizationSettings');
+    assert(apiText.includes("planHasFeature(orgData.subscription || {}, 'approvalWorkflow')"), 'saveOrganizationSettings does not enforce approval plan entitlement');
+    assert(!adminHtml.includes("updateDoc(doc(db, 'organizations'"), 'admin.html still updates organization docs directly');
+    assert(!adminHtml.includes("setDoc(doc(db, 'organizations'"), 'admin.html still sets organization docs directly');
+    assert(rulesText.includes('request.resource.data.diff(resource.data).affectedKeys().hasOnly'), 'firestore.rules is missing narrow org update diff checks');
+    assert(rulesText.includes("'screenLimitEnforcement'"), 'firestore.rules is missing the screenLimitEnforcement exception');
+    assert(!rulesText.includes('allow update: if isAdmin(orgId);'), 'firestore.rules still allows broad organization updates');
+  });
 
   await check('Static screen org scoping guard', async () => {
     const adminHtml = await readText('admin.html');
