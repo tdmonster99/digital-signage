@@ -35,6 +35,8 @@ Improved the Fabric.js slide designer editing surface.
 - **Preview reliability**: Widened the labeled left toolbar to avoid horizontal scrolling and switched designed-slide previews to live Fabric preview canvases so multi-image slides render fully even when image export is blocked by cross-origin media.
 - **GIPHY animation**: Disabled Fabric object caching for GIPHY assets and their parent groups, and added preview-canvas animation loops so inserted GIPHY GIFs animate in the editor, preview modals, and display player.
 - **Invite acceptance**: Preserved invite links through login/account creation so `/admin.html?invite=...` returns to the invitation after authentication, with invited-user copy on the login page.
+- **Slide bulk delete**: Added click-to-select slide cards with blue selected borders, shift-click range selection, a bulk-selection action bar, and Delete Selected for removing multiple slides at once.
+- **Invite onboarding UX**: Added invite metadata lookup, clearer accept-invite copy, a primary email-account creation path for new invited users, and exact mismatch guidance when OAuth returns a different email than the invited address.
 
 ---
 

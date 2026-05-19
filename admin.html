@@ -1453,14 +1453,75 @@ section.content {
   overflow: hidden;
   background: var(--surface2);
   border: 1px solid var(--border);
-  cursor: grab;
+  cursor: pointer;
   position: relative;
   box-shadow: var(--card-shadow);
   transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
 }
 .slide-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.14); border-color: var(--muted); }
+.slide-card.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0,67,206,.18), 0 8px 24px rgba(0,67,206,.16);
+}
+.slide-card.selected:hover {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0,67,206,.22), 0 10px 28px rgba(0,67,206,.18);
+}
+.slide-card:focus-visible {
+  outline: 3px solid rgba(0,67,206,.28);
+  outline-offset: 3px;
+}
 .slide-card.dragging { opacity: 0.4; cursor: grabbing; }
 .slide-card.drag-target { border-color: var(--accent); }
+
+.slide-selection-bar {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(0,67,206,.22);
+  border-radius: 10px;
+  background: rgba(0,67,206,.07);
+  color: var(--text);
+}
+.slide-selection-bar.active { display: flex; }
+.slide-selection-count {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+}
+.slide-selection-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.slide-selection-action {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 7px 10px;
+}
+.slide-selection-action:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.slide-selection-action.danger {
+  border-color: rgba(239,68,68,.32);
+  background: rgba(239,68,68,.08);
+  color: var(--danger);
+}
+.slide-selection-action.danger:hover {
+  border-color: var(--danger);
+  background: rgba(239,68,68,.12);
+}
 
 .slide-thumb {
   width: 100%; aspect-ratio: 16/9;
@@ -5063,8 +5124,17 @@ body.role-editor .admin-action {
       </div>
     </div>
 
+    <div class="slide-selection-bar" id="slideSelectionBar">
+      <span class="slide-selection-count" id="slideSelectionCount">0 selected</span>
+      <div class="slide-selection-actions">
+        <button class="slide-selection-action" onclick="selectAllSlides()">Select All</button>
+        <button class="slide-selection-action" onclick="clearSlideSelection()">Clear Selection</button>
+        <button class="slide-selection-action danger" id="btnDeleteSelectedSlides" onclick="deleteSelectedSlides()">Delete Selected</button>
+      </div>
+    </div>
+
     <!-- Slide grid -->
-    <div class="slide-grid" id="slideGrid">
+    <div class="slide-grid" id="slideGrid" role="listbox" aria-multiselectable="true">
       <div class="empty" style="grid-column:1/-1">
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
           <rect x="3" y="3" width="18" height="18" rx="2"/>
@@ -10182,6 +10252,8 @@ let currentShowId = "main";
 let slides        = [];
 let dragSrcIdx    = null;
 let unsaved       = false;
+let selectedSlideIds = new Set();
+let lastSlideSelectionIdx = null;
 
 // ── Org / role state ──────────────────────────────────────────────────────
 let currentOrgId  = null;
@@ -10834,6 +10906,21 @@ async function createOrg(user) {
   setTimeout(showOnboarding, 200);
 }
 
+function expectedInviteEmailFromError(message) {
+  const match = String(message || '').match(/sent to\s+(.+?)\.\s+Please/i);
+  return match?.[1]?.trim() || '';
+}
+
+function stashInviteMismatch(inviteId, user, message) {
+  try {
+    sessionStorage.setItem('zignsInviteMismatch', JSON.stringify({
+      inviteId,
+      expectedEmail: expectedInviteEmailFromError(message),
+      signedInEmail: user?.email || '',
+    }));
+  } catch(_) {}
+}
+
 async function acceptInvitation(inviteId, user) {
   try {
     const result = await callAccountApi('acceptInvitation', {
@@ -10852,6 +10939,7 @@ async function acceptInvitation(inviteId, user) {
 
     if (msg.includes('sent to') || msg.includes('Please sign in with that account')) {
       cleanupRealtimeListeners();
+      stashInviteMismatch(inviteId, user, msg);
       await signOut(auth);
       return false;
     }
@@ -15192,6 +15280,8 @@ window.addFromOneDrive = function() {
 window.clearAll = async () => {
   if (!confirm("Remove all slides?")) return;
   slides = [];
+  selectedSlideIds.clear();
+  lastSlideSelectionIdx = null;
   renderGrid(); updateCount();
   await pushToFirestore();
 };
@@ -15438,10 +15528,102 @@ function slideDwellControlHtml(slide, idx) {
   </label>`;
 }
 
+function getSlideSelectionId(slide, idx) {
+  return slide?.id || `idx:${idx}`;
+}
+
+function selectedSlideIndexes() {
+  return slides
+    .map((slide, idx) => selectedSlideIds.has(getSlideSelectionId(slide, idx)) ? idx : -1)
+    .filter(idx => idx >= 0);
+}
+
+function pruneSlideSelection() {
+  if (!selectedSlideIds.size) return;
+  const validIds = new Set(slides.map((slide, idx) => getSlideSelectionId(slide, idx)));
+  selectedSlideIds.forEach(id => {
+    if (!validIds.has(id)) selectedSlideIds.delete(id);
+  });
+  if (!selectedSlideIds.size) lastSlideSelectionIdx = null;
+}
+
+function syncSlideSelectionDom() {
+  document.querySelectorAll('#slideGrid .slide-card').forEach(card => {
+    const selected = selectedSlideIds.has(card.dataset.selectionId);
+    card.classList.toggle('selected', selected);
+    card.setAttribute('aria-selected', selected ? 'true' : 'false');
+  });
+}
+
+function updateSlideSelectionUi() {
+  pruneSlideSelection();
+  const count = selectedSlideIndexes().length;
+  const bar = document.getElementById('slideSelectionBar');
+  const countEl = document.getElementById('slideSelectionCount');
+  const deleteBtn = document.getElementById('btnDeleteSelectedSlides');
+  if (bar) bar.classList.toggle('active', count > 0);
+  if (countEl) countEl.textContent = `${count} selected`;
+  if (deleteBtn) deleteBtn.textContent = `Delete ${count} Selected`;
+  syncSlideSelectionDom();
+}
+
+function isSlideSelectionControlTarget(target) {
+  return Boolean(target?.closest?.('button,input,label,select,textarea,a,.slide-actions'));
+}
+
+function setSlideSelection(idx, selected) {
+  const slide = slides[idx];
+  if (!slide) return;
+  const id = getSlideSelectionId(slide, idx);
+  if (selected) selectedSlideIds.add(id);
+  else selectedSlideIds.delete(id);
+}
+
+function toggleSlideSelection(idx, event) {
+  if (!slides[idx]) return;
+  if (event?.shiftKey && lastSlideSelectionIdx !== null && slides[lastSlideSelectionIdx]) {
+    const start = Math.min(lastSlideSelectionIdx, idx);
+    const end = Math.max(lastSlideSelectionIdx, idx);
+    for (let i = start; i <= end; i += 1) setSlideSelection(i, true);
+  } else {
+    const id = getSlideSelectionId(slides[idx], idx);
+    setSlideSelection(idx, !selectedSlideIds.has(id));
+    lastSlideSelectionIdx = idx;
+  }
+  updateSlideSelectionUi();
+}
+
+window.selectAllSlides = function() {
+  slides.forEach((slide, idx) => selectedSlideIds.add(getSlideSelectionId(slide, idx)));
+  lastSlideSelectionIdx = slides.length ? 0 : null;
+  updateSlideSelectionUi();
+};
+
+window.clearSlideSelection = function() {
+  selectedSlideIds.clear();
+  lastSlideSelectionIdx = null;
+  updateSlideSelectionUi();
+};
+
+window.deleteSelectedSlides = async function() {
+  const indexes = selectedSlideIndexes();
+  if (!indexes.length) return;
+  const count = indexes.length;
+  if (!confirm(`Remove ${count} selected slide${count !== 1 ? 's' : ''}?`)) return;
+  const deleteIndexes = new Set(indexes);
+  slides = slides.filter((_, idx) => !deleteIndexes.has(idx));
+  selectedSlideIds.clear();
+  lastSlideSelectionIdx = null;
+  renderGrid(); updateCount();
+  await pushToFirestore();
+  toast(`${count} slide${count !== 1 ? 's' : ''} removed ✓`);
+};
+
 // ── Render grid ───────────────────────────────────────────────────────────
 function renderGrid() {
   const grid   = document.getElementById("slideGrid");
   const btnClr = document.getElementById("btnClear");
+  pruneSlideSelection();
   const show = slides.length ? "" : "none";
   btnClr.style.display = show;
 
@@ -15453,15 +15635,20 @@ function renderGrid() {
       </svg>
       <p>No slides yet.<br>Upload images or add by URL to get started.</p>
     </div>`;
+    updateSlideSelectionUi();
     return;
   }
 
   grid.innerHTML = slides.map((s, i) => {
+    const selectionId = getSlideSelectionId(s, i);
+    const isSelected = selectedSlideIds.has(selectionId);
+    const selectedClass = isSelected ? 'selected' : '';
+    const selectionAttrs = `tabindex="0" role="option" aria-selected="${isSelected ? 'true' : 'false'}" data-selection-id="${escHtml(selectionId)}"`;
     if (s.type === 'group') {
       const count    = (s.slides || []).length;
       const firstThumb = (s.slides || []).map(getDesignedSlideThumbUrl).find(Boolean) || null;
       return `
-      <div class="slide-card group-card ${s.active === false ? 'disabled' : ''}" draggable="true" data-idx="${i}">
+      <div class="slide-card group-card ${s.active === false ? 'disabled' : ''} ${selectedClass}" draggable="true" data-idx="${i}" ${selectionAttrs}>
         <div class="group-stack group-stack-2"></div>
         <div class="group-stack group-stack-1"></div>
         ${firstThumb
@@ -15640,8 +15827,8 @@ function renderGrid() {
            }
          </button>`;
     return `
-    <div class="slide-card ${s.active === false ? 'disabled' : ''}"
-         draggable="true" data-idx="${i}">
+    <div class="slide-card ${s.active === false ? 'disabled' : ''} ${selectedClass}"
+         draggable="true" data-idx="${i}" ${selectionAttrs}>
       ${thumbUrl
         ? `<img class="slide-thumb" src="${thumbUrl}" alt="${s.name}"
                 onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
@@ -15689,26 +15876,41 @@ function renderGrid() {
     </div>`;
   }).join("");
 
-  // Drag-to-reorder
+  // Drag-to-reorder and select
   grid.querySelectorAll(".slide-card").forEach(card => {
+    card.addEventListener("click", e => {
+      if (dragSrcIdx !== null || isSlideSelectionControlTarget(e.target)) return;
+      toggleSlideSelection(+card.dataset.idx, e);
+    });
+    card.addEventListener("keydown", e => {
+      if (isSlideSelectionControlTarget(e.target)) return;
+      if (e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        toggleSlideSelection(+card.dataset.idx, e);
+      }
+    });
     card.addEventListener("dragstart", e => {
       dragSrcIdx = +card.dataset.idx;
       card.classList.add("dragging");
     });
-    card.addEventListener("dragend",  () => card.classList.remove("dragging"));
+    card.addEventListener("dragend",  () => {
+      card.classList.remove("dragging");
+      setTimeout(() => { dragSrcIdx = null; }, 0);
+    });
     card.addEventListener("dragover", e => { e.preventDefault(); card.classList.add("drag-target"); });
     card.addEventListener("dragleave",() => card.classList.remove("drag-target"));
     card.addEventListener("drop", async e => {
       e.preventDefault();
       card.classList.remove("drag-target");
       const destIdx = +card.dataset.idx;
-      if (dragSrcIdx === destIdx) return;
+      if (dragSrcIdx === null || dragSrcIdx === destIdx) return;
       const moved = slides.splice(dragSrcIdx, 1)[0];
       slides.splice(destIdx, 0, moved);
       renderGrid();
       await pushToFirestore();
     });
   });
+  updateSlideSelectionUi();
 }
 
 // ── Slide actions ─────────────────────────────────────────────────────────
@@ -15892,6 +16094,7 @@ window.setGroupSlideDwell = async function(slideIdx, dwell) {
 
 window.deleteSlide = async (idx) => {
   if (!confirm("Remove this slide?")) return;
+  selectedSlideIds.delete(getSlideSelectionId(slides[idx], idx));
   slides.splice(idx, 1);
   renderGrid(); updateCount();
   await pushToFirestore();

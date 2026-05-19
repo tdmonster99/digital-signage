@@ -137,6 +137,47 @@
     line-height: 1.45;
     margin: -14px 0 20px;
   }
+  .invite-details {
+    display: none;
+    border: 1px solid #dbeafe;
+    border-radius: 10px;
+    background: #f8fbff;
+    padding: 12px;
+    margin: -12px 0 18px;
+  }
+  .invite-details.active { display: block; }
+  .invite-detail-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #0a1628;
+    margin-bottom: 8px;
+  }
+  .invite-detail-line {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 12px;
+    color: #6b7280;
+    margin-top: 5px;
+  }
+  .invite-detail-line strong {
+    color: #111827;
+    font-weight: 700;
+    text-align: right;
+    overflow-wrap: anywhere;
+  }
+  .invite-warning {
+    display: none;
+    padding: 10px 12px;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    background: #fef2f2;
+    color: #b91c1c;
+    font-size: 12px;
+    line-height: 1.45;
+    margin: -8px 0 16px;
+  }
+  .invite-warning.active { display: block; }
 
   .provider-btn {
     display: flex; align-items: center; gap: 10px;
@@ -199,6 +240,34 @@
     cursor: pointer; transition: background .15s;
   }
   .submit-btn:hover { background: #0035a8; }
+  .submit-btn.secondary {
+    background: #eef4ff;
+    color: #0043ce;
+    border: 1.5px solid #bfdbfe;
+    margin-bottom: 10px;
+  }
+  .submit-btn.secondary:hover { background: #dbeafe; }
+  .invite-create-btn { display: none; }
+  .invite-existing-link {
+    display: none;
+    text-align: center;
+    font-size: 13px;
+    margin: 8px 0 14px;
+  }
+  .invite-existing-link a {
+    color: #0043ce;
+    cursor: pointer;
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .invite-existing-link a:hover { text-decoration: underline; }
+  body.invite-mode .invite-create-btn { display: block; }
+  body.invite-mode #emailSignInPanel { display: none; }
+  body.invite-mode #signInFooter { display: none; }
+  body.invite-mode .invite-existing-link { display: block; }
+  body.invite-mode .invite-create-btn { margin-bottom: 12px; }
+  body.invite-mode.email-signin-open #emailSignInPanel { display: block; }
+  body.invite-mode.email-signin-open .invite-existing-link { display: none; }
 
   .footer-links {
     display: flex; justify-content: space-between;
@@ -282,9 +351,11 @@
 
     <!-- Sign in view -->
     <div id="signInView">
-      <div class="card-title">Welcome back</div>
+      <div class="card-title" id="signInTitle">Welcome back</div>
       <div class="card-sub" id="signInSub">Sign in to your account</div>
-      <div class="invite-note" id="signInInviteNote">Sign in with the invited email address to accept your Zigns invitation.</div>
+      <div class="invite-details" id="inviteDetails"></div>
+      <div class="invite-warning" id="inviteWarning"></div>
+      <div class="invite-note" id="signInInviteNote">Use the email address this invitation was sent to. Google or Microsoft sign-in only works when it returns that same address.</div>
 
       <button class="provider-btn" id="googleBtn">
         <img src="assets/brand/google-g.png" alt="" aria-hidden="true" style="width:18px;height:18px;object-fit:contain;flex-shrink:0">
@@ -298,22 +369,27 @@
 
       <div class="divider">or</div>
 
-      <div class="field">
-        <label>Email</label>
-        <input type="email" id="authEmail" placeholder="you@example.com" autocomplete="email">
-      </div>
-      <div class="field">
-        <label>Password</label>
-        <div class="pw-wrap">
-          <input type="password" id="authPassword" placeholder="••••••••" autocomplete="current-password">
-          <button type="button" class="pw-toggle" onclick="togglePw('authPassword',this)" tabindex="-1" aria-label="Show password">
-            <svg id="eyeIcon-authPassword" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-          </button>
-        </div>
-      </div>
+      <button class="submit-btn invite-create-btn" id="inviteCreateAccountBtn">Create account with invited email</button>
+      <div class="invite-existing-link" id="inviteExistingLink"><a>Already have a Zigns account? Sign in with email</a></div>
       <div class="error" id="authError"></div>
-      <button class="submit-btn" id="signInBtn">Sign In</button>
-      <div class="footer-links">
+
+      <div id="emailSignInPanel">
+        <div class="field">
+          <label>Email</label>
+          <input type="email" id="authEmail" placeholder="you@example.com" autocomplete="email">
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <div class="pw-wrap">
+            <input type="password" id="authPassword" placeholder="••••••••" autocomplete="current-password">
+            <button type="button" class="pw-toggle" onclick="togglePw('authPassword',this)" tabindex="-1" aria-label="Show password">
+              <svg id="eyeIcon-authPassword" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+        <button class="submit-btn" id="signInBtn">Sign In</button>
+      </div>
+      <div class="footer-links" id="signInFooter">
         <a id="toRegister">Create account</a>
         <a id="toReset">Forgot password?</a>
       </div>
@@ -322,10 +398,10 @@
     <!-- Register view -->
     <div id="registerView" style="display:none">
       <div class="early-access-badge">Early Access</div>
-      <div class="card-title">Create account</div>
+      <div class="card-title" id="registerTitle">Create account</div>
       <div class="card-sub" id="registerSub">Start managing real screens today</div>
       <div class="early-access-note">Official launch is coming late May / early June. Some integrations and polish may continue to evolve during Early Access.</div>
-      <div class="invite-note" id="registerInviteNote">Create your account with the invited email address to join this Zigns organization.</div>
+      <div class="invite-note" id="registerInviteNote">Use the invited email address below. This password will be for your new Zigns account.</div>
       <div class="field">
         <label>Email</label>
         <input type="email" id="regEmail" placeholder="you@example.com" autocomplete="email">
@@ -395,6 +471,9 @@ const auth = getAuth(app);
 const loginRouteParams = new URLSearchParams(window.location.search);
 const inviteId = loginRouteParams.get('invite');
 const continuePath = loginRouteParams.get('continue');
+const inviteMismatchKey = 'zignsInviteMismatch';
+let inviteInfo = null;
+let inviteIsKnownInvalid = false;
 
 function localContinuePath(path) {
   if (!path) return '';
@@ -409,19 +488,114 @@ function localContinuePath(path) {
 }
 
 function postAuthRedirectUrl() {
-  if (inviteId) return '/admin.html?invite=' + encodeURIComponent(inviteId);
+  if (inviteId && !inviteIsKnownInvalid) return '/admin.html?invite=' + encodeURIComponent(inviteId);
   return localContinuePath(continuePath) || '/';
 }
 
-if (inviteId) {
-  document.getElementById('signInSub').textContent = 'Sign in to accept your invitation';
-  document.getElementById('registerSub').textContent = 'Create an account to accept your invitation';
+function escHtml(value) {
+  return String(value || '').replace(/[&<>"']/g, ch => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  })[ch]);
+}
+
+function roleLabel(role) {
+  const labels = { admin: 'Admin', editor: 'Editor', viewer: 'Viewer' };
+  return labels[String(role || '').toLowerCase()] || 'Team member';
+}
+
+function readInviteMismatch() {
+  try {
+    const raw = sessionStorage.getItem(inviteMismatchKey);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    if (data?.inviteId !== inviteId) return null;
+    sessionStorage.removeItem(inviteMismatchKey);
+    return data;
+  } catch(_) {
+    return null;
+  }
+}
+
+function invitedEmail() {
+  return inviteInfo?.email || window._inviteMismatch?.expectedEmail || '';
+}
+
+function prefillInvitedEmail(force = false) {
+  const email = invitedEmail();
+  if (!email) return;
+  const signInEmail = document.getElementById('authEmail');
+  const regEmail = document.getElementById('regEmail');
+  if (signInEmail && (force || !signInEmail.value)) signInEmail.value = email;
+  if (regEmail && (force || !regEmail.value)) regEmail.value = email;
+}
+
+function showInviteWarning(message) {
+  const warning = document.getElementById('inviteWarning');
+  if (!warning || !message) return;
+  warning.textContent = message;
+  warning.classList.add('active');
+}
+
+function renderInviteDetails() {
+  const details = document.getElementById('inviteDetails');
+  if (!details || !inviteInfo) return;
+  details.classList.add('active');
+  details.innerHTML = `
+    <div class="invite-detail-title">Invitation details</div>
+    <div class="invite-detail-line"><span>Organization</span><strong>${escHtml(inviteInfo.orgName || 'Zigns')}</strong></div>
+    <div class="invite-detail-line"><span>Invited email</span><strong>${escHtml(inviteInfo.email || 'Unknown')}</strong></div>
+    <div class="invite-detail-line"><span>Role</span><strong>${escHtml(roleLabel(inviteInfo.role))}</strong></div>
+    ${inviteInfo.invitedByEmail ? `<div class="invite-detail-line"><span>Sent by</span><strong>${escHtml(inviteInfo.invitedByEmail)}</strong></div>` : ''}
+  `;
+}
+
+function applyInviteModeDefaults() {
+  document.body.classList.add('invite-mode');
+  document.getElementById('signInTitle').textContent = 'Accept your invitation';
+  document.getElementById('signInSub').textContent = 'Join a Zigns organization';
+  document.getElementById('registerTitle').textContent = 'Create account to accept invite';
+  document.getElementById('registerSub').textContent = 'Use the email this invitation was sent to';
   document.getElementById('signInInviteNote').style.display = 'block';
   document.getElementById('registerInviteNote').style.display = 'block';
+  window._inviteMismatch = readInviteMismatch();
+  if (window._inviteMismatch) {
+    const expected = window._inviteMismatch.expectedEmail || 'the invited address';
+    const actual = window._inviteMismatch.signedInEmail || 'a different address';
+    showInviteWarning(`This invitation was sent to ${expected}, but you signed in as ${actual}. Create an email/password account with the invited address, sign in with that exact account, or ask for a new invite to ${actual}.`);
+  }
+  prefillInvitedEmail(true);
 }
+
+async function loadInviteInfo() {
+  if (!inviteId) return;
+  try {
+    const resp = await fetch('/api/invite-info?invite=' + encodeURIComponent(inviteId), { cache: 'no-store' });
+    const result = await resp.json().catch(() => ({}));
+    if (!resp.ok || result.ok === false || !result.invite) {
+      throw new Error(result.error || 'Invitation could not be loaded.');
+    }
+    inviteInfo = result.invite;
+    if (inviteInfo.status !== 'pending') {
+      inviteIsKnownInvalid = true;
+      showInviteWarning(inviteInfo.status === 'accepted'
+        ? 'This invitation has already been accepted. Sign in normally or ask your administrator to resend an invite.'
+        : 'This invitation is no longer active. Ask your administrator to send a new invite.');
+    }
+    document.getElementById('signInSub').textContent = `Join ${inviteInfo.orgName || 'this organization'} on Zigns`;
+    renderInviteDetails();
+    prefillInvitedEmail(true);
+  } catch(e) {
+    inviteIsKnownInvalid = true;
+    showInviteWarning(e.message || 'This invitation link could not be verified. Ask your administrator to send a new invite.');
+  }
+}
+
+if (inviteId) applyInviteModeDefaults();
 
 // Redirect to app when signed in (handles both popup and redirect flows)
 onAuthStateChanged(auth, user => { if (user) window.location.replace(postAuthRedirectUrl()); });
+
+if (inviteId) loadInviteInfo();
 
 
 let authBusy = false;
@@ -491,13 +665,33 @@ function show(viewId) {
   ['signInView','registerView','resetView'].forEach(id => {
     document.getElementById(id).style.display = id === viewId ? '' : 'none';
   });
+  if (inviteId && viewId === 'signInView') {
+    document.body.classList.remove('email-signin-open');
+    prefillInvitedEmail(true);
+  }
+  if (inviteId && viewId === 'registerView') prefillInvitedEmail(true);
   clearMessages();
 }
 
-document.getElementById('toRegister').onclick = () => show('registerView');
+function openInviteRegister() {
+  show('registerView');
+  prefillInvitedEmail(true);
+  setTimeout(() => document.getElementById('regPassword')?.focus(), 0);
+}
+
+function openInviteEmailSignIn() {
+  show('signInView');
+  document.body.classList.add('email-signin-open');
+  prefillInvitedEmail(true);
+  setTimeout(() => document.getElementById('authPassword')?.focus(), 0);
+}
+
+document.getElementById('toRegister').onclick = () => inviteId ? openInviteRegister() : show('registerView');
 document.getElementById('toSignIn').onclick    = () => show('signInView');
 document.getElementById('toSignIn2').onclick   = () => show('signInView');
 document.getElementById('toReset').onclick     = () => show('resetView');
+document.getElementById('inviteCreateAccountBtn').onclick = openInviteRegister;
+document.getElementById('inviteExistingLink').onclick = openInviteEmailSignIn;
 
 function showProviderConflict() {
   const errEl = document.getElementById('authError');
