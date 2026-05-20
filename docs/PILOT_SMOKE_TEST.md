@@ -4,6 +4,8 @@ Use this checklist for each pilot build or production deploy that needs confiden
 
 For a short release-gate checklist, start with `docs/RELEASE_QA.md`.
 
+GitHub Actions also includes a static CI gate and a manually triggered release QA gate.
+
 Production app: https://app.zigns.io
 Player setup URL: https://app.zigns.io/display.html
 

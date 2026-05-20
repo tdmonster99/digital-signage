@@ -39,6 +39,22 @@ Pass means the app URL resolves, production is reachable, Firebase auth DNS is r
 
 Stop if this fails. Fix environment, DNS, credentials, or browser/CDP setup before running heavier smoke tests.
 
+## Automated Gates
+
+GitHub Actions runs `CI` on pushes and pull requests. It parses the smoke scripts and runs `npm run smoke:static`.
+
+Use the manual `Release QA` workflow before release handoff when you want GitHub to run the production gate. It requires these repository secrets:
+
+- `ZIGNS_SMOKE_EMAIL`
+- `ZIGNS_SMOKE_PASSWORD`
+
+Optional repository variables:
+
+- `ZIGNS_SMOKE_EXPECTED_ORG` (defaults to `Zigns Smoke Test`)
+- `ZIGNS_SMOKE_EXPECTED_ROLE` (defaults to `admin`)
+
+The manual workflow defaults to the safe production smoke. Enable `run_mutation` only when you intentionally want temporary smoke data created and cleaned up in the smoke org.
+
 ## Gate 1: Safe Production Smoke
 
 Run this for every production deploy candidate:

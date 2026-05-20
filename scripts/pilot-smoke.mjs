@@ -421,10 +421,24 @@ async function main() {
 
   await check('Release QA docs exist', () => assertFileContains('docs/RELEASE_QA.md', [
     'Zigns Release QA Gate',
+    'Automated Gates',
     'Gate 0: Preflight Doctor',
     'Gate 1: Safe Production Smoke',
     'Gate 2: Mutation Production Smoke',
     'ZIGNS_PILOT_MUTATE=1 npm run smoke:pilot',
+  ]));
+
+  await check('Static GitHub Actions release gates', () => assertFileContains('.github/workflows/ci.yml', [
+    'npm run smoke:static',
+    'node --check scripts/*.mjs',
+  ]));
+
+  await check('Manual GitHub Actions release QA', () => assertFileContains('.github/workflows/release-qa.yml', [
+    'workflow_dispatch',
+    'run_mutation',
+    'npm run smoke:doctor',
+    'npm run smoke:pilot',
+    'ZIGNS_PILOT_MUTATE',
   ]));
 
   await check('Static browser smoke script', () => assertFileContains('scripts/browser-smoke.mjs', [

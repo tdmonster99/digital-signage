@@ -1,0 +1,82 @@
+name: Release QA
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: App URL to validate
+        required: true
+        default: https://app.zigns.io
+        type: string
+      run_mutation:
+        description: Create and clean temporary smoke data in the smoke org
+        required: true
+        default: false
+        type: boolean
+      include_tags_rules:
+        description: Also run tag propagation and Firestore rules denial checks
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  release-qa:
+    name: Release QA
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    env:
+      ZIGNS_SMOKE_EMAIL: ${{ secrets.ZIGNS_SMOKE_EMAIL }}
+      ZIGNS_SMOKE_PASSWORD: ${{ secrets.ZIGNS_SMOKE_PASSWORD }}
+      ZIGNS_SMOKE_EXPECTED_ORG: ${{ vars.ZIGNS_SMOKE_EXPECTED_ORG || 'Zigns Smoke Test' }}
+      ZIGNS_SMOKE_EXPECTED_ROLE: ${{ vars.ZIGNS_SMOKE_EXPECTED_ROLE || 'admin' }}
+      ZIGNS_BROWSER_EMAIL: ${{ secrets.ZIGNS_SMOKE_EMAIL }}
+      ZIGNS_BROWSER_PASSWORD: ${{ secrets.ZIGNS_SMOKE_PASSWORD }}
+      ZIGNS_BROWSER_EXPECTED_ORG: ${{ vars.ZIGNS_SMOKE_EXPECTED_ORG || 'Zigns Smoke Test' }}
+      ZIGNS_BROWSER_EXPECTED_ROLE: ${{ vars.ZIGNS_SMOKE_EXPECTED_ROLE || 'admin' }}
+      ZIGNS_PILOT_BASE_URL: ${{ inputs.base_url }}
+      ZIGNS_SMOKE_BASE_URL: ${{ inputs.base_url }}
+      ZIGNS_BROWSER_BASE_URL: ${{ inputs.base_url }}
+      ZIGNS_BROWSER_TIMEOUT_MS: 90000
+      ZIGNS_DOCTOR_TIMEOUT_MS: 15000
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check smoke secrets are configured
+        run: |
+          test -n "$ZIGNS_SMOKE_EMAIL" || (echo "Missing GitHub secret ZIGNS_SMOKE_EMAIL" && exit 1)
+          test -n "$ZIGNS_SMOKE_PASSWORD" || (echo "Missing GitHub secret ZIGNS_SMOKE_PASSWORD" && exit 1)
+
+      - name: Check smoke scripts parse
+        run: node --check scripts/*.mjs
+
+      - name: Run release preflight doctor
+        run: npm run smoke:doctor -- --base-url "${{ inputs.base_url }}"
+
+      - name: Run safe release smoke
+        if: ${{ !inputs.run_mutation }}
+        run: npm run smoke:pilot -- --base-url "${{ inputs.base_url }}"
+
+      - name: Run mutation release smoke
+        if: ${{ inputs.run_mutation && !inputs.include_tags_rules }}
+        env:
+          ZIGNS_PILOT_MUTATE: "1"
+          ZIGNS_SMOKE_INVITE_EMAIL: ""
+        run: npm run smoke:pilot -- --base-url "${{ inputs.base_url }}"
+
+      - name: Run mutation release smoke with tags and rules
+        if: ${{ inputs.run_mutation && inputs.include_tags_rules }}
+        env:
+          ZIGNS_PILOT_MUTATE: "1"
+          ZIGNS_SMOKE_INVITE_EMAIL: ""
+        run: npm run smoke:pilot -- --base-url "${{ inputs.base_url }}" --include-tags --include-rules
