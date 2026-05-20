@@ -406,6 +406,7 @@ async function main() {
   ]));
 
   await check('Pilot docs exist', () => assertFileContains('docs/PILOT_SMOKE_TEST.md', [
+    'docs/RELEASE_QA.md',
     'Account And Role Smoke',
     'Display Pairing Smoke',
     'Tags, Priority, And Emergency Smoke',
@@ -416,6 +417,14 @@ async function main() {
     'Rendering Smoke',
     'tag propagation pass',
     'CAP Alert Smoke',
+  ]));
+
+  await check('Release QA docs exist', () => assertFileContains('docs/RELEASE_QA.md', [
+    'Zigns Release QA Gate',
+    'Gate 0: Preflight Doctor',
+    'Gate 1: Safe Production Smoke',
+    'Gate 2: Mutation Production Smoke',
+    'ZIGNS_PILOT_MUTATE=1 npm run smoke:pilot',
   ]));
 
   await check('Static browser smoke script', () => assertFileContains('scripts/browser-smoke.mjs', [

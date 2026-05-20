@@ -2,6 +2,8 @@
 
 Use this checklist for each pilot build or production deploy that needs confidence before users test broadly.
 
+For a short release-gate checklist, start with `docs/RELEASE_QA.md`.
+
 Production app: https://app.zigns.io
 Player setup URL: https://app.zigns.io/display.html
 

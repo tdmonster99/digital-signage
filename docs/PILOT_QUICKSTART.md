@@ -1,6 +1,6 @@
 # Zigns Pilot Quickstart
 
-Use this runbook when onboarding a pilot customer or internal test group. For repeatable validation runs, use `docs/PILOT_SMOKE_TEST.md`.
+Use this runbook when onboarding a pilot customer or internal test group. For release gates, use `docs/RELEASE_QA.md`. For the full repeatable validation harness, use `docs/PILOT_SMOKE_TEST.md`.
 
 ## Current Pilot: Novares
 

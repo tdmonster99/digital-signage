@@ -36,7 +36,7 @@ const config = {
   skipAccount: Boolean(args['skip-account'] || process.env.ZIGNS_PILOT_SKIP_ACCOUNT === '1'),
   skipBrowser: Boolean(args['skip-browser'] || process.env.ZIGNS_PILOT_SKIP_BROWSER === '1'),
   json: Boolean(args.json || process.env.ZIGNS_DOCTOR_JSON === '1'),
-  timeoutMs: Number.parseInt(args.timeout || process.env.ZIGNS_DOCTOR_TIMEOUT_MS || '8000', 10),
+  timeoutMs: Number.parseInt(args.timeout || process.env.ZIGNS_DOCTOR_TIMEOUT_MS || '15000', 10),
 };
 
 const results = [];
