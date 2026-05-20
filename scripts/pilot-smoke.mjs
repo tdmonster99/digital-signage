@@ -32,6 +32,7 @@ const args = parseArgs(process.argv.slice(2));
 const config = {
   baseUrl: String(args['base-url'] || process.env.ZIGNS_SMOKE_BASE_URL || 'https://app.zigns.io').replace(/\/+$/, ''),
   staticOnly: Boolean(args.static || process.env.ZIGNS_SMOKE_STATIC === '1'),
+  skipAuth: Boolean(args['skip-auth'] || process.env.ZIGNS_SMOKE_SKIP_AUTH === '1'),
   json: Boolean(args.json || process.env.ZIGNS_SMOKE_JSON === '1'),
   email: args.email || process.env.ZIGNS_SMOKE_EMAIL || '',
   password: args.password || process.env.ZIGNS_SMOKE_PASSWORD || '',
@@ -87,7 +88,25 @@ function fetchWithTimeout(url, options = {}) {
       'User-Agent': 'ZignsPilotSmoke/1.0',
       ...(options.headers || {}),
     },
+  }).catch(error => {
+    const cause = error?.cause;
+    const detail = cause?.code
+      ? `${cause.code}${cause.hostname ? ` ${cause.hostname}` : ''}`
+      : (error?.message || String(error));
+    throw new Error(`Request failed for ${redactUrlForLog(url)}: ${detail}`);
   }).finally(() => clearTimeout(timeout));
+}
+
+function redactUrlForLog(input) {
+  try {
+    const url = new URL(input);
+    for (const key of ['key', 'token', 'idToken', 'password']) {
+      if (url.searchParams.has(key)) url.searchParams.set(key, '[redacted]');
+    }
+    return url.toString();
+  } catch {
+    return String(input).replace(/([?&](?:key|token|idToken|password)=)[^&\s]+/gi, '$1[redacted]');
+  }
 }
 
 async function checkPublicPage(route, expectedText) {
@@ -391,6 +410,7 @@ async function main() {
     'Display Pairing Smoke',
     'Tags, Priority, And Emergency Smoke',
     'Team Invite Smoke',
+    'One-Command Pilot QA',
     'Browser Smoke',
     'Editor Save/Publish Smoke',
     'Rendering Smoke',
@@ -434,12 +454,25 @@ async function main() {
     'Republish removes deleted YouTube slide',
   ]));
 
+  await check('Static pilot QA runner', () => assertFileContains('scripts/pilot-qa.mjs', [
+    'Zigns Pilot QA',
+    'Editor save/publish smoke',
+    'Rendering smoke',
+    'ZIGNS_PILOT_MUTATE',
+    'ZIGNS_PILOT_INCLUDE_INVITE',
+    'ZIGNS_PILOT_SKIP_ACCOUNT',
+  ]));
+
   if (!config.staticOnly) {
     await check('Live login page', () => checkPublicPage('/login.html', 'Zigns'));
     await check('Live admin shell', () => checkPublicPage('/admin.html', 'Dashboard'));
     await check('Live display player', () => checkPublicPage('/display.html', 'Zigns'));
     await check('Live mobile shell', () => checkPublicPage('/mobile.html', 'Zigns'));
-    await runAuthBootstrapCheck();
+    if (config.skipAuth) {
+      warn('Authenticated bootstrap', 'skipped by --skip-auth');
+    } else {
+      await runAuthBootstrapCheck();
+    }
   } else {
     warn('Live public pages', 'skipped by --static');
     warn('Authenticated bootstrap', 'skipped by --static');
@@ -451,7 +484,7 @@ async function main() {
   }, {});
 
   if (config.json) {
-    console.log(JSON.stringify({ config: { baseUrl: config.baseUrl, staticOnly: config.staticOnly }, counts, results }, null, 2));
+    console.log(JSON.stringify({ config: { baseUrl: config.baseUrl, staticOnly: config.staticOnly, skipAuth: config.skipAuth }, counts, results }, null, 2));
   } else {
     console.log(`Zigns pilot smoke: ${counts.pass || 0} pass, ${counts.warn || 0} warn, ${counts.fail || 0} fail`);
     for (const result of results) {

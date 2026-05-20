@@ -36,6 +36,34 @@ Issue reports copied: yes/no
 
 The smoke scripts automatically load `ZIGNS_*` values from `.env.local` or `.env` when those variables are not already exported in the shell. They intentionally ignore unrelated keys so normal app secrets are not pulled into the smoke process.
 
+## One-Command Pilot QA
+
+Run the default pilot suite before a pilot build handoff:
+
+```bash
+npm run smoke:pilot -- --base-url https://app.zigns.io
+```
+
+The default suite runs static checks, public reachability, account bootstrap, and the browser UI smoke when browser credentials are configured. It skips mutating checks unless you explicitly allow temporary smoke data:
+
+```bash
+ZIGNS_PILOT_MUTATE=1 npm run smoke:pilot -- --base-url https://app.zigns.io
+```
+
+With mutation enabled, the runner also executes the slideshow CRUD pass, editor save/publish smoke, and rendering smoke. It prints a single pass/warn/fail summary and explains skipped checks, such as missing smoke credentials or missing Chrome/Edge configuration.
+
+The one-command runner does not send invite emails by default, even if `ZIGNS_SMOKE_INVITE_EMAIL` is set. Add `--include-invite` only when you intentionally want the account bootstrap step to send a test invite.
+
+If you only need static and public-page reachability, or external auth is temporarily unavailable, add `--skip-account` to skip the Firebase email/password bootstrap check.
+
+Optional deeper passes:
+
+```bash
+ZIGNS_PILOT_MUTATE=1 npm run smoke:pilot -- --base-url https://app.zigns.io --include-tags --include-rules
+```
+
+Use a dedicated Admin smoke account in the `Zigns Smoke Test` organization for mutation-enabled runs.
+
 Run the no-network static check before or after a deploy:
 
 ```bash

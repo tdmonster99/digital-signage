@@ -146,6 +146,8 @@ function findPlaywrightBrowsers() {
   for (const entry of fs.readdirSync(root)) {
     out.push(path.join(root, entry, 'chrome-linux64', 'chrome'));
     out.push(path.join(root, entry, 'chrome-headless-shell-linux64', 'chrome-headless-shell'));
+    out.push(path.join(root, entry, 'chrome-mac', 'Chromium.app', 'Contents', 'MacOS', 'Chromium'));
+    out.push(path.join(root, entry, 'chrome-mac', 'headless_shell'));
   }
   return out.filter(candidate => fs.existsSync(candidate));
 }
@@ -223,14 +225,22 @@ async function startBrowser() {
   ];
   if (!config.headed) browserArgs.unshift('--headless=new');
 
-  const child = spawn(executable, browserArgs, { stdio: 'ignore', detached: false });
+  const child = spawn(executable, browserArgs, { stdio: ['ignore', 'ignore', 'pipe'], detached: false });
+  let browserStderr = '';
+  child.stderr?.on('data', chunk => {
+    browserStderr = `${browserStderr}${chunk}`.slice(-4000);
+  });
   const browserBaseUrl = `http://127.0.0.1:${port}`;
 
   try {
     await Promise.race([
       waitForJsonVersion(browserBaseUrl),
       new Promise((_, reject) => child.once('error', reject)),
-      new Promise((_, reject) => child.once('exit', code => reject(new Error(`browser exited before DevTools was ready (code ${code})`)))),
+      new Promise((_, reject) => child.once('exit', code => {
+        const stderr = browserStderr.trim();
+        const detail = stderr ? `; stderr: ${stderr}` : '';
+        reject(new Error(`browser exited before DevTools was ready (code ${code}); path=${executable}${detail}`));
+      })),
     ]);
   } catch (error) {
     child.kill();
