@@ -36,6 +36,14 @@ Issue reports copied: yes/no
 
 The smoke scripts automatically load `ZIGNS_*` values from `.env.local` or `.env` when those variables are not already exported in the shell. They intentionally ignore unrelated keys so normal app secrets are not pulled into the smoke process.
 
+Run the preflight doctor when a smoke run fails before app assertions, or before running the full pilot suite on a new machine:
+
+```bash
+npm run smoke:doctor -- --base-url https://app.zigns.io
+```
+
+The doctor checks base URL reachability, DNS for the app and Firebase auth, smoke credential presence, browser/CDP availability, and whether mutation mode is enabled. Add `--skip-account` or `--skip-browser` when intentionally testing a narrower slice.
+
 ## One-Command Pilot QA
 
 Run the default pilot suite before a pilot build handoff:

@@ -463,6 +463,13 @@ async function main() {
     'ZIGNS_PILOT_SKIP_ACCOUNT',
   ]));
 
+  await check('Static smoke doctor script', () => assertFileContains('scripts/smoke-doctor.mjs', [
+    'Zigns smoke doctor',
+    'Firebase auth DNS',
+    'Browser launch',
+    'ZIGNS_BROWSER_CDP_URL',
+  ]));
+
   if (!config.staticOnly) {
     await check('Live login page', () => checkPublicPage('/login.html', 'Zigns'));
     await check('Live admin shell', () => checkPublicPage('/admin.html', 'Dashboard'));

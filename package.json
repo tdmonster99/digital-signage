@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "scripts": {
     "smoke": "node scripts/pilot-smoke.mjs",
+    "smoke:doctor": "node scripts/smoke-doctor.mjs",
     "smoke:pilot": "node scripts/pilot-qa.mjs",
     "smoke:static": "node scripts/pilot-smoke.mjs --static",
     "smoke:browser": "node scripts/browser-smoke.mjs",
