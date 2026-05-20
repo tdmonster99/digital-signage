@@ -36,6 +36,7 @@ const config = {
   headed: Boolean(args.headed || process.env.ZIGNS_BROWSER_HEADED === '1'),
   keepOpen: Boolean(args['keep-open'] || process.env.ZIGNS_BROWSER_KEEP_OPEN === '1'),
   mutate: Boolean(args.mutate || process.env.ZIGNS_BROWSER_MUTATE === '1'),
+  editor: Boolean(args.editor || process.env.ZIGNS_BROWSER_EDITOR === '1'),
   timeoutMs: Number.parseInt(args.timeout || process.env.ZIGNS_BROWSER_TIMEOUT_MS || '60000', 10),
 };
 
@@ -572,6 +573,193 @@ async function runReadOnlyAuthenticatedChecks(cdp) {
   return sessionDetails;
 }
 
+function editorDisplayStateExpression() {
+  return `(() => {
+    const byId = id => document.getElementById(id);
+    const stage = byId('stageDesigned');
+    const opacity = stage ? Number.parseFloat(stage.style.opacity || getComputedStyle(stage).opacity || '0') || 0 : 0;
+    const canvas = byId('fabricDisplay');
+    let canvasNonBlank = false;
+    let canvasSampleError = '';
+    if (opacity > 0.01 && canvas && canvas.width && canvas.height) {
+      try {
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+        const stepX = Math.max(1, Math.floor(width / 14));
+        const stepY = Math.max(1, Math.floor(height / 14));
+        for (let y = 0; y < height && !canvasNonBlank; y += stepY) {
+          for (let x = 0; x < width; x += stepX) {
+            const p = ctx.getImageData(x, y, 1, 1).data;
+            if (p[3] > 0 && (p[0] > 12 || p[1] > 12 || p[2] > 12)) {
+              canvasNonBlank = true;
+              break;
+            }
+          }
+        }
+      } catch (error) {
+        canvasSampleError = error?.message || String(error);
+      }
+    }
+    const errBox = byId('errBox');
+    return {
+      designedVisible: opacity > 0.01,
+      canvasNonBlank,
+      canvasSampleError,
+      errorVisible: errBox ? getComputedStyle(errBox).display !== 'none' : false,
+      errorText: byId('errMsg')?.textContent?.trim() || '',
+    };
+  })()`;
+}
+
+function assertDesignedSlideSummary(summary, label) {
+  assert(summary, `${label}: missing slide summary`);
+  assert(summary.type === 'designed', `${label}: expected designed slide, got ${summary.type || 'unknown'}`);
+  assert(summary.objectCount >= 8, `${label}: expected at least 8 canvas objects, got ${summary.objectCount}`);
+  const types = summary.objectTypes || summary.types || [];
+  const texts = summary.texts || [];
+  assert(types.includes('rect'), `${label}: saved canvas is missing a rect object`);
+  assert(types.includes('circle'), `${label}: saved canvas is missing a circle object`);
+  assert(types.includes('line'), `${label}: saved canvas is missing a line object`);
+  assert(types.includes('image'), `${label}: saved canvas is missing an image object`);
+  assert(texts.some(text => text.includes('Layer 3 Editor Smoke')), `${label}: saved canvas is missing smoke title text`);
+}
+
+async function waitForEditorHarness(cdp) {
+  await waitFor(cdp, `window.__zignsEditorSmoke && typeof window.__zignsEditorSmoke.populateCanvas === 'function'`, 'editor smoke harness', 30000);
+}
+
+async function waitForEditorDisplayPreview(cdp, timeoutMs = 30000) {
+  const deadline = Date.now() + timeoutMs;
+  let lastState = null;
+  while (Date.now() < deadline) {
+    lastState = await evaluate(cdp, editorDisplayStateExpression()).catch(error => ({ evaluationError: error.message }));
+    if (lastState && !lastState.evaluationError && !lastState.errorVisible && lastState.designedVisible && lastState.canvasNonBlank) {
+      return lastState;
+    }
+    await sleep(500);
+  }
+  throw new Error(`Timed out waiting for published designed slide preview; lastState=${JSON.stringify(lastState)}`);
+}
+
+async function waitForAdminShell(cdp) {
+  await waitFor(cdp, `location.pathname.endsWith('/admin.html') || document.querySelector('#page-dashboard')`, 'admin shell', 30000);
+  await waitFor(cdp, `document.querySelector('#page-dashboard') && document.body.textContent.includes('Dashboard')`, 'dashboard content', 30000);
+  await waitFor(cdp, `typeof window.newShowPrompt === 'function' && typeof window.deleteCurrentSlideshow === 'function'`, 'admin slideshow helpers', 30000);
+}
+
+async function runEditorSavePublishChecks(cdp, sessionDetails) {
+  await check('Editor Save/Publish smoke', async () => {
+    assert(String(sessionDetails?.role || '').toLowerCase() === 'admin', `editor save/publish cleanup requires an admin smoke account, got ${sessionDetails?.role || 'unknown'}`);
+
+    const showName = `Editor Smoke ${new Date().toISOString().replace(/[:.]/g, '-')}`;
+    const slideName = `Layer 3 Editor Smoke ${Date.now().toString(36)}`;
+    let created = null;
+    let cleanupNote = 'not needed';
+
+    try {
+      created = await evaluate(cdp, `(async () => {
+        await window.__zignsEditorSmoke.selectShow(document.querySelector('#showList .show-item.active')?.dataset.id || 'main').catch(() => null);
+        const oldPrompt = window.prompt;
+        window.prompt = () => ${JSON.stringify(showName)};
+        try {
+          await window.newShowPrompt();
+        } finally {
+          window.prompt = oldPrompt;
+        }
+        const active = document.querySelector('#showList .show-item.active');
+        return {
+          id: active?.dataset.id || '',
+          name: document.querySelector('#showTitle')?.textContent?.trim() || active?.querySelector('.show-item-name')?.textContent?.trim() || '',
+        };
+      })()`);
+      assert(created?.id, 'editor smoke slideshow was not created');
+      assert(created.name === showName, `created slideshow name mismatch: ${JSON.stringify(created)}`);
+
+      const saved = await evaluate(cdp, `(async () => {
+        const h = window.__zignsEditorSmoke;
+        await h.selectShow(${JSON.stringify(created.id)});
+        const opened = await h.openBlankDesigner(${JSON.stringify(slideName)});
+        const populated = await h.populateCanvas(${JSON.stringify(slideName)});
+        const slides = await h.saveDesigner(${JSON.stringify(slideName)});
+        return {
+          opened,
+          populated,
+          slides,
+          savedSlide: slides.find(slide => slide.name === ${JSON.stringify(slideName)}) || null,
+          context: h.context(),
+        };
+      })()`);
+      assert(saved.populated?.objectCount >= 8, `designer canvas did not populate expected objects: ${JSON.stringify(saved.populated)}`);
+      assertDesignedSlideSummary(saved.savedSlide, 'saved draft');
+      assert(saved.context?.slideCount === 1, `expected one saved slide in editor state, got ${saved.context?.slideCount}`);
+
+      await navigate(cdp, `${config.baseUrl}/admin.html`);
+      await waitForAdminShell(cdp);
+      await waitForEditorHarness(cdp);
+
+      const reopened = await evaluate(cdp, `(async () => {
+        const h = window.__zignsEditorSmoke;
+        await h.selectShow(${JSON.stringify(created.id)});
+        const canvas = await h.reopenDesigned(${JSON.stringify(slideName)});
+        const slides = h.slides();
+        h.closeDesigner();
+        return {
+          slides,
+          savedSlide: slides.find(slide => slide.name === ${JSON.stringify(slideName)}) || null,
+          canvas,
+          context: h.context(),
+        };
+      })()`);
+      assertDesignedSlideSummary(reopened.savedSlide, 'reopened persisted draft');
+      assert(reopened.canvas?.objectCount >= 8, `reopened designer canvas lost objects: ${JSON.stringify(reopened.canvas)}`);
+      assert((reopened.canvas?.texts || []).some(text => text.includes('Layer 3 Editor Smoke')), 'reopened designer canvas lost title text');
+
+      const published = await evaluate(cdp, `(async () => {
+        const h = window.__zignsEditorSmoke;
+        await h.selectShow(${JSON.stringify(created.id)});
+        return h.publishCurrent(${JSON.stringify(slideName)});
+      })()`);
+      assert(published.publishedSlidesCount === 1, `expected one published slide, got ${published.publishedSlidesCount}`);
+
+      await navigate(cdp, `${config.baseUrl}/display.html?slideshow=${encodeURIComponent(created.id)}`);
+      await waitFor(cdp, `document.querySelector('#stageDesigned') && document.querySelector('#fabricDisplay')`, 'display designed stage');
+      await waitFor(cdp, `getComputedStyle(document.querySelector('#loader')).display === 'none' || getComputedStyle(document.querySelector('#errBox')).display !== 'none'`, 'display preview load completion', 30000);
+      const displayState = await waitForEditorDisplayPreview(cdp, 30000);
+      assert(!displayState.errorVisible, displayState.errorText || 'display preview reported an error');
+      assert(displayState.canvasNonBlank, `display preview canvas was blank: ${JSON.stringify(displayState)}`);
+
+      return `show=${created.id}; slide=${slideName}; objects=${reopened.canvas.objectCount}; published=${published.publishedSlidesCount}`;
+    } finally {
+      if (created?.id) {
+        try {
+          await navigate(cdp, `${config.baseUrl}/admin.html`);
+          await waitForAdminShell(cdp);
+          await waitForEditorHarness(cdp);
+          cleanupNote = await evaluate(cdp, `(async () => {
+            const showId = ${JSON.stringify(created.id)};
+            const h = window.__zignsEditorSmoke;
+            await h.selectShow(showId);
+            const oldConfirm = window.confirm;
+            window.confirm = () => true;
+            try {
+              await window.deleteCurrentSlideshow();
+            } finally {
+              window.confirm = oldConfirm;
+            }
+            return 'delete requested';
+          })()`);
+          await waitFor(cdp, `!document.querySelector('#showList .show-item[data-id="' + CSS.escape(${JSON.stringify(created.id)}) + '"]')`, 'editor smoke slideshow deletion', 30000);
+        } catch (error) {
+          cleanupNote = `cleanup failed: ${error.message}`;
+          warn('Editor Save/Publish cleanup', cleanupNote);
+        }
+      }
+      assert(!cleanupNote.includes('failed'), cleanupNote);
+    }
+  });
+}
+
 async function runMutatingChecks(cdp) {
   await check('Slideshow CRUD smoke', async () => {
     const name = `Smoke ${new Date().toISOString().replace(/[:.]/g, '-')}`;
@@ -666,6 +854,9 @@ async function main() {
 
     await check('Login page browser UI', async () => {
       await navigate(cdp, `${config.baseUrl}/login.html`);
+      if (config.editor) {
+        await evaluate(cdp, `localStorage.setItem('zignsSmokeHarness', '1'); true`);
+      }
       await waitFor(cdp, `document.querySelector('#authEmail') && document.querySelector('#authPassword') && document.querySelector('#signInBtn')`, 'login form controls');
       const title = await evaluate(cdp, `document.title`);
       return title || 'login form visible';
@@ -684,7 +875,16 @@ async function main() {
           await runMutatingChecks(cdp);
         }
       } else {
-        warn('Slideshow CRUD smoke', 'skipped; set ZIGNS_BROWSER_MUTATE=1 to create/tag/delete a temporary slideshow');
+        if (!config.editor) warn('Slideshow CRUD smoke', 'skipped; set ZIGNS_BROWSER_MUTATE=1 to create/tag/delete a temporary slideshow');
+      }
+
+      if (config.editor) {
+        if (!sessionDetails) {
+          warn('Editor Save/Publish smoke', 'skipped; authenticated session did not complete');
+        } else {
+          await waitForEditorHarness(cdp);
+          await runEditorSavePublishChecks(cdp, sessionDetails);
+        }
       }
     }
   } finally {

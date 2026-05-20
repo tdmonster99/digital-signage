@@ -26829,6 +26829,275 @@ window.saveDesignedSlide = async function() {
   }
 };
 
+function isEditorSmokeHarnessEnabled() {
+  try {
+    return localStorage.getItem('zignsSmokeHarness') === '1' ||
+      new URLSearchParams(window.location.search).get('smokeHarness') === '1';
+  } catch (_) {
+    return false;
+  }
+}
+
+function smokeWaitFor(predicate, label = 'condition', timeoutMs = 10000) {
+  const started = Date.now();
+  return new Promise((resolve, reject) => {
+    const tick = () => {
+      let value = null;
+      try { value = predicate(); }
+      catch (error) {
+        reject(error);
+        return;
+      }
+      if (value) {
+        resolve(value);
+        return;
+      }
+      if (Date.now() - started >= timeoutMs) {
+        reject(new Error(`Timed out waiting for ${label}`));
+        return;
+      }
+      setTimeout(tick, 100);
+    };
+    tick();
+  });
+}
+
+function smokeCanvasSummary(canvas = fabricCanvas) {
+  if (!canvas) return { ready: false, objectCount: 0, types: [], texts: [], labels: [] };
+  const objects = canvas.getObjects();
+  return {
+    ready: true,
+    objectCount: objects.length,
+    backgroundColor: canvas.backgroundColor || '',
+    types: objects.map(obj => obj.type || ''),
+    texts: objects.map(obj => obj.text || '').filter(Boolean),
+    labels: objects.map(obj => obj.zignsLayerLabel || obj.zignsImageName || '').filter(Boolean),
+  };
+}
+
+function smokeSlideSummary(slide) {
+  let canvas = null;
+  try {
+    canvas = slide?.canvasJson
+      ? (typeof slide.canvasJson === 'string' ? JSON.parse(slide.canvasJson) : slide.canvasJson)
+      : null;
+  } catch (_) {}
+  const objects = Array.isArray(canvas?.objects) ? canvas.objects : [];
+  return {
+    id: slide?.id || '',
+    name: slide?.name || '',
+    type: slide?.type || '',
+    active: slide?.active !== false,
+    objectCount: objects.length,
+    objectTypes: objects.map(obj => obj.type || ''),
+    texts: objects.map(obj => obj.text || '').filter(Boolean),
+    labels: objects.map(obj => obj.zignsLayerLabel || obj.zignsImageName || '').filter(Boolean),
+  };
+}
+
+function smokeAddImageObject(url, options = {}) {
+  return new Promise((resolve, reject) => {
+    if (!fabricCanvas) {
+      reject(new Error('Designer canvas is not ready.'));
+      return;
+    }
+    fabric.Image.fromURL(url, img => {
+      if (!img) {
+        reject(new Error('Smoke image failed to load.'));
+        return;
+      }
+      img.set({
+        left: options.left || 1360,
+        top: options.top || 590,
+        originX: 'center',
+        originY: 'center',
+        scaleX: options.scaleX || 1,
+        scaleY: options.scaleY || 1,
+        zignsLayerLabel: options.label || 'Smoke Image',
+        zignsImageName: options.label || 'Smoke Image',
+      });
+      fabricCanvas.add(img);
+      resolve(img);
+    });
+  });
+}
+
+if (isEditorSmokeHarnessEnabled()) {
+  window.__zignsEditorSmoke = {
+    async selectShow(showId) {
+      showPage('slideshows');
+      const item = await smokeWaitFor(
+        () => document.querySelector(`#showList .show-item[data-id="${CSS.escape(showId)}"]`),
+        `slideshow ${showId}`,
+        15000
+      );
+      item.click();
+      await smokeWaitFor(() => currentShowId === showId && document.getElementById('slideGrid'), 'selected slideshow', 15000);
+      await smokeWaitFor(() => currentShowId === showId && Array.isArray(slides), 'slideshow slides', 15000);
+      return this.context();
+    },
+
+    async openBlankDesigner(name = 'Layer 3 Editor Smoke') {
+      pendingTemplate = 'blank';
+      launchDesigner(null);
+      await smokeWaitFor(() => fabricCanvas, 'designer canvas', 10000);
+      document.getElementById('designerSlideName').value = name;
+      return smokeCanvasSummary();
+    },
+
+    async populateCanvas(label = 'Layer 3 Editor Smoke') {
+      if (!fabricCanvas) throw new Error('Designer canvas is not ready.');
+      fabricCanvas.clear();
+      fabricCanvas.backgroundColor = '#07111f';
+      fabricCanvas.add(new fabric.Rect({
+        left: 0,
+        top: 0,
+        width: CANVAS_W,
+        height: CANVAS_H,
+        fill: '#07111f',
+        selectable: false,
+        zignsLayerLabel: 'Smoke Background',
+      }));
+      fabricCanvas.add(new fabric.Rect({
+        left: 120,
+        top: 130,
+        width: 1680,
+        height: 820,
+        fill: '#10233f',
+        stroke: '#0043ce',
+        strokeWidth: 10,
+        rx: 28,
+        ry: 28,
+        zignsLayerLabel: 'Smoke Frame',
+      }));
+      fabricCanvas.add(new fabric.Rect({
+        left: 205,
+        top: 250,
+        width: 520,
+        height: 300,
+        fill: '#0043ce',
+        rx: 22,
+        ry: 22,
+        zignsLayerLabel: 'Smoke Blue Block',
+      }));
+      fabricCanvas.add(new fabric.Circle({
+        left: 880,
+        top: 400,
+        radius: 152,
+        fill: '#16a34a',
+        zignsLayerLabel: 'Smoke Circle',
+      }));
+      fabricCanvas.add(new fabric.Line([220, 760, 1160, 760], {
+        stroke: '#f5b400',
+        strokeWidth: 18,
+        zignsLayerLabel: 'Smoke Divider',
+      }));
+      fabricCanvas.add(new fabric.IText(label, {
+        left: 210,
+        top: 645,
+        fontSize: 72,
+        fontFamily: 'Arial',
+        fontWeight: '700',
+        fill: '#ffffff',
+        zignsLayerLabel: 'Smoke Title',
+      }));
+      fabricCanvas.add(new fabric.IText('Saved, reopened, published, previewed', {
+        left: 214,
+        top: 810,
+        fontSize: 42,
+        fontFamily: 'Arial',
+        fill: '#c7d2fe',
+        zignsLayerLabel: 'Smoke Subtitle',
+      }));
+      const svg = [
+        '<svg xmlns="http://www.w3.org/2000/svg" width="360" height="240" viewBox="0 0 360 240">',
+        '<rect width="360" height="240" rx="34" fill="#eaf2ff"/>',
+        '<circle cx="120" cy="112" r="54" fill="#0043ce"/>',
+        '<rect x="188" y="70" width="112" height="86" rx="18" fill="#f5b400"/>',
+        '<path d="M82 176h198" stroke="#07111f" stroke-width="18" stroke-linecap="round"/>',
+        '</svg>',
+      ].join('');
+      await smokeAddImageObject(`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`, {
+        label: 'Smoke Data Image',
+      });
+      fabricCanvas.renderAll();
+      markDesignerDirty();
+      return smokeCanvasSummary();
+    },
+
+    async saveDesigner(name = 'Layer 3 Editor Smoke') {
+      document.getElementById('designerSlideName').value = name;
+      await window.saveDesignedSlide();
+      await smokeWaitFor(() => document.getElementById('designerModal').style.display !== 'flex', 'designer to close after save', 20000);
+      await smokeWaitFor(() => slides.some(slide => slide.type === 'designed' && slide.name === name), 'saved designed slide', 20000);
+      return this.slides();
+    },
+
+    async reopenDesigned(name = 'Layer 3 Editor Smoke') {
+      await smokeWaitFor(
+        () => slides.some(slide => slide.type === 'designed' && slide.name === name),
+        `designed slide ${name}`,
+        20000
+      );
+      const idx = slides.findIndex(slide => slide.type === 'designed' && slide.name === name);
+      if (idx < 0) throw new Error(`Designed slide "${name}" was not found.`);
+      window.editDesignedSlide(idx);
+      await smokeWaitFor(() => fabricCanvas && document.getElementById('designerModal').style.display === 'flex', 'reopened designer canvas', 10000);
+      await smokeWaitFor(() => smokeCanvasSummary().objectCount >= 7, 'reopened canvas objects', 15000);
+      return smokeCanvasSummary();
+    },
+
+    closeDesigner() {
+      designerDirty = false;
+      doCloseDesigner();
+      return true;
+    },
+
+    async publishCurrent(expectedSlideName = '') {
+      if (expectedSlideName) {
+        await smokeWaitFor(
+          () => slides.some(slide => slide.type === 'designed' && slide.name === expectedSlideName),
+          `designed slide ${expectedSlideName} before publish`,
+          20000
+        );
+      }
+      const dwell = defaultSlideDwellSeconds();
+      const fit = document.getElementById('fitMode').value;
+      const transition = selectedTransitionType();
+      const transitionSpeed = selectedTransitionSpeed();
+      const showMeta = showMetaFromOrg(currentShowId) || {};
+      const publishedSlides = await resolveSmartPlaylistSlides(slides, currentShowId);
+      await publishSlideshowToServer(currentShowId, publishedSlides, {
+        defaultDwell: dwell,
+        fitMode: fit,
+        transition,
+        transitionSpeed,
+        tags: normalizeTagsFromInput(showMeta.tags || []),
+        autoIncludeTags: normalizeTagsFromInput(showMeta.autoIncludeTags || []),
+        emergencyPlaylist: showMeta.emergencyPlaylist === true,
+      }, []);
+      setPushVisible(false);
+      refreshLivePreviewAfterPublish(currentShowId);
+      return { showId: currentShowId, publishedSlidesCount: publishedSlides.length };
+    },
+
+    slides() {
+      return slides.map(smokeSlideSummary);
+    },
+
+    context() {
+      return {
+        orgId: currentOrgId,
+        orgName: currentOrg?.name || '',
+        role: currentRole,
+        showId: currentShowId,
+        showName: currentShowName,
+        slideCount: slides.length,
+      };
+    },
+  };
+}
+
 function dataURLtoBlob(dataUrl) {
   const [header, data] = dataUrl.split(',');
   const mime   = header.match(/:(.*?);/)[1];

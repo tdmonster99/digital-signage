@@ -367,6 +367,7 @@ async function main() {
     'playlist_slide_skipped',
     'playerVersion',
     'startPreviewFallbackPolling',
+    'previewAuthUnsub',
   ]));
 
   await check('Static screen diagnostics panel', () => assertFileContains('admin.html', [
@@ -391,6 +392,7 @@ async function main() {
     'Tags, Priority, And Emergency Smoke',
     'Team Invite Smoke',
     'Browser Smoke',
+    'Editor Save/Publish Smoke',
     'Rendering Smoke',
     'tag propagation pass',
     'CAP Alert Smoke',
@@ -401,6 +403,14 @@ async function main() {
     'Slideshow tags modal opens',
     'Add Media includes Google Photos',
     'Slideshow CRUD smoke',
+    'Editor Save/Publish smoke',
+  ]));
+
+  await check('Static editor smoke harness', () => assertFileContains('admin.html', [
+    'zignsSmokeHarness',
+    '__zignsEditorSmoke',
+    'populateCanvas',
+    'publishCurrent',
   ]));
 
   await check('Static tag propagation smoke script', () => assertFileContains('scripts/tag-propagation-smoke.mjs', [

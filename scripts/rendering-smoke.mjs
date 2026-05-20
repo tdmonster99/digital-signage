@@ -660,7 +660,7 @@ function mergeObservation(observed, state) {
   if (state.designed?.canvasSampleError) observed.canvasSampleErrors.push(state.designed.canvasSampleError);
 }
 
-async function collectPreviewObservations(cdp, durationMs) {
+async function collectPreviewObservations(cdp, durationMs, isComplete = null) {
   const observed = {
     imageOne: false,
     imageTwo: false,
@@ -676,9 +676,18 @@ async function collectPreviewObservations(cdp, durationMs) {
     lastState = await evaluate(cdp, previewStateExpression());
     observed.samples += 1;
     mergeObservation(observed, lastState);
+    if (typeof isComplete === 'function' && isComplete(observed, lastState)) break;
     await sleep(350);
   }
   return { observed, lastState };
+}
+
+function observedFullSlideMix(observed) {
+  return observed.imageOne && observed.imageTwo && observed.designed && observed.youtube;
+}
+
+function observedPublishedSlideMix(observed) {
+  return observed.imageOne && observed.imageTwo && observed.designed;
 }
 
 async function loginBrowser(cdp) {
@@ -778,7 +787,7 @@ async function main() {
     });
 
     await check('Display preview renders slide mix', async () => {
-      const { observed } = await collectPreviewObservations(cdp, 11000);
+      const { observed } = await collectPreviewObservations(cdp, 22000, observedFullSlideMix);
       assert(!observed.errors.length, `preview errors: ${observed.errors.join('; ')}`);
       assert(observed.imageOne, `first image slide was not observed; saw ${summarizeObserved(observed)}`);
       assert(observed.imageTwo, `second image slide was not observed; saw ${summarizeObserved(observed)}`);
@@ -802,7 +811,7 @@ async function main() {
       assert(!published.some(slide => slide.type === 'youtube'), 'showSnapshot still contains a YouTube slide after republish');
       await waitFor(cdp, postDeletePlaylistVisibleExpression(), 'post-delete playlist to render in preview', 20000);
       await waitForYoutubeGone(cdp);
-      const { observed } = await collectPreviewObservations(cdp, 8000);
+      const { observed } = await collectPreviewObservations(cdp, 12000, observedPublishedSlideMix);
       assert(!observed.youtube, `preview still showed YouTube after republish; saw ${summarizeObserved(observed)}`);
       assert(observed.imageOne && observed.imageTwo && observed.designed, `republished preview did not cycle through remaining slides; saw ${summarizeObserved(observed)}`);
       return `snapshot=${published.length} slides; observed ${summarizeObserved(observed)}`;

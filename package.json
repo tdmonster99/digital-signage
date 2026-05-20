@@ -5,6 +5,7 @@
     "smoke": "node scripts/pilot-smoke.mjs",
     "smoke:static": "node scripts/pilot-smoke.mjs --static",
     "smoke:browser": "node scripts/browser-smoke.mjs",
+    "smoke:editor": "node scripts/browser-smoke.mjs --editor",
     "smoke:tags": "node scripts/tag-propagation-smoke.mjs",
     "smoke:rules": "node scripts/rules-denial-smoke.mjs",
     "smoke:rendering": "node scripts/rendering-smoke.mjs"

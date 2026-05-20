@@ -348,13 +348,30 @@
     });
   }
 
+  let previewAuthUnsub = null;
+
+  function clearPreviewAuthWait() {
+    if (previewAuthUnsub) {
+      try { previewAuthUnsub(); } catch (_) {}
+      previewAuthUnsub = null;
+    }
+  }
+
   async function startPreviewMode(slideshowId) {
     ownsScreenIdentity = false;
     screenWriteState = "readonly";
-    const user = await waitForSignedInUser();
+    const user = await waitForSignedInUser(15000);
+    clearPreviewAuthWait();
     if (!user) {
       loader.style.display = "none";
       showError("Sign in to the Admin Panel to preview this slideshow.");
+      previewAuthUnsub = onAuthStateChanged(screenAuth, nextUser => {
+        if (!nextUser) return;
+        clearPreviewAuthWait();
+        errBox.style.display = "none";
+        loader.style.display = "flex";
+        subscribeToSlideshow(slideshowId);
+      });
       return;
     }
     subscribeToSlideshow(slideshowId);

@@ -116,6 +116,20 @@ npm run smoke:browser -- --base-url https://app.zigns.io
 
 The mutating pass creates a temporary slideshow, saves a `smoke` tag, toggles its emergency-ready state on and off from the Screens manager, then deletes the temporary slideshow. Only run it against a dedicated pilot test organization.
 
+## Editor Save/Publish Smoke
+
+Run the editor save/publish pass when validating the slide designer, Fabric canvas persistence, or save/publish/preview drift:
+
+```bash
+ZIGNS_BROWSER_EMAIL="pilot-admin@example.com" \
+ZIGNS_BROWSER_PASSWORD="use-a-dedicated-test-password" \
+ZIGNS_BROWSER_EXPECTED_ORG="Zigns Smoke Test" \
+ZIGNS_BROWSER_EXPECTED_ROLE="admin" \
+npm run smoke:editor -- --base-url https://app.zigns.io
+```
+
+The editor pass creates a temporary slideshow in the browser, opens the designer, builds a multi-object Fabric slide with text, shapes, line, and an embedded image, saves it through the designer, reloads the admin shell, reopens the saved slide, publishes it, verifies the display preview renders a nonblank designed canvas, then deletes the temporary slideshow. It requires an Admin smoke account because cleanup deletes the temporary slideshow.
+
 Run the Phase 5.1 tag propagation pass when validating tag manager or smart playlist changes:
 
 ```bash
