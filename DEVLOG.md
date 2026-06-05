@@ -4,6 +4,17 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-06-05 — Codex — Add server-stamped player diagnostics
+
+Improved onsite screen troubleshooting for stale/offline display incidents.
+
+- **Server heartbeat**: Added `/api/screen-heartbeat` so paired displays can verify their screen secret and update `lastSeen` with server time instead of relying only on the device clock.
+- **Player metadata**: Display heartbeats now include safe diagnostics such as player URL/slot, cached vs live state, visibility, browser online status, uptime, navigation type, viewport, platform family, and clock skew.
+- **Lifecycle signals**: The player now sends immediate server heartbeat diagnostics for boot, cached/live listener changes, browser online/offline, visibility changes, auth failures, and pagehide when possible.
+- **Admin diagnostics**: Screen diagnostics now show the latest server heartbeat details and include a copyable diagnostic report for onsite triage.
+
+---
+
 ## 2026-05-18 — Codex — Polish Slide Designer Editing Controls
 
 Improved the Fabric.js slide designer editing surface.

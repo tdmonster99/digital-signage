@@ -600,7 +600,7 @@ select.ui-control { cursor: pointer; }
 .screen-diagnostics-status.warn { background: rgba(245,158,11,.14); color: #b45309; }
 .screen-diagnostics-status.bad { background: rgba(239,68,68,.12); color: #dc2626; }
 .screen-diagnostics-summary { padding: 10px; border-radius: 8px; background: var(--surface); border: 1px solid var(--border); line-height: 1.45; color: var(--text); }
-.screen-diagnostics-actions { display: flex; justify-content: flex-end; }
+.screen-diagnostics-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
 .screen-diagnostics-refresh {
   border: 1px solid var(--border); background: var(--surface); color: var(--text);
   border-radius: 8px; padding: 6px 9px; font: 700 11px 'DM Sans', sans-serif; cursor: pointer;
@@ -27574,6 +27574,7 @@ const PLAYER_DIAGNOSTIC_TYPES = new Set([
   'player_capabilities',
   'player_online',
   'player_offline',
+  'player_heartbeat',
   'player_heartbeat_error',
   'player_watchdog_restart',
   'player_slideshow_error',
@@ -27581,6 +27582,7 @@ const PLAYER_DIAGNOSTIC_TYPES = new Set([
 ]);
 
 const SCREEN_OFFLINE_THRESHOLD_MS = 10 * 60 * 1000;
+const _screenDiagnosticReports = {};
 
 function formatPlayerDiagTime(value) {
   if (!value) return '—';
@@ -27614,6 +27616,96 @@ function playerDiagRow(label, value) {
   </div>`;
 }
 
+function formatClockSkew(ms) {
+  if (typeof ms !== 'number' || !Number.isFinite(ms)) return '—';
+  const abs = Math.abs(ms);
+  if (abs < 1000) return 'under 1s';
+  const sign = ms > 0 ? '+' : '-';
+  if (abs < 60000) return `${sign}${Math.round(abs / 1000)}s`;
+  if (abs < 3600000) return `${sign}${Math.round(abs / 60000)}m`;
+  return `${sign}${(abs / 3600000).toFixed(1)}h`;
+}
+
+function heartbeatUrlLabel(heartbeat = {}) {
+  const path = heartbeat.path || '';
+  const search = heartbeat.search || '';
+  return path || search ? `${path}${search}` : '—';
+}
+
+function heartbeatModeLabel(heartbeat = {}) {
+  if (!heartbeat.at && !heartbeat.serverTime) return '—';
+  return heartbeat.offlineCacheMode ? 'Cached playback' : 'Live listener';
+}
+
+function heartbeatBoolLabel(value) {
+  if (value === true) return 'Yes';
+  if (value === false) return 'No';
+  return '—';
+}
+
+function renderHeartbeatRows(screen) {
+  const heartbeat = screen?.lastHeartbeat || null;
+  if (!heartbeat) return '';
+  const rows = [
+    ['Server heartbeat', formatPlayerDiagTime(heartbeat.at || heartbeat.serverTime)],
+    ['Device clock skew', formatClockSkew(heartbeat.clockSkewMs)],
+    ['Player URL', heartbeatUrlLabel(heartbeat)],
+    ['Slot', heartbeat.screenSlot || 'default'],
+    ['Playback mode', heartbeatModeLabel(heartbeat)],
+    ['Browser online', heartbeatBoolLabel(heartbeat.browserOnline)],
+    ['Visibility', heartbeat.visibilityState || (heartbeat.documentHidden ? 'hidden' : '—')],
+    ['Last live update', formatPlayerDiagTime(heartbeat.lastLiveUpdateAt)],
+    ['Navigation', heartbeat.navigationType || '—'],
+    ['Uptime', heartbeat.uptimeSec ? `${Math.round(heartbeat.uptimeSec / 60)}m` : '—'],
+  ];
+  return rows.map(([label, value]) => playerDiagRow(label, escHtml(value))).join('');
+}
+
+function buildScreenDiagnosticReport(screen, latest, events) {
+  const diagnosis = diagnoseScreenHealth(screen, latest);
+  const heartbeat = screen?.lastHeartbeat || {};
+  const lines = [
+    'Zigns Screen Diagnostic Report',
+    `Generated: ${new Date().toLocaleString()}`,
+    `Screen: ${screen?.name || screen?.id || 'unknown'} (${screen?.id || 'unknown'})`,
+    `Diagnosis: ${diagnosis.title}`,
+    `Summary: ${diagnosis.summary}`,
+    '',
+    'Screen record',
+    `Last heartbeat: ${formatPlayerDiagTime(screen?.lastSeen)}`,
+    `Offline alert: ${formatPlayerDiagTime(screen?.lastNotifiedAt)}`,
+    `Assigned slideshow: ${screen?.slideshowId || '—'}`,
+    `Location: ${screen?.location || '—'}`,
+    '',
+    'Latest server heartbeat',
+    `Server heartbeat: ${formatPlayerDiagTime(heartbeat.at || heartbeat.serverTime)}`,
+    `Reason: ${heartbeat.reason || '—'}`,
+    `Device clock skew: ${formatClockSkew(heartbeat.clockSkewMs)}`,
+    `Player URL: ${heartbeatUrlLabel(heartbeat)}`,
+    `Slot: ${heartbeat.screenSlot || 'default'}`,
+    `Playback mode: ${heartbeatModeLabel(heartbeat)}`,
+    `Browser online: ${heartbeatBoolLabel(heartbeat.browserOnline)}`,
+    `Visibility: ${heartbeat.visibilityState || (heartbeat.documentHidden ? 'hidden' : '—')}`,
+    `Last live update: ${formatPlayerDiagTime(heartbeat.lastLiveUpdateAt)}`,
+    `Navigation: ${heartbeat.navigationType || '—'}`,
+    `Uptime: ${heartbeat.uptimeSec ? `${Math.round(heartbeat.uptimeSec / 60)}m` : '—'}`,
+    `Platform: ${heartbeat.platform?.family || '—'}${heartbeat.platform?.shellType ? ` (${heartbeat.platform.shellType}${heartbeat.platform.shellVersion ? ` ${heartbeat.platform.shellVersion}` : ''})` : ''}`,
+    `Viewport: ${heartbeat.viewport?.width || '—'} x ${heartbeat.viewport?.height || '—'} @ ${heartbeat.viewport?.dpr || '—'}x`,
+    '',
+    'Recent player events',
+  ];
+
+  if (!events.length) {
+    lines.push('No player events recorded.');
+  } else {
+    events.slice(0, 12).forEach(event => {
+      lines.push(`- ${formatPlayerDiagTime(event.timestamp)} | ${screenDiagEventLabel(event)} | ${screenDiagEventDetail(event) || 'No detail'}`);
+    });
+  }
+
+  return lines.join('\n');
+}
+
 function eventTimeMs(event) {
   const ms = new Date(event?.timestamp || 0).getTime();
   return Number.isFinite(ms) ? ms : 0;
@@ -27627,6 +27719,7 @@ function screenDiagEventLabel(event) {
     player_capabilities: 'Capabilities',
     player_online: 'Player online',
     player_offline: 'Player offline',
+    player_heartbeat: 'Server heartbeat',
     player_heartbeat_error: 'Heartbeat failed',
     player_watchdog_restart: 'Watchdog restart',
     player_slideshow_error: 'Slideshow error',
@@ -27643,6 +27736,9 @@ function screenDiagEventDetail(event) {
   if (event.message) parts.push(String(event.message).slice(0, 120));
   if (event.slideshowId) parts.push(`show: ${event.slideshowId}`);
   if (event.online === false) parts.push('browser reported offline');
+  if (event.offlineCacheMode === true) parts.push('cached mode');
+  if (typeof event.clockSkewMs === 'number') parts.push(`clock skew: ${formatClockSkew(event.clockSkewMs)}`);
+  if (event.path || event.search) parts.push(`url: ${String((event.path || '') + (event.search || '')).slice(0, 120)}`);
   return parts.join(' · ');
 }
 
@@ -27656,8 +27752,18 @@ function diagnoseScreenHealth(screen, latest) {
   const lastOnlineMs = eventTimeMs(lastOnline);
   const lastOfflineMs = eventTimeMs(lastOffline);
   const heartbeatErrorMs = eventTimeMs(heartbeatError);
+  const heartbeat = screen?.lastHeartbeat || {};
+  const heartbeatMs = screenTimeMs(heartbeat.at || heartbeat.serverTime);
+  const heartbeatReason = String(heartbeat.reason || '').toLowerCase();
 
   if (online) {
+    if (typeof heartbeat.clockSkewMs === 'number' && Math.abs(heartbeat.clockSkewMs) > 120000) {
+      return {
+        state: 'warn',
+        title: 'Online with clock drift',
+        summary: `This screen is heartbeating, but the device clock differs from server time by ${formatClockSkew(heartbeat.clockSkewMs)}.`,
+      };
+    }
     return {
       state: 'ok',
       title: 'Healthy',
@@ -27677,6 +27783,36 @@ function diagnoseScreenHealth(screen, latest) {
       title: 'Heartbeat write failed',
       summary: `The player reported a heartbeat write failure after its last successful heartbeat${heartbeatError.message ? `: ${heartbeatError.message}` : '.'}`,
     };
+  }
+  if (heartbeatMs >= Math.max(lastSeenMs - 60 * 1000, 0)) {
+    if (heartbeatReason === 'visibility_hidden' || heartbeatReason === 'pagehide') {
+      return {
+        state: 'bad',
+        title: 'Tab hidden or closed',
+        summary: 'The latest server heartbeat says the display page was hidden or unloaded near the time heartbeats stopped.',
+      };
+    }
+    if (heartbeatReason === 'browser_offline' || heartbeat.browserOnline === false) {
+      return {
+        state: 'bad',
+        title: 'Browser went offline',
+        summary: 'The latest server heartbeat says the browser was offline near the time heartbeats stopped.',
+      };
+    }
+    if (heartbeat.offlineCacheMode === true) {
+      return {
+        state: 'bad',
+        title: 'Cached playback only',
+        summary: 'The latest server heartbeat says the player was showing cached content instead of a live Firestore listener.',
+      };
+    }
+    if (typeof heartbeat.clockSkewMs === 'number' && Math.abs(heartbeat.clockSkewMs) > 120000) {
+      return {
+        state: 'warn',
+        title: 'Device clock drift',
+        summary: `The latest server heartbeat found the device clock differs from server time by ${formatClockSkew(heartbeat.clockSkewMs)}.`,
+      };
+    }
   }
   if (lastOfflineMs >= Math.max(lastSeenMs - 60 * 1000, 0) && lastOfflineMs >= lastOnlineMs) {
     if (lastOfflineSource === 'visibility_hidden' || lastOfflineSource === 'pagehide') {
@@ -27738,8 +27874,10 @@ function renderScreenDiagnosticsSummary(screen, latest, events) {
       ${playerDiagRow('Last online', escHtml(formatPlayerDiagTime((latest.player_online || latest.screen_online || {}).timestamp)))}
       ${playerDiagRow('Last offline', escHtml(formatPlayerDiagTime((latest.player_offline || latest.screen_offline || {}).timestamp)))}
       ${lastIssue ? playerDiagRow('Last issue', escHtml(screenDiagEventDetail(lastIssue) || lastIssue.reason || screenDiagEventLabel(lastIssue))) : ''}
+      ${renderHeartbeatRows(screen)}
     </div>
     <div class="screen-diagnostics-actions">
+      <button type="button" class="screen-diagnostics-refresh" onclick="copyScreenDiagnosticReport('${escAttr(screen?.id || '')}')">Copy report</button>
       <button type="button" class="screen-diagnostics-refresh" onclick="loadScreenPlayerDiagnostics('${escAttr(screen?.id || '')}')">Refresh diagnostics</button>
     </div>
     <div>
@@ -27760,6 +27898,7 @@ function renderPlayerDiagnostics(screenId, events) {
     .sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0))
     .slice(0, 50);
   screenEvents.forEach(e => { if (!latest[e.type]) latest[e.type] = e; });
+  _screenDiagnosticReports[screenId] = buildScreenDiagnosticReport(screenRecord, latest, screenEvents);
 
   const capsEvent = latest.player_capabilities || {};
   const bootEvent = latest.player_boot || {};
@@ -27837,6 +27976,17 @@ async function loadScreenPlayerDiagnostics(screenId) {
   }
 }
 window.loadScreenPlayerDiagnostics = loadScreenPlayerDiagnostics;
+
+window.copyScreenDiagnosticReport = function(screenId) {
+  const report = _screenDiagnosticReports[screenId] || '';
+  if (!report) {
+    toast('Open diagnostics before copying a report.', true);
+    return;
+  }
+  copyTextToClipboard(report)
+    .then(() => toast('Screen diagnostic report copied ✓'))
+    .catch(() => toast('Could not copy diagnostic report.', true));
+};
 
 function renderScreens(screens) {
   const list = document.getElementById('screensList');

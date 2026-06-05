@@ -100,6 +100,8 @@
   let debugVisible      = false;
   const PAGE_LOAD_TIME  = Date.now();
   const ZIGNS_PLAYER_VERSION = "2026.05.17.1";
+  let lastServerHeartbeatAt = null;
+  let lastServerClockSkewMs = null;
 
   // ── Player platform diagnostics ───────────────────────────────────────────
   let playerBootDiagnosticsSent = false;
@@ -208,6 +210,97 @@
     };
   }
 
+  function getNavigationType() {
+    try {
+      const entry = performance.getEntriesByType('navigation')?.[0];
+      return entry?.type || 'unknown';
+    } catch(_) {
+      return 'unknown';
+    }
+  }
+
+  function heartbeatReasonForConnectivity(type, source) {
+    if (source === "browser") return type === "player_offline" ? "browser_offline" : "browser_online";
+    if (source === "visibility_hidden" || source === "pagehide" || source === "visibility_visible") return source;
+    if (source === "slideshow_listener_cache") return "cache_mode";
+    if (source === "slideshow_listener_live") return "live_mode";
+    return String(source || type || "heartbeat").slice(0, 60);
+  }
+
+  function collectHeartbeatDiagnostics(reason = "heartbeat") {
+    const platform = detectPlayerPlatform();
+    const activeId = currentSlideshowIdForAnalytics || activeSlideshowId || "";
+    return {
+      reason,
+      clientTime: new Date().toISOString(),
+      playerVersion: ZIGNS_PLAYER_VERSION,
+      screenSlot: screenSlot || "",
+      path: location.pathname,
+      search: location.search,
+      queryKeys: Array.from(urlParams.keys()).slice(0, 12),
+      screenParam: urlParams.get("screen") || "",
+      previewSlideshow: previewId || "",
+      hasLocalSecret: Boolean(screenSecret),
+      localScreenIdMatches: !urlParams.get("screen") || screenId === urlParams.get("screen"),
+      browserOnline: navigator.onLine !== false,
+      visibilityState: document.visibilityState || "",
+      documentHidden: document.hidden === true,
+      offlineCacheMode: isOffline,
+      cachePresent: Boolean(activeId && loadCache(activeId)),
+      slideshowId: activeId,
+      slideIndex: slides.length ? current + 1 : 0,
+      slideCount: slides.length || 0,
+      lastLiveUpdateAt: lastUpdateTime ? new Date(lastUpdateTime).toISOString() : "",
+      reconnectBackoffMs: reconnectBackoff,
+      uptimeSec: Math.round((Date.now() - PAGE_LOAD_TIME) / 1000),
+      navigationType: getNavigationType(),
+      platform: {
+        family: platform.family || "",
+        shellType: platform.shell?.type || "",
+        shellVersion: platform.shell?.version || "",
+      },
+      viewport: {
+        width: window.innerWidth || 0,
+        height: window.innerHeight || 0,
+        dpr: window.devicePixelRatio || 1,
+      },
+      screen: {
+        width: screen?.width || 0,
+        height: screen?.height || 0,
+        availWidth: screen?.availWidth || 0,
+        availHeight: screen?.availHeight || 0,
+      },
+    };
+  }
+
+  async function sendScreenHeartbeat(reason = "heartbeat", options = {}) {
+    if (!ownsScreenIdentity || !screenId || !screenSecret) return false;
+    const payload = JSON.stringify({
+      screenId,
+      secret: screenSecret,
+      reason,
+      diagnostics: collectHeartbeatDiagnostics(reason),
+    });
+
+    if (options.beacon && navigator.sendBeacon) {
+      try {
+        return navigator.sendBeacon('/api/screen-heartbeat', new Blob([payload], { type: 'application/json' }));
+      } catch(_) {}
+    }
+
+    const response = await fetch('/api/screen-heartbeat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: payload,
+      keepalive: options.keepalive === true,
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
+    lastServerHeartbeatAt = data.serverTime || new Date().toISOString();
+    lastServerClockSkewMs = typeof data.clockSkewMs === 'number' ? data.clockSkewMs : null;
+    return true;
+  }
+
   // ── Analytics batch queue ─────────────────────────────────────────────────
   let analyticsQueue  = [];
   let analyticsOrgId  = null;   // set when screen doc is known
@@ -257,6 +350,7 @@
   }
 
   function emitPlayerConnectivity(type, source) {
+    sendScreenHeartbeat(heartbeatReasonForConnectivity(type, source), { keepalive: true }).catch(() => {});
     if (!hasScreenWriteAccess() || !analyticsOrgId) return;
     queuePlayerEvent(type, { source });
     flushAnalyticsSoon();
@@ -322,6 +416,7 @@
           }, 60 * 1000);
         }
         console.warn('[Screen] Screen credential rejected; heartbeat and analytics disabled:', err.message);
+        sendScreenHeartbeat("heartbeat_auth_failed", { keepalive: true }).catch(() => {});
         return false;
       })
       .finally(() => {
@@ -2207,6 +2302,9 @@
                            isOffline ? 'dbg-warn' : 'dbg-ok'],
       ['Cache',            activeSlideshowId && loadCache(activeSlideshowId) ? '✓ present' : '✗ empty'],
       ['Last live update', lastUpdateTime ? new Date(lastUpdateTime).toLocaleTimeString() : 'never'],
+      ['Server heartbeat', lastServerHeartbeatAt ? new Date(lastServerHeartbeatAt).toLocaleTimeString() : 'never'],
+      ['Clock skew',       typeof lastServerClockSkewMs === 'number' ? Math.round(lastServerClockSkewMs / 1000) + ' s' : '—',
+                           typeof lastServerClockSkewMs === 'number' && Math.abs(lastServerClockSkewMs) > 120000 ? 'dbg-warn' : ''],
       ['Uptime',           uptimeStr],
       ['Memory',           mem],
       ['Reconnect backoff', isOffline ? (reconnectBackoff / 1000).toFixed(0) + ' s' : '—'],
@@ -3154,16 +3252,23 @@
     // Heartbeat every 5 min — admin detects offline within ~6 min.
     // IMPORTANT: never call heartbeat() from inside the screenRef onSnapshot
     // callback — doing so writes lastSeen → re-triggers the snapshot → infinite write loop.
-    async function heartbeat() {
+    async function heartbeat(reason = "heartbeat") {
       if (!(await ensureScreenWriteAccess())) return;
       try {
+        const serverStamped = await sendScreenHeartbeat(reason);
+        if (serverStamped) return;
         await setDoc(screenRef, { lastSeen: new Date().toISOString() }, { merge: true });
-      } catch(e) {
-        queuePlayerEvent("player_heartbeat_error", {
-          source: "heartbeat",
-          message: String(e.message || e || "Heartbeat write failed").slice(0, 300),
-        });
-        flushAnalyticsSoon();
+      } catch(serverErr) {
+        try {
+          await setDoc(screenRef, { lastSeen: new Date().toISOString() }, { merge: true });
+          return;
+        } catch(e) {
+          queuePlayerEvent("player_heartbeat_error", {
+            source: "heartbeat",
+            message: String((serverErr && serverErr.message) || e.message || e || "Heartbeat write failed").slice(0, 300),
+          });
+          flushAnalyticsSoon();
+        }
       }
     }
 
@@ -3173,7 +3278,7 @@
       heartbeatTimer = setInterval(heartbeat, 5 * 60 * 1000);
       heartbeatKickoffTimer = setTimeout(() => {
         heartbeatKickoffTimer = null;
-        heartbeat();
+        heartbeat("boot");
       }, 1000);
     }
 
@@ -3406,6 +3511,10 @@
       emitPlayerBootDiagnostics();
     }
     function emitPlayerHidden(source) {
+      sendScreenHeartbeat(heartbeatReasonForConnectivity("player_offline", source), {
+        beacon: source === "pagehide",
+        keepalive: true,
+      }).catch(() => {});
       if (!hasScreenWriteAccess() || !analyticsOrgId) return;
       // Best-effort flush + offline event when tab is hidden/closed.
       queuePlayerEvent("player_offline", { source });
