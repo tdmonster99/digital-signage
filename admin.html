@@ -11974,14 +11974,18 @@ function hasInlineSlidePayload(data = {}) {
   return Array.isArray(data.draftSlides) || Array.isArray(data.slides);
 }
 
+function hasSubcollectionSlideStorage(data = {}) {
+  return data.slideStorageVersion >= SLIDE_STORAGE_VERSION ||
+    data.publishedStorage === 'subcollection' ||
+    data.draftStorage === 'subcollection';
+}
+
 function shouldHydrateShowCountMeta(data = {}) {
-  if (hasInlineSlidePayload(data)) return false;
+  if (hasInlineSlidePayload(data) && !hasSubcollectionSlideStorage(data)) return false;
   const metadataCount = slideshowMetadataCount(data);
   if (!Number.isFinite(metadataCount)) return true;
   if (metadataCount > 0) return false;
-  return data.slideStorageVersion >= SLIDE_STORAGE_VERSION ||
-    data.publishedStorage === 'subcollection' ||
-    data.draftStorage === 'subcollection' ||
+  return hasSubcollectionSlideStorage(data) ||
     shouldProbeUnmarkedSubcollections(data);
 }
 

@@ -4,6 +4,15 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-06-08 — Codex — Fix slideshow sidebar counts for migrated shows
+
+Fixed a stale sidebar count issue where subcollection-backed slideshows could appear as `0 slides` until selected.
+
+- **Sidebar hydration**: Sidebar count metadata now hydrates subcollection-backed shows even when an old inline `slides` array is still present on the slideshow document.
+- **Regression coverage**: Added a focused smoke script and strengthened the main static smoke check so stale inline arrays cannot mask subcollection slide counts again.
+
+---
+
 ## 2026-06-05 — Codex — Add server-stamped player diagnostics
 
 Improved onsite screen troubleshooting for stale/offline display incidents.

@@ -3,6 +3,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import vm from 'node:vm';
 import { loadSmokeEnv } from './smoke-env.mjs';
 
 loadSmokeEnv();
@@ -68,6 +69,34 @@ function assert(condition, message) {
 
 async function readText(file) {
   return fs.readFile(path.join(ROOT, file), 'utf8');
+}
+
+function extractHtmlFunction(source, name) {
+  const match = new RegExp(`\\nfunction ${name}\\s*\\(`).exec(source);
+  assert(match, `Could not find function ${name}`);
+  const start = match.index + 1;
+  let parenDepth = 0;
+  let braceStart = -1;
+  for (let i = source.indexOf('(', start); i < source.length; i += 1) {
+    const char = source[i];
+    if (char === '(') parenDepth += 1;
+    if (char === ')') parenDepth -= 1;
+    if (parenDepth === 0) {
+      braceStart = source.indexOf('{', i);
+      break;
+    }
+  }
+  assert(braceStart !== -1, `Could not find body for function ${name}`);
+  let depth = 0;
+  for (let i = braceStart; i < source.length; i += 1) {
+    const char = source[i];
+    if (char === '{') depth += 1;
+    if (char === '}') {
+      depth -= 1;
+      if (depth === 0) return source.slice(start, i + 1);
+    }
+  }
+  throw new Error(`Could not extract function ${name}`);
 }
 
 async function assertFileContains(file, patterns) {
@@ -317,6 +346,24 @@ async function main() {
     assert(adminHtml.includes('shouldHydrateShowCountMeta'), 'admin.html is missing stale slideshow count hydration');
     assert(adminHtml.includes('loadShowMetaForSidebarCount'), 'admin.html is missing sidebar count loader fallback');
     assert(!adminHtml.includes('if (!hasCount && !hasInlineSlides)'), 'admin.html still trusts stale zero slideshow count metadata');
+    const helpers = [
+      'slideshowMetadataCount',
+      'hasInlineSlidePayload',
+      'hasSubcollectionSlideStorage',
+      'shouldProbeUnmarkedSubcollections',
+      'shouldHydrateShowCountMeta',
+    ].map(name => extractHtmlFunction(adminHtml, name)).join('\n');
+    const context = { SLIDE_STORAGE_VERSION: 2 };
+    vm.createContext(context);
+    vm.runInContext(helpers, context);
+    assert(
+      context.shouldHydrateShowCountMeta({ slides: [], publishedStorage: 'subcollection' }) === true,
+      'sidebar count hydration still skips subcollection-backed shows with stale inline slides'
+    );
+    assert(
+      context.shouldHydrateShowCountMeta({ slides: [{ id: 'inline-slide' }] }) === false,
+      'sidebar count hydration should not probe authoritative inline slides'
+    );
   });
 
   await check('Static authenticated email senders', async () => {
