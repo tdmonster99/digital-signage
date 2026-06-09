@@ -43,6 +43,7 @@ Phase 5 platform compatibility and pro infrastructure are underway. See `ROADMAP
 6. **Deployment is automatic.** `git push origin main` triggers Vercel. No build step needed.
 7. **New slide types must be added to `PLAYABLE_SLIDE_TYPES` in `display.html`** plus the render/hide path, or the player will skip them and emit diagnostics.
 8. **DEVLOG.md**: prepend a new dated entry at the top after any session that makes changes. Include what was built and any required setup steps (env vars, Firestore rules, third-party accounts).
+9. **Escape user-controlled values** (slide / screen / show / schedule names, titles, anything read from Firestore) with `escHtml` / `escAttr` before interpolating into `innerHTML` or template-literal HTML — any org member can set these, so an unescaped sink is a stored-XSS path into an admin session. `esc()` in `display.html` / `mobile.html` escapes single quotes too, so its output is also safe inside single-quoted inline `onclick` strings.
 
 ## Pattern for new widget slide types
 
