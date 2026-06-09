@@ -104,10 +104,14 @@ module.exports = async function handler(req, res) {
         refreshToken: tokens.refresh_token || null,
         expiresAt:    Date.now() + (tokens.expires_in || 3600) * 1000,
       });
+      // The opener is admin.html on this same host — restrict postMessage to it
+      // so the Canva tokens can never leak to an untrusted opener window.
+      const proto = req.headers['x-forwarded-proto'] || 'https';
+      const appOrigin = JSON.stringify(`${proto}://${req.headers.host}`);
       return res.status(200).send(`<!DOCTYPE html><html><head><title>Canva Connected</title></head><body>
 <script>
 (function(){
-  try { if (window.opener) window.opener.postMessage(${payload}, '*'); } catch(e) {}
+  try { if (window.opener) window.opener.postMessage(${payload}, ${appOrigin}); } catch(e) {}
   window.close();
 })();
 </script>

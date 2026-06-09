@@ -1447,7 +1447,9 @@
 
     // ── Escape ────────────────────────────────────────────────────────────────
     function esc(s) {
-      return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      // Escapes single quotes too — esc() output is interpolated into
+      // single-quoted inline onclick strings (e.g. openShowDetail('${esc(id)}')).
+      return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
     }
   </script>
 </body>

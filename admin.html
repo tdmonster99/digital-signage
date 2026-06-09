@@ -14403,9 +14403,9 @@ function _gdRender() {
     html += `<div class="gdrive-section-label">Folders</div>
     <div class="gdrive-folder-grid">
       ${folders.map(f => `
-        <div class="gdrive-folder-card" data-id="${f.id}" data-name="${f.name.replace(/"/g, '&quot;')}" onclick="gdriveFolderClick(this)">
+        <div class="gdrive-folder-card" data-id="${escAttr(f.id)}" data-name="${escAttr(f.name)}" onclick="gdriveFolderClick(this)">
           ${folderIcon}
-          <span class="gdrive-folder-name">${f.name}</span>
+          <span class="gdrive-folder-name">${escHtml(f.name)}</span>
         </div>`).join('')}
     </div>`;
   }
@@ -14422,7 +14422,7 @@ function _gdRender() {
             ${thumb ? `<img src="${thumb}" alt="" onload="this.classList.add('gd-loaded')" onerror="this.remove()">` : ''}
             <div class="gdrive-cb">${checkIcon}</div>
           </div>
-          <div class="gdrive-file-name" title="${f.name.replace(/"/g, '&quot;')}">${f.name}</div>
+          <div class="gdrive-file-name" title="${escAttr(f.name)}">${escHtml(f.name)}</div>
         </div>`;
       }).join('')}
     </div>`;
@@ -15654,7 +15654,7 @@ function renderGrid() {
         <div class="group-stack group-stack-2"></div>
         <div class="group-stack group-stack-1"></div>
         ${firstThumb
-          ? `<img class="slide-thumb" src="${firstThumb}" alt="${s.name}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+          ? `<img class="slide-thumb" src="${escAttr(firstThumb)}" alt="${escAttr(s.name)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
           : ''}
         <div class="slide-thumb-placeholder" style="display:${firstThumb ? 'none' : 'flex'}">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="1.5">
@@ -15695,7 +15695,7 @@ function renderGrid() {
         </div>
         <div class="slide-footer">
           <span class="slide-index">${String(i+1).padStart(2,'0')}</span>
-          <span class="slide-name" title="${s.name}">${s.name}</span>
+          <span class="slide-name" title="${escAttr(s.name)}">${escHtml(s.name)}</span>
           <span class="slide-dwell">—</span>
         </div>
       </div>`;
@@ -15832,7 +15832,7 @@ function renderGrid() {
     <div class="slide-card ${s.active === false ? 'disabled' : ''} ${selectedClass}"
          draggable="true" data-idx="${i}" ${selectionAttrs}>
       ${thumbUrl
-        ? `<img class="slide-thumb" src="${thumbUrl}" alt="${s.name}"
+        ? `<img class="slide-thumb" src="${escAttr(thumbUrl)}" alt="${escAttr(s.name)}"
                 onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
         : ''}
       <div class="slide-thumb-placeholder" style="display:${thumbUrl ? 'none' : 'flex'};${isClock ? `background:${s.bgColor||'#000'};flex-direction:column;gap:4px` : ''}">
@@ -15872,7 +15872,7 @@ function renderGrid() {
       </div>
       <div class="slide-footer">
         <span class="slide-index">${String(i+1).padStart(2,'0')}</span>
-        <span class="slide-name" title="${s.name}">${s.name}</span>
+        <span class="slide-name" title="${escAttr(s.name)}">${escHtml(s.name)}</span>
         ${slideDwellControlHtml(s, i)}
       </div>
     </div>`;
@@ -29445,12 +29445,12 @@ function renderScheduleGrid() {
     return;
   }
   grid.innerHTML = allSchedules.map(s => `
-    <button class="schedule-card" onclick="openScheduleEditor('${s.id}')">
-      <div class="schedule-card-name">${s.name}</div>
+    <button class="schedule-card" onclick="openScheduleEditor('${escAttr(s.id)}')">
+      <div class="schedule-card-name">${escHtml(s.name)}</div>
       <div style="font-size:12px;color:var(--muted)">${s.events.length} event${s.events.length !== 1 ? 's' : ''}</div>
       <div class="schedule-card-tag">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3l14 9-14 9V3z"/></svg>
-        Filler: ${getShowName(s.fillerSlideshowId)}
+        Filler: ${escHtml(getShowName(s.fillerSlideshowId))}
       </div>
     </button>`).join('');
 }
@@ -29583,7 +29583,7 @@ function buildEventBlock(ev, idx, day) {
   block.style.cssText = `top:${top}px;height:${height}px;background:${ev.color};`;
 
   block.innerHTML = `
-    <div class="cal-ev-name">${ev.name}</div>
+    <div class="cal-ev-name">${escHtml(ev.name)}</div>
     <div class="cal-ev-time">${fmtTime(ev.startHour, ev.startMin)} – ${fmtTime(ev.endHour, ev.endMin)} · P${Number(ev.priority || 0)}</div>
     <button class="cal-ev-del" title="Delete" onclick="deleteEventFromCal(event,${idx})">✕</button>
     <div class="cal-resize-handle"></div>`;
@@ -29714,7 +29714,7 @@ function renderEventPanel() {
         <div class="sched-ev-item" onclick="openAddEventModal(${i})">
           <div class="sched-ev-dot" style="background:${ev.color}"></div>
           <div class="sched-ev-text">
-            <div class="sched-ev-name">${ev.name}</div>
+            <div class="sched-ev-name">${escHtml(ev.name)}</div>
             <div class="sched-ev-sub">${fmtTime(ev.startHour,ev.startMin)} – ${fmtTime(ev.endHour,ev.endMin)} · ${repeatLabel(ev)} · Priority ${Number(ev.priority || 0)}</div>
           </div>
           <button class="sched-ev-del" onclick="deleteSchedEvent(event,${i})">✕</button>
@@ -29723,7 +29723,7 @@ function renderEventPanel() {
 
   // Filler content selector
   const shows  = getAllShows();
-  const opts   = shows.map(s => `<option value="${s.id}" ${s.id === editingSchedule.fillerSlideshowId ? 'selected' : ''}>${s.name}</option>`).join('');
+  const opts   = shows.map(s => `<option value="${escAttr(s.id)}" ${s.id === editingSchedule.fillerSlideshowId ? 'selected' : ''}>${escHtml(s.name)}</option>`).join('');
   const filler = `
     <div class="sched-filler">
       <div class="sched-filler-lbl">Filler Content</div>
@@ -29755,7 +29755,7 @@ window.openAddEventModal = function(evIdx = null, prefDay = 0, prefSH = 9, prefS
   const sel   = document.getElementById('aemSlideshow');
   const shows = getAllShows();
   sel.innerHTML = shows.length
-    ? shows.map(s => `<option value="${s.id}" ${s.id === (ev?.slideshowId || 'main') ? 'selected' : ''}>${s.name}</option>`).join('')
+    ? shows.map(s => `<option value="${escAttr(s.id)}" ${s.id === (ev?.slideshowId || 'main') ? 'selected' : ''}>${escHtml(s.name)}</option>`).join('')
     : '<option value="main">Main Display</option>';
 
   // Times
@@ -30349,7 +30349,7 @@ function _populateShowSelect(selectId) {
     ? currentOrg.slideshows
     : [{ id: currentShowId || 'main', name: 'Main Slideshow' }];
   sel.innerHTML = shows.map(s =>
-    `<option value="${s.id}"${s.id === currentShowId ? ' selected' : ''}>${s.name}</option>`
+    `<option value="${escAttr(s.id)}"${s.id === currentShowId ? ' selected' : ''}>${escHtml(s.name)}</option>`
   ).join('');
 }
 
@@ -31346,7 +31346,7 @@ window.openGoogleSheetsModal = function(editIdx) {
 function _populateGsheetsShowTarget() {
   const sel = document.getElementById('gsheetsShowTarget');
   const shows = (currentOrg?.slideshows || [{ id: currentShowId, name: 'Main Slideshow' }]);
-  sel.innerHTML = shows.map(s => `<option value="${s.id}">${s.name || s.id}</option>`).join('');
+  sel.innerHTML = shows.map(s => `<option value="${escAttr(s.id)}">${escHtml(s.name || s.id)}</option>`).join('');
   sel.value = currentShowId;
 }
 
@@ -32129,7 +32129,7 @@ function renderAnalytics() {
       const info = uptimeByScreen[sc.id] || { pct: 0 };
       const pct  = info.pct || 0;
       return `<div class="uptime-bar-row">
-        <div class="uptime-bar-label" title="${sc.name || sc.id}">${sc.name || sc.id}</div>
+        <div class="uptime-bar-label" title="${escAttr(sc.name || sc.id)}">${escHtml(sc.name || sc.id)}</div>
         <div class="uptime-bar-track"><div class="uptime-bar-fill" style="width:${pct}%"></div></div>
         <div class="uptime-bar-pct">${pct}%</div>
       </div>`;
@@ -32146,7 +32146,7 @@ function renderAnalytics() {
     slideBarsEl.innerHTML = topSlides.map(([name, count]) => `
       <div class="slide-bar-row">
         <div class="slide-bar-info">
-          <span class="slide-bar-name" title="${name}">${name}</span>
+          <span class="slide-bar-name" title="${escAttr(name)}">${escHtml(name)}</span>
           <span class="slide-bar-count">${count} views</span>
         </div>
         <div class="slide-bar-track"><div class="slide-bar-fill" style="width:${Math.round(count/maxV*100)}%"></div></div>
@@ -32206,7 +32206,7 @@ function renderAnalytics() {
       ? new Date(sc.lastSeen).toLocaleString([], {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})
       : 'Never';
     return `<tr>
-      <td style="font-weight:600">${sc.name || sc.id}</td>
+      <td style="font-weight:600">${escHtml(sc.name || sc.id)}</td>
       <td>${views.toLocaleString()}</td>
       <td>${hours}h</td>
       <td><span class="uptime-pill ${pillClass}">${pct}%</span></td>
@@ -32271,14 +32271,22 @@ function calcUptimeByScreen(onlineEvts, offlineEvts, screens) {
   const result   = {};
 
   screens.forEach(sc => {
-    const ons  = onlineEvts.filter(e => e.screenId === sc.id).map(e => new Date(e.timestamp).getTime()).sort();
-    const offs = offlineEvts.filter(e => e.screenId === sc.id).map(e => new Date(e.timestamp).getTime()).sort();
+    const ons  = onlineEvts.filter(e => e.screenId === sc.id).map(e => new Date(e.timestamp).getTime()).sort((a, b) => a - b);
+    const offs = offlineEvts.filter(e => e.screenId === sc.id).map(e => new Date(e.timestamp).getTime()).sort((a, b) => a - b);
     const now  = Date.now();
     let onlineMs = 0;
 
+    // Merge overlapping intervals: repeated online events without an offline in
+    // between (e.g. player reboots) must not double-count the same period.
+    let coveredUntil = 0;
     ons.forEach(onTs => {
       const offTs = offs.find(t => t > onTs) || now;
-      onlineMs += Math.min(offTs, now) - onTs;
+      const start = Math.max(onTs, coveredUntil);
+      const end   = Math.min(offTs, now);
+      if (end > start) {
+        onlineMs += end - start;
+        coveredUntil = end;
+      }
     });
 
     onlineMs = Math.min(onlineMs, windowMs);
@@ -32941,6 +32949,9 @@ window.canvaStartAuth = function canvaStartAuth() {
   );
 
   const onMsg = async (e) => {
+    // The auth popup is /api/canva on this same origin — ignore messages from
+    // anywhere else so a foreign window cannot inject a forged token.
+    if (e.origin !== window.location.origin) return;
     if (!e.data || e.data.type !== 'canva-auth-success') return;
     window.removeEventListener('message', onMsg);
     try { popup?.close(); } catch (_) {}
@@ -33031,11 +33042,11 @@ function canvaRenderDesigns() {
     html += `<div class="canva-design-card ${sel}" onclick="canvaToggleSelect('${d.id}')" data-id="${d.id}">
       <div class="canva-thumb-wrap">
         ${d.thumbnail
-          ? `<img src="${d.thumbnail}" alt="${d.title}" onload="this.classList.add('cv-loaded')" onerror="this.style.display='none'">`
+          ? `<img src="${escAttr(d.thumbnail)}" alt="${escAttr(d.title)}" onload="this.classList.add('cv-loaded')" onerror="this.style.display='none'">`
           : placeholder}
         <div class="canva-cb">${sel ? checkSvg : ''}</div>
       </div>
-      <div class="canva-design-name" title="${d.title}">${d.title}</div>
+      <div class="canva-design-name" title="${escAttr(d.title)}">${escHtml(d.title)}</div>
       ${date ? `<div class="canva-design-date">${date}</div>` : ''}
     </div>`;
   }

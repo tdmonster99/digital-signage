@@ -4,6 +4,20 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-06-09 — Claude — Bug-scan fixes: XSS escaping, uptime math, OAuth token scoping, checkout redirect
+
+Full-codebase bug scan (api/, admin.html, display.html, login.html, mobile.html) with five fixes.
+
+- **Stored XSS escaping (admin.html)**: Slide, slideshow, schedule, event, and screen names plus Google Drive and Canva titles were interpolated into `innerHTML` without `escHtml`/`escAttr` in the slide grid, schedule cards/calendar/event panel, slideshow `<option>` lists, analytics tables/bars, Drive picker, and Canva picker. A slide renamed by any org editor could run script in an admin's session. All sinks now escape.
+- **mobile.html `esc()`**: Now escapes single quotes too — its output is interpolated into single-quoted inline `onclick` strings (e.g. `openShowDetail('${esc(name)}')`), so a name containing `'` could break out into JS.
+- **Analytics uptime double-count (admin.html `calcUptimeByScreen`)**: Repeated `screen_online` events without an intervening offline event (the normal case for player reboots — offline events only fire on clean shutdown) each counted until "now", inflating uptime toward 100%. Intervals are now merged; timestamp sorts use numeric comparators.
+- **Canva OAuth token scoping (api/canva.js + admin.html)**: The OAuth callback posted Canva access/refresh tokens to the opener with `postMessage(…, '*')`, so any window that opened the popup could steal them. Now targets the app's own origin, and the admin-side listener verifies `e.origin` before accepting tokens.
+- **Stripe checkout redirect (api/stripe-sessions.js)**: Success/cancel/portal URLs were built from `VERCEL_URL` (the hashed `*.vercel.app` deployment URL) where users have no Firebase session, breaking the `?billing=success` flow. Now uses `APP_BASE_URL` env override or `https://app.zigns.io`, matching how invite links are built.
+
+Noted but intentionally unchanged: CLAUDE.md documents `CLOUDFRONT_BASE_URL` while the code/env use `CLOUDFRONT_URL`; client-side `PLAN_LIMITS` fallback for per-screen plans is 9999 while the server falls back to 1 (org docs carry real values from the webhook).
+
+---
+
 ## 2026-06-08 — Codex — Fix slideshow sidebar counts for migrated shows
 
 Fixed a stale sidebar count issue where subcollection-backed slideshows could appear as `0 slides` until selected.

@@ -18,9 +18,10 @@ module.exports = async function handler(req, res) {
 
   if (!process.env.STRIPE_SECRET_KEY) return res.status(500).json({ error: 'Stripe not configured.' });
 
-  const baseUrl = process.env.VERCEL_URL
-    ? 'https://' + process.env.VERCEL_URL
-    : 'https://app.zigns.io';
+  // Always redirect back to the canonical app domain. VERCEL_URL points at the
+  // hashed deployment URL (e.g. xxx.vercel.app) where the user has no Firebase
+  // auth session, which broke the post-checkout ?billing=success flow.
+  const baseUrl = process.env.APP_BASE_URL || 'https://app.zigns.io';
 
   const { type } = req.query;
 
