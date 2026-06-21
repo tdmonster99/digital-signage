@@ -440,6 +440,10 @@ async function main() {
     'Screen Diagnostics',
     'renderScreenDiagnosticsSummary',
     'diagnoseScreenHealth',
+    'renderDiagnosticTimelineRows',
+    'offlineIncident',
+    'Incident timeline',
+    'Last known state',
     'Last heartbeat',
     'Recent player events',
     'Refresh diagnostics',
@@ -447,9 +451,25 @@ async function main() {
   ]));
 
   await check('Static player diagnostic events', () => assertFileContains('display.html', [
+    'recordDiagnosticEvent',
+    'player_timeline',
+    'page_frozen',
+    'page_resumed',
+    'focus_lost',
+    'focus_returned',
+    'asset_error',
+    'js_error',
+    'fullscreen_change',
     'player_heartbeat_error',
     'visibility_visible',
     'pagehide',
+  ]));
+
+  await check('Static offline incident snapshots', () => assertFileContains('api/screen-monitor.js', [
+    'buildOfflineIncident',
+    'offlineIncident',
+    'No final browser event was received',
+    'Last known state',
   ]));
 
   await check('Pilot docs exist', () => assertFileContains('docs/PILOT_SMOKE_TEST.md', [

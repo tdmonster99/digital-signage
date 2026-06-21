@@ -27578,6 +27578,7 @@ const PLAYER_DIAGNOSTIC_TYPES = new Set([
   'player_capabilities',
   'player_online',
   'player_offline',
+  'player_timeline',
   'player_heartbeat',
   'player_heartbeat_error',
   'player_watchdog_restart',
@@ -27647,6 +27648,133 @@ function heartbeatBoolLabel(value) {
   return '—';
 }
 
+function timelineEventTypeLabel(type) {
+  const labels = {
+    asset_error: 'Asset error',
+    browser_offline: 'Browser offline',
+    browser_online: 'Browser online',
+    cache_mode: 'Cache mode',
+    focus_lost: 'Focus lost',
+    focus_returned: 'Focus returned',
+    fullscreen_change: 'Fullscreen changed',
+    heartbeat_failed: 'Heartbeat failed',
+    js_error: 'JavaScript error',
+    live_mode: 'Live mode',
+    page_frozen: 'Page frozen',
+    page_loaded: 'Page loaded',
+    page_resumed: 'Page resumed',
+    pagehide: 'Page hidden/unloaded',
+    playlist_slide_skipped: 'Slide skipped',
+    slideshow_error: 'Slideshow error',
+    visibility_hidden: 'Visibility hidden',
+    visibility_visible: 'Visibility visible',
+    watchdog_restart: 'Watchdog restart',
+  };
+  return labels[type] || type || 'Timeline event';
+}
+
+function normalizeTimelineEvent(event = {}) {
+  const eventType = event.eventType || event.type || '';
+  return {
+    at: event.at || event.eventAt || event.timestamp || '',
+    eventType,
+    source: event.source || '',
+    reason: event.reason || '',
+    message: event.message || '',
+    code: event.code || '',
+    target: event.target || '',
+    url: event.url || '',
+    browserOnline: event.browserOnline ?? event.online,
+    visibilityState: event.visibilityState || '',
+    documentHidden: event.documentHidden,
+    focused: event.focused,
+    fullscreen: event.fullscreen,
+    offlineCacheMode: event.offlineCacheMode,
+    slideshowId: event.slideshowId || '',
+    slideIndex: event.slideIndex,
+    slideCount: event.slideCount,
+    lastLiveUpdateAt: event.lastLiveUpdateAt || '',
+    uptimeSec: event.uptimeSec,
+  };
+}
+
+function collectDiagnosticTimeline(screen, events = []) {
+  const incidentTimeline = Array.isArray(screen?.offlineIncident?.timeline) ? screen.offlineIncident.timeline : [];
+  const screenTimeline = Array.isArray(screen?.diagnosticTimeline) ? screen.diagnosticTimeline : [];
+  const heartbeatTimeline = Array.isArray(screen?.lastHeartbeat?.diagnosticTimeline) ? screen.lastHeartbeat.diagnosticTimeline : [];
+  const analyticsTimeline = events
+    .filter(event => event.type === 'player_timeline')
+    .map(normalizeTimelineEvent);
+  const combined = [
+    ...incidentTimeline.map(normalizeTimelineEvent),
+    ...screenTimeline.map(normalizeTimelineEvent),
+    ...heartbeatTimeline.map(normalizeTimelineEvent),
+    ...analyticsTimeline,
+  ].filter(event => event.at || event.eventType);
+
+  const seen = new Set();
+  return combined
+    .sort((a, b) => screenTimeMs(b.at) - screenTimeMs(a.at))
+    .filter(event => {
+      const key = [event.at, event.eventType, event.source, event.message].join('|');
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .slice(0, 12);
+}
+
+function timelineEventDetail(event) {
+  const parts = [];
+  if (event.source) parts.push(`source: ${event.source}`);
+  if (event.reason) parts.push(`reason: ${event.reason}`);
+  if (event.message) parts.push(String(event.message).slice(0, 120));
+  if (event.code) parts.push(`code: ${event.code}`);
+  if (event.browserOnline === false) parts.push('browser offline');
+  if (event.offlineCacheMode === true) parts.push('cached playback');
+  if (event.visibilityState) parts.push(`visibility: ${event.visibilityState}`);
+  if (event.slideCount) parts.push(`slide: ${event.slideIndex || 0}/${event.slideCount}`);
+  if (event.url) parts.push(`url: ${String(event.url).slice(0, 100)}`);
+  return parts.join(' · ');
+}
+
+function renderDiagnosticTimelineRows(screen, events = []) {
+  const timeline = collectDiagnosticTimeline(screen, events);
+  if (!timeline.length) return '<div style="color:var(--muted)">No timeline events recorded yet.</div>';
+  return timeline.map(event => `
+    <div class="screen-diagnostics-event">
+      <div class="screen-diagnostics-event-time">${escHtml(formatPlayerDiagTime(event.at))}</div>
+      <div class="screen-diagnostics-event-body">
+        <div class="screen-diagnostics-event-type">${escHtml(timelineEventTypeLabel(event.eventType))}</div>
+        <div class="screen-diagnostics-event-detail">${escHtml(timelineEventDetail(event) || 'No extra detail')}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderLastKnownStateRows(screen) {
+  const incidentState = screen?.offlineIncident?.lastKnownState || {};
+  const heartbeat = screen?.lastHeartbeat || {};
+  const state = Object.keys(incidentState).length ? incidentState : heartbeat;
+  const slideCount = Number(state.slideCount);
+  const slideIndex = Number(state.slideIndex);
+  const slideLabel = Number.isFinite(slideCount) && slideCount > 0
+    ? `${Number.isFinite(slideIndex) ? slideIndex : 0} of ${slideCount}`
+    : '—';
+  const playbackMode = state.playbackMode || heartbeatModeLabel(state);
+  const url = state.playerUrl || heartbeatUrlLabel(state);
+  return [
+    ['Player URL', url || '—'],
+    ['Browser online', heartbeatBoolLabel(state.browserOnline)],
+    ['Visibility', state.visibilityState || (state.documentHidden ? 'hidden' : '—')],
+    ['Focused', heartbeatBoolLabel(state.focused)],
+    ['Fullscreen', heartbeatBoolLabel(state.fullscreen)],
+    ['Playback', playbackMode || '—'],
+    ['Slide', slideLabel],
+    ['Last live update', formatPlayerDiagTime(state.lastLiveUpdateAt)],
+  ].map(([label, value]) => playerDiagRow(label, escHtml(value))).join('');
+}
+
 function renderHeartbeatRows(screen) {
   const heartbeat = screen?.lastHeartbeat || null;
   if (!heartbeat) return '';
@@ -27668,6 +27796,8 @@ function renderHeartbeatRows(screen) {
 function buildScreenDiagnosticReport(screen, latest, events) {
   const diagnosis = diagnoseScreenHealth(screen, latest);
   const heartbeat = screen?.lastHeartbeat || {};
+  const incident = screen?.offlineIncident || null;
+  const timeline = collectDiagnosticTimeline(screen, events);
   const lines = [
     'Zigns Screen Diagnostic Report',
     `Generated: ${new Date().toLocaleString()}`,
@@ -27680,6 +27810,12 @@ function buildScreenDiagnosticReport(screen, latest, events) {
     `Offline alert: ${formatPlayerDiagTime(screen?.lastNotifiedAt)}`,
     `Assigned slideshow: ${screen?.slideshowId || '—'}`,
     `Location: ${screen?.location || '—'}`,
+    '',
+    'Offline incident',
+    `Title: ${incident?.title || '—'}`,
+    `Summary: ${incident?.summary || '—'}`,
+    `Probable cause: ${incident?.probableCause || '—'}`,
+    `Final browser event received: ${heartbeatBoolLabel(incident?.finalEventReceived)}`,
     '',
     'Latest server heartbeat',
     `Server heartbeat: ${formatPlayerDiagTime(heartbeat.at || heartbeat.serverTime)}`,
@@ -27696,8 +27832,21 @@ function buildScreenDiagnosticReport(screen, latest, events) {
     `Platform: ${heartbeat.platform?.family || '—'}${heartbeat.platform?.shellType ? ` (${heartbeat.platform.shellType}${heartbeat.platform.shellVersion ? ` ${heartbeat.platform.shellVersion}` : ''})` : ''}`,
     `Viewport: ${heartbeat.viewport?.width || '—'} x ${heartbeat.viewport?.height || '—'} @ ${heartbeat.viewport?.dpr || '—'}x`,
     '',
-    'Recent player events',
+    'Incident timeline',
   ];
+
+  if (!timeline.length) {
+    lines.push('No timeline events recorded.');
+  } else {
+    timeline.forEach(event => {
+      lines.push(`- ${formatPlayerDiagTime(event.at)} | ${timelineEventTypeLabel(event.eventType)} | ${timelineEventDetail(event) || 'No detail'}`);
+    });
+  }
+
+  lines.push(
+    '',
+    'Recent player events',
+  );
 
   if (!events.length) {
     lines.push('No player events recorded.');
@@ -27725,6 +27874,7 @@ function screenDiagEventLabel(event) {
     player_offline: 'Player offline',
     player_heartbeat: 'Server heartbeat',
     player_heartbeat_error: 'Heartbeat failed',
+    player_timeline: 'Timeline event',
     player_watchdog_restart: 'Watchdog restart',
     player_slideshow_error: 'Slideshow error',
     playlist_slide_skipped: 'Slide skipped',
@@ -27734,6 +27884,7 @@ function screenDiagEventLabel(event) {
 
 function screenDiagEventDetail(event) {
   if (!event) return '';
+  if (event.type === 'player_timeline') return timelineEventDetail(normalizeTimelineEvent(event));
   const parts = [];
   if (event.source) parts.push(`source: ${event.source}`);
   if (event.reason) parts.push(`reason: ${event.reason}`);
@@ -27779,6 +27930,15 @@ function diagnoseScreenHealth(screen, latest) {
       state: 'warn',
       title: 'No heartbeat yet',
       summary: 'This screen record exists, but the player has not written its first heartbeat.',
+    };
+  }
+  const incident = screen?.offlineIncident || null;
+  const incidentLastSeenMs = screenTimeMs(incident?.lastSeenAt);
+  if (incident && (!incidentLastSeenMs || Math.abs(incidentLastSeenMs - lastSeenMs) < 5000)) {
+    return {
+      state: incident.finalEventReceived === false ? 'warn' : 'bad',
+      title: incident.title || 'Offline incident',
+      summary: incident.summary || 'Zigns saved a diagnostic snapshot when this screen crossed the offline threshold.',
     };
   }
   if (heartbeatError && heartbeatErrorMs >= lastSeenMs) {
@@ -27848,6 +28008,7 @@ function diagnoseScreenHealth(screen, latest) {
 
 function renderScreenDiagnosticsSummary(screen, latest, events) {
   const diagnosis = diagnoseScreenHealth(screen, latest);
+  const incident = screen?.offlineIncident || null;
   const lastIssue = latest.player_heartbeat_error || latest.player_slideshow_error || latest.playlist_slide_skipped || latest.player_watchdog_restart || null;
   const offlineAge = screen?.lastSeen
     ? Math.max(0, Math.round((Date.now() - new Date(screen.lastSeen).getTime()) / 60000))
@@ -27871,6 +28032,14 @@ function renderScreenDiagnosticsSummary(screen, latest, events) {
       <span class="screen-diagnostics-status ${diagnosis.state}">${diagnosis.state === 'ok' ? 'Online' : 'Check'}</span>
     </div>
     <div class="screen-diagnostics-summary">${escHtml(diagnosis.summary)}</div>
+    ${incident ? `<div class="screen-diagnostics-summary">
+      <strong>${escHtml(incident.title || 'Offline incident')}</strong><br>
+      ${escHtml(incident.summary || 'Zigns saved a diagnostic snapshot when this screen crossed the offline threshold.')}
+    </div>` : ''}
+    <div>
+      <div class="screen-diagnostics-section-title">Last known state</div>
+      ${renderLastKnownStateRows(screen)}
+    </div>
     <div>
       ${playerDiagRow('Last heartbeat', escHtml(screen?.lastSeen ? `${formatPlayerDiagTime(screen.lastSeen)}${offlineAge !== null && offlineAge * 60 * 1000 >= SCREEN_OFFLINE_THRESHOLD_MS ? ` (${offlineAge}m ago)` : ''}` : 'never'))}
       ${playerDiagRow('Offline alert', escHtml(formatPlayerDiagTime(screen?.lastNotifiedAt)))}
@@ -27883,6 +28052,10 @@ function renderScreenDiagnosticsSummary(screen, latest, events) {
     <div class="screen-diagnostics-actions">
       <button type="button" class="screen-diagnostics-refresh" onclick="copyScreenDiagnosticReport('${escAttr(screen?.id || '')}')">Copy report</button>
       <button type="button" class="screen-diagnostics-refresh" onclick="loadScreenPlayerDiagnostics('${escAttr(screen?.id || '')}')">Refresh diagnostics</button>
+    </div>
+    <div>
+      <div class="screen-diagnostics-section-title">Incident timeline</div>
+      <div class="screen-diagnostics-events">${renderDiagnosticTimelineRows(screen, events)}</div>
     </div>
     <div>
       <div class="screen-diagnostics-section-title">Recent player events</div>

@@ -8,15 +8,27 @@ const { getFirestore } = require('./_lib/firebase-admin');
 const SECRET_RE = /^[A-Za-z0-9_-]{32,128}$/;
 const SCREEN_ID_RE = /^[A-Za-z0-9_-]{1,160}$/;
 const DIAGNOSTIC_EVENT_REASONS = new Set([
+  'asset_error',
   'boot',
   'browser_offline',
   'browser_online',
   'cache_mode',
+  'focus_lost',
+  'focus_returned',
+  'fullscreen_change',
   'heartbeat_auth_failed',
+  'heartbeat_failed',
+  'js_error',
   'live_mode',
   'pagehide',
+  'page_frozen',
+  'page_loaded',
+  'page_resumed',
+  'playlist_slide_skipped',
+  'slideshow_error',
   'visibility_hidden',
   'visibility_visible',
+  'watchdog_restart',
 ]);
 
 module.exports = async function handler(req, res) {
@@ -58,6 +70,10 @@ module.exports = async function handler(req, res) {
         serverTime: nowIso,
       },
     };
+    if (heartbeat.diagnosticTimeline.length) {
+      patch.diagnosticTimeline = heartbeat.diagnosticTimeline;
+      patch.lastDiagnosticEvent = heartbeat.lastDiagnosticEvent || heartbeat.diagnosticTimeline[heartbeat.diagnosticTimeline.length - 1];
+    }
     await screenRef.set(patch, { merge: true });
 
     if (screen.orgId && DIAGNOSTIC_EVENT_REASONS.has(heartbeat.reason)) {
@@ -78,6 +94,37 @@ module.exports = async function handler(req, res) {
         path: heartbeat.path || '',
         search: heartbeat.search || '',
         navigationType: heartbeat.navigationType || '',
+      });
+    }
+
+    const timelineEvent = latestTimelineEventForReason(heartbeat);
+    if (screen.orgId && timelineEvent) {
+      await db.collection('organizations').doc(String(screen.orgId)).collection('analytics').add({
+        type: 'player_timeline',
+        screenId,
+        timestamp: nowIso,
+        eventAt: timelineEvent.at || '',
+        eventType: timelineEvent.eventType || heartbeat.reason,
+        source: timelineEvent.source || '',
+        reason: timelineEvent.reason || heartbeat.reason,
+        message: timelineEvent.message || '',
+        code: timelineEvent.code || '',
+        target: timelineEvent.target || '',
+        url: timelineEvent.url || '',
+        playerVersion: heartbeat.playerVersion || '',
+        slideshowId: timelineEvent.slideshowId || heartbeat.slideshowId || null,
+        uptimeSec: timelineEvent.uptimeSec || heartbeat.uptimeSec || null,
+        browserOnline: timelineEvent.browserOnline,
+        online: timelineEvent.browserOnline,
+        offlineCacheMode: timelineEvent.offlineCacheMode,
+        visibilityState: timelineEvent.visibilityState || '',
+        documentHidden: timelineEvent.documentHidden,
+        focused: timelineEvent.focused,
+        fullscreen: timelineEvent.fullscreen,
+        slideIndex: timelineEvent.slideIndex,
+        slideCount: timelineEvent.slideCount,
+        lastLiveUpdateAt: timelineEvent.lastLiveUpdateAt || '',
+        reconnectBackoffMs: timelineEvent.reconnectBackoffMs,
       });
     }
 
@@ -103,6 +150,10 @@ function sanitizeHeartbeat(input, reason, nowMs) {
   const platform = input.platform && typeof input.platform === 'object' ? input.platform : {};
   const viewport = input.viewport && typeof input.viewport === 'object' ? input.viewport : {};
   const screen = input.screen && typeof input.screen === 'object' ? input.screen : {};
+  const diagnosticTimeline = sanitizeDiagnosticTimeline(input.diagnosticTimeline, nowMs);
+  const lastDiagnosticEvent = sanitizeDiagnosticEvent(input.lastDiagnosticEvent, nowMs)
+    || diagnosticTimeline[diagnosticTimeline.length - 1]
+    || null;
 
   return {
     reason: cleanToken(reason || input.reason || 'heartbeat', 60) || 'heartbeat',
@@ -131,6 +182,10 @@ function sanitizeHeartbeat(input, reason, nowMs) {
     reconnectBackoffMs: clampInt(input.reconnectBackoffMs, 0, 3600000),
     uptimeSec: clampInt(input.uptimeSec, 0, 31536000),
     navigationType: cleanText(input.navigationType, 40),
+    focused: input.focused === true ? true : (input.focused === false ? false : null),
+    fullscreen: input.fullscreen === true,
+    lastDiagnosticEvent,
+    diagnosticTimeline,
     platform: {
       family: cleanText(platform.family, 40),
       shellType: cleanText(platform.shellType, 40),
@@ -148,6 +203,53 @@ function sanitizeHeartbeat(input, reason, nowMs) {
       availHeight: clampInt(screen.availHeight, 0, 20000),
     },
   };
+}
+
+function sanitizeDiagnosticTimeline(input, nowMs) {
+  if (!Array.isArray(input)) return [];
+  return input
+    .map(item => sanitizeDiagnosticEvent(item, nowMs))
+    .filter(Boolean)
+    .slice(-20);
+}
+
+function sanitizeDiagnosticEvent(input, nowMs) {
+  if (!input || typeof input !== 'object') return null;
+  const at = cleanIso(input.at) || cleanIso(input.eventAt) || new Date(nowMs).toISOString();
+  const eventType = cleanToken(input.eventType || input.type || 'event', 60) || 'event';
+  const browserOnline = input.browserOnline === false || input.online === false ? false : true;
+  return {
+    at,
+    eventType,
+    source: cleanText(input.source, 80),
+    reason: cleanText(input.reason, 120),
+    message: cleanText(input.message, 300),
+    code: cleanText(input.code, 80),
+    target: cleanText(input.target, 80),
+    url: cleanText(input.url, 240),
+    browserOnline,
+    visibilityState: cleanText(input.visibilityState, 24),
+    documentHidden: input.documentHidden === true,
+    focused: input.focused === true ? true : (input.focused === false ? false : null),
+    fullscreen: input.fullscreen === true,
+    offlineCacheMode: input.offlineCacheMode === true,
+    slideshowId: cleanText(input.slideshowId, 160),
+    slideIndex: clampInt(input.slideIndex, 0, 10000),
+    slideCount: clampInt(input.slideCount, 0, 10000),
+    lastLiveUpdateAt: cleanIso(input.lastLiveUpdateAt),
+    reconnectBackoffMs: clampInt(input.reconnectBackoffMs, 0, 3600000),
+    uptimeSec: clampInt(input.uptimeSec, 0, 31536000),
+  };
+}
+
+function latestTimelineEventForReason(heartbeat) {
+  const reason = cleanToken(heartbeat.reason, 60);
+  if (!reason || reason === 'heartbeat') return null;
+  const timeline = Array.isArray(heartbeat.diagnosticTimeline) ? heartbeat.diagnosticTimeline : [];
+  const latest = timeline[timeline.length - 1] || null;
+  if (!latest) return null;
+  if (latest.eventType !== reason) return null;
+  return latest;
 }
 
 function cleanText(value, maxLen) {

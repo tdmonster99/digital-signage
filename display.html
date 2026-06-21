@@ -105,6 +105,8 @@
 
   // ── Player platform diagnostics ───────────────────────────────────────────
   let playerBootDiagnosticsSent = false;
+  const DIAGNOSTIC_TIMELINE_LIMIT = 20;
+  let diagnosticTimeline = [];
 
   function safeStorageAvailable() {
     try {
@@ -219,6 +221,95 @@
     }
   }
 
+  function cleanDiagnosticText(value, maxLen = 160) {
+    return String(value || '').replace(/[\u0000-\u001f\u007f]/g, '').slice(0, maxLen);
+  }
+
+  function cleanDiagnosticType(value) {
+    return cleanDiagnosticText(value, 60).toLowerCase().replace(/[^a-z0-9_-]/g, '_') || 'event';
+  }
+
+  function fullscreenActive() {
+    return Boolean(
+      document.fullscreenElement ||
+      document.webkitFullscreenElement ||
+      document.mozFullScreenElement ||
+      document.msFullscreenElement
+    );
+  }
+
+  function collectDiagnosticState() {
+    const activeId = currentSlideshowIdForAnalytics || activeSlideshowId || "";
+    return {
+      browserOnline: navigator.onLine !== false,
+      visibilityState: document.visibilityState || "",
+      documentHidden: document.hidden === true,
+      focused: typeof document.hasFocus === "function" ? document.hasFocus() : null,
+      fullscreen: fullscreenActive(),
+      offlineCacheMode: isOffline,
+      slideshowId: activeId,
+      slideIndex: slides.length ? current + 1 : 0,
+      slideCount: slides.length || 0,
+      lastLiveUpdateAt: lastUpdateTime ? new Date(lastUpdateTime).toISOString() : "",
+      reconnectBackoffMs: reconnectBackoff,
+      uptimeSec: Math.round((Date.now() - PAGE_LOAD_TIME) / 1000),
+    };
+  }
+
+  function diagnosticAnalyticsPayload(event) {
+    return {
+      eventType: event.eventType,
+      eventAt: event.at,
+      source: event.source || "",
+      reason: event.reason || "",
+      message: event.message || "",
+      code: event.code || "",
+      target: event.target || "",
+      url: event.url || "",
+      browserOnline: event.browserOnline,
+      visibilityState: event.visibilityState || "",
+      documentHidden: event.documentHidden,
+      focused: event.focused,
+      fullscreen: event.fullscreen,
+      slideIndex: event.slideIndex,
+      slideCount: event.slideCount,
+      lastLiveUpdateAt: event.lastLiveUpdateAt || "",
+      reconnectBackoffMs: event.reconnectBackoffMs,
+    };
+  }
+
+  function recordDiagnosticEvent(eventType, data = {}, options = {}) {
+    const state = collectDiagnosticState();
+    const event = {
+      at: new Date().toISOString(),
+      eventType: cleanDiagnosticType(eventType),
+      ...state,
+      source: cleanDiagnosticText(data.source, 80),
+      reason: cleanDiagnosticText(data.reason, 120),
+      message: cleanDiagnosticText(data.message, 300),
+      code: cleanDiagnosticText(data.code, 80),
+      target: cleanDiagnosticText(data.target, 80),
+      url: cleanDiagnosticText(data.url, 240),
+    };
+    diagnosticTimeline.push(event);
+    if (diagnosticTimeline.length > DIAGNOSTIC_TIMELINE_LIMIT) {
+      diagnosticTimeline = diagnosticTimeline.slice(-DIAGNOSTIC_TIMELINE_LIMIT);
+    }
+
+    if (hasScreenWriteAccess() && analyticsOrgId && options.heartbeat !== true) {
+      queuePlayerEvent("player_timeline", diagnosticAnalyticsPayload(event));
+      if (options.flush !== false) flushAnalyticsSoon();
+    }
+
+    if (options.heartbeat === true) {
+      sendScreenHeartbeat(event.eventType, {
+        keepalive: options.keepalive === true,
+        beacon: options.beacon === true,
+      }).catch(() => {});
+    }
+    return event;
+  }
+
   function heartbeatReasonForConnectivity(type, source) {
     if (source === "browser") return type === "player_offline" ? "browser_offline" : "browser_online";
     if (source === "visibility_hidden" || source === "pagehide" || source === "visibility_visible") return source;
@@ -254,6 +345,10 @@
       reconnectBackoffMs: reconnectBackoff,
       uptimeSec: Math.round((Date.now() - PAGE_LOAD_TIME) / 1000),
       navigationType: getNavigationType(),
+      focused: typeof document.hasFocus === "function" ? document.hasFocus() : null,
+      fullscreen: fullscreenActive(),
+      lastDiagnosticEvent: diagnosticTimeline[diagnosticTimeline.length - 1] || null,
+      diagnosticTimeline: diagnosticTimeline.slice(-12),
       platform: {
         family: platform.family || "",
         shellType: platform.shell?.type || "",
@@ -337,6 +432,10 @@
   function emitPlayerBootDiagnostics() {
     if (playerBootDiagnosticsSent || !hasScreenWriteAccess() || !analyticsOrgId) return;
     playerBootDiagnosticsSent = true;
+    recordDiagnosticEvent("page_loaded", {
+      source: "player_boot",
+      reason: getNavigationType(),
+    }, { flush: false });
     queuePlayerEvent("player_boot", {
       path: location.pathname,
       screenSlot: screenSlot || null,
@@ -350,13 +449,22 @@
   }
 
   function emitPlayerConnectivity(type, source) {
-    sendScreenHeartbeat(heartbeatReasonForConnectivity(type, source), { keepalive: true }).catch(() => {});
+    recordDiagnosticEvent(heartbeatReasonForConnectivity(type, source), { source }, {
+      heartbeat: true,
+      keepalive: true,
+    });
     if (!hasScreenWriteAccess() || !analyticsOrgId) return;
     queuePlayerEvent(type, { source });
     flushAnalyticsSoon();
   }
 
   function emitPlayerSlideshowError(reason, message, data = {}) {
+    recordDiagnosticEvent("slideshow_error", {
+      source: "player",
+      reason,
+      message,
+      code: data.code || "",
+    }, { heartbeat: true, keepalive: true });
     if (!hasScreenWriteAccess() || !analyticsOrgId) return;
     queuePlayerEvent("player_slideshow_error", {
       reason,
@@ -379,6 +487,37 @@
   setInterval(flushAnalytics, 60 * 1000);
   window.addEventListener("online", () => emitPlayerConnectivity("player_online", "browser"));
   window.addEventListener("offline", () => emitPlayerConnectivity("player_offline", "browser"));
+  window.addEventListener("focus", () => recordDiagnosticEvent("focus_returned", { source: "window" }, { heartbeat: true, keepalive: true }));
+  window.addEventListener("blur", () => recordDiagnosticEvent("focus_lost", { source: "window" }, { heartbeat: true, keepalive: true }));
+  document.addEventListener("fullscreenchange", () => recordDiagnosticEvent("fullscreen_change", { source: "document" }, { heartbeat: true, keepalive: true }));
+  document.addEventListener("webkitfullscreenchange", () => recordDiagnosticEvent("fullscreen_change", { source: "document" }, { heartbeat: true, keepalive: true }));
+  document.addEventListener("freeze", () => recordDiagnosticEvent("page_frozen", { source: "document" }, { heartbeat: true, keepalive: true }));
+  document.addEventListener("resume", () => recordDiagnosticEvent("page_resumed", { source: "document" }, { heartbeat: true, keepalive: true }));
+  window.addEventListener("error", event => {
+    const target = event.target || null;
+    if (target && target !== window) {
+      recordDiagnosticEvent("asset_error", {
+        source: "resource",
+        target: target.tagName || target.nodeName || "",
+        url: target.currentSrc || target.src || target.href || "",
+      }, { heartbeat: true, keepalive: true });
+      return;
+    }
+    recordDiagnosticEvent("js_error", {
+      source: "window",
+      message: event.message || "",
+      url: event.filename || "",
+      code: [event.lineno, event.colno].filter(Boolean).join(":"),
+    }, { heartbeat: true, keepalive: true });
+  }, true);
+  window.addEventListener("unhandledrejection", event => {
+    const reason = event.reason;
+    recordDiagnosticEvent("js_error", {
+      source: "unhandledrejection",
+      message: reason?.message || String(reason || "Unhandled promise rejection"),
+      code: reason?.name || "",
+    }, { heartbeat: true, keepalive: true });
+  });
 
   async function ensureScreenWriteAccess() {
     if (!ownsScreenIdentity) {
@@ -1093,6 +1232,11 @@
       reason: s.reason,
     }));
     console.warn(`[Playlist] Skipped ${skipped.length} unsupported or incomplete slide(s):`, details);
+    recordDiagnosticEvent("playlist_slide_skipped", {
+      source: "playlist",
+      reason: details[0]?.reason || "",
+      message: `${skipped.length} unsupported or incomplete slide(s) skipped`,
+    }, { heartbeat: true, keepalive: true });
     if (!hasScreenWriteAccess() || !analyticsOrgId) return;
     skipped.slice(0, 10).forEach(s => queueAnalyticsEvent({
       type: 'playlist_slide_skipped',
@@ -2240,7 +2384,13 @@
       } else if (next.url) {
         await preload(next.url);
       }
-    } catch(_) {}
+    } catch(e) {
+      recordDiagnosticEvent("asset_error", {
+        source: "preload",
+        message: e?.message || String(e || "Preload failed"),
+        url: next?.url || "",
+      }, { heartbeat: true, keepalive: true });
+    }
   }
 
   // ── Watchdog: force-advance if slideshow stalls ───────────────────────────
@@ -2249,6 +2399,10 @@
     const timeout = Math.max((dwell ?? defaultDwell) * 3, 45000); // min 45 s
     watchdogHandle = setTimeout(async () => {
       console.warn('[Watchdog] Playback stalled — forcing advance');
+      recordDiagnosticEvent("watchdog_restart", {
+        source: "watchdog",
+        reason: "stall_timeout",
+      }, { heartbeat: true, keepalive: true });
       try {
         if (hasScreenWriteAccess() && analyticsOrgId) {
           queuePlayerEvent("player_watchdog_restart", { reason: "stall_timeout" });
@@ -3263,6 +3417,10 @@
           await setDoc(screenRef, { lastSeen: new Date().toISOString() }, { merge: true });
           return;
         } catch(e) {
+          recordDiagnosticEvent("heartbeat_failed", {
+            source: "heartbeat",
+            message: String((serverErr && serverErr.message) || e.message || e || "Heartbeat write failed").slice(0, 300),
+          });
           queuePlayerEvent("player_heartbeat_error", {
             source: "heartbeat",
             message: String((serverErr && serverErr.message) || e.message || e || "Heartbeat write failed").slice(0, 300),
@@ -3511,10 +3669,11 @@
       emitPlayerBootDiagnostics();
     }
     function emitPlayerHidden(source) {
-      sendScreenHeartbeat(heartbeatReasonForConnectivity("player_offline", source), {
+      recordDiagnosticEvent(heartbeatReasonForConnectivity("player_offline", source), { source }, {
+        heartbeat: true,
         beacon: source === "pagehide",
         keepalive: true,
-      }).catch(() => {});
+      });
       if (!hasScreenWriteAccess() || !analyticsOrgId) return;
       // Best-effort flush + offline event when tab is hidden/closed.
       queuePlayerEvent("player_offline", { source });

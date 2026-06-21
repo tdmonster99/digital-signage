@@ -4,6 +4,19 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-06-20 — Codex — Add granular screen incident diagnostics
+
+Expanded display/player diagnostics so offline notifications carry a clearer “what happened” trail.
+
+- **Player timeline**: `display.html` now keeps a bounded diagnostic timeline with page load, focus/blur, visibility, online/offline, fullscreen, freeze/resume, asset error, JavaScript error, slideshow error, skipped-slide, watchdog, cache/live, and heartbeat-failure events.
+- **Heartbeat persistence**: `/api/screen-heartbeat` sanitizes the timeline, saves it on the screen record, and mirrors significant timeline events into analytics as `player_timeline`.
+- **Offline incidents**: `/api/screen-monitor` now builds an `offlineIncident` snapshot when a screen crosses the offline threshold, including probable cause, final-event status, last known state, and recent timeline entries.
+- **Email diagnostics**: Offline emails include the incident summary and a compact Last known state table.
+- **Admin diagnostics**: The Screen Diagnostics panel and copyable report now surface the saved incident, Last known state, and Incident timeline.
+- **Coverage**: Strengthened static smoke checks for the player timeline, admin diagnostics UI, and monitor incident snapshots.
+
+---
+
 ## 2026-06-09 — Claude — Bug-scan fixes: XSS escaping, uptime math, OAuth token scoping, checkout redirect
 
 Full-codebase bug scan (api/, admin.html, display.html, login.html, mobile.html) with five fixes.
