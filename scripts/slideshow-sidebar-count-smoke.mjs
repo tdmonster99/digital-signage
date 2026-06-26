@@ -35,6 +35,8 @@ function extractFunction(name) {
 }
 
 const names = [
+  'sidebarSlideCount',
+  'sidebarSlideCountLabel',
   'slideshowMetadataCount',
   'hasInlineSlidePayload',
   'hasSubcollectionSlideStorage',
@@ -60,6 +62,24 @@ assert.equal(
   context.shouldHydrateShowCountMeta({ slides: [{ id: 'inline-slide' }] }),
   false,
   'sidebar counts should not hydrate when inline slides are the authoritative payload'
+);
+
+assert.equal(
+  context.sidebarSlideCountLabel({ publishedSlidesCount: 14 }),
+  '14 slides',
+  'sidebar rows should render the known published count before async hydration'
+);
+
+assert.equal(
+  context.sidebarSlideCountLabel({ draftSlides: [{ id: 'draft' }], draftSlidesCount: 1, publishedSlidesCount: 14, _hasDraftSlides: true }),
+  '1 slide',
+  'sidebar rows should prefer loaded draft slides when draft content is active'
+);
+
+assert.equal(
+  context.sidebarSlideCountLabel({ slides: [], publishedSlidesCount: 14, publishedStorage: 'subcollection' }),
+  '14 slides',
+  'sidebar rows should not let a stale empty inline slides array mask authoritative metadata'
 );
 
 console.log('slideshow sidebar count smoke passed');

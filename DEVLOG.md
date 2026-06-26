@@ -4,6 +4,17 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-06-26 — Codex — Fix initial slideshow sidebar counts
+
+Fixed a repeat issue where a slideshow row could show `0 slides` until selected, even though the slideshow document already had the correct published slide count.
+
+- **Root cause**: Organization slideshow lists only carried `{id, name}` metadata, and `makeShowItem()` rendered new rows with a hard-coded `0 slides` label before async count hydration completed.
+- **Bootstrap metadata**: `/api/link-account` bootstrap now carries slideshow storage/count metadata (`slideStorageVersion`, `publishedStorage`, `publishedSlidesCount`, draft count metadata, and status) from slideshow docs into the org slideshow list.
+- **Initial sidebar labels**: `admin.html` now uses shared `sidebarSlideCount()` / `sidebarSlideCountLabel()` helpers for both first render and later hydrated updates.
+- **Regression coverage**: Strengthened the slideshow sidebar count smoke coverage so known published counts render immediately and stale empty inline arrays cannot mask authoritative metadata.
+
+---
+
 ## 2026-06-20 — Codex — Add granular screen incident diagnostics
 
 Expanded display/player diagnostics so offline notifications carry a clearer “what happened” trail.

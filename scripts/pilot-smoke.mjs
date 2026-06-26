@@ -345,8 +345,11 @@ async function main() {
     const adminHtml = await readText('admin.html');
     assert(adminHtml.includes('shouldHydrateShowCountMeta'), 'admin.html is missing stale slideshow count hydration');
     assert(adminHtml.includes('loadShowMetaForSidebarCount'), 'admin.html is missing sidebar count loader fallback');
+    assert(adminHtml.includes('sidebarSlideCountLabel'), 'admin.html is missing initial sidebar count labels');
     assert(!adminHtml.includes('if (!hasCount && !hasInlineSlides)'), 'admin.html still trusts stale zero slideshow count metadata');
     const helpers = [
+      'sidebarSlideCount',
+      'sidebarSlideCountLabel',
       'slideshowMetadataCount',
       'hasInlineSlidePayload',
       'hasSubcollectionSlideStorage',
@@ -363,6 +366,21 @@ async function main() {
     assert(
       context.shouldHydrateShowCountMeta({ slides: [{ id: 'inline-slide' }] }) === false,
       'sidebar count hydration should not probe authoritative inline slides'
+    );
+    assert(
+      context.sidebarSlideCountLabel({ publishedSlidesCount: 14 }) === '14 slides',
+      'sidebar count label should use bootstrap metadata before async hydration'
+    );
+    assert(
+      context.sidebarSlideCountLabel({ slides: [], publishedSlidesCount: 14, publishedStorage: 'subcollection' }) === '14 slides',
+      'sidebar count label should not let stale inline slides mask metadata'
+    );
+    const accountApi = await readText('api/link-account.js');
+    assert(
+      accountApi.includes('publishedSlidesCount: data.publishedSlidesCount') &&
+      accountApi.includes('slideStorageVersion: data.slideStorageVersion') &&
+      accountApi.includes('publishedStorage: data.publishedStorage'),
+      'server bootstrap does not carry slideshow count metadata into the slideshow list'
     );
   });
 
