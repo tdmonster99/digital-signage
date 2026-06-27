@@ -4,6 +4,18 @@ Running log of changes by session. Append a new entry at the top after each sess
 
 ---
 
+## 2026-06-27 — Codex — Add network probe diagnostics for offline incidents
+
+Improved screen-offline diagnostics so guest WiFi, captive portal, proxy, or firewall interruptions are easier to distinguish from player/content issues.
+
+- **Connectivity probe**: `display.html` now checks a tiny same-origin `zigns-connectivity.txt` sentinel, records timeout/fetch/unexpected-response failures, and detects captive-portal-like responses.
+- **Heartbeat payloads**: `/api/screen-heartbeat` sanitizes and stores the latest probe result on `lastHeartbeat`, mirrors probe timeline events, and keeps the data available for analytics/admin diagnostics.
+- **Offline classification**: `/api/screen-monitor` now prioritizes explicit network-probe failures and treats repeated generic asset errors as supporting context instead of the probable root cause.
+- **Admin diagnostics**: Screen Diagnostics, copied reports, and offline emails now surface the latest network probe result.
+- **Regression coverage**: Added a focused `scripts/offline-diagnostics.test.mjs` test for captive/blocked network classification and the asset-error fallback behavior seen in the Novares investigation.
+
+---
+
 ## 2026-06-26 — Codex — Fix initial slideshow sidebar counts
 
 Fixed a repeat issue where a slideshow row could show `0 slides` until selected, even though the slideshow document already had the correct published slide count.

@@ -106,7 +106,15 @@
   // ── Player platform diagnostics ───────────────────────────────────────────
   let playerBootDiagnosticsSent = false;
   const DIAGNOSTIC_TIMELINE_LIMIT = 20;
+  const NETWORK_PROBE_PATH = "/zigns-connectivity.txt";
+  const NETWORK_PROBE_EXPECTED = "zigns-connectivity-ok";
+  const NETWORK_PROBE_TIMEOUT_MS = 6000;
+  const NETWORK_PROBE_INTERVAL_MS = 2 * 60 * 1000;
+  const NETWORK_PROBE_MAX_AGE_MS = 60 * 1000;
   let diagnosticTimeline = [];
+  let lastNetworkProbe = null;
+  let lastNetworkProbeEventKey = "";
+  let networkProbeInFlight = null;
 
   function safeStorageAvailable() {
     try {
@@ -229,6 +237,122 @@
     return cleanDiagnosticText(value, 60).toLowerCase().replace(/[^a-z0-9_-]/g, '_') || 'event';
   }
 
+  function cloneNetworkProbe(probe = lastNetworkProbe) {
+    if (!probe || typeof probe !== "object") return null;
+    return {
+      checkedAt: probe.checkedAt || "",
+      ok: probe.ok === true,
+      status: Number.isFinite(Number(probe.status)) ? Number(probe.status) : null,
+      elapsedMs: Number.isFinite(Number(probe.elapsedMs)) ? Number(probe.elapsedMs) : null,
+      reason: cleanDiagnosticText(probe.reason, 80),
+      message: cleanDiagnosticText(probe.message, 240),
+      looksCaptive: probe.looksCaptive === true,
+      url: cleanDiagnosticText(probe.url || NETWORK_PROBE_PATH, 120),
+    };
+  }
+
+  function networkProbeEventKey(probe) {
+    if (!probe) return "";
+    return [
+      probe.ok ? "ok" : "fail",
+      probe.reason || "",
+      probe.status || "",
+      probe.looksCaptive ? "captive" : "",
+    ].join("|");
+  }
+
+  async function fetchWithTimeout(url, timeoutMs) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+    try {
+      return await fetch(url, {
+        cache: "no-store",
+        credentials: "same-origin",
+        signal: ctrl.signal,
+      });
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  async function runNetworkProbe(options = {}) {
+    if (networkProbeInFlight) return networkProbeInFlight;
+    networkProbeInFlight = (async () => {
+      const previous = lastNetworkProbe;
+      const checkedAt = new Date().toISOString();
+      const started = Date.now();
+      let probe;
+      try {
+        const response = await fetchWithTimeout(`${NETWORK_PROBE_PATH}?t=${Date.now()}`, NETWORK_PROBE_TIMEOUT_MS);
+        const text = (await response.text()).trim();
+        const ok = response.ok && text === NETWORK_PROBE_EXPECTED;
+        const looksCaptive = response.ok && !ok && /<html|login|wifi|captive|portal|authenticate|sign[ -]?in/i.test(text);
+        probe = {
+          checkedAt,
+          ok,
+          status: response.status,
+          elapsedMs: Date.now() - started,
+          reason: ok ? "ok" : (response.ok ? "unexpected_probe_response" : "http_status"),
+          message: ok ? "Reached Zigns" : (response.ok ? "Probe returned unexpected content" : `HTTP ${response.status}`),
+          looksCaptive,
+          url: NETWORK_PROBE_PATH,
+        };
+      } catch (e) {
+        probe = {
+          checkedAt,
+          ok: false,
+          status: null,
+          elapsedMs: Date.now() - started,
+          reason: e?.name === "AbortError" ? "timeout" : "fetch_failed",
+          message: e?.name === "AbortError" ? "Probe timed out" : cleanDiagnosticText(e?.message || "Probe failed", 240),
+          looksCaptive: false,
+          url: NETWORK_PROBE_PATH,
+        };
+      }
+
+      lastNetworkProbe = cloneNetworkProbe(probe);
+      const key = networkProbeEventKey(lastNetworkProbe);
+      const statusChanged = previous && previous.ok !== lastNetworkProbe.ok;
+      const shouldEmit = options.emit === true
+        && key !== lastNetworkProbeEventKey
+        && (lastNetworkProbe.ok === false || previous?.ok === false || statusChanged);
+
+      if (shouldEmit) {
+        lastNetworkProbeEventKey = key;
+        recordDiagnosticEvent(lastNetworkProbe.ok ? "network_probe_ok" : "network_probe_failed", {
+          source: "connectivity_probe",
+          reason: lastNetworkProbe.reason,
+          message: lastNetworkProbe.message,
+          code: lastNetworkProbe.status ? String(lastNetworkProbe.status) : "",
+          url: lastNetworkProbe.url,
+          networkProbe: lastNetworkProbe,
+        }, {
+          heartbeat: true,
+          keepalive: true,
+          skipNetworkProbe: true,
+        });
+      }
+
+      return lastNetworkProbe;
+    })();
+    try {
+      return await networkProbeInFlight;
+    } finally {
+      networkProbeInFlight = null;
+    }
+  }
+
+  async function ensureFreshNetworkProbe(options = {}) {
+    const checkedMs = lastNetworkProbe?.checkedAt ? new Date(lastNetworkProbe.checkedAt).getTime() : 0;
+    if (checkedMs && Date.now() - checkedMs < NETWORK_PROBE_MAX_AGE_MS) return lastNetworkProbe;
+    return runNetworkProbe(options);
+  }
+
+  function startNetworkProbeLoop() {
+    setTimeout(() => runNetworkProbe({ emit: true }).catch(() => {}), 3000);
+    setInterval(() => runNetworkProbe({ emit: true }).catch(() => {}), NETWORK_PROBE_INTERVAL_MS);
+  }
+
   function fullscreenActive() {
     return Boolean(
       document.fullscreenElement ||
@@ -275,6 +399,7 @@
       slideCount: event.slideCount,
       lastLiveUpdateAt: event.lastLiveUpdateAt || "",
       reconnectBackoffMs: event.reconnectBackoffMs,
+      networkProbe: cloneNetworkProbe(event.networkProbe),
     };
   }
 
@@ -290,6 +415,7 @@
       code: cleanDiagnosticText(data.code, 80),
       target: cleanDiagnosticText(data.target, 80),
       url: cleanDiagnosticText(data.url, 240),
+      networkProbe: cloneNetworkProbe(data.networkProbe),
     };
     diagnosticTimeline.push(event);
     if (diagnosticTimeline.length > DIAGNOSTIC_TIMELINE_LIMIT) {
@@ -305,6 +431,7 @@
       sendScreenHeartbeat(event.eventType, {
         keepalive: options.keepalive === true,
         beacon: options.beacon === true,
+        skipNetworkProbe: options.skipNetworkProbe === true,
       }).catch(() => {});
     }
     return event;
@@ -347,6 +474,7 @@
       navigationType: getNavigationType(),
       focused: typeof document.hasFocus === "function" ? document.hasFocus() : null,
       fullscreen: fullscreenActive(),
+      networkProbe: cloneNetworkProbe(),
       lastDiagnosticEvent: diagnosticTimeline[diagnosticTimeline.length - 1] || null,
       diagnosticTimeline: diagnosticTimeline.slice(-12),
       platform: {
@@ -370,6 +498,9 @@
 
   async function sendScreenHeartbeat(reason = "heartbeat", options = {}) {
     if (!ownsScreenIdentity || !screenId || !screenSecret) return false;
+    if (options.skipNetworkProbe !== true && options.beacon !== true) {
+      await ensureFreshNetworkProbe({ emit: true }).catch(() => null);
+    }
     const payload = JSON.stringify({
       screenId,
       secret: screenSecret,
@@ -518,6 +649,7 @@
       code: reason?.name || "",
     }, { heartbeat: true, keepalive: true });
   });
+  startNetworkProbeLoop();
 
   async function ensureScreenWriteAccess() {
     if (!ownsScreenIdentity) {
@@ -2455,6 +2587,10 @@
       ['Firebase',         isOffline ? '⚠ Offline (cached)' : '● Live',
                            isOffline ? 'dbg-warn' : 'dbg-ok'],
       ['Cache',            activeSlideshowId && loadCache(activeSlideshowId) ? '✓ present' : '✗ empty'],
+      ['Network probe',    lastNetworkProbe
+        ? (lastNetworkProbe.ok ? `✓ ${lastNetworkProbe.elapsedMs || 0} ms` : `⚠ ${lastNetworkProbe.reason || 'failed'}`)
+        : 'pending',
+                           lastNetworkProbe && !lastNetworkProbe.ok ? 'dbg-warn' : 'dbg-ok'],
       ['Last live update', lastUpdateTime ? new Date(lastUpdateTime).toLocaleTimeString() : 'never'],
       ['Server heartbeat', lastServerHeartbeatAt ? new Date(lastServerHeartbeatAt).toLocaleTimeString() : 'never'],
       ['Clock skew',       typeof lastServerClockSkewMs === 'number' ? Math.round(lastServerClockSkewMs / 1000) + ' s' : '—',

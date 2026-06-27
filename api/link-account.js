@@ -10,6 +10,7 @@ const PLAYER_DIAGNOSTIC_TYPES = new Set([
   'player_online',
   'player_offline',
   'player_timeline',
+  'player_heartbeat',
   'player_heartbeat_error',
   'player_watchdog_restart',
   'player_slideshow_error',

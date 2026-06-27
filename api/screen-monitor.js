@@ -38,6 +38,20 @@ function yesNo(value) {
   return 'Unknown';
 }
 
+function sanitizeNetworkProbe(input) {
+  if (!input || typeof input !== 'object') return null;
+  return {
+    checkedAt: cleanText(input.checkedAt, 40),
+    ok: input.ok === true,
+    status: Number.isFinite(Number(input.status)) ? Number(input.status) : null,
+    elapsedMs: Number.isFinite(Number(input.elapsedMs)) ? Number(input.elapsedMs) : null,
+    reason: cleanText(input.reason, 80),
+    message: cleanText(input.message, 240),
+    looksCaptive: input.looksCaptive === true,
+    url: cleanText(input.url, 120),
+  };
+}
+
 function diagnosticTimeline(screen) {
   const fromScreen = Array.isArray(screen.diagnosticTimeline) ? screen.diagnosticTimeline : [];
   const fromHeartbeat = Array.isArray(screen.lastHeartbeat?.diagnosticTimeline)
@@ -58,6 +72,7 @@ function diagnosticTimeline(screen) {
       focused: event.focused === true ? true : (event.focused === false ? false : null),
       fullscreen: event.fullscreen === true,
       offlineCacheMode: event.offlineCacheMode === true,
+      networkProbe: sanitizeNetworkProbe(event.networkProbe),
       slideshowId: cleanText(event.slideshowId, 160),
       slideIndex: Number.isFinite(Number(event.slideIndex)) ? Number(event.slideIndex) : null,
       slideCount: Number.isFinite(Number(event.slideCount)) ? Number(event.slideCount) : null,
@@ -80,6 +95,7 @@ function lastKnownState(screen) {
     playbackMode: hb.offlineCacheMode === true ? 'Cached playback' : 'Live listener',
     offlineCacheMode: hb.offlineCacheMode === true,
     cachePresent: hb.cachePresent === true,
+    networkProbe: sanitizeNetworkProbe(hb.networkProbe),
     localScreenIdMatches: hb.localScreenIdMatches === true,
     slideshowId: cleanText(hb.slideshowId || screen.slideshowId || '', 160),
     slideIndex: Number.isFinite(Number(hb.slideIndex)) ? Number(hb.slideIndex) : null,
@@ -104,6 +120,10 @@ function classifyOfflineIncident(screen, timeline) {
   const heartbeatReason = String(hb.reason || '').toLowerCase();
   const latestEvent = timeline[timeline.length - 1] || null;
   const latestType = String(latestEvent?.eventType || '').toLowerCase();
+  const latestProbe = sanitizeNetworkProbe(latestEvent?.networkProbe);
+  const heartbeatProbe = sanitizeNetworkProbe(hb.networkProbe);
+  const failedProbe = [latestProbe, heartbeatProbe].find(probe => probe && probe.ok === false) || null;
+  const assetErrorCount = timeline.filter(event => String(event?.eventType || '').toLowerCase() === 'asset_error').length;
 
   if (['visibility_hidden', 'pagehide'].includes(heartbeatReason) || ['visibility_hidden', 'pagehide'].includes(latestType)) {
     return {
@@ -118,6 +138,17 @@ function classifyOfflineIncident(screen, timeline) {
       title: 'Browser went offline',
       probableCause: 'browser_network_offline',
       summary: 'The browser reported a network offline event near the time heartbeats stopped.',
+      finalEventReceived: true,
+    };
+  }
+  if (heartbeatReason === 'network_probe_failed' || latestType === 'network_probe_failed' || failedProbe) {
+    const captive = failedProbe?.looksCaptive === true;
+    return {
+      title: captive ? 'Captive portal or blocked network' : 'Network probe failed',
+      probableCause: captive ? 'network_probe_captive_or_blocked' : 'network_probe_failed',
+      summary: captive
+        ? 'The player reached something other than the Zigns connectivity check. A captive portal, guest WiFi session, proxy, or firewall may have intercepted app traffic.'
+        : `The player could not complete the Zigns connectivity check before heartbeats stopped${failedProbe?.message ? `: ${failedProbe.message}` : '.'}`,
       finalEventReceived: true,
     };
   }
@@ -145,18 +176,12 @@ function classifyOfflineIncident(screen, timeline) {
       finalEventReceived: true,
     };
   }
-  if (latestType === 'asset_error') {
-    return {
-      title: 'Asset load error',
-      probableCause: 'asset_load_error',
-      summary: `The player reported an asset load error before heartbeats stopped${latestEvent.message ? `: ${latestEvent.message}` : '.'}`,
-      finalEventReceived: true,
-    };
-  }
   return {
-    title: 'Heartbeat stopped',
+    title: assetErrorCount ? 'Heartbeat stopped after asset errors' : 'Heartbeat stopped',
     probableCause: 'abrupt_session_or_network_interruption',
-    summary: 'No final browser event was received. The device, Chrome session, network, or page may have stopped before the player could report a reason.',
+    summary: assetErrorCount
+      ? 'Asset errors were recorded before the heartbeat stopped, but no definitive browser offline, cache-mode, freeze, or network-probe event was received. The device, Chrome session, network, or page may have stopped before the player could report a final reason.'
+      : 'No final browser event was received. The device, Chrome session, network, or page may have stopped before the player could report a reason.',
     finalEventReceived: false,
   };
 }
@@ -401,6 +426,7 @@ function buildHtml(screenName, event, offlineIncident = null) {
       <tr><td style="padding:3px 0;color:#777">Browser online</td><td align="right" style="padding:3px 0;color:#111;font-weight:600">${esc(yesNo(state.browserOnline))}</td></tr>
       <tr><td style="padding:3px 0;color:#777">Visibility</td><td align="right" style="padding:3px 0;color:#111;font-weight:600">${esc(state.visibilityState || 'Unknown')}</td></tr>
       <tr><td style="padding:3px 0;color:#777">Playback</td><td align="right" style="padding:3px 0;color:#111;font-weight:600">${esc(state.playbackMode || 'Unknown')}</td></tr>
+      <tr><td style="padding:3px 0;color:#777">Network probe</td><td align="right" style="padding:3px 0;color:#111;font-weight:600">${esc(state.networkProbe ? (state.networkProbe.ok ? 'Passed' : (state.networkProbe.message || state.networkProbe.reason || 'Failed')) : 'Unknown')}</td></tr>
       <tr><td style="padding:3px 0;color:#777">Slide</td><td align="right" style="padding:3px 0;color:#111;font-weight:600">${esc(state.slideCount ? `${state.slideIndex || 0} of ${state.slideCount}` : 'Unknown')}</td></tr>
     </table>
   </div>` : '';
@@ -432,3 +458,10 @@ function buildHtml(screenName, event, offlineIncident = null) {
 function esc(s) {
   return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
+
+module.exports._test = {
+  buildOfflineIncident,
+  classifyOfflineIncident,
+  diagnosticTimeline,
+  lastKnownState,
+};

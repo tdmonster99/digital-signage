@@ -27666,6 +27666,8 @@ function timelineEventTypeLabel(type) {
     heartbeat_failed: 'Heartbeat failed',
     js_error: 'JavaScript error',
     live_mode: 'Live mode',
+    network_probe_failed: 'Network probe failed',
+    network_probe_ok: 'Network probe ok',
     page_frozen: 'Page frozen',
     page_loaded: 'Page loaded',
     page_resumed: 'Page resumed',
@@ -27696,6 +27698,7 @@ function normalizeTimelineEvent(event = {}) {
     focused: event.focused,
     fullscreen: event.fullscreen,
     offlineCacheMode: event.offlineCacheMode,
+    networkProbe: event.networkProbe || null,
     slideshowId: event.slideshowId || '',
     slideIndex: event.slideIndex,
     slideCount: event.slideCount,
@@ -27738,6 +27741,11 @@ function timelineEventDetail(event) {
   if (event.code) parts.push(`code: ${event.code}`);
   if (event.browserOnline === false) parts.push('browser offline');
   if (event.offlineCacheMode === true) parts.push('cached playback');
+  if (event.networkProbe) {
+    const probe = event.networkProbe;
+    parts.push(`probe: ${probe.ok ? 'ok' : (probe.message || probe.reason || 'failed')}`);
+    if (probe.looksCaptive) parts.push('possible captive portal');
+  }
   if (event.visibilityState) parts.push(`visibility: ${event.visibilityState}`);
   if (event.slideCount) parts.push(`slide: ${event.slideIndex || 0}/${event.slideCount}`);
   if (event.url) parts.push(`url: ${String(event.url).slice(0, 100)}`);
@@ -27769,6 +27777,7 @@ function renderLastKnownStateRows(screen) {
     : '—';
   const playbackMode = state.playbackMode || heartbeatModeLabel(state);
   const url = state.playerUrl || heartbeatUrlLabel(state);
+  const probe = state.networkProbe || heartbeat.networkProbe || null;
   return [
     ['Player URL', url || '—'],
     ['Browser online', heartbeatBoolLabel(state.browserOnline)],
@@ -27776,6 +27785,7 @@ function renderLastKnownStateRows(screen) {
     ['Focused', heartbeatBoolLabel(state.focused)],
     ['Fullscreen', heartbeatBoolLabel(state.fullscreen)],
     ['Playback', playbackMode || '—'],
+    ['Network probe', probe ? (probe.ok ? `Passed${probe.elapsedMs ? ` (${probe.elapsedMs} ms)` : ''}` : (probe.message || probe.reason || 'Failed')) : '—'],
     ['Slide', slideLabel],
     ['Last live update', formatPlayerDiagTime(state.lastLiveUpdateAt)],
   ].map(([label, value]) => playerDiagRow(label, escHtml(value))).join('');
@@ -27790,6 +27800,7 @@ function renderHeartbeatRows(screen) {
     ['Player URL', heartbeatUrlLabel(heartbeat)],
     ['Slot', heartbeat.screenSlot || 'default'],
     ['Playback mode', heartbeatModeLabel(heartbeat)],
+    ['Network probe', heartbeat.networkProbe ? (heartbeat.networkProbe.ok ? `Passed${heartbeat.networkProbe.elapsedMs ? ` (${heartbeat.networkProbe.elapsedMs} ms)` : ''}` : (heartbeat.networkProbe.message || heartbeat.networkProbe.reason || 'Failed')) : '—'],
     ['Browser online', heartbeatBoolLabel(heartbeat.browserOnline)],
     ['Visibility', heartbeat.visibilityState || (heartbeat.documentHidden ? 'hidden' : '—')],
     ['Last live update', formatPlayerDiagTime(heartbeat.lastLiveUpdateAt)],
@@ -27830,6 +27841,7 @@ function buildScreenDiagnosticReport(screen, latest, events) {
     `Player URL: ${heartbeatUrlLabel(heartbeat)}`,
     `Slot: ${heartbeat.screenSlot || 'default'}`,
     `Playback mode: ${heartbeatModeLabel(heartbeat)}`,
+    `Network probe: ${heartbeat.networkProbe ? (heartbeat.networkProbe.ok ? `Passed${heartbeat.networkProbe.elapsedMs ? ` (${heartbeat.networkProbe.elapsedMs} ms)` : ''}` : (heartbeat.networkProbe.message || heartbeat.networkProbe.reason || 'Failed')) : '—'}`,
     `Browser online: ${heartbeatBoolLabel(heartbeat.browserOnline)}`,
     `Visibility: ${heartbeat.visibilityState || (heartbeat.documentHidden ? 'hidden' : '—')}`,
     `Last live update: ${formatPlayerDiagTime(heartbeat.lastLiveUpdateAt)}`,

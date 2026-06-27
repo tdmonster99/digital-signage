@@ -20,6 +20,8 @@ const DIAGNOSTIC_EVENT_REASONS = new Set([
   'heartbeat_failed',
   'js_error',
   'live_mode',
+  'network_probe_failed',
+  'network_probe_ok',
   'pagehide',
   'page_frozen',
   'page_loaded',
@@ -88,6 +90,7 @@ module.exports = async function handler(req, res) {
         uptimeSec: heartbeat.uptimeSec || null,
         online: heartbeat.browserOnline,
         offlineCacheMode: heartbeat.offlineCacheMode,
+        networkProbe: heartbeat.networkProbe,
         visibilityState: heartbeat.visibilityState || '',
         clockSkewMs: heartbeat.clockSkewMs,
         screenSlot: heartbeat.screenSlot || null,
@@ -117,6 +120,7 @@ module.exports = async function handler(req, res) {
         browserOnline: timelineEvent.browserOnline,
         online: timelineEvent.browserOnline,
         offlineCacheMode: timelineEvent.offlineCacheMode,
+        networkProbe: timelineEvent.networkProbe || null,
         visibilityState: timelineEvent.visibilityState || '',
         documentHidden: timelineEvent.documentHidden,
         focused: timelineEvent.focused,
@@ -175,6 +179,7 @@ function sanitizeHeartbeat(input, reason, nowMs) {
     documentHidden: input.documentHidden === true,
     offlineCacheMode: input.offlineCacheMode === true,
     cachePresent: input.cachePresent === true,
+    networkProbe: sanitizeNetworkProbe(input.networkProbe, nowMs),
     slideshowId: cleanText(input.slideshowId, 160),
     slideIndex: clampInt(input.slideIndex, 0, 10000),
     slideCount: clampInt(input.slideCount, 0, 10000),
@@ -233,12 +238,28 @@ function sanitizeDiagnosticEvent(input, nowMs) {
     focused: input.focused === true ? true : (input.focused === false ? false : null),
     fullscreen: input.fullscreen === true,
     offlineCacheMode: input.offlineCacheMode === true,
+    networkProbe: sanitizeNetworkProbe(input.networkProbe, nowMs),
     slideshowId: cleanText(input.slideshowId, 160),
     slideIndex: clampInt(input.slideIndex, 0, 10000),
     slideCount: clampInt(input.slideCount, 0, 10000),
     lastLiveUpdateAt: cleanIso(input.lastLiveUpdateAt),
     reconnectBackoffMs: clampInt(input.reconnectBackoffMs, 0, 3600000),
     uptimeSec: clampInt(input.uptimeSec, 0, 31536000),
+  };
+}
+
+function sanitizeNetworkProbe(input, nowMs) {
+  if (!input || typeof input !== 'object') return null;
+  const checkedAt = cleanIso(input.checkedAt) || new Date(nowMs).toISOString();
+  return {
+    checkedAt,
+    ok: input.ok === true,
+    status: clampInt(input.status, 0, 599),
+    elapsedMs: clampInt(input.elapsedMs, 0, 60000),
+    reason: cleanToken(input.reason || (input.ok === true ? 'ok' : 'failed'), 80),
+    message: cleanText(input.message, 240),
+    looksCaptive: input.looksCaptive === true,
+    url: cleanText(input.url, 120),
   };
 }
 
